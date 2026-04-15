@@ -1,7 +1,10 @@
 import Link from "next/link";
+import Image from "next/image";
 
 import { buildPlaylist } from "@/lib/buildPlaylist";
 import type { PlaylistItem } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
 
 export default async function FeedPage() {
   let playlist: PlaylistItem[] = [];
@@ -28,9 +31,11 @@ export default async function FeedPage() {
               href="/live"
               className="flex gap-3 rounded-xl border border-gray-200 bg-white p-3 transition hover:border-gray-300"
             >
-              <img
+              <Image
                 src={`https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`}
                 alt={item.title}
+                width={360}
+                height={200}
                 className="h-20 w-36 rounded-md object-cover"
                 loading="lazy"
               />

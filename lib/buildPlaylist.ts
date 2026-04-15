@@ -106,23 +106,24 @@ export const fetchLatestVideos = cache(
     const data = (await response.json()) as YoutubeSearchResponse;
     const items = data.items ?? [];
 
-    return items
-      .map((item) => {
-        const videoId = item.id?.videoId;
-        const title = item.snippet?.title;
-        if (!videoId || !title) {
-          return null;
-        }
+    const playlistItems: PlaylistItem[] = [];
+    for (const item of items) {
+      const videoId = item.id?.videoId;
+      const title = item.snippet?.title;
+      if (!videoId || !title) {
+        continue;
+      }
 
-        return {
-          videoId,
-          title,
-          channelName,
-          sourceId,
-          publishedAt: item.snippet?.publishedAt,
-        } satisfies PlaylistItem;
-      })
-      .filter((item): item is PlaylistItem => item !== null);
+      playlistItems.push({
+        videoId,
+        title,
+        channelName,
+        sourceId,
+        publishedAt: item.snippet?.publishedAt,
+      });
+    }
+
+    return playlistItems;
   }
 );
 
