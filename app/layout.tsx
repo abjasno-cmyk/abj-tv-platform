@@ -20,8 +20,8 @@ const inter = Inter({
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="cs">
-      <body className={`${inter.className} bg-white text-gray-900 antialiased`}>
-        <main className="mx-auto min-h-screen w-full max-w-3xl px-6 pb-28 pt-6">
+      <body className={`${inter.className} bg-slate-50 text-gray-900 antialiased`}>
+        <main className="mx-auto min-h-screen w-full max-w-5xl px-4 pb-28 pt-6 sm:px-6">
           {children}
         </main>
         <BottomNav />

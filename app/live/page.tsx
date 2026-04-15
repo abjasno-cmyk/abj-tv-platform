@@ -16,7 +16,7 @@ export default async function LivePage() {
 
   if (!playlist.length) {
     return (
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 text-center text-sm text-gray-500 shadow-sm">
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 shadow-sm">
         Vysílání se načítá, zkuste za chvíli.
       </section>
     );

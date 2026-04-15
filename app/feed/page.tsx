@@ -16,36 +16,44 @@ export default async function FeedPage() {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-3xl flex-col space-y-6">
-      <h1 className="text-xl font-semibold text-gray-900">Feed</h1>
+    <section className="mx-auto w-full max-w-6xl space-y-8">
+      <header className="space-y-2">
+        <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
+          Media feed
+        </p>
+        <h1 className="text-3xl font-semibold tracking-tight text-gray-900">Výběr videí</h1>
+      </header>
 
       {playlist.length === 0 ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-500 shadow-sm">
+        <div className="rounded-3xl border border-white/70 bg-white p-6 text-sm text-gray-500 shadow-sm">
           Feed je zatím prázdný, zkuste to prosím za chvíli.
         </div>
       ) : (
-        <div className="space-y-4">
-          {playlist.map((item) => (
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+          {playlist.map((item, index) => (
             <Link
               key={`${item.videoId}-${item.sourceId ?? "source"}`}
               href="/live"
-              className="group flex gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 ease-in-out hover:scale-[1.01] hover:shadow-md"
+              className={`group overflow-hidden rounded-2xl border border-white/70 bg-white shadow-sm transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:shadow-md ${
+                index === 0 ? "col-span-2 md:col-span-2 lg:col-span-2" : ""
+              }`}
             >
-              <div className="overflow-hidden rounded-xl">
+              <div className="relative overflow-hidden">
                 <Image
                   src={`https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`}
                   alt={item.title}
-                  width={360}
-                  height={200}
-                  className="h-24 w-40 rounded-xl object-cover transition-transform duration-200 ease-in-out group-hover:scale-105"
+                  width={720}
+                  height={400}
+                  className={`w-full object-cover transition-transform duration-200 ease-in-out group-hover:scale-105 ${
+                    index === 0 ? "h-52 md:h-56" : "h-36"
+                  }`}
                   loading="lazy"
                 />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/50 to-transparent" />
               </div>
-              <div className="flex min-w-0 flex-1 flex-col justify-center">
-                <p className="text-sm text-gray-500">{item.channelName}</p>
-                <p className="line-clamp-2 text-base font-semibold text-gray-900">
-                  {item.title}
-                </p>
+              <div className="space-y-1 p-3">
+                <p className="text-xs text-gray-500">{item.channelName}</p>
+                <p className="line-clamp-2 text-sm font-medium text-gray-900">{item.title}</p>
               </div>
             </Link>
           ))}
