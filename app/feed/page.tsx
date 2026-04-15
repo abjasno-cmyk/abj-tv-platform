@@ -28,7 +28,7 @@ export default async function FeedPage() {
           {playlist.map((item) => (
             <Link
               key={`${item.videoId}-${item.sourceId ?? "source"}`}
-              href="/live"
+              href={`/live?video=${item.videoId}`}
               className="flex gap-3 rounded-xl border border-gray-200 bg-white p-3 transition hover:border-gray-300"
             >
               <Image
