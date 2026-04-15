@@ -1,20 +1,12 @@
 import { buildPlaylist } from "@/lib/buildPlaylist";
 import TVPlayer from "@/components/TVPlayer";
 import { Chat } from "@/components/Chat";
-import type { PlaylistItem } from "@/lib/types";
+import type { PlaylistItem } from "@/lib/buildPlaylist";
 
 export const dynamic = "force-dynamic";
 
-type LivePageProps = {
-  searchParams?: Promise<{ video?: string | string[] }>;
-};
-
-export default async function LivePage({ searchParams }: LivePageProps) {
+export default async function LivePage() {
   let playlist: PlaylistItem[] = [];
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
-  const requestedVideoId = Array.isArray(resolvedSearchParams?.video)
-    ? resolvedSearchParams?.video[0]
-    : resolvedSearchParams?.video;
 
   try {
     playlist = await buildPlaylist();
@@ -30,14 +22,9 @@ export default async function LivePage({ searchParams }: LivePageProps) {
     );
   }
 
-  const initialIndex =
-    requestedVideoId !== undefined
-      ? playlist.findIndex((item) => item.videoId === requestedVideoId)
-      : 0;
-
   return (
     <section className="space-y-4">
-      <TVPlayer playlist={playlist} initialIndex={initialIndex >= 0 ? initialIndex : 0} />
+      <TVPlayer playlist={playlist} />
       <Chat />
     </section>
   );

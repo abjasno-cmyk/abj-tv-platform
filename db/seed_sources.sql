@@ -31,7 +31,7 @@ insert into sources (
   ('Modrý jelen', 'youtube', 'https://www.youtube.com/@Modryjelen', 'B', 'komentář', 'CZ', 'cs', true, 'support', 'Petr Bohuš'),
   ('KTV Live', 'youtube', 'https://www.youtube.com/@ktvlive-zpravy', 'B', 'politika', 'CZ', 'cs', true, 'support', null),
   ('Raptor-TV', 'youtube', 'https://www.youtube.com/@RaptorTV.cz_hejobcane_zs', 'B', 'politika', 'CZ', 'cs', true, 'support', null),
-  ('Radim Panenka', 'youtube', 'https://www.youtube.com/@RadimPanenka', 'B', 'rozhovor', 'CZ', 'cs', true, 'support', null),
+  ('Radim Panenka', 'youtube', 'https://www.youtube.com/@RadimOanenka', 'B', 'rozhovor', 'CZ', 'cs', true, 'support', null),
   ('Gregor i Jan', 'youtube', 'https://www.youtube.com/@gregormatej', 'B', 'komentář', 'CZ', 'cs', true, 'support', null),
   ('Dvojí metr', 'youtube', 'https://www.youtube.com/@PatrikNacherCZ', 'B', 'politika', 'CZ', 'cs', true, 'support', 'Patrik Nacher'),
   ('Tomáš Lukavec', 'youtube', 'https://www.youtube.com/@zakonybohatstvi', 'B', 'rozhovor', 'CZ', 'cs', true, 'support', null),

@@ -1,32 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import YouTube, { type YouTubeProps } from "react-youtube";
 
-import type { PlaylistItem } from "@/lib/types";
+import type { PlaylistItem } from "@/lib/buildPlaylist";
 
 type TVPlayerProps = {
   playlist: PlaylistItem[];
-  initialIndex?: number;
 };
 
 const QUEUE_SIZE = 8;
 
-function normalizeInitialIndex(length: number, initialIndex?: number): number {
-  if (!length || initialIndex === undefined) {
-    return 0;
-  }
-  if (initialIndex < 0 || initialIndex >= length) {
-    return 0;
-  }
-  return initialIndex;
-}
-
-export default function TVPlayer({ playlist, initialIndex }: TVPlayerProps) {
-  const [currentIndex, setCurrentIndex] = useState(
-    normalizeInitialIndex(playlist.length, initialIndex)
-  );
+export default function TVPlayer({ playlist }: TVPlayerProps) {
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [embedBlocked, setEmbedBlocked] = useState(false);
   const currentItem = playlist[currentIndex];
 
@@ -42,10 +29,6 @@ export default function TVPlayer({ playlist, initialIndex }: TVPlayerProps) {
     }),
     [],
   );
-
-  useEffect(() => {
-    setCurrentIndex(normalizeInitialIndex(playlist.length, initialIndex));
-  }, [playlist, initialIndex]);
 
   if (!currentItem) {
     return null;

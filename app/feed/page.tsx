@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { buildPlaylist } from "@/lib/buildPlaylist";
-import type { PlaylistItem } from "@/lib/types";
+import type { PlaylistItem } from "@/lib/buildPlaylist";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +28,7 @@ export default async function FeedPage() {
           {playlist.map((item) => (
             <Link
               key={`${item.videoId}-${item.sourceId ?? "source"}`}
-              href={`/live?video=${item.videoId}`}
+              href="/live"
               className="flex gap-3 rounded-xl border border-gray-200 bg-white p-3 transition hover:border-gray-300"
             >
               <Image

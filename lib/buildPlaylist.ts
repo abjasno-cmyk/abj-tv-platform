@@ -2,7 +2,6 @@ import "server-only";
 
 import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { PlaylistItem } from "@/lib/types";
 
 type SourcePriority = "A" | "B" | "C";
 
@@ -25,6 +24,14 @@ type YoutubeSearchResponse = {
       publishedAt?: string;
     };
   }>;
+};
+
+export type PlaylistItem = {
+  videoId: string;
+  title: string;
+  channelName: string;
+  sourceId?: string;
+  publishedAt?: string;
 };
 
 const YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3";
