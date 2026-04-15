@@ -14,8 +14,8 @@ type RootLayoutProps = {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="cs">
-      <body className="bg-slate-50 text-slate-900 antialiased">
-        <main className="mx-auto min-h-screen w-full max-w-3xl px-4 pb-24 pt-4">
+      <body className="bg-black text-white antialiased">
+        <main className="mx-auto min-h-screen w-full max-w-3xl px-4 pb-28 pt-6">
           {children}
         </main>
         <BottomNav />

@@ -15,11 +15,13 @@ const QUEUE_SIZE = 8;
 export default function TVPlayer({ playlist }: TVPlayerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [embedBlocked, setEmbedBlocked] = useState(false);
+  const [readyVideoId, setReadyVideoId] = useState<string | null>(null);
   const currentItem = playlist[currentIndex];
 
   const playerOptions = useMemo<YouTubeProps["opts"]>(
     () => ({
       width: "100%",
+      height: "100%",
       playerVars: {
         autoplay: 1,
         rel: 0,
@@ -55,43 +57,52 @@ export default function TVPlayer({ playlist }: TVPlayerProps) {
   const youtubeUrl = `https://www.youtube.com/watch?v=${currentItem.videoId}`;
 
   return (
-    <section className="space-y-3">
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-black">
+    <section className="space-y-4">
+      <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-neutral-950 shadow-lg">
+        {readyVideoId !== currentItem.videoId ? (
+          <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900" />
+        ) : null}
         <YouTube
           key={currentItem.videoId}
           videoId={currentItem.videoId}
           title={currentItem.title}
-          iframeClassName="h-[220px] w-full sm:h-[360px]"
+          iframeClassName={`h-full w-full transition-opacity duration-500 ${
+            readyVideoId === currentItem.videoId ? "opacity-100" : "opacity-0"
+          }`}
           opts={playerOptions}
+          onReady={() => {
+            setReadyVideoId(currentItem.videoId);
+          }}
           onPlay={() => setEmbedBlocked(false)}
           onError={() => setEmbedBlocked(true)}
           onEnd={() => {
             setCurrentIndex((prev) => (prev + 1) % playlist.length);
           }}
         />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/70 to-transparent" />
       </div>
 
-      <div className="space-y-2">
-        <p className="text-sm text-gray-500">{currentItem.channelName}</p>
-        <h2 className="text-base font-medium text-gray-900">{currentItem.title}</h2>
-        <div className="flex gap-2">
+      <div className="space-y-3 rounded-2xl border border-white/10 bg-neutral-950 p-6 shadow-lg transition-all duration-300">
+        <p className="text-sm text-gray-400">{currentItem.channelName}</p>
+        <h2 className="text-xl font-semibold text-white">{currentItem.title}</h2>
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={goToPrevious}
-            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
           >
             Předchozí video
           </button>
           <button
             type="button"
             onClick={goToNext}
-            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
           >
             Další video
           </button>
         </div>
         {embedBlocked ? (
-          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <div className="rounded-xl border border-amber-200/30 bg-amber-200/10 p-4 text-sm text-amber-200">
             Embedded přehrávání je omezené. Otevři video přímo na YouTube.
           </div>
         ) : null}
@@ -99,16 +110,16 @@ export default function TVPlayer({ playlist }: TVPlayerProps) {
           href={youtubeUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center text-sm font-medium text-blue-700 hover:text-blue-800 hover:underline"
+          className="inline-flex items-center text-sm font-medium text-gray-300 transition hover:text-white hover:underline"
         >
           Otevřít aktuální video na YouTube
         </Link>
       </div>
 
       {upcomingItems.length > 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-3">
-          <h3 className="mb-2 text-sm font-semibold text-gray-700">Následuje</h3>
-          <ul className="space-y-2">
+        <div className="rounded-2xl border border-white/10 bg-neutral-950 p-4 shadow-lg">
+          <h3 className="mb-3 text-sm font-semibold text-gray-300">Následuje</h3>
+          <ul className="space-y-3">
             {upcomingItems.map(({ queueIndex, item }, position) => (
               <li key={`${item.videoId}-${queueIndex}`}>
                 <button
@@ -117,12 +128,12 @@ export default function TVPlayer({ playlist }: TVPlayerProps) {
                     setCurrentIndex(queueIndex);
                     setEmbedBlocked(false);
                   }}
-                  className="w-full rounded-md px-2 py-1 text-left hover:bg-gray-50"
+                  className="w-full rounded-xl border border-transparent bg-white/0 px-3 py-2 text-left transition hover:border-white/10 hover:bg-white/5"
                 >
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-400">
                     #{position + 1} · {item.channelName}
                   </p>
-                  <p className="line-clamp-2 text-sm text-gray-800">{item.title}</p>
+                  <p className="line-clamp-2 text-sm text-white">{item.title}</p>
                 </button>
               </li>
             ))}

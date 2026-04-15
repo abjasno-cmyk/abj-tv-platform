@@ -16,14 +16,14 @@ export default async function LivePage() {
 
   if (!playlist.length) {
     return (
-      <section className="rounded-xl border border-gray-200 bg-white p-6 text-center text-sm text-gray-600">
+      <section className="rounded-2xl border border-white/10 bg-neutral-950 p-6 text-center text-sm text-gray-400 shadow-lg">
         Vysílání se načítá, zkuste za chvíli.
       </section>
     );
   }
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-6">
       <TVPlayer playlist={playlist} />
       <Chat />
     </section>

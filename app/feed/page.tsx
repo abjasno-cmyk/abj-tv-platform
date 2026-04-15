@@ -16,32 +16,34 @@ export default async function FeedPage() {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-3xl flex-col gap-4">
-      <h1 className="text-xl font-semibold text-gray-900">Feed</h1>
+    <section className="mx-auto flex w-full max-w-3xl flex-col space-y-4">
+      <h1 className="text-2xl font-semibold text-white">Feed</h1>
 
       {playlist.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-600">
+        <div className="rounded-2xl border border-white/10 bg-neutral-950 p-6 text-sm text-gray-400 shadow-lg">
           Feed je zatím prázdný, zkuste to prosím za chvíli.
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="space-y-4">
           {playlist.map((item) => (
             <Link
               key={`${item.videoId}-${item.sourceId ?? "source"}`}
               href="/live"
-              className="flex gap-3 rounded-xl border border-gray-200 bg-white p-3 transition hover:border-gray-300"
+              className="group flex gap-4 rounded-2xl border border-white/10 bg-neutral-950 p-4 shadow-lg transition-all duration-300 hover:border-white/20 hover:bg-neutral-900"
             >
-              <Image
-                src={`https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`}
-                alt={item.title}
-                width={360}
-                height={200}
-                className="h-20 w-36 rounded-md object-cover"
-                loading="lazy"
-              />
+              <div className="overflow-hidden rounded-xl">
+                <Image
+                  src={`https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`}
+                  alt={item.title}
+                  width={360}
+                  height={200}
+                  className="h-24 w-40 object-cover transition-transform duration-300 group-hover:scale-105"
+                  loading="lazy"
+                />
+              </div>
               <div className="flex min-w-0 flex-1 flex-col justify-center">
-                <p className="text-sm text-gray-500">{item.channelName}</p>
-                <p className="line-clamp-2 text-base font-medium text-gray-900">
+                <p className="text-sm text-gray-400">{item.channelName}</p>
+                <p className="line-clamp-2 text-base font-semibold text-white">
                   {item.title}
                 </p>
               </div>
