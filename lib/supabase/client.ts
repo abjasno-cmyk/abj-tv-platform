@@ -16,9 +16,28 @@ function sanitizeEnvValue(value?: string): string | undefined {
   return trimmed;
 }
 
+function maybeExtractAssignedValue(value?: string, expectedKey?: string): string | undefined {
+  const sanitized = sanitizeEnvValue(value);
+  if (!sanitized) {
+    return undefined;
+  }
+
+  if (expectedKey && sanitized.startsWith(`${expectedKey}=`)) {
+    return sanitizeEnvValue(sanitized.slice(expectedKey.length + 1));
+  }
+
+  return sanitized;
+}
+
 export function createSupabaseBrowserClient() {
-  const supabaseUrl = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);
-  const supabaseAnonKey = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  const supabaseUrl = maybeExtractAssignedValue(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    "NEXT_PUBLIC_SUPABASE_URL"
+  );
+  const supabaseAnonKey = maybeExtractAssignedValue(
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+  );
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error("Supabase env vars not set");

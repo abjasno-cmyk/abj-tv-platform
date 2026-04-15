@@ -7,14 +7,21 @@ function sanitizeEnvValue(value?: string): string | undefined {
   }
 
   const trimmed = value.trim();
+  const equalsIdx = trimmed.indexOf("=");
+  const withoutInlineKeyName =
+    equalsIdx > 0 &&
+    /^[A-Z0-9_]+$/.test(trimmed.slice(0, equalsIdx))
+      ? trimmed.slice(equalsIdx + 1).trim()
+      : trimmed;
+
   if (
-    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+    (withoutInlineKeyName.startsWith('"') && withoutInlineKeyName.endsWith('"')) ||
+    (withoutInlineKeyName.startsWith("'") && withoutInlineKeyName.endsWith("'"))
   ) {
-    return trimmed.slice(1, -1).trim();
+    return withoutInlineKeyName.slice(1, -1).trim();
   }
 
-  return trimmed;
+  return withoutInlineKeyName;
 }
 
 export async function createSupabaseServerClient() {
