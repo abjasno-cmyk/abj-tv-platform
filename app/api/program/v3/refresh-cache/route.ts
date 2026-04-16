@@ -45,7 +45,12 @@ export async function GET(request: Request) {
       const supabaseAnonKey = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
       if (supabaseUrl && supabaseAnonKey) {
         const supabase = createClient(supabaseUrl, supabaseAnonKey);
-        const status = result.failedSources.length > 0 ? "failed" : "success";
+        const status =
+          result.failedSources.length === 0
+            ? "success"
+            : result.stored > 0
+              ? "success"
+              : "failed";
         const errorText =
           result.failedDetails.length > 0
             ? result.failedDetails

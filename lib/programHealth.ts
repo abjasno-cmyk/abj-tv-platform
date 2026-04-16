@@ -14,6 +14,7 @@ type HealthCheck = {
 };
 
 type IngestRunRow = {
+  id: string;
   started_at: string;
   finished_at: string | null;
   status: "running" | "success" | "failed";
@@ -262,11 +263,23 @@ export async function getProgramHealth() {
 
   const ingestQuery = await supabase
     .from("ingest_runs")
-    .select("started_at, finished_at, status, api_calls, videos_upserted, error_text")
+    .select("id, started_at, finished_at, status, api_calls, videos_upserted, error_text")
     .order("started_at", { ascending: false })
-    .limit(1);
+    .limit(3);
 
-  const latestIngest = ingestQuery.data?.[0] as IngestRunRow | undefined;
+  const recentIngestRuns = ((ingestQuery.data ?? []) as IngestRunRow[]).sort((a, b) => {
+    const aStarted = parseDateSafe(a.started_at)?.getTime() ?? 0;
+    const bStarted = parseDateSafe(b.started_at)?.getTime() ?? 0;
+    if (aStarted !== bStarted) return bStarted - aStarted;
+
+    const aFinished = parseDateSafe(a.finished_at)?.getTime() ?? 0;
+    const bFinished = parseDateSafe(b.finished_at)?.getTime() ?? 0;
+    if (aFinished !== bFinished) return bFinished - aFinished;
+
+    return b.id.localeCompare(a.id);
+  });
+
+  const latestIngest = recentIngestRuns[0];
   const latestIngestErrorText = latestIngest?.error_text ?? null;
   if (!latestIngest) {
     checks.push({
@@ -275,11 +288,11 @@ export async function getProgramHealth() {
       message: "Nebyl nalezen žádný ingest run.",
     });
     overall = maxStatus(overall, "warning");
-  } else if (latestIngest.status === "failed") {
+  } else if (latestIngest.status === "failed" && latestIngest.videos_upserted <= 0) {
     checks.push({
       id: "ingest",
       status: parse403Hint(latestIngestErrorText) ? "error" : "warning",
-      message: "Poslední ingest run selhal.",
+      message: "Poslední ingest run selhal (0 uložených videí).",
       details: {
         startedAt: latestIngest.started_at,
         apiCalls: latestIngest.api_calls,
@@ -288,6 +301,19 @@ export async function getProgramHealth() {
       },
     });
     overall = maxStatus(overall, parse403Hint(latestIngestErrorText) ? "error" : "warning");
+  } else if (latestIngest.status === "failed" && latestIngest.videos_upserted > 0) {
+    checks.push({
+      id: "ingest",
+      status: "warning",
+      message: "Poslední ingest run byl částečně úspěšný.",
+      details: {
+        startedAt: latestIngest.started_at,
+        apiCalls: latestIngest.api_calls,
+        videosUpserted: latestIngest.videos_upserted,
+        errorText: latestIngest.error_text,
+      },
+    });
+    overall = maxStatus(overall, "warning");
   } else {
     checks.push({
       id: "ingest",
@@ -327,6 +353,15 @@ export async function getProgramHealth() {
           apiCalls: latestIngest.api_calls,
           videosUpserted: latestIngest.videos_upserted,
           errorText: latestIngest.error_text,
+          recentRuns: recentIngestRuns.map((run) => ({
+            id: run.id,
+            status: run.status,
+            startedAt: run.started_at,
+            finishedAt: run.finished_at,
+            apiCalls: run.api_calls,
+            videosUpserted: run.videos_upserted,
+            errorText: run.error_text,
+          })),
         }
       : null,
     checks,

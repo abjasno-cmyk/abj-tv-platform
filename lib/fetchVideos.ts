@@ -413,7 +413,7 @@ async function main() {
     apiCalls = result.apiCalls;
     stored = result.stored;
     if (result.failedSources.length > 0) {
-      status = "failed";
+      status = result.stored > 0 ? "success" : "failed";
       runErrorText = `Failed sources: ${result.failedSources.join(", ")}`;
     }
   } catch (error) {
