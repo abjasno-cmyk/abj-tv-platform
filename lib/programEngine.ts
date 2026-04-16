@@ -8,6 +8,7 @@ import { buildPlaylist } from "@/lib/buildPlaylist";
 import type {
   ProgramBlock,
   ProgramCandidateVideo,
+  ProgramManualScheduleItem,
   ProgramOverrideRules,
 } from "@/lib/epg-types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -185,6 +186,114 @@ function readNumberMeta(metadata: Record<string, unknown> | undefined, key: stri
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
+function normalizeWeekdayLabel(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+const WEEKDAY_INDEX_BY_LABEL: Record<string, number> = {
+  sunday: 0,
+  sun: 0,
+  nedele: 0,
+  nedela: 0,
+  monday: 1,
+  mon: 1,
+  pondeli: 1,
+  tuesday: 2,
+  tue: 2,
+  utery: 2,
+  streda: 3,
+  st: 3,
+  wednesday: 3,
+  wed: 3,
+  thursday: 4,
+  thu: 4,
+  ctvrtek: 4,
+  stvrtok: 4,
+  friday: 5,
+  fri: 5,
+  patek: 5,
+  piatok: 5,
+  saturday: 6,
+  sat: 6,
+  sobota: 6,
+};
+
+function parseWeekdayToIndex(input?: string | number): number | null {
+  if (typeof input === "number" && Number.isInteger(input) && input >= 0 && input <= 6) {
+    return input;
+  }
+  if (typeof input !== "string") return null;
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  const asNumber = Number(trimmed);
+  if (Number.isInteger(asNumber) && asNumber >= 0 && asNumber <= 6) return asNumber;
+  const normalized = normalizeWeekdayLabel(trimmed);
+  return WEEKDAY_INDEX_BY_LABEL[normalized] ?? null;
+}
+
+function parseTimeString(value: string): { hour: number; minute: number } | null {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) return null;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  return { hour, minute };
+}
+
+function getPragueWeekdayIndex(dayStart: Date): number {
+  const p = toParts(dayStart, { year: "numeric", month: "2-digit", day: "2-digit" });
+  return new Date(Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day))).getUTCDay();
+}
+
+function normalizeManualScheduleItem(item: ProgramManualScheduleItem): ProgramManualScheduleItem | null {
+  const videoId = typeof item.videoId === "string" ? item.videoId.trim() : "";
+  const time = typeof item.time === "string" ? item.time.trim() : "";
+  if (!videoId || !time || !parseTimeString(time)) return null;
+
+  const normalized: ProgramManualScheduleItem = {
+    videoId,
+    time,
+  };
+
+  if (typeof item.weekday === "string" || typeof item.weekday === "number") {
+    normalized.weekday = item.weekday;
+  }
+  if (typeof item.date === "string") {
+    const date = item.date.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) normalized.date = date;
+  }
+  if (typeof item.title === "string" && item.title.trim()) {
+    normalized.title = item.title.trim();
+  }
+  if (typeof item.channel === "string" && item.channel.trim()) {
+    normalized.channel = item.channel.trim();
+  }
+  if (typeof item.isABJ === "boolean") {
+    normalized.isABJ = item.isABJ;
+  }
+
+  const durationMin = sanitizeDurationMin(Number(item.durationMin ?? 0));
+  if (durationMin > 0) normalized.durationMin = durationMin;
+
+  const priority = Number(item.priority);
+  if (Number.isFinite(priority)) {
+    normalized.priority = Math.round(priority);
+  }
+
+  return normalized;
+}
+
+function normalizeManualScheduleItems(items: ProgramManualScheduleItem[] | undefined): ProgramManualScheduleItem[] {
+  return safeArray(items)
+    .map((item) => normalizeManualScheduleItem(item))
+    .filter((item): item is ProgramManualScheduleItem => item !== null);
+}
+
 async function readOverrideRules(): Promise<ProgramOverrideRules> {
   try {
     const filePath = path.join(process.cwd(), "data", "program-engine-overrides.json");
@@ -195,16 +304,20 @@ async function readOverrideRules(): Promise<ProgramOverrideRules> {
       forcedPriorityChannels: Array.isArray(parsed.forcedPriorityChannels)
         ? parsed.forcedPriorityChannels
         : [],
+      manualSchedule: Array.isArray(parsed.manualSchedule) ? parsed.manualSchedule : [],
     };
   } catch {
-    return { forcedVideoIds: [], forcedPriorityChannels: [] };
+    return { forcedVideoIds: [], forcedPriorityChannels: [], manualSchedule: [] };
   }
 }
 
 function normalizeOverrides(overrideRules?: ProgramOverrideRules): ProgramOverrideRules {
   return {
-    forcedVideoIds: safeArray(overrideRules?.forcedVideoIds).filter(Boolean),
-    forcedPriorityChannels: safeArray(overrideRules?.forcedPriorityChannels).filter(Boolean),
+    forcedVideoIds: Array.from(new Set(safeArray(overrideRules?.forcedVideoIds).filter(Boolean))),
+    forcedPriorityChannels: Array.from(
+      new Set(safeArray(overrideRules?.forcedPriorityChannels).filter(Boolean))
+    ),
+    manualSchedule: normalizeManualScheduleItems(overrideRules?.manualSchedule),
   };
 }
 
@@ -728,6 +841,73 @@ function collectForcedBlocks(
   return forcedBlocks;
 }
 
+function shouldApplyManualSlotToday(
+  item: ProgramManualScheduleItem,
+  dayStart: Date,
+  dateKey: string
+): boolean {
+  if (item.date && item.date !== dateKey) return false;
+  if (item.weekday === undefined) return true;
+  const weekdayIndex = parseWeekdayToIndex(item.weekday);
+  if (weekdayIndex === null) return false;
+  return weekdayIndex === getPragueWeekdayIndex(dayStart);
+}
+
+function collectManualScheduleBlocks(
+  overrideRules: ProgramOverrideRules,
+  candidates: ProgramCandidateVideo[],
+  dayStart: Date,
+  dayEnd: Date,
+  dateKey: string
+): ProgramBlock[] {
+  const schedule = safeArray(overrideRules.manualSchedule);
+  if (schedule.length === 0) return [];
+
+  const day = toParts(dayStart, { year: "numeric", month: "2-digit", day: "2-digit" });
+  const blocks: ProgramBlock[] = [];
+
+  for (const [index, item] of schedule.entries()) {
+    if (!shouldApplyManualSlotToday(item, dayStart, dateKey)) continue;
+    const time = parseTimeString(item.time);
+    if (!time) continue;
+
+    const start = pragueDateTimeToUtc(
+      Number(day.year),
+      Number(day.month),
+      Number(day.day),
+      time.hour,
+      time.minute,
+      0
+    );
+    if (start.getTime() < dayStart.getTime() || start.getTime() >= dayEnd.getTime()) continue;
+
+    const candidate = candidates.find((video) => video.videoId === item.videoId);
+    const rawDuration = item.durationMin ?? candidate?.durationMin ?? 60;
+    const duration = sanitizeDurationMin(rawDuration) || 60;
+    const unclampedEnd = addMinutes(start, duration);
+    const end = unclampedEnd.getTime() > dayEnd.getTime() ? new Date(dayEnd) : unclampedEnd;
+    if (end.getTime() <= start.getTime()) continue;
+
+    const channel = item.channel ?? candidate?.channel ?? "ABJ TV";
+    const isABJ = item.isABJ ?? candidate?.isABJ ?? channel.toLowerCase().includes("abj");
+    blocks.push({
+      id: `manual-${index}-${item.videoId}-${time.hour}-${time.minute}`,
+      start: start.toISOString(),
+      end: end.toISOString(),
+      durationMin: sanitizeDurationMin(minutesDiff(start, end)),
+      type: "recorded",
+      title: item.title ?? candidate?.title ?? `Ruční slot ${item.videoId}`,
+      videoId: item.videoId,
+      channel,
+      isABJ,
+      priority: item.priority ?? 950,
+      thumbnail: candidate?.thumbnail ?? undefined,
+    });
+  }
+
+  return blocks.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+}
+
 function finalizeTimeline(blocks: ProgramBlock[]): ProgramBlock[] {
   return blocks
     .map(normalizeBlock)
@@ -827,21 +1007,23 @@ async function loadCandidateVideosWithFallback(): Promise<ProgramCandidateVideo[
 async function buildProgramBundleInternal(inputOverrides?: ProgramOverrideRules): Promise<ProgramBundle> {
   const fileOverrides = await readOverrideRules();
   const runtimeOverrides = normalizeOverrides(inputOverrides);
-  const mergedOverrides: ProgramOverrideRules = {
+  const mergedOverrides: ProgramOverrideRules = normalizeOverrides({
     forcedVideoIds: [
       ...safeArray(fileOverrides.forcedVideoIds),
       ...safeArray(runtimeOverrides.forcedVideoIds),
     ],
-    forcedPriorityChannels: Array.from(
-      new Set([
-        ...safeArray(fileOverrides.forcedPriorityChannels),
-        ...safeArray(runtimeOverrides.forcedPriorityChannels),
-      ])
-    ),
-  };
+    forcedPriorityChannels: [
+      ...safeArray(fileOverrides.forcedPriorityChannels),
+      ...safeArray(runtimeOverrides.forcedPriorityChannels),
+    ],
+    manualSchedule: [
+      ...safeArray(fileOverrides.manualSchedule),
+      ...safeArray(runtimeOverrides.manualSchedule),
+    ],
+  });
 
   const now = new Date();
-  const { dayStart, dayEnd } = getTodayPragueWindow(now);
+  const { dayStart, dayEnd, dateKey } = getTodayPragueWindow(now);
   const candidates = await loadCandidateVideosWithFallback();
 
   let timeline: ProgramBlock[] = [];
@@ -850,6 +1032,9 @@ async function buildProgramBundleInternal(inputOverrides?: ProgramOverrideRules)
     timeline = insertWithConflictResolution(timeline, block);
   }
   for (const block of buildFixedABJBlocks(dayStart)) {
+    timeline = insertWithConflictResolution(timeline, block);
+  }
+  for (const block of collectManualScheduleBlocks(mergedOverrides, candidates, dayStart, dayEnd, dateKey)) {
     timeline = insertWithConflictResolution(timeline, block);
   }
   for (const block of collectForcedBlocks(mergedOverrides, candidates, dayStart)) {

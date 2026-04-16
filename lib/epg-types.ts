@@ -59,6 +59,19 @@ export type ProgramBlock = {
 export type ProgramOverrideRules = {
   forcedVideoIds?: string[];
   forcedPriorityChannels?: string[];
+  manualSchedule?: ProgramManualScheduleItem[];
+};
+
+export type ProgramManualScheduleItem = {
+  videoId: string;
+  time: string;
+  weekday?: string | number;
+  date?: string;
+  durationMin?: number;
+  title?: string;
+  channel?: string;
+  isABJ?: boolean;
+  priority?: number;
 };
 
 export type ProgramCandidateVideo = {
