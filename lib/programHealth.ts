@@ -62,6 +62,13 @@ function minutesSince(value: Date | null, now: Date): number | null {
 function buildRecommendations(checks: HealthCheck[], lastErrorText: string | null): string[] {
   const recommendations: string[] = [];
 
+  const ingestCheck = checks.find((check) => check.id === "ingest");
+  if (ingestCheck?.status !== "ok") {
+    recommendations.push(
+      "Ingest je aktuálně nestabilní nebo selhal; otevři `/api/program/v3/refresh-cache` a zkontroluj `failedSources`."
+    );
+  }
+
   const hasApi403 = parse403Hint(lastErrorText);
   if (hasApi403) {
     recommendations.push(
