@@ -9,7 +9,14 @@ type SourceRow = {
 };
 
 type YoutubeChannelsResponse = {
-  items?: Array<{ id?: string }>;
+  items?: Array<{
+    id?: string;
+    contentDetails?: {
+      relatedPlaylists?: {
+        uploads?: string;
+      };
+    };
+  }>;
 };
 
 function sanitizeEnvValue(value?: string): string | undefined {
@@ -70,14 +77,14 @@ function extractHandleFromChannelUrl(channelUrl: string): string | null {
 async function resolveChannelIdByHandle(
   apiKey: string,
   handle: string
-): Promise<string | null> {
+): Promise<{ channelId: string | null; uploadsPlaylistId: string | null }> {
   const handleWithoutAt = handle.startsWith("@") ? handle.slice(1) : handle;
   if (!handleWithoutAt) {
-    return null;
+    return { channelId: null, uploadsPlaylistId: null };
   }
 
   const url = new URL("https://www.googleapis.com/youtube/v3/channels");
-  url.searchParams.set("part", "id");
+  url.searchParams.set("part", "id,contentDetails");
   url.searchParams.set("forHandle", handleWithoutAt);
   url.searchParams.set("key", apiKey);
 
@@ -87,7 +94,11 @@ async function resolveChannelIdByHandle(
   }
 
   const data = (await response.json()) as YoutubeChannelsResponse;
-  return data.items?.[0]?.id ?? null;
+  return {
+    channelId: data.items?.[0]?.id ?? null,
+    uploadsPlaylistId:
+      data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads ?? null,
+  };
 }
 
 async function main() {
@@ -101,7 +112,7 @@ async function main() {
     .from("sources")
     .select("id, source_name, channel_url")
     .eq("platform", "youtube")
-    .is("channel_id", null)
+    .or("channel_id.is.null,uploads_playlist_id.is.null")
     .order("priority", { ascending: true })
     .order("source_name", { ascending: true });
 
@@ -121,7 +132,10 @@ async function main() {
         continue;
       }
 
-      const channelId = await resolveChannelIdByHandle(youtubeApiKey, handle);
+      const { channelId, uploadsPlaylistId } = await resolveChannelIdByHandle(
+        youtubeApiKey,
+        handle
+      );
       if (!channelId) {
         console.warn(`[MISS] ${source.source_name}: channel not found for handle ${handle}`);
         await sleep(200);
@@ -130,13 +144,18 @@ async function main() {
 
       const { error: updateError } = await supabase
         .from("sources")
-        .update({ channel_id: channelId })
+        .update({
+          channel_id: channelId,
+          uploads_playlist_id: uploadsPlaylistId,
+        })
         .eq("id", source.id);
 
       if (updateError) {
         console.error(`[FAIL] ${source.source_name}: ${updateError.message}`);
       } else {
-        console.log(`[OK] ${source.source_name}: ${channelId}`);
+        console.log(
+          `[OK] ${source.source_name}: channel=${channelId} uploads=${uploadsPlaylistId ?? "null"}`
+        );
       }
     } catch (err) {
       console.error(`[FAIL] ${source.source_name}:`, err);

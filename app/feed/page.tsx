@@ -1,16 +1,29 @@
 import Link from "next/link";
 import Image from "next/image";
 
-import { buildPlaylist } from "@/lib/buildPlaylist";
-import type { PlaylistItem } from "@/lib/buildPlaylist";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { CachedVideo } from "@/lib/epg-types";
 
 export const dynamic = "force-dynamic";
 
 export default async function FeedPage() {
-  let playlist: PlaylistItem[] = [];
+  let playlist: CachedVideo[] = [];
 
   try {
-    playlist = await buildPlaylist();
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from("videos")
+      .select(
+        "id, source_id, channel_id, video_id, title, thumbnail, published_at, scheduled_start_at, video_type, channel_name, is_abj, created_at"
+      )
+      .order("published_at", { ascending: false })
+      .limit(120);
+
+    if (error) {
+      throw error;
+    }
+
+    playlist = (data ?? []) as CachedVideo[];
   } catch (error) {
     console.error("Feed playlist build failed:", error);
   }
@@ -34,22 +47,23 @@ export default async function FeedPage() {
         <div className="space-y-3">
           {playlist.map((item) => (
             <Link
-              key={`${item.videoId}-${item.sourceId ?? "source"}`}
+              key={`${item.video_id}-${item.source_id ?? "source"}`}
               href="/live"
               className="group flex min-h-12 gap-4 rounded-xl bg-[var(--surface-warm)] p-3 shadow-[0_2px_12px_rgba(0,0,0,0.35)] transition-all duration-200 ease-out hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
             >
               <div className="overflow-hidden rounded-xl">
                 <Image
-                  src={`https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`}
+                  src={item.thumbnail ?? "/placeholder-thumb.jpg"}
                   alt={item.title}
                   width={320}
                   height={180}
                   className="h-24 w-40 object-cover transition-all duration-200 ease-out group-hover:scale-[1.02]"
                   loading="lazy"
+                  unoptimized={item.thumbnail !== null}
                 />
               </div>
               <div className="min-w-0 space-y-1">
-                <p className="text-xs text-[var(--text-soft)]">{item.channelName}</p>
+                <p className="text-xs text-[var(--text-soft)]">{item.channel_name}</p>
                 <p className="line-clamp-2 text-sm font-medium text-[var(--text-main)]">{item.title}</p>
               </div>
             </Link>
