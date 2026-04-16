@@ -49,7 +49,7 @@ export async function GET(request: Request) {
           result.failedSources.length === 0
             ? "success"
             : result.stored > 0
-              ? "success"
+              ? "running"
               : "failed";
         const errorText =
           result.failedDetails.length > 0

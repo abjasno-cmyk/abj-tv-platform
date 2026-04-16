@@ -1,17 +1,21 @@
 // Suggested cron:
 // run every 15 minutes to keep cache warm
+// Quota-safe mode: use uploads playlist + batched videos.list (avoid search.list)
 import { createClient } from "@supabase/supabase-js";
 
 type SourceRow = {
   id: string;
   source_name: string;
   channel_id: string;
+  uploads_playlist_id: string;
   priority: "A" | "B" | "C";
 };
 
-type SearchListResponse = {
+type PlaylistItemsResponse = {
   items?: Array<{
-    id?: { videoId?: string };
+    snippet?: {
+      resourceId?: { videoId?: string };
+    };
   }>;
 };
 
@@ -36,15 +40,6 @@ type VideosListResponse = {
       scheduledStartTime?: string;
       actualStartTime?: string;
       actualEndTime?: string;
-    };
-  }>;
-};
-
-type ChannelsStatisticsResponse = {
-  items?: Array<{
-    id?: string;
-    statistics?: {
-      subscriberCount?: string;
     };
   }>;
 };
@@ -78,6 +73,13 @@ type LegacyVideoUpsert = {
   channel_id: string;
   source_id: string;
   raw: Record<string, unknown>;
+};
+
+type SourceMeta = {
+  sourceId: string;
+  sourceName: string;
+  sourcePriority: "A" | "B" | "C";
+  channelId: string;
 };
 
 export type RefreshVideoCacheResult = {
@@ -129,31 +131,36 @@ function parseDurationToMinutes(value?: string): number {
   return Math.round(total * 10) / 10;
 }
 
-async function fetchSearchVideoIds(
-  channelId: string,
+function maxResultsByPriority(priority: "A" | "B" | "C"): number {
+  if (priority === "A") return 6;
+  if (priority === "B") return 4;
+  return 3;
+}
+
+async function fetchUploadsVideoIds(
+  uploadsPlaylistId: string,
   apiKey: string,
   maxResults: number
 ): Promise<string[]> {
-  const url = new URL("https://www.googleapis.com/youtube/v3/search");
-  url.searchParams.set("part", "id");
-  url.searchParams.set("channelId", channelId);
-  url.searchParams.set("order", "date");
-  url.searchParams.set("type", "video");
+  const url = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
+  url.searchParams.set("part", "snippet");
+  url.searchParams.set("playlistId", uploadsPlaylistId);
   url.searchParams.set("maxResults", String(maxResults));
   url.searchParams.set("key", apiKey);
 
   const res = await fetch(url.toString());
   if (!res.ok) {
-    throw new Error(`search.list failed (${res.status})`);
+    throw new Error(`playlistItems.list failed (${res.status})`);
   }
-  const body = (await res.json()) as SearchListResponse;
+
+  const body = (await res.json()) as PlaylistItemsResponse;
   const ids = (body.items ?? [])
-    .map((item) => item.id?.videoId)
+    .map((item) => item.snippet?.resourceId?.videoId)
     .filter((videoId): videoId is string => Boolean(videoId));
   return Array.from(new Set(ids));
 }
 
-async function fetchVideosDetails(videoIds: string[], apiKey: string): Promise<VideosListResponse> {
+async function fetchVideosDetailsBatch(videoIds: string[], apiKey: string): Promise<VideosListResponse> {
   const url = new URL("https://www.googleapis.com/youtube/v3/videos");
   url.searchParams.set("part", "snippet,contentDetails,liveStreamingDetails");
   url.searchParams.set("id", videoIds.join(","));
@@ -165,31 +172,6 @@ async function fetchVideosDetails(videoIds: string[], apiKey: string): Promise<V
     throw new Error(`videos.list failed (${res.status})`);
   }
   return (await res.json()) as VideosListResponse;
-}
-
-async function fetchChannelSubscribers(channelIds: string[], apiKey: string): Promise<Map<string, number>> {
-  const result = new Map<string, number>();
-  for (let i = 0; i < channelIds.length; i += 50) {
-    const chunk = channelIds.slice(i, i + 50);
-    const url = new URL("https://www.googleapis.com/youtube/v3/channels");
-    url.searchParams.set("part", "statistics");
-    url.searchParams.set("id", chunk.join(","));
-    url.searchParams.set("maxResults", String(chunk.length));
-    url.searchParams.set("key", apiKey);
-
-    const res = await fetch(url.toString());
-    if (!res.ok) {
-      throw new Error(`channels.list statistics failed (${res.status})`);
-    }
-    const body = (await res.json()) as ChannelsStatisticsResponse;
-    for (const item of body.items ?? []) {
-      const id = item.id;
-      if (!id) continue;
-      const subscribers = Number(item.statistics?.subscriberCount ?? "0");
-      result.set(id, Number.isFinite(subscribers) ? subscribers : 0);
-    }
-  }
-  return result;
 }
 
 function inferVideoType(
@@ -272,10 +254,11 @@ export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
 
   const { data: sourcesData, error: sourcesError } = await supabase
     .from("sources")
-    .select("id, source_name, channel_id, priority")
+    .select("id, source_name, channel_id, uploads_playlist_id, priority")
     .eq("platform", "youtube")
     .eq("active", true)
     .not("channel_id", "is", null)
+    .not("uploads_playlist_id", "is", null)
     .order("priority", { ascending: true })
     .order("source_name", { ascending: true });
 
@@ -290,94 +273,31 @@ export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
   const failedDetails: Array<{ source: string; error: string }> = [];
   const nowIso = new Date().toISOString();
 
-  const uniqueChannelIds = Array.from(new Set(sources.map((source) => source.channel_id)));
-  let subscribersByChannel = new Map<string, number>();
-  if (uniqueChannelIds.length > 0) {
-    try {
-      subscribersByChannel = await fetchChannelSubscribers(uniqueChannelIds, youtubeApiKey);
-      apiCalls += Math.ceil(uniqueChannelIds.length / 50);
-    } catch (error) {
-      console.warn("channels statistics fetch failed, continuing without subscribers", error);
-    }
-  }
-
+  const sourceByVideoId = new Map<string, SourceMeta>();
   for (const source of sources) {
     try {
-      const maxResults = source.priority === "A" ? 12 : source.priority === "B" ? 8 : 6;
-      const videoIds = await fetchSearchVideoIds(source.channel_id, youtubeApiKey, maxResults);
+      const videoIds = await fetchUploadsVideoIds(
+        source.uploads_playlist_id,
+        youtubeApiKey,
+        maxResultsByPriority(source.priority)
+      );
       apiCalls += 1;
 
       if (videoIds.length === 0) {
-        console.log(`[MISS] ${source.source_name}: no videos from search.list`);
-        await sleep(150);
+        console.log(`[MISS] ${source.source_name}: no videos from uploads playlist`);
+        await sleep(120);
         continue;
       }
 
-      const videosResponse = await fetchVideosDetails(videoIds, youtubeApiKey);
-      apiCalls += 1;
-      const detailById = new Map(
-        (videosResponse.items ?? [])
-          .map((item) => [item.id, item] as const)
-          .filter((entry): entry is [string, NonNullable<VideosListResponse["items"]>[number]] => Boolean(entry[0]))
-      );
-
-      const rows: CanonicalVideoUpsert[] = [];
       for (const videoId of videoIds) {
-        const details = detailById.get(videoId);
-        if (!details?.snippet?.title) continue;
-
-        const snippet = details.snippet;
-        const snippetTitle = snippet.title;
-        if (!snippetTitle) continue;
-        const liveBroadcastContent = (snippet.liveBroadcastContent ?? "none") as "live" | "upcoming" | "none";
-        const scheduledStartTime = details.liveStreamingDetails?.scheduledStartTime ?? null;
-        const actualStartTime = details.liveStreamingDetails?.actualStartTime ?? null;
-        const durationIso = details.contentDetails?.duration;
-        const durationMin = parseDurationToMinutes(durationIso);
-        const videoType = inferVideoType(liveBroadcastContent, scheduledStartTime, nowIso);
-        const thumbnail =
-          snippet.thumbnails?.high?.url ??
-          snippet.thumbnails?.medium?.url ??
-          snippet.thumbnails?.default?.url ??
-          null;
-        const isABJ = source.source_name.toLowerCase().includes("abj");
-        const subscriberCount = subscribersByChannel.get(source.channel_id) ?? 0;
-
-        rows.push({
-          video_id: videoId,
-          title: snippetTitle,
-          thumbnail,
-          published_at: snippet.publishedAt ?? null,
-          scheduled_start_at: scheduledStartTime,
-          video_type: videoType,
-          channel_id: source.channel_id,
-          source_id: source.id,
-          channel_name: source.source_name,
-          is_abj: isABJ,
-          duration_min: durationMin,
-          live_broadcast_content: liveBroadcastContent,
-          metadata: {
-            duration: durationIso ?? null,
-            durationMin,
-            liveBroadcastContent,
-            scheduledStartTime,
-            actualStartTime,
-            actualEndTime: details.liveStreamingDetails?.actualEndTime ?? null,
-            subscriberCount,
-            channelTitle: snippet.channelTitle ?? source.source_name,
-            ingestedAt: nowIso,
+        if (!sourceByVideoId.has(videoId)) {
+          sourceByVideoId.set(videoId, {
+            sourceId: source.id,
+            sourceName: source.source_name,
             sourcePriority: source.priority,
-          },
-          cache_refreshed_at: nowIso,
-        });
-      }
-
-      const upsertResult = await upsertVideosResiliently(supabase, rows);
-      stored += upsertResult.stored;
-      if (upsertResult.usedLegacyFallback) {
-        console.log(`[OK] ${source.source_name}: upserted ${upsertResult.stored} videos (legacy schema)`);
-      } else {
-        console.log(`[OK] ${source.source_name}: upserted ${upsertResult.stored} videos`);
+            channelId: source.channel_id,
+          });
+        }
       }
     } catch (err) {
       failedSources.push(source.source_name);
@@ -387,8 +307,99 @@ export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
       });
       console.error(`[FAIL] ${source.source_name}:`, err);
     }
+    await sleep(120);
+  }
 
-    await sleep(150);
+  const videoIds = [...sourceByVideoId.keys()];
+  const detailsByVideoId = new Map<string, NonNullable<VideosListResponse["items"]>[number]>();
+  for (let idx = 0; idx < videoIds.length; idx += 50) {
+    const batch = videoIds.slice(idx, idx + 50);
+    try {
+      const details = await fetchVideosDetailsBatch(batch, youtubeApiKey);
+      apiCalls += 1;
+      for (const item of details.items ?? []) {
+        if (!item.id) continue;
+        detailsByVideoId.set(item.id, item);
+      }
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      for (const videoId of batch) {
+        const source = sourceByVideoId.get(videoId);
+        if (!source) continue;
+        if (!failedSources.includes(source.sourceName)) {
+          failedSources.push(source.sourceName);
+          failedDetails.push({
+            source: source.sourceName,
+            error: `videos.list batch failed: ${errMsg}`,
+          });
+        }
+      }
+      console.error("[FAIL] videos.list batch:", err);
+    }
+    await sleep(120);
+  }
+
+  const rows: CanonicalVideoUpsert[] = [];
+  for (const videoId of videoIds) {
+    const source = sourceByVideoId.get(videoId);
+    const details = detailsByVideoId.get(videoId);
+    if (!source || !details?.snippet?.title) continue;
+
+    const snippet = details.snippet;
+    const liveBroadcastContent = (snippet.liveBroadcastContent ?? "none") as "live" | "upcoming" | "none";
+    const scheduledStartTime = details.liveStreamingDetails?.scheduledStartTime ?? null;
+    const actualStartTime = details.liveStreamingDetails?.actualStartTime ?? null;
+    const durationIso = details.contentDetails?.duration;
+    const durationMin = parseDurationToMinutes(durationIso);
+    const videoType = inferVideoType(liveBroadcastContent, scheduledStartTime, nowIso);
+    const thumbnail =
+      snippet.thumbnails?.high?.url ??
+      snippet.thumbnails?.medium?.url ??
+      snippet.thumbnails?.default?.url ??
+      null;
+    const isABJ = source.sourceName.toLowerCase().includes("abj");
+
+    rows.push({
+      video_id: videoId,
+      title: snippet.title ?? "Bez názvu",
+      thumbnail,
+      published_at: snippet.publishedAt ?? null,
+      scheduled_start_at: scheduledStartTime,
+      video_type: videoType,
+      channel_id: source.channelId,
+      source_id: source.sourceId,
+      channel_name: source.sourceName,
+      is_abj: isABJ,
+      duration_min: durationMin,
+      live_broadcast_content: liveBroadcastContent,
+      metadata: {
+        duration: durationIso ?? null,
+        durationMin,
+        liveBroadcastContent,
+        scheduledStartTime,
+        actualStartTime,
+        actualEndTime: details.liveStreamingDetails?.actualEndTime ?? null,
+        channelTitle: snippet.channelTitle ?? source.sourceName,
+        ingestedAt: nowIso,
+        sourcePriority: source.sourcePriority,
+        ingestMode: "uploads-playlist-batch-videos-list",
+      },
+      cache_refreshed_at: nowIso,
+    });
+  }
+
+  if (rows.length > 0) {
+    try {
+      const upsertResult = await upsertVideosResiliently(supabase, rows);
+      stored += upsertResult.stored;
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      failedDetails.push({ source: "videos-upsert", error: errMsg });
+      if (!failedSources.includes("videos-upsert")) {
+        failedSources.push("videos-upsert");
+      }
+      console.error("[FAIL] videos upsert:", err);
+    }
   }
 
   return {
@@ -413,8 +424,11 @@ async function main() {
     apiCalls = result.apiCalls;
     stored = result.stored;
     if (result.failedSources.length > 0) {
-      status = result.stored > 0 ? "success" : "failed";
-      runErrorText = `Failed sources: ${result.failedSources.join(", ")}`;
+      status = result.stored > 0 ? "running" : "failed";
+      runErrorText = result.failedDetails
+        .slice(0, 8)
+        .map((item) => `${item.source}: ${item.error}`)
+        .join(" | ");
     }
   } catch (error) {
     status = "failed";
