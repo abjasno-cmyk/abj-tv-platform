@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { unstable_cache } from "next/cache";
 
+import { buildPlaylist } from "@/lib/buildPlaylist";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CachedVideo, DayProgram, ProgramItem, ProgramOverrideItem } from "@/lib/epg-types";
 
@@ -135,6 +136,23 @@ function buildLatestFallback(videos: VideoCacheRow[], limit: number = 24): Progr
     .map((row) => row.item);
 }
 
+function buildPlaylistFallback(playlist: Awaited<ReturnType<typeof buildPlaylist>>, limit: number = 24): ProgramItem[] {
+  return playlist.slice(0, limit).map((item, idx) => {
+    const parsed = item.publishedAt ? new Date(item.publishedAt) : new Date(Date.now() - idx * 60_000);
+    const safeDate = Number.isNaN(parsed.getTime()) ? new Date(Date.now() - idx * 60_000) : parsed;
+
+    return {
+      time: toTimeLabel(safeDate),
+      title: item.title,
+      channelName: item.channelName,
+      thumbnail: null,
+      videoId: item.videoId,
+      isABJ: item.channelName.toLowerCase().includes("abj"),
+      type: "vod",
+    } satisfies ProgramItem;
+  });
+}
+
 async function loadCachedVideos(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>): Promise<VideoCacheRow[]> {
   const canonicalColumns =
     "id, source_id, channel_id, video_id, title, thumbnail, published_at, scheduled_start_at, video_type, channel_name, is_abj, created_at";
@@ -148,8 +166,8 @@ async function loadCachedVideos(supabase: Awaited<ReturnType<typeof createSupaba
     return (canonical.data ?? []) as VideoCacheRow[];
   }
 
-  const maybeMissingColumn = /column .* does not exist/i.test(canonical.error.message);
-  if (!maybeMissingColumn) {
+  const maybeSchemaMismatch = /(column|relation) .* does not exist/i.test(canonical.error.message);
+  if (!maybeSchemaMismatch) {
     throw new Error(`Failed to load cached videos: ${canonical.error.message}`);
   }
 
@@ -201,7 +219,13 @@ async function buildEPGInternal(days: number): Promise<DayProgram[]> {
 
   try {
     const supabase = await createSupabaseServerClient();
-    const cachedVideos = await loadCachedVideos(supabase);
+    let cachedVideos: VideoCacheRow[] = [];
+    try {
+      cachedVideos = await loadCachedVideos(supabase);
+    } catch (cacheError) {
+      console.warn("loadCachedVideos failed, trying playlist fallback", cacheError);
+    }
+
     const result = buildFromCache(makeProgram(safeDays), cachedVideos);
 
     const overrides = await readOverrides();
@@ -215,6 +239,17 @@ async function buildEPGInternal(days: number): Promise<DayProgram[]> {
     // keep the UI populated with the latest cached videos.
     if (countItems(result) === 0 && cachedVideos.length > 0) {
       result[0].items = buildLatestFallback(cachedVideos);
+    }
+
+    if (countItems(result) === 0) {
+      try {
+        const playlistFallback = await buildPlaylist();
+        if (playlistFallback.length > 0) {
+          result[0].items = buildPlaylistFallback(playlistFallback);
+        }
+      } catch (playlistError) {
+        console.warn("buildPlaylist fallback failed", playlistError);
+      }
     }
 
     return result;
@@ -233,7 +268,7 @@ export async function buildEPG(days: number = 7): Promise<DayProgram[]> {
   }
   const buildEPGCached = unstable_cache(
     async () => buildEPGInternal(days),
-    ["build-epg-v2", String(days)],
+    ["build-epg-v4", String(days)],
     { revalidate: 1800 }
   );
   return buildEPGCached();
