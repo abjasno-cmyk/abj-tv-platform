@@ -1,5 +1,11 @@
 {
   "framework": "nextjs",
   "buildCommand": "next build",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "crons": [
+    {
+      "path": "/api/program/v3/refresh-cache",
+      "schedule": "*/15 * * * *"
+    }
+  ]
 }
