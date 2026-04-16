@@ -56,8 +56,6 @@ function toProgramItemType(block: ProgramBlock): ProgramItem["type"] {
 function mapTimelineToDays(timeline: ProgramBlock[]): DayProgram[] {
   const byDate = new Map<string, DayProgram>();
   for (const block of timeline) {
-    if (!block.videoId) continue;
-
     const startDate = new Date(block.start);
     if (Number.isNaN(startDate.getTime())) continue;
 
@@ -76,7 +74,7 @@ function mapTimelineToDays(timeline: ProgramBlock[]): DayProgram[] {
       title: block.title,
       channelName: block.channel,
       thumbnail: block.thumbnail ?? null,
-      videoId: block.videoId,
+      videoId: block.videoId ?? null,
       isABJ: block.isABJ,
       type: toProgramItemType(block),
     });
@@ -97,18 +95,20 @@ function chooseInitialItem(epg: DayProgram[]): ProgramItem | null {
   if (todayItems.length > 0) {
     let lastPlayable: ProgramItem | null = null;
     for (const item of todayItems) {
-      if (item.time <= currentTime) {
+      if (item.videoId && item.time <= currentTime) {
         lastPlayable = item;
       }
     }
-    return lastPlayable ?? todayItems[0] ?? null;
+    const firstPlayableToday = todayItems.find((item) => Boolean(item.videoId)) ?? null;
+    return lastPlayable ?? firstPlayableToday;
   }
 
   // If there is no schedule entry for "today", start with the first
   // available item from the next populated day.
   for (const day of epg) {
-    if (day.items.length > 0) {
-      return day.items[0] ?? null;
+    const firstPlayable = day.items.find((item) => Boolean(item.videoId));
+    if (firstPlayable) {
+      return firstPlayable;
     }
   }
 
@@ -117,7 +117,7 @@ function chooseInitialItem(epg: DayProgram[]): ProgramItem | null {
 
 function findItemByVideoId(epg: DayProgram[], videoId: string): ProgramItem | null {
   for (const day of epg) {
-    const found = day.items.find((item) => item.videoId === videoId);
+    const found = day.items.find((item) => item.videoId === videoId && item.videoId !== null);
     if (found) return found;
   }
   return null;

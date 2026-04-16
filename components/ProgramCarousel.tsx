@@ -115,6 +115,7 @@ export function ProgramCarousel({ days, onVideoSelect }: ProgramCarouselProps) {
           className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         >
           {activeProgram.items.map((item) => {
+            const isPlayable = Boolean(item.videoId);
             const isNow =
               activeDay === 0 &&
               currentTodayItem !== null &&
@@ -122,15 +123,24 @@ export function ProgramCarousel({ days, onVideoSelect }: ProgramCarouselProps) {
               currentTodayItem.time === item.time;
 
             return (
-              <li key={`${activeProgram.date}-${item.time}-${item.videoId}`} className="snap-start">
+              <li
+                key={`${activeProgram.date}-${item.time}-${item.videoId ?? item.title}`}
+                className="snap-start"
+              >
                 <button
                   type="button"
-                  onClick={() => onVideoSelect(item.videoId, item.title, item.channelName)}
+                  onClick={() => {
+                    if (!item.videoId) return;
+                    onVideoSelect(item.videoId, item.title, item.channelName);
+                  }}
+                  disabled={!isPlayable}
                   className={`min-h-12 w-44 cursor-pointer overflow-hidden rounded-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(0,0,0,0.5)] ${
                     item.isABJ
                       ? "bg-[var(--abj-glow)] ring-1 ring-[rgba(59,130,246,0.3)]"
                       : "bg-[var(--surface-warm)]"
-                  } ${isNow ? "ring-1 ring-[var(--accent-red)]" : ""}`}
+                  } ${isNow ? "ring-1 ring-[var(--accent-red)]" : ""} ${
+                    isPlayable ? "" : "cursor-default opacity-75"
+                  }`}
                 >
                   <div className="relative">
                     <Image
@@ -154,6 +164,11 @@ export function ProgramCarousel({ days, onVideoSelect }: ProgramCarouselProps) {
                       {item.title}
                     </p>
                     <p className="mt-1 text-[11px] text-[var(--text-soft)]">{item.channelName}</p>
+                    {!isPlayable ? (
+                      <p className="mt-1 text-[10px] uppercase tracking-wide text-[var(--text-soft)]">
+                        Programový blok
+                      </p>
+                    ) : null}
                   </div>
                 </button>
               </li>

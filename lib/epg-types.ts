@@ -3,7 +3,7 @@ export type ProgramItem = {
   title: string;
   channelName: string;
   thumbnail: string | null;
-  videoId: string;
+  videoId: string | null;
   isABJ: boolean;
   type?: "upcoming" | "vod" | "live" | "override";
 };
