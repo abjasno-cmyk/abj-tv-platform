@@ -221,6 +221,22 @@ async function upsertVideosResiliently(
     return { stored: rows.length, usedLegacyFallback: false };
   }
 
+  const isVideoTypeConstraint =
+    /videos_video_type_check|check constraint/i.test(canonicalUpsert.error.message) &&
+    /video_type/i.test(canonicalUpsert.error.message);
+  if (isVideoTypeConstraint) {
+    const downgradedRows = rows.map((row) => ({
+      ...row,
+      video_type: row.video_type === "live" ? ("upcoming" as const) : row.video_type,
+    }));
+    const downgradedUpsert = await supabase.from("videos").upsert(downgradedRows as never[], {
+      onConflict: "video_id",
+    });
+    if (!downgradedUpsert.error) {
+      return { stored: downgradedRows.length, usedLegacyFallback: false };
+    }
+  }
+
   const isSchemaMismatch = /(column|relation) .* does not exist/i.test(canonicalUpsert.error.message);
   if (!isSchemaMismatch) {
     throw new Error(canonicalUpsert.error.message);
