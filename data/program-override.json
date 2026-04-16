@@ -1,0 +1,29 @@
+[
+  {
+    "date": "2026-04-17",
+    "time": "19:00",
+    "title": "Jasné zprávy",
+    "channelName": "ABJ TV",
+    "videoId": "REPLACE_WITH_REAL_ID",
+    "thumbnail": null,
+    "isABJ": true
+  },
+  {
+    "date": "2026-04-17",
+    "time": "20:00",
+    "title": "Jsme ve válce s Janem Schneiderem",
+    "channelName": "ABJ TV",
+    "videoId": "REPLACE_WITH_REAL_ID",
+    "thumbnail": null,
+    "isABJ": true
+  },
+  {
+    "date": "2026-04-17",
+    "time": "21:00",
+    "title": "Xaver Live",
+    "channelName": "Xaver Live",
+    "videoId": "REPLACE_WITH_REAL_ID",
+    "thumbnail": null,
+    "isABJ": false
+  }
+]

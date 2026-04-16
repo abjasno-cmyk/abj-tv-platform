@@ -16,44 +16,41 @@ export default async function FeedPage() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-6xl space-y-8">
+    <section className="space-y-6 pt-6">
       <header className="space-y-2">
-        <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
-          Media feed
+        <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--text-soft)]">
+          Výběr pořadů
         </p>
-        <h1 className="text-3xl font-semibold tracking-tight text-gray-900">Výběr videí</h1>
+        <h1 className="font-[var(--font-playfair)] text-2xl font-normal tracking-wide text-[var(--text-main)] md:text-3xl">
+          Přehled videí
+        </h1>
       </header>
 
       {playlist.length === 0 ? (
-        <div className="rounded-3xl border border-white/70 bg-white p-6 text-sm text-gray-500 shadow-sm">
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 text-base text-[var(--text-soft)] shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-md">
           Feed je zatím prázdný, zkuste to prosím za chvíli.
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {playlist.map((item, index) => (
+        <div className="space-y-3">
+          {playlist.map((item) => (
             <Link
               key={`${item.videoId}-${item.sourceId ?? "source"}`}
               href="/live"
-              className={`group overflow-hidden rounded-2xl border border-white/70 bg-white shadow-sm transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:shadow-md ${
-                index === 0 ? "col-span-2 md:col-span-2 lg:col-span-2" : ""
-              }`}
+              className="group flex min-h-12 gap-4 rounded-xl bg-[var(--surface-warm)] p-3 shadow-[0_2px_12px_rgba(0,0,0,0.35)] transition-all duration-200 ease-out hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
             >
-              <div className="relative overflow-hidden">
+              <div className="overflow-hidden rounded-xl">
                 <Image
                   src={`https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`}
                   alt={item.title}
-                  width={720}
-                  height={400}
-                  className={`w-full object-cover transition-transform duration-200 ease-in-out group-hover:scale-105 ${
-                    index === 0 ? "h-52 md:h-56" : "h-36"
-                  }`}
+                  width={320}
+                  height={180}
+                  className="h-24 w-40 object-cover transition-all duration-200 ease-out group-hover:scale-[1.02]"
                   loading="lazy"
                 />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/50 to-transparent" />
               </div>
-              <div className="space-y-1 p-3">
-                <p className="text-xs text-gray-500">{item.channelName}</p>
-                <p className="line-clamp-2 text-sm font-medium text-gray-900">{item.title}</p>
+              <div className="min-w-0 space-y-1">
+                <p className="text-xs text-[var(--text-soft)]">{item.channelName}</p>
+                <p className="line-clamp-2 text-sm font-medium text-[var(--text-main)]">{item.title}</p>
               </div>
             </Link>
           ))}

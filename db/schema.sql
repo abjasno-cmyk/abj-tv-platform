@@ -24,3 +24,13 @@ create table if not exists messages (
 
 alter table messages disable row level security;
 alter table sources disable row level security;
+
+alter table sources add column if not exists channel_id text;
+
+do $$
+begin
+  alter table sources add constraint sources_channel_url_unique
+    unique (channel_url);
+exception
+  when duplicate_object then null;
+end $$;

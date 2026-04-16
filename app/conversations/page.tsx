@@ -1,14 +1,16 @@
 export default function ConversationsPage() {
   return (
-    <section className="space-y-6">
-      <div className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
-        Community
-      </div>
-      <h1 className="text-3xl font-semibold tracking-tight text-gray-900">
-        Conversations
+    <section className="space-y-6 pt-6">
+      <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--text-soft)]">
+        Komunita
+      </p>
+      <h1 className="font-[var(--font-playfair)] text-2xl font-normal text-[var(--text-main)] md:text-3xl">
+        Hospoda
       </h1>
-      <div className="rounded-3xl bg-white p-6 text-sm leading-relaxed text-gray-500 shadow-sm ring-1 ring-gray-100">
-        Konverzace budou dostupné v další verzi. Zatím jde o placeholder pro v0.2.
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-md">
+        <p className="text-base text-[var(--text-main)]">
+          Konverzace budou dostupné v další verzi. Zatím jde o placeholder pro V2.
+        </p>
       </div>
     </section>
   );
