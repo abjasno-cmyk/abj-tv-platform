@@ -80,6 +80,13 @@ type LegacyVideoUpsert = {
   raw: Record<string, unknown>;
 };
 
+export type RefreshVideoCacheResult = {
+  apiCalls: number;
+  stored: number;
+  failedSources: string[];
+  failedDetails: Array<{ source: string; error: string }>;
+};
+
 function sanitizeEnvValue(value?: string): string | undefined {
   if (!value) return undefined;
   const trimmed = value.trim();
@@ -241,11 +248,7 @@ async function upsertVideosResiliently(
   return { stored: legacyRows.length, usedLegacyFallback: true };
 }
 
-export async function refreshVideoCache(): Promise<{
-  apiCalls: number;
-  stored: number;
-  failedSources: string[];
-}> {
+export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
   const supabaseUrl = requiredEnv("NEXT_PUBLIC_SUPABASE_URL");
   const supabaseAnonKey = requiredEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
   const youtubeApiKey = requiredEnv("YOUTUBE_API_KEY");
@@ -268,6 +271,7 @@ export async function refreshVideoCache(): Promise<{
   let apiCalls = 0;
   let stored = 0;
   const failedSources: string[] = [];
+  const failedDetails: Array<{ source: string; error: string }> = [];
   const nowIso = new Date().toISOString();
 
   const uniqueChannelIds = Array.from(new Set(sources.map((source) => source.channel_id)));
@@ -361,6 +365,10 @@ export async function refreshVideoCache(): Promise<{
       }
     } catch (err) {
       failedSources.push(source.source_name);
+      failedDetails.push({
+        source: source.source_name,
+        error: err instanceof Error ? err.message : String(err),
+      });
       console.error(`[FAIL] ${source.source_name}:`, err);
     }
 
@@ -371,6 +379,7 @@ export async function refreshVideoCache(): Promise<{
     apiCalls,
     stored,
     failedSources,
+    failedDetails,
   };
 }
 
