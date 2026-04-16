@@ -164,7 +164,10 @@ export default async function LivePageServer(
 
   const requestedItem = requestedVideoId ? findItemByVideoId(epg, requestedVideoId) : null;
   const initialItem = chooseInitialItem(epg);
-  const initialVideoId = requestedItem?.videoId ?? initialFromNowPlaying?.videoId ?? initialItem?.videoId ?? null;
+  const initialVideoId =
+    requestedVideoId && requestedVideoId.trim().length > 0
+      ? requestedVideoId.trim()
+      : requestedItem?.videoId ?? initialFromNowPlaying?.videoId ?? initialItem?.videoId ?? null;
   const initialTitle =
     requestedItem?.title ??
     initialFromNowPlaying?.title ??

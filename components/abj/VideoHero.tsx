@@ -1,6 +1,10 @@
 "use client";
 
+import { useMemo, useState } from "react";
+import YouTube, { type YouTubeProps } from "react-youtube";
+
 type VideoHeroProps = {
+  videoId: string | null;
   title: string;
   channel: string;
   isLive: boolean;
@@ -10,6 +14,7 @@ type VideoHeroProps = {
 };
 
 export function VideoHero({
+  videoId,
   title,
   channel,
   isLive,
@@ -18,6 +23,23 @@ export function VideoHero({
   onPlayToggle,
 }: VideoHeroProps) {
   const clampedProgress = Math.max(0, Math.min(100, progressPercent));
+  const [manualUnmuteVideoId, setManualUnmuteVideoId] = useState<string | null>(null);
+  const isMuted = manualUnmuteVideoId !== videoId;
+  const showUnmuteButton = Boolean(videoId) && isMuted;
+
+  const playerOptions = useMemo<YouTubeProps["opts"]>(
+    () => ({
+      width: "100%",
+      height: "100%",
+      playerVars: {
+        autoplay: 1,
+        mute: isMuted ? 1 : 0,
+        rel: 0,
+        modestbranding: 1,
+      },
+    }),
+    [isMuted]
+  );
 
   return (
     <section className="relative flex min-h-[200px] overflow-hidden bg-[#05090F]">
@@ -29,18 +51,44 @@ export function VideoHero({
         ABJ
       </div>
 
-      <div className="relative z-[2] flex w-full items-center justify-center">
-        <button
-          type="button"
-          onClick={onPlayToggle}
-          className="h-[50px] w-[50px] rounded-full border-[1.5px] border-[rgba(198,168,91,0.35)] bg-[rgba(198,168,91,0.07)] transition-colors duration-200 hover:bg-[rgba(198,168,91,0.14)]"
-          aria-label="Přehrát"
-        >
-          <span
-            className="ml-[4px] inline-block h-0 w-0 border-b-[9px] border-l-[13px] border-t-[9px] border-b-transparent border-l-[var(--abj-gold)] border-t-transparent align-middle opacity-75"
-            aria-hidden="true"
-          />
-        </button>
+      <div className="relative z-[2] aspect-video w-full bg-[#05090F]">
+        {videoId ? (
+          <>
+            <YouTube
+              key={`${videoId}-${isMuted ? "muted" : "unmuted"}`}
+              videoId={videoId}
+              title={title}
+              iframeClassName="absolute inset-0 h-full w-full"
+              opts={playerOptions}
+            />
+            {showUnmuteButton ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setManualUnmuteVideoId(videoId);
+                  onPlayToggle?.();
+                }}
+                className="absolute right-3 top-3 z-10 rounded bg-black/65 px-3 py-2 text-xs text-white"
+              >
+                Zapnout zvuk
+              </button>
+            ) : null}
+          </>
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <button
+              type="button"
+              onClick={onPlayToggle}
+              className="h-[50px] w-[50px] rounded-full border-[1.5px] border-[rgba(198,168,91,0.35)] bg-[rgba(198,168,91,0.07)] transition-colors duration-200 hover:bg-[rgba(198,168,91,0.14)]"
+              aria-label="Přehrát"
+            >
+              <span
+                className="ml-[4px] inline-block h-0 w-0 border-b-[9px] border-l-[13px] border-t-[9px] border-b-transparent border-l-[var(--abj-gold)] border-t-transparent align-middle opacity-75"
+                aria-hidden="true"
+              />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between bg-[rgba(5,9,15,0.90)] px-[18px] py-[13px]">

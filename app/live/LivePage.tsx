@@ -77,6 +77,8 @@ export default function LivePage({
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="px-5 pt-5">
             <VideoHero
+              key={videoId ?? "no-video"}
+              videoId={videoId}
               title={title}
               channel={channelName || "ABJ Síť"}
               isLive={isLive}
