@@ -28,20 +28,28 @@ function getPragueTimeLabel(date: Date): string {
 }
 
 function chooseInitialItem(epg: DayProgram[]): ProgramItem | null {
+  const currentTime = getPragueTimeLabel(new Date());
   const todayItems = epg[0]?.items ?? [];
-  if (todayItems.length === 0) {
-    return null;
+
+  if (todayItems.length > 0) {
+    let lastPlayable: ProgramItem | null = null;
+    for (const item of todayItems) {
+      if (item.time <= currentTime) {
+        lastPlayable = item;
+      }
+    }
+    return lastPlayable ?? todayItems[0] ?? null;
   }
 
-  const currentTime = getPragueTimeLabel(new Date());
-  let lastPlayable: ProgramItem | null = null;
-  for (const item of todayItems) {
-    if (item.time <= currentTime) {
-      lastPlayable = item;
+  // If there is no schedule entry for "today", start with the first
+  // available item from the next populated day.
+  for (const day of epg) {
+    if (day.items.length > 0) {
+      return day.items[0] ?? null;
     }
   }
 
-  return lastPlayable ?? todayItems[0] ?? null;
+  return null;
 }
 
 export default async function LivePageServer() {

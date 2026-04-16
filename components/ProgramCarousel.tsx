@@ -40,7 +40,10 @@ function findCurrentItem(items: ProgramItem[], currentTime: string): ProgramItem
 }
 
 export function ProgramCarousel({ days, onVideoSelect }: ProgramCarouselProps) {
-  const [activeDay, setActiveDay] = useState(0);
+  const [activeDay, setActiveDay] = useState(() => {
+    const firstPopulatedDay = days.findIndex((day) => day.items.length > 0);
+    return firstPopulatedDay >= 0 ? firstPopulatedDay : 0;
+  });
   const [nowTime, setNowTime] = useState<string>(() => getCurrentPragueTime());
   const scrollPositions = useRef<ScrollPositions>({});
   const rowRef = useRef<HTMLUListElement | null>(null);
