@@ -23,6 +23,10 @@ type IngestRunRow = {
   error_text: string | null;
 };
 
+type ProgramHealthOptions = {
+  probeYouTube?: boolean;
+};
+
 function statusRank(status: HealthStatus): number {
   if (status === "error") return 3;
   if (status === "warning") return 2;
@@ -107,7 +111,7 @@ function buildRecommendations(checks: HealthCheck[], lastErrorText: string | nul
   return recommendations;
 }
 
-export async function getProgramHealth() {
+export async function getProgramHealth(options: ProgramHealthOptions = {}) {
   const now = new Date();
   const supabase = await createSupabaseServerClient();
 
@@ -328,6 +332,7 @@ export async function getProgramHealth() {
   }
 
   const recommendations = buildRecommendations(checks, latestIngestErrorText);
+  const youtubeProbe = options.probeYouTube ? await runYouTubeKeyProbe() : undefined;
 
   return {
     generatedAt: now.toISOString(),
@@ -366,5 +371,84 @@ export async function getProgramHealth() {
       : null,
     checks,
     recommendations,
+    ...(youtubeProbe ? { youtubeProbe } : {}),
   };
+}
+
+function sanitizeEnvValue(value?: string): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  const equalsIdx = trimmed.indexOf("=");
+  const maybeAssigned =
+    equalsIdx > 0 && /^[A-Z0-9_]+$/.test(trimmed.slice(0, equalsIdx))
+      ? trimmed.slice(equalsIdx + 1).trim()
+      : trimmed;
+  if (
+    (maybeAssigned.startsWith('"') && maybeAssigned.endsWith('"')) ||
+    (maybeAssigned.startsWith("'") && maybeAssigned.endsWith("'"))
+  ) {
+    return maybeAssigned.slice(1, -1).trim();
+  }
+  return maybeAssigned;
+}
+
+function keyFingerprint(value: string | undefined): string | null {
+  if (!value) return null;
+  if (value.length <= 10) return value;
+  return `${value.slice(0, 5)}...${value.slice(-5)}`;
+}
+
+export async function runYouTubeKeyProbe() {
+  const rawKey = sanitizeEnvValue(process.env.YOUTUBE_API_KEY);
+  if (!rawKey) {
+    return {
+      ok: false,
+      reason: "YOUTUBE_API_KEY is missing in runtime env",
+      keyFingerprint: null,
+      status: null,
+      error: "missing_key",
+    };
+  }
+
+  const url = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
+  url.searchParams.set("part", "snippet");
+  url.searchParams.set("playlistId", "UU4ghMQ16P3acuKKXHTtkS7w");
+  url.searchParams.set("maxResults", "1");
+  url.searchParams.set("key", rawKey);
+
+  try {
+    const response = await fetch(url.toString(), { cache: "no-store" });
+    const rawText = await response.text();
+    let parsed: unknown = null;
+    try {
+      parsed = JSON.parse(rawText);
+    } catch {
+      parsed = null;
+    }
+
+    const itemCount =
+      parsed && typeof parsed === "object" && Array.isArray((parsed as { items?: unknown[] }).items)
+        ? (parsed as { items: unknown[] }).items.length
+        : 0;
+
+    return {
+      ok: response.ok,
+      reason: response.ok ? "probe_ok" : "probe_failed",
+      keyFingerprint: keyFingerprint(rawKey),
+      status: response.status,
+      itemCount,
+      error:
+        parsed && typeof parsed === "object"
+          ? ((parsed as { error?: unknown }).error ?? null)
+          : rawText.slice(0, 500),
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      reason: "network_or_fetch_error",
+      keyFingerprint: keyFingerprint(rawKey),
+      status: null,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
