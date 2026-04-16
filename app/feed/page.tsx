@@ -71,14 +71,16 @@ async function loadFeedVideos(): Promise<CachedVideo[]> {
 export default async function FeedPage() {
   let playlist: CachedVideo[] = [];
   let feedErrorMessage = "";
+  const fallbackBaseTimestamp = new Date().toISOString();
 
   try {
     playlist = await loadFeedVideos();
 
     if (playlist.length === 0) {
       const directFallback = await buildPlaylist();
+      const baseMs = new Date(fallbackBaseTimestamp).getTime();
       playlist = directFallback.slice(0, 120).map((item, idx) => {
-        const publishedAt = item.publishedAt ?? new Date(Date.now() - idx * 60_000).toISOString();
+        const publishedAt = item.publishedAt ?? new Date(baseMs - idx * 60_000).toISOString();
         return {
           id: `${item.videoId}-${idx}`,
           source_id: item.sourceId ?? null,
