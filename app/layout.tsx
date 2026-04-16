@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
-import { BottomNav } from "@/components/BottomNav";
+import { ABJNav } from "@/components/abj/Nav";
 
 export const metadata: Metadata = {
   title: "ABJ TV Platform",
@@ -14,33 +14,21 @@ type RootLayoutProps = {
 
 const inter = Inter({
   subsets: ["latin"],
-  display: "swap",
-  weight: ["400", "500", "600"],
-  variable: "--font-inter",
+  variable: "--font-sans",
 });
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
-  display: "swap",
-  weight: ["400", "500"],
-  variable: "--font-playfair",
+  variable: "--font-serif",
+  weight: ["400", "600", "700"],
 });
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="cs">
-      <body
-        className={`${inter.className} ${inter.variable} ${playfair.variable} bg-[var(--bg)] text-[var(--text-main)] antialiased`}
-      >
-        <header className="border-b border-[var(--border)] px-6 py-4">
-          <p className="mx-auto max-w-3xl text-center font-[var(--font-playfair)] text-2xl font-normal tracking-wide text-[var(--text-main)] md:text-3xl">
-            Aby bylo jasno: Československá televize
-          </p>
-        </header>
-        <main className="mx-auto min-h-screen w-full max-w-3xl px-6 pb-20">
-          {children}
-        </main>
-        <BottomNav />
+    <html lang="cs" className={`${playfair.variable} ${inter.variable}`}>
+      <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
+        <ABJNav />
+        <main className="min-h-[calc(100vh-46px)] overflow-hidden">{children}</main>
       </body>
     </html>
   );

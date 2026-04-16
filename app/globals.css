@@ -4,17 +4,54 @@
 
 :root {
   color-scheme: dark;
-  --bg: #0b0f19;
-  --surface: rgba(255, 255, 255, 0.05);
-  --surface-warm: rgba(255, 255, 255, 0.07);
-  --border: rgba(255, 255, 255, 0.1);
-  --accent-red: #e11d48;
-  --accent-blue: #3b82f6;
-  --text-main: #f9fafb;
-  --text-soft: #9ca3af;
-  --abj-glow: rgba(59, 130, 246, 0.12);
+  --abj-deep: #07111e;
+  --abj-main: #0b1f3a;
+  --abj-panel: #0e2745;
+  --abj-hospoda: #060c17;
+  --abj-card: #0a1e35;
+  --abj-gold: #c6a85b;
+  --abj-gold-dim: rgba(198, 168, 91, 0.13);
+  --abj-red: #a63a3a;
+  --abj-red-dim: rgba(166, 58, 58, 0.18);
+  --abj-text1: #e6e9ef;
+  --abj-text2: #9aa3b2;
+  --abj-text3: rgba(154, 163, 178, 0.4);
 }
 
 body {
-  @apply bg-[var(--bg)] text-[var(--text-main)] font-[var(--font-inter)];
+  @apply bg-abj-main text-abj-text1 font-[var(--font-sans)];
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@keyframes msgAppear {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.abj-live-dot {
+  animation: blink 2s ease-in-out infinite;
+}
+
+.abj-msg-appear {
+  animation: msgAppear 0.25s ease;
 }
