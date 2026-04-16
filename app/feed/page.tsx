@@ -2,10 +2,29 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { buildPlaylist } from "@/lib/buildPlaylist";
+import { getProgram } from "@/lib/programEngine";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { CachedVideo } from "@/lib/epg-types";
+import type { CachedVideo, ProgramBlock } from "@/lib/epg-types";
 
 export const dynamic = "force-dynamic";
+
+const BLOCK_TYPE_LABELS: Record<ProgramBlock["type"], string> = {
+  live: "Živě",
+  premiere: "Premiéra",
+  recorded: "Záznam",
+  coming_up: "Za chvíli",
+  fixed_abj: "ABJ blok",
+  ceremonial: "Ceremoniál",
+};
+
+function formatPragueTime(iso: string): string {
+  return new Intl.DateTimeFormat("cs-CZ", {
+    timeZone: "Europe/Prague",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date(iso));
+}
 
 async function loadFeedVideos(): Promise<CachedVideo[]> {
   const supabase = await createSupabaseServerClient();
@@ -69,9 +88,18 @@ async function loadFeedVideos(): Promise<CachedVideo[]> {
 }
 
 export default async function FeedPage() {
+  let timeline: ProgramBlock[] = [];
+  let timelineErrorMessage = "";
   let playlist: CachedVideo[] = [];
   let feedErrorMessage = "";
   const fallbackBaseTimestamp = new Date().toISOString();
+
+  try {
+    timeline = await getProgram();
+  } catch (error) {
+    console.error("Program timeline build failed:", error);
+    timelineErrorMessage = error instanceof Error ? error.message : "Neznámá chyba při načítání timeline";
+  }
 
   try {
     playlist = await loadFeedVideos();
@@ -113,6 +141,66 @@ export default async function FeedPage() {
         </h1>
       </header>
 
+      <section className="space-y-3">
+        <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--text-soft)]">
+          Dnešní program (V3)
+        </p>
+
+        {timeline.length === 0 ? (
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 text-sm text-[var(--text-soft)] shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-md">
+            Programová timeline je dočasně prázdná.
+            {timelineErrorMessage ? (
+              <p className="mt-2 text-xs opacity-80">Technická hláška: {timelineErrorMessage}</p>
+            ) : null}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {timeline.slice(0, 12).map((block) => {
+              const href = block.videoId ? `/live?videoId=${encodeURIComponent(block.videoId)}` : "/live";
+              return (
+                <Link
+                  key={block.id}
+                  href={href}
+                  className="group flex min-h-12 gap-4 rounded-xl bg-[var(--surface-warm)] p-3 shadow-[0_2px_12px_rgba(0,0,0,0.35)] transition-all duration-200 ease-out hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
+                >
+                  <div className="overflow-hidden rounded-xl">
+                    <Image
+                      src={block.thumbnail ?? "/placeholder-thumb.jpg"}
+                      alt={block.title}
+                      width={320}
+                      height={180}
+                      className="h-24 w-40 object-cover transition-all duration-200 ease-out group-hover:scale-[1.02]"
+                      loading="lazy"
+                      unoptimized={block.thumbnail !== undefined}
+                    />
+                  </div>
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-[var(--accent-blue)]">
+                        {formatPragueTime(block.start)}–{formatPragueTime(block.end)}
+                      </span>
+                      <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-[10px] uppercase tracking-wide text-[var(--text-soft)]">
+                        {BLOCK_TYPE_LABELS[block.type]}
+                      </span>
+                    </div>
+                    <p className="line-clamp-2 text-sm font-medium text-[var(--text-main)]">{block.title}</p>
+                    <p className="text-xs text-[var(--text-soft)]">
+                      {block.channel}
+                      {block.isABJ ? " · ABJ" : ""}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--text-soft)]">
+          Archiv videí (cache)
+        </p>
+
       {playlist.length === 0 ? (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 text-base text-[var(--text-soft)] shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-md">
           <p>Feed je zatím prázdný, zkuste to prosím za chvíli.</p>
@@ -123,7 +211,7 @@ export default async function FeedPage() {
           {playlist.map((item) => (
             <Link
               key={`${item.video_id}-${item.source_id ?? "source"}`}
-              href="/live"
+              href={`/live?videoId=${encodeURIComponent(item.video_id)}`}
               className="group flex min-h-12 gap-4 rounded-xl bg-[var(--surface-warm)] p-3 shadow-[0_2px_12px_rgba(0,0,0,0.35)] transition-all duration-200 ease-out hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
             >
               <div className="overflow-hidden rounded-xl">
@@ -145,6 +233,7 @@ export default async function FeedPage() {
           ))}
         </div>
       )}
+      </section>
     </section>
   );
 }

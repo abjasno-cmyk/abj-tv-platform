@@ -115,9 +115,27 @@ function chooseInitialItem(epg: DayProgram[]): ProgramItem | null {
   return null;
 }
 
-export default async function LivePageServer() {
+function findItemByVideoId(epg: DayProgram[], videoId: string): ProgramItem | null {
+  for (const day of epg) {
+    const found = day.items.find((item) => item.videoId === videoId);
+    if (found) return found;
+  }
+  return null;
+}
+
+export default async function LivePageServer(
+  {
+    searchParams,
+  }: {
+    searchParams?: Promise<Record<string, string | string[] | undefined>>;
+  } = {}
+) {
   let epg: DayProgram[] = [];
   let v3NowPlaying: ProgramBlock | null = null;
+
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const rawVideoId = resolvedSearchParams?.videoId;
+  const requestedVideoId = Array.isArray(rawVideoId) ? rawVideoId[0] : rawVideoId;
 
   try {
     const timeline = await getProgram();
@@ -144,12 +162,19 @@ export default async function LivePageServer() {
         }
       : null;
 
+  const requestedItem = requestedVideoId ? findItemByVideoId(epg, requestedVideoId) : null;
   const initialItem = chooseInitialItem(epg);
-  const initialVideoId = initialFromNowPlaying?.videoId ?? initialItem?.videoId ?? null;
+  const initialVideoId = requestedItem?.videoId ?? initialFromNowPlaying?.videoId ?? initialItem?.videoId ?? null;
   const initialTitle =
-    initialFromNowPlaying?.title ?? initialItem?.title ?? "Dnes není plánované vysílání";
+    requestedItem?.title ??
+    initialFromNowPlaying?.title ??
+    initialItem?.title ??
+    "Dnes není plánované vysílání";
   const initialChannelName =
-    initialFromNowPlaying?.channelName ?? initialItem?.channelName ?? "";
+    requestedItem?.channelName ??
+    initialFromNowPlaying?.channelName ??
+    initialItem?.channelName ??
+    "";
 
   return (
     <LivePage
