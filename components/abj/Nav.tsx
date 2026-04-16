@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 const NAV_LINKS = [
   { href: "/live", label: "Živě" },
   { href: "/feed", label: "Archiv" },
-  { href: "/feed", label: "Program" },
+  { href: "/program", label: "Program" },
 ];
 
 function getPragueClockValue(date: Date): string {
@@ -32,6 +32,7 @@ export function ABJNav() {
 
   const activeHref = useMemo(() => {
     if (pathname.startsWith("/feed")) return "/feed";
+    if (pathname.startsWith("/program")) return "/program";
     if (pathname.startsWith("/live")) return "/live";
     return "";
   }, [pathname]);
