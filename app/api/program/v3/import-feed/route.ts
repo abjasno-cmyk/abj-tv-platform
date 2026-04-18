@@ -26,8 +26,8 @@ export async function GET(request: Request) {
     const result = await refreshProgramFeedImport();
 
     if (result.report.status !== "error") {
-      revalidateTag(PROGRAM_FEED_CACHE_TAG);
-      revalidateTag("program-engine-v3");
+      revalidateTag(PROGRAM_FEED_CACHE_TAG, "max");
+      revalidateTag("program-engine-v3", "max");
     }
 
     const statusCode = result.report.status === "error" ? 503 : 200;

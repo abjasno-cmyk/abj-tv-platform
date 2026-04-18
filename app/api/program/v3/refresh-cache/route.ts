@@ -43,8 +43,8 @@ export async function GET(request: Request) {
   try {
     programFeedImport = await refreshProgramFeedImport();
     if (programFeedImport.report.status !== "error") {
-      revalidateTag("program-feed-import");
-      revalidateTag("program-engine-v3");
+      revalidateTag("program-feed-import", "max");
+      revalidateTag("program-engine-v3", "max");
     }
     const result = await refreshVideoCache();
 
