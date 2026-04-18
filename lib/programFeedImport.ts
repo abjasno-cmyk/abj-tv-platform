@@ -120,6 +120,14 @@ function resolveSignatureSecret(): string | null {
   );
 }
 
+function resolveFeedApiKey(): string | null {
+  return (
+    sanitizeEnvValue(process.env.FEED_API_KEY) ??
+    sanitizeEnvValue(process.env.PROGRAM_FEED_API_KEY) ??
+    null
+  );
+}
+
 function allowStaleFeedWindow(): boolean {
   const value = sanitizeEnvValue(process.env.PROGRAM_FEED_STALE_ALLOWED);
   if (!value) return false;
@@ -287,6 +295,7 @@ async function fetchAndValidateProgramFeed(feedUrl: string): Promise<ProgramFeed
 
   let responseText = "";
   let signatureVerified: boolean | null = null;
+  const feedApiKey = resolveFeedApiKey();
 
   try {
     const response = await fetch(feedUrl, {
@@ -294,6 +303,7 @@ async function fetchAndValidateProgramFeed(feedUrl: string): Promise<ProgramFeed
       headers: {
         Accept: "application/json",
         "User-Agent": "abj-program-importer/1.0",
+        ...(feedApiKey ? { "X-Api-Key": feedApiKey } : {}),
       },
     });
     responseText = await response.text();
