@@ -1115,6 +1115,18 @@ function buildDeterministicMinimalFallback(now: Date): ProgramBlock[] {
   return finalizeTimeline(output);
 }
 
+function pickCurrentTimelineBlock(timeline: ProgramBlock[], now: Date): ProgramBlock | null {
+  const nowTs = now.getTime();
+  const current = timeline
+    .filter((block) => {
+      const startTs = new Date(block.start).getTime();
+      const endTs = new Date(block.end).getTime();
+      return Number.isFinite(startTs) && Number.isFinite(endTs) && startTs <= nowTs && nowTs < endTs;
+    })
+    .sort((a, b) => b.priority - a.priority || new Date(b.start).getTime() - new Date(a.start).getTime());
+  return current[0] ?? null;
+}
+
 export async function getProgram(overrideRules: ProgramOverrideRules = {}): Promise<ProgramBlock[]> {
   try {
     const bundle = await getProgramBundleCached(overrideRules);
@@ -1128,7 +1140,9 @@ export async function getProgram(overrideRules: ProgramOverrideRules = {}): Prom
 export async function getNowPlaying(overrideRules: ProgramOverrideRules = {}): Promise<ProgramBlock | null> {
   try {
     const bundle = await getProgramBundleCached(overrideRules);
-    return bundle.nowPlaying;
+    if (bundle.nowPlaying) return bundle.nowPlaying;
+    const fallbackFromTimeline = pickCurrentTimelineBlock(bundle.timeline, new Date());
+    return fallbackFromTimeline;
   } catch (error) {
     console.error("getNowPlaying failed", error);
     return null;

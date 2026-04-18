@@ -44,6 +44,16 @@ type VideosListResponse = {
   }>;
 };
 
+type ChannelsListResponse = {
+  items?: Array<{
+    contentDetails?: {
+      relatedPlaylists?: {
+        uploads?: string;
+      };
+    };
+  }>;
+};
+
 type IngestRunStatus = "running" | "success" | "failed";
 
 type CanonicalVideoUpsert = {
@@ -158,6 +168,29 @@ async function fetchUploadsVideoIds(
     .map((item) => item.snippet?.resourceId?.videoId)
     .filter((videoId): videoId is string => Boolean(videoId));
   return Array.from(new Set(ids));
+}
+
+async function fetchUploadsPlaylistIdByChannelId(
+  channelId: string,
+  apiKey: string
+): Promise<string | null> {
+  const url = new URL("https://www.googleapis.com/youtube/v3/channels");
+  url.searchParams.set("part", "contentDetails");
+  url.searchParams.set("id", channelId);
+  url.searchParams.set("maxResults", "1");
+  url.searchParams.set("key", apiKey);
+
+  const res = await fetch(url.toString());
+  if (!res.ok) {
+    throw new Error(`channels.list failed (${res.status})`);
+  }
+
+  const body = (await res.json()) as ChannelsListResponse;
+  return body.items?.[0]?.contentDetails?.relatedPlaylists?.uploads ?? null;
+}
+
+function isPlaylistItems404(error: unknown): boolean {
+  return error instanceof Error && /playlistItems\.list failed \(404\)/i.test(error.message);
 }
 
 async function fetchVideosDetailsBatch(videoIds: string[], apiKey: string): Promise<VideosListResponse> {
@@ -276,12 +309,58 @@ export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
   const sourceByVideoId = new Map<string, SourceMeta>();
   for (const source of sources) {
     try {
-      const videoIds = await fetchUploadsVideoIds(
-        source.uploads_playlist_id,
-        youtubeApiKey,
-        maxResultsByPriority(source.priority)
-      );
-      apiCalls += 1;
+      let uploadsPlaylistId = source.uploads_playlist_id;
+      let videoIds: string[] = [];
+      try {
+        videoIds = await fetchUploadsVideoIds(
+          uploadsPlaylistId,
+          youtubeApiKey,
+          maxResultsByPriority(source.priority)
+        );
+        apiCalls += 1;
+      } catch (err) {
+        if (!isPlaylistItems404(err)) {
+          throw err;
+        }
+
+        console.warn(
+          `[WARN] ${source.source_name}: playlist ${uploadsPlaylistId} returned 404, resolving uploads playlist from channel_id ${source.channel_id}`
+        );
+        const refreshedUploadsPlaylistId = await fetchUploadsPlaylistIdByChannelId(
+          source.channel_id,
+          youtubeApiKey
+        );
+        apiCalls += 1;
+
+        if (!refreshedUploadsPlaylistId) {
+          throw new Error(`Unable to resolve uploads playlist for channel_id ${source.channel_id}`);
+        }
+
+        uploadsPlaylistId = refreshedUploadsPlaylistId;
+        if (uploadsPlaylistId !== source.uploads_playlist_id) {
+          const { error: updateError } = await supabase
+            .from("sources")
+            .update({ uploads_playlist_id: uploadsPlaylistId })
+            .eq("id", source.id);
+          if (updateError) {
+            console.warn(
+              `[WARN] ${source.source_name}: failed to persist refreshed uploads_playlist_id (${updateError.message})`
+            );
+          } else {
+            source.uploads_playlist_id = uploadsPlaylistId;
+            console.log(
+              `[OK] ${source.source_name}: uploads_playlist_id auto-updated to ${uploadsPlaylistId}`
+            );
+          }
+        }
+
+        videoIds = await fetchUploadsVideoIds(
+          uploadsPlaylistId,
+          youtubeApiKey,
+          maxResultsByPriority(source.priority)
+        );
+        apiCalls += 1;
+      }
 
       if (videoIds.length === 0) {
         console.log(`[MISS] ${source.source_name}: no videos from uploads playlist`);
