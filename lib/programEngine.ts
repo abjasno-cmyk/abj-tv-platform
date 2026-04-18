@@ -614,7 +614,9 @@ function buildLiveAndPremiereBlocks(
       videoId: video.videoId,
       channel: video.channel,
       isABJ: video.isABJ,
-      priority: isLive ? (video.isABJ ? 880 : 820) : video.isABJ ? 860 : 800,
+      // Live broadcasts must outrank fixed/manual blocks so the active stream
+      // can become the visible/selected "now playing" block.
+      priority: isLive ? (video.isABJ ? 1200 : 1150) : video.isABJ ? 860 : 800,
       thumbnail: video.thumbnail ?? undefined,
     });
   }
@@ -946,6 +948,22 @@ export function fillGapsWithAI(
 }
 
 function pickNowPlaying(timeline: ProgramBlock[], candidates: ProgramCandidateVideo[]): ProgramBlock | null {
+  const now = new Date();
+  const nowTs = now.getTime();
+
+  const activeLive = timeline
+    .filter((block) => {
+      if (block.type !== "live") return false;
+      const startTs = new Date(block.start).getTime();
+      const endTs = new Date(block.end).getTime();
+      return Number.isFinite(startTs) && Number.isFinite(endTs) && startTs <= nowTs && nowTs < endTs;
+    })
+    .sort((a, b) => b.priority - a.priority || new Date(b.start).getTime() - new Date(a.start).getTime());
+  if (activeLive.length > 0) return activeLive[0] ?? null;
+
+  const activeTimelineBlock = pickCurrentTimelineBlock(timeline, now);
+  if (activeTimelineBlock?.videoId) return activeTimelineBlock;
+
   const liveBlocks = timeline
     .filter((block) => block.type === "live")
     .sort((a, b) => b.priority - a.priority || new Date(b.start).getTime() - new Date(a.start).getTime());
@@ -960,7 +978,6 @@ function pickNowPlaying(timeline: ProgramBlock[], candidates: ProgramCandidateVi
     })[0];
   if (!latestABJ) return null;
 
-  const now = new Date();
   const end = addMinutes(now, latestABJ.durationMin > 0 ? latestABJ.durationMin : 30);
   return {
     id: `now-playing-abj-${latestABJ.videoId}`,
