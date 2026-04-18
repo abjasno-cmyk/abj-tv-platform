@@ -6,6 +6,10 @@
     {
       "path": "/api/program/v3/refresh-cache",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/program/v3/import-feed",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

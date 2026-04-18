@@ -62,6 +62,8 @@ export type ProgramOverrideRules = {
   manualSchedule?: ProgramManualScheduleItem[];
 };
 
+export type ProgramFeedImportMode = "scheduled" | "stale_allowed" | "manual";
+
 export type ProgramManualScheduleItem = {
   videoId: string;
   time: string;

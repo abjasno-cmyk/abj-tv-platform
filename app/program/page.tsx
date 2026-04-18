@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { getProgram } from "@/lib/programEngine";
+import { getProgramFeedImport } from "@/lib/programFeedImport";
 import type { ProgramBlock } from "@/lib/epg-types";
 
 export const dynamic = "force-dynamic";
@@ -35,6 +36,7 @@ function formatPragueDateTime(iso: string): { date: string; time: string } {
 export default async function ProgramPage() {
   let timeline: ProgramBlock[] = [];
   let errorMessage = "";
+  const importInfo = await getProgramFeedImport();
 
   try {
     timeline = await getProgram();
@@ -49,6 +51,28 @@ export default async function ProgramPage() {
         <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">Program</p>
         <h1 className="font-[var(--font-serif)] text-2xl font-semibold text-abj-text1">Dnešní vysílání</h1>
       </header>
+
+      <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel px-3 py-2 text-xs text-abj-text2">
+        <p>
+          Auto-import:{" "}
+          <span
+            className={`font-medium ${
+              importInfo.report.status === "ok"
+                ? "text-[#8FC197]"
+                : importInfo.report.status === "warning"
+                  ? "text-[#D9C37A]"
+                  : importInfo.report.status === "disabled"
+                    ? "text-abj-text2"
+                    : "text-[#D47B7B]"
+            }`}
+          >
+            {importInfo.report.status}
+          </span>
+          {" · "}revize {importInfo.report.revision ?? "—"}
+          {" · "}freshness {importInfo.report.freshness}
+          {" · "}importováno položek {importInfo.report.importedItems}
+        </p>
+      </div>
 
       {timeline.length === 0 ? (
         <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel p-4 text-sm text-abj-text2">

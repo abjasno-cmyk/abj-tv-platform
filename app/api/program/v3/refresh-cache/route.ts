@@ -1,5 +1,7 @@
 import { refreshVideoCache } from "@/lib/fetchVideos";
+import { refreshProgramFeedImport } from "@/lib/programFeedImport";
 import { createClient } from "@supabase/supabase-js";
+import { revalidateTag } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +39,13 @@ export async function GET(request: Request) {
   }
 
   const startedAt = new Date().toISOString();
+  let programFeedImport = null;
   try {
+    programFeedImport = await refreshProgramFeedImport();
+    if (programFeedImport.report.status !== "error") {
+      revalidateTag("program-feed-import");
+      revalidateTag("program-engine-v3");
+    }
     const result = await refreshVideoCache();
 
     try {
@@ -78,6 +86,7 @@ export async function GET(request: Request) {
     return Response.json({
       ok: true,
       refreshedAt: new Date().toISOString(),
+      programFeedImport,
       apiCalls: result.apiCalls,
       videosStored: result.stored,
       failedSources: result.failedSources,

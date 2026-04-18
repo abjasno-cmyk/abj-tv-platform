@@ -11,6 +11,7 @@ import type {
   ProgramManualScheduleItem,
   ProgramOverrideRules,
 } from "@/lib/epg-types";
+import { getProgramFeedImport } from "@/lib/programFeedImport";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const PRAGUE_TIMEZONE = "Europe/Prague";
@@ -1005,6 +1006,7 @@ async function loadCandidateVideosWithFallback(): Promise<ProgramCandidateVideo[
 }
 
 async function buildProgramBundleInternal(inputOverrides?: ProgramOverrideRules): Promise<ProgramBundle> {
+  const importedFeed = await getProgramFeedImport();
   const fileOverrides = await readOverrideRules();
   const runtimeOverrides = normalizeOverrides(inputOverrides);
   const mergedOverrides: ProgramOverrideRules = normalizeOverrides({
@@ -1017,6 +1019,7 @@ async function buildProgramBundleInternal(inputOverrides?: ProgramOverrideRules)
       ...safeArray(runtimeOverrides.forcedPriorityChannels),
     ],
     manualSchedule: [
+      ...safeArray(importedFeed.manualSchedule),
       ...safeArray(fileOverrides.manualSchedule),
       ...safeArray(runtimeOverrides.manualSchedule),
     ],
