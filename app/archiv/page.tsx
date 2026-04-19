@@ -1,4 +1,5 @@
 import { VideoCard } from "@/components/abj/VideoCard";
+import { VideoEditorial } from "@/components/abj/VideoEditorial";
 import {
   TOPIC_ORDER,
   deduplicateVideos,
@@ -8,6 +9,7 @@ import {
   type FeedVideo,
   type FeedResponse,
 } from "@/lib/dayOverview";
+import type { FeedEditorial } from "@/lib/dayOverview";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +18,17 @@ const EMPTY_MESSAGE = "Zatím žádná nová videa";
 function topicLabel(topic: string): string {
   if (!topic) return "";
   return topic.charAt(0).toUpperCase() + topic.slice(1);
+}
+
+function buildEditorial(video: FeedVideo): FeedEditorial | null {
+  const tldr = video.tldr?.trim();
+  if (!tldr) return null;
+  return {
+    tldr,
+    context: video.context?.trim() || undefined,
+    impact: video.impact?.trim() || undefined,
+    freshness: video.freshness,
+  };
 }
 
 async function loadStructuredFeed(): Promise<FeedResponse | null> {
@@ -66,7 +79,7 @@ export default async function DayOverviewPage() {
     <section className="space-y-12 py-6">
       <header className="space-y-2">
         <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">Výběr dne</p>
-        <h1 className="font-[var(--font-serif)] text-3xl font-semibold text-abj-text1">Přehled dne</h1>
+        <h1 className="font-[var(--font-serif)] text-3xl font-semibold text-abj-text1">Co právě přibylo</h1>
         <p className="text-sm text-abj-text2">Co právě vyšlo v ABJ síti</p>
       </header>
 
@@ -81,15 +94,17 @@ export default async function DayOverviewPage() {
           <h2 className="text-lg font-semibold text-abj-text1">Hlavní výběr</h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {topForDisplay.map((video) => (
-              <VideoCard
-                key={`${video.video_id}-${video.channel}`}
-                videoId={video.video_id}
-                thumbnail={video.thumbnail}
-                title={video.title}
-                channel={video.channel}
-                publishedAt={video.published_at}
-                featured={true}
-              />
+              <div key={`${video.video_id}-${video.channel}`} className="space-y-2">
+                <VideoCard
+                  videoId={video.video_id}
+                  thumbnail={video.thumbnail}
+                  title={video.title}
+                  channel={video.channel}
+                  publishedAt={video.published_at}
+                  featured={true}
+                />
+                {buildEditorial(video) ? <VideoEditorial {...buildEditorial(video)!} /> : null}
+              </div>
             ))}
           </div>
         </section>
@@ -106,14 +121,16 @@ export default async function DayOverviewPage() {
                 </h3>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {entry.videos.map((video) => (
-                    <VideoCard
-                      key={`${entry.topic}-${video.video_id}-${video.channel}`}
-                      videoId={video.video_id}
-                      thumbnail={video.thumbnail}
-                      title={video.title}
-                      channel={video.channel}
-                      publishedAt={video.published_at}
-                    />
+                    <div key={`${entry.topic}-${video.video_id}-${video.channel}`} className="space-y-2">
+                      <VideoCard
+                        videoId={video.video_id}
+                        thumbnail={video.thumbnail}
+                        title={video.title}
+                        channel={video.channel}
+                        publishedAt={video.published_at}
+                      />
+                      {buildEditorial(video) ? <VideoEditorial {...buildEditorial(video)!} /> : null}
+                    </div>
                   ))}
                 </div>
               </section>
@@ -133,14 +150,16 @@ export default async function DayOverviewPage() {
                 </h3>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {entry.videos.slice(0, 6).map((video) => (
-                      <VideoCard
-                        key={`${entry.channel}-${video.video_id}-${video.channel}`}
-                        videoId={video.video_id}
-                        thumbnail={video.thumbnail}
-                        title={video.title}
-                        channel={video.channel}
-                        publishedAt={video.published_at}
-                      />
+                      <div key={`${entry.channel}-${video.video_id}-${video.channel}`} className="space-y-2">
+                        <VideoCard
+                          videoId={video.video_id}
+                          thumbnail={video.thumbnail}
+                          title={video.title}
+                          channel={video.channel}
+                          publishedAt={video.published_at}
+                        />
+                        {buildEditorial(video) ? <VideoEditorial {...buildEditorial(video)!} /> : null}
+                      </div>
                     ))}
                 </div>
               </section>

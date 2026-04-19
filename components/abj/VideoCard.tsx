@@ -10,6 +10,7 @@ type VideoCardProps = {
   title: string;
   channel: string;
   publishedAt: string | null;
+  onClick?: () => void;
   featured?: boolean;
 };
 
@@ -33,6 +34,7 @@ function VideoCardBase({
   title,
   channel,
   publishedAt,
+  onClick,
   featured = false,
 }: VideoCardProps) {
   const href = `/live?videoId=${encodeURIComponent(videoId)}`;
@@ -41,6 +43,7 @@ function VideoCardBase({
   return (
     <Link
       href={href}
+      onClick={onClick}
       className="group block overflow-hidden rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel shadow-[0_4px_18px_rgba(0,0,0,0.35)] transition-all duration-200 hover:scale-[1.03] hover:shadow-[0_12px_28px_rgba(0,0,0,0.55)]"
     >
       <div className="relative aspect-video w-full overflow-hidden bg-abj-card">

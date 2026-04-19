@@ -5,12 +5,14 @@ export const dynamic = "force-dynamic";
 
 type LiveNowPayload = {
   is_live: boolean;
-  video_id: string | null;
-  title: string | null;
-  channel: string | null;
-  thumbnail: string | null;
-  is_premiere: boolean;
-  started_at: string | null;
+  items: Array<{
+    video_id: string;
+    title: string;
+    channel: string;
+    thumbnail: string | null;
+    is_premiere: boolean;
+    started_at: string;
+  }>;
 };
 
 function pickActiveLiveBlock(timeline: ProgramBlock[], now: Date): ProgramBlock | null {
@@ -30,12 +32,7 @@ function pickActiveLiveBlock(timeline: ProgramBlock[], now: Date): ProgramBlock 
 export async function GET() {
   const fallback: LiveNowPayload = {
     is_live: false,
-    video_id: null,
-    title: null,
-    channel: null,
-    thumbnail: null,
-    is_premiere: false,
-    started_at: null,
+    items: [],
   };
 
   try {
@@ -46,12 +43,16 @@ export async function GET() {
 
     return Response.json({
       is_live: true,
-      video_id: block.videoId,
-      title: block.title,
-      channel: block.channel,
-      thumbnail: block.thumbnail ?? null,
-      is_premiere: block.type === "premiere",
-      started_at: block.start,
+      items: [
+        {
+          video_id: block.videoId,
+          title: block.title,
+          channel: block.channel,
+          thumbnail: block.thumbnail ?? null,
+          is_premiere: block.type === "premiere",
+          started_at: block.start,
+        },
+      ],
     } satisfies LiveNowPayload);
   } catch {
     return Response.json(fallback);
