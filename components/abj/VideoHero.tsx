@@ -28,6 +28,14 @@ export function VideoHero({
   const [manualUnmuteVideoId, setManualUnmuteVideoId] = useState<string | null>(null);
   const isMuted = manualUnmuteVideoId !== videoId;
   const showUnmuteButton = Boolean(videoId) && isMuted;
+  const offsetSeconds = Math.max(0, Math.floor(startSeconds));
+  const offsetBadge =
+    offsetSeconds > 0
+      ? `+${String(Math.floor(offsetSeconds / 60)).padStart(2, "0")}:${String(offsetSeconds % 60).padStart(
+          2,
+          "0"
+        )} od začátku pořadu`
+      : null;
 
   const playerOptions = useMemo<YouTubeProps["opts"]>(
     () => ({
@@ -36,12 +44,12 @@ export function VideoHero({
       playerVars: {
         autoplay: 1,
         mute: isMuted ? 1 : 0,
-        start: Math.max(0, Math.floor(startSeconds)),
+        start: offsetSeconds,
         rel: 0,
         modestbranding: 1,
       },
     }),
-    [isMuted, startSeconds]
+    [isMuted, offsetSeconds]
   );
 
   return (
@@ -75,6 +83,11 @@ export function VideoHero({
               >
                 Zapnout zvuk
               </button>
+            ) : null}
+            {offsetBadge ? (
+              <span className="absolute left-3 top-3 z-10 rounded bg-black/65 px-3 py-2 text-xs text-white">
+                {offsetBadge}
+              </span>
             ) : null}
           </>
         ) : (
