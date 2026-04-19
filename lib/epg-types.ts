@@ -6,6 +6,8 @@ export type ProgramItem = {
   videoId: string | null;
   isABJ: boolean;
   type?: "upcoming" | "vod" | "live" | "override";
+  startIso?: string;
+  endIso?: string;
 };
 
 export type DayProgram = {
