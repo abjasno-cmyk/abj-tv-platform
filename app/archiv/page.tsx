@@ -103,7 +103,9 @@ export default async function DayOverviewPage() {
                   publishedAt={video.published_at}
                   featured={true}
                 />
-                {buildEditorial(video) ? <VideoEditorial {...buildEditorial(video)!} /> : null}
+                {buildEditorial(video) ? (
+                  <VideoEditorial videoId={video.video_id} {...buildEditorial(video)!} />
+                ) : null}
               </div>
             ))}
           </div>
@@ -129,7 +131,9 @@ export default async function DayOverviewPage() {
                         channel={video.channel}
                         publishedAt={video.published_at}
                       />
-                      {buildEditorial(video) ? <VideoEditorial {...buildEditorial(video)!} /> : null}
+                      {buildEditorial(video) ? (
+                        <VideoEditorial videoId={video.video_id} {...buildEditorial(video)!} />
+                      ) : null}
                     </div>
                   ))}
                 </div>
@@ -158,7 +162,9 @@ export default async function DayOverviewPage() {
                           channel={video.channel}
                           publishedAt={video.published_at}
                         />
-                        {buildEditorial(video) ? <VideoEditorial {...buildEditorial(video)!} /> : null}
+                        {buildEditorial(video) ? (
+                          <VideoEditorial videoId={video.video_id} {...buildEditorial(video)!} />
+                        ) : null}
                       </div>
                     ))}
                 </div>
