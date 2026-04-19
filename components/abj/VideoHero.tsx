@@ -112,7 +112,7 @@ export function VideoHero({
           {isLive ? (
             <span className="mb-[6px] inline-flex items-center gap-[5px] rounded-[2px] bg-[var(--abj-red)] px-2 py-[3px] font-[var(--font-sans)] text-[9px] uppercase tracking-[0.15em] text-[#F0D5D5]">
               <span className="h-[5px] w-[5px] animate-[blink_2s_ease-in-out_infinite] rounded-full bg-[#F0D5D5]" />
-              ŽIVĚ
+              VYSÍLÁNÍ
             </span>
           ) : null}
           <h2 className="mb-[3px] line-clamp-2 font-[var(--font-serif)] text-[19px] font-semibold leading-[1.25] text-[var(--abj-text1)]">

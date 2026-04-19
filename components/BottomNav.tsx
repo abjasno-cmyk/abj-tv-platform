@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const tabs = [
-  { href: "/live", label: "Živě", icon: "▶" },
+  { href: "/live", label: "Vysílání", icon: "▶" },
   { href: "/feed", label: "Program", icon: "◧" },
   { href: "/conversations", label: "Hospoda", icon: "◉" },
 ];
