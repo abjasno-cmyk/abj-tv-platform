@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { DayProgram } from "@/lib/epg-types";
 import { ABJNav } from "@/components/abj/Nav";
 import { VideoHero } from "@/components/abj/VideoHero";
+import { LiveAlert } from "@/components/abj/LiveAlert";
 import { NowNextBar } from "@/components/abj/NowNextBar";
 import { Timeline } from "@/components/abj/Timeline";
 import { Hospoda } from "@/components/abj/Hospoda";
@@ -78,6 +79,9 @@ export default function LivePage({
       <ABJNav />
       <div className="flex h-[calc(100vh-46px)] overflow-hidden">
         <div className="flex min-w-0 flex-1 flex-col">
+          <div className="px-5 pt-4">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">ABJ vysílání 24/7</p>
+          </div>
           <div className="px-5 pt-5">
             <VideoHero
               key={`${videoId ?? "no-video"}-${startSeconds}`}
@@ -93,6 +97,14 @@ export default function LivePage({
               }}
             />
           </div>
+          <LiveAlert
+            currentVideoId={videoId}
+            onWatchLive={(video) => {
+              setVideoId(video);
+              setStartSeconds(0);
+              setIsLive(true);
+            }}
+          />
           <NowNextBar
             nowItem={
               nowItem

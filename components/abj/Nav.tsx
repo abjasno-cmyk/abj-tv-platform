@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 
 const NAV_LINKS = [
-  { href: "/live", label: "Živě" },
+  { href: "/live", label: "Vysílání" },
   { href: "/archiv", label: "Přehled dne" },
   { href: "/program", label: "Program" },
 ];
@@ -72,7 +72,7 @@ export function ABJNav() {
           <div className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 animate-[blink_2s_ease-in-out_infinite] rounded-full bg-abj-red" />
             <span className="font-[var(--font-sans)] text-[10px] uppercase tracking-[0.12em] text-[#C07070]">
-              Živě
+              Vysílání
             </span>
           </div>
           <p className="font-[var(--font-sans)] text-[13px] tabular-nums text-abj-text2">{clock}</p>
