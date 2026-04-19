@@ -4,10 +4,10 @@ import {
   deduplicateVideos,
   deduplicateBySeen,
   groupChannelsForDisplay,
+  loadStructuredFeedPayload,
   type FeedVideo,
   type FeedResponse,
 } from "@/lib/dayOverview";
-import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -18,26 +18,9 @@ function topicLabel(topic: string): string {
   return topic.charAt(0).toUpperCase() + topic.slice(1);
 }
 
-async function getFeedUrl(): Promise<string> {
-  const requestHeaders = await headers();
-  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
-  const proto = requestHeaders.get("x-forwarded-proto") ?? "https";
-  if (host) return `${proto}://${host}/feed`;
-
-  const explicitOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.VERCEL_URL;
-  if (explicitOrigin) {
-    const base = explicitOrigin.startsWith("http") ? explicitOrigin : `https://${explicitOrigin}`;
-    return `${base.replace(/\/+$/, "")}/feed`;
-  }
-  return "http://127.0.0.1:3000/feed";
-}
-
 async function loadStructuredFeed(): Promise<FeedResponse | null> {
   try {
-    const response = await fetch(await getFeedUrl(), { next: { revalidate: 120 } });
-    if (!response.ok) return null;
-    const payload = (await response.json()) as FeedResponse;
-    return payload;
+    return await loadStructuredFeedPayload();
   } catch (error) {
     console.error("Failed to load structured feed", error);
     return null;
