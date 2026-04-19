@@ -229,7 +229,7 @@ export default function ProgramPage() {
   const [clockNow, setClockNow] = useState(() => new Date());
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [startedPlayback, setStartedPlayback] = useState<Record<string, boolean>>({});
-  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const itemRefs = useRef<Record<string, HTMLElement | null>>({});
   const skipTracked = useRef<Set<string>>(new Set());
 
   const loadProgram = useCallback(
