@@ -520,47 +520,27 @@ function insertWithConflictResolution(timeline: ProgramBlock[], incoming: Progra
   return [...winners, promoted].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
 }
 
-function pickCeremonialDurations(candidates: ProgramCandidateVideo[]): { czech: number; slovak: number } {
-  const czech =
-    candidates.find((video) => video.videoId === "s_dNWH7p5YM")?.durationMin ??
-    parseIsoDurationToMinutes("PT2M");
-  const slovak =
-    candidates.find((video) => video.videoId === "jMZYJdd5kO0")?.durationMin ??
-    parseIsoDurationToMinutes("PT2M");
-  return {
-    czech: czech > 0 ? czech : 2,
-    slovak: slovak > 0 ? slovak : 2,
-  };
+function pickCeremonialDuration(candidates: ProgramCandidateVideo[]): number {
+  const unified =
+    candidates.find((video) => video.videoId === "5jRzqwLHpR4")?.durationMin ??
+    parseIsoDurationToMinutes("PT4M");
+  return unified > 0 ? unified : 4;
 }
 
 function buildCeremonialBlocks(dayStart: Date, candidates: ProgramCandidateVideo[]): ProgramBlock[] {
-  const durations = pickCeremonialDurations(candidates);
-  const czechStart = dayStart;
-  const czechEnd = addMinutes(czechStart, durations.czech);
-  const slovakStart = czechEnd;
-  const slovakEnd = addMinutes(slovakStart, durations.slovak);
+  const duration = pickCeremonialDuration(candidates);
+  const start = dayStart;
+  const end = addMinutes(start, duration);
 
   return [
     {
-      id: "ceremonial-czech-anthem",
-      start: czechStart.toISOString(),
-      end: czechEnd.toISOString(),
-      durationMin: durations.czech,
+      id: "ceremonial-czech-slovak-anthem",
+      start: start.toISOString(),
+      end: end.toISOString(),
+      durationMin: duration,
       type: "ceremonial",
-      title: "Česká státní hymna",
-      videoId: "s_dNWH7p5YM",
-      channel: "ABJ Ceremonial",
-      isABJ: true,
-      priority: 1000,
-    },
-    {
-      id: "ceremonial-slovak-anthem",
-      start: slovakStart.toISOString(),
-      end: slovakEnd.toISOString(),
-      durationMin: durations.slovak,
-      type: "ceremonial",
-      title: "Slovenská státní hymna",
-      videoId: "jMZYJdd5kO0",
+      title: "Česká a slovenská státní hymna",
+      videoId: "5jRzqwLHpR4",
       channel: "ABJ Ceremonial",
       isABJ: true,
       priority: 1000,
