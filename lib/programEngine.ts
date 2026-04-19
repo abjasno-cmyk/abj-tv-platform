@@ -187,6 +187,39 @@ function readNumberMeta(metadata: Record<string, unknown> | undefined, key: stri
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
+function normalizeLiveBroadcastContent(
+  value: unknown
+): "live" | "upcoming" | "none" | null {
+  if (typeof value !== "string") return null;
+  if (value === "live" || value === "upcoming" || value === "none") return value;
+  return null;
+}
+
+function inferLegacyLiveBroadcastContent(
+  row: VideoRowLegacy,
+  metadata: Record<string, unknown> | undefined,
+  nowTs: number
+): "live" | "upcoming" | "none" {
+  const metaBroadcastContent = normalizeLiveBroadcastContent(
+    readStringMeta(metadata, "liveBroadcastContent")
+  );
+  if (metaBroadcastContent) return metaBroadcastContent;
+
+  const actualStartTs = new Date(readStringMeta(metadata, "actualStartTime") ?? "").getTime();
+  const actualEndTs = new Date(readStringMeta(metadata, "actualEndTime") ?? "").getTime();
+  if (Number.isFinite(actualStartTs) && actualStartTs > 0 && (!Number.isFinite(actualEndTs) || actualEndTs <= 0)) {
+    return "live";
+  }
+
+  const scheduledStartRaw = row.scheduled_start_time ?? readStringMeta(metadata, "scheduledStartTime") ?? null;
+  const scheduledStartTs = scheduledStartRaw ? new Date(scheduledStartRaw).getTime() : NaN;
+  if (row.kind === "upcoming" && Number.isFinite(scheduledStartTs) && scheduledStartTs > nowTs) {
+    return "upcoming";
+  }
+
+  return "none";
+}
+
 function normalizeWeekdayLabel(value: string): string {
   return value
     .normalize("NFD")
@@ -395,12 +428,15 @@ async function loadCachedCandidates(): Promise<ProgramCandidateVideo[]> {
     sourceNameById = new Map((sourceRows ?? []).map((row) => [row.id as string, row.source_name as string]));
   }
 
+  const nowTs = Date.now();
   return ((legacy.data ?? []) as VideoRowLegacy[]).map((row) => {
     const metadata = asObjectRecord(row.metadata) ?? asObjectRecord(row.raw);
     const sourceName =
       (row.source_id ? sourceNameById.get(row.source_id) : undefined) ??
       readStringMeta(metadata, "channelTitle") ??
       "Neznámý kanál";
+    const scheduledStartTime =
+      row.scheduled_start_time ?? readStringMeta(metadata, "scheduledStartTime") ?? null;
     return {
       videoId: row.video_id,
       title: row.title,
@@ -408,13 +444,13 @@ async function loadCachedCandidates(): Promise<ProgramCandidateVideo[]> {
       channelId: row.channel_id ?? undefined,
       isABJ: sourceName.toLowerCase().includes("abj"),
       publishedAt: row.published_at,
-      scheduledStartTime: row.scheduled_start_time,
+      scheduledStartTime,
       actualStartTime: readStringMeta(metadata, "actualStartTime") ?? null,
       durationMin:
         sanitizeDurationMin(
           readNumberMeta(metadata, "durationMin") ?? parseIsoDurationToMinutes(readStringMeta(metadata, "duration"))
         ) || 30,
-      liveBroadcastContent: row.kind === "upcoming" ? "upcoming" : "none",
+      liveBroadcastContent: inferLegacyLiveBroadcastContent(row, metadata, nowTs),
       thumbnail: row.thumbnail,
       metadata,
     } satisfies ProgramCandidateVideo;
@@ -614,7 +650,9 @@ function buildLiveAndPremiereBlocks(
       videoId: video.videoId,
       channel: video.channel,
       isABJ: video.isABJ,
-      priority: isLive ? (video.isABJ ? 880 : 820) : video.isABJ ? 860 : 800,
+      // Live broadcasts must outrank fixed/manual blocks so the active stream
+      // can become the visible/selected "now playing" block.
+      priority: isLive ? (video.isABJ ? 1200 : 1150) : video.isABJ ? 860 : 800,
       thumbnail: video.thumbnail ?? undefined,
     });
   }
@@ -946,6 +984,22 @@ export function fillGapsWithAI(
 }
 
 function pickNowPlaying(timeline: ProgramBlock[], candidates: ProgramCandidateVideo[]): ProgramBlock | null {
+  const now = new Date();
+  const nowTs = now.getTime();
+
+  const activeLive = timeline
+    .filter((block) => {
+      if (block.type !== "live") return false;
+      const startTs = new Date(block.start).getTime();
+      const endTs = new Date(block.end).getTime();
+      return Number.isFinite(startTs) && Number.isFinite(endTs) && startTs <= nowTs && nowTs < endTs;
+    })
+    .sort((a, b) => b.priority - a.priority || new Date(b.start).getTime() - new Date(a.start).getTime());
+  if (activeLive.length > 0) return activeLive[0] ?? null;
+
+  const activeTimelineBlock = pickCurrentTimelineBlock(timeline, now);
+  if (activeTimelineBlock?.videoId) return activeTimelineBlock;
+
   const liveBlocks = timeline
     .filter((block) => block.type === "live")
     .sort((a, b) => b.priority - a.priority || new Date(b.start).getTime() - new Date(a.start).getTime());
@@ -960,7 +1014,6 @@ function pickNowPlaying(timeline: ProgramBlock[], candidates: ProgramCandidateVi
     })[0];
   if (!latestABJ) return null;
 
-  const now = new Date();
   const end = addMinutes(now, latestABJ.durationMin > 0 ? latestABJ.durationMin : 30);
   return {
     id: `now-playing-abj-${latestABJ.videoId}`,
@@ -1091,7 +1144,7 @@ async function getProgramBundleCached(overrideRules: ProgramOverrideRules): Prom
   const cached = unstable_cache(
     async () => buildProgramBundleInternal(overrideRules),
     ["program-engine-v3", key],
-    { revalidate: CACHE_REVALIDATE_SECONDS }
+    { revalidate: CACHE_REVALIDATE_SECONDS, tags: ["program-engine-v3"] }
   );
   return cached();
 }

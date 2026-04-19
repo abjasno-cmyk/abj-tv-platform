@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 
 const NAV_LINKS = [
   { href: "/live", label: "Živě" },
-  { href: "/feed", label: "Archiv" },
+  { href: "/archiv", label: "Přehled dne" },
   { href: "/program", label: "Program" },
 ];
 
@@ -31,7 +31,7 @@ export function ABJNav() {
   }, []);
 
   const activeHref = useMemo(() => {
-    if (pathname.startsWith("/feed")) return "/feed";
+    if (pathname.startsWith("/archiv") || pathname.startsWith("/feed")) return "/archiv";
     if (pathname.startsWith("/program")) return "/program";
     if (pathname.startsWith("/live")) return "/live";
     return "";
