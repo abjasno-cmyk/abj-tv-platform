@@ -49,6 +49,7 @@ insert into sources (
   ('Teraz Takto s AŽ', 'youtube', 'https://www.youtube.com/@TERAZTAKTOsAnkouZitnou', 'B', 'rozhovor', 'SK', 'sk', true, 'support', null),
   ('TVOTV', 'youtube', 'https://www.youtube.com/channel/UCVry0p4SnE6UpJCYVwaLqIg', 'B', 'zprávy', 'CZ', 'cs', true, 'support', null),
   ('SMER - Sociálna Demokracia', 'youtube', 'https://www.youtube.com/channel/UCdU1Hed-u-HJky_GNcPABeQ', 'B', 'politika', 'SK', 'sk', true, 'support', null),
+  ('Ilona Švihlíková Official', 'youtube', 'https://www.youtube.com/@IlonaSvihl%C3%ADkovaOfficial', 'B', 'ekonomika', 'CZ', 'cs', true, 'support', null),
   ('Spolek Svatopluk', 'youtube', 'https://www.youtube.com/@SpolekSvatopluk', 'B', 'společnost', 'CZ', 'cs', true, 'support', null),
   ('O čem se mlčí', 'youtube', 'https://www.youtube.com/@O%C4%8Demseml%C4%8D%C3%AD', 'B', 'komentář', 'CZ', 'cs', true, 'support', null),
   ('Hlavné správy', 'youtube', 'https://www.youtube.com/@Hlavnespravy-lc9yc', 'B', 'zprávy', 'SK', 'sk', true, 'support', null),
