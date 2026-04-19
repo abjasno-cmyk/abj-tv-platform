@@ -14,6 +14,7 @@ type LivePageProps = {
   initialVideoId: string | null;
   initialTitle: string;
   initialChannelName: string;
+  initialStartSeconds?: number;
 };
 
 export default function LivePage({
@@ -21,12 +22,14 @@ export default function LivePage({
   initialVideoId,
   initialTitle,
   initialChannelName,
+  initialStartSeconds = 0,
 }: LivePageProps) {
   const safeEpg = epg;
   const [videoId, setVideoId] = useState<string | null>(initialVideoId);
   const [title, setTitle] = useState(initialTitle);
   const [channelName, setChannelName] = useState(initialChannelName);
   const [isLive, setIsLive] = useState(() => initialChannelName.toLowerCase().includes("abj"));
+  const [startSeconds, setStartSeconds] = useState(() => Math.max(0, Math.floor(initialStartSeconds)));
   const [remainingLabel, setRemainingLabel] = useState("za 12 min");
   const [progressPercent, setProgressPercent] = useState(22);
 
@@ -77,11 +80,12 @@ export default function LivePage({
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="px-5 pt-5">
             <VideoHero
-              key={videoId ?? "no-video"}
+              key={`${videoId ?? "no-video"}-${startSeconds}`}
               videoId={videoId}
               title={title}
               channel={channelName || "ABJ Síť"}
               isLive={isLive}
+              startSeconds={startSeconds}
               remainingLabel={remainingLabel}
               progressPercent={progressPercent}
               onPlayToggle={() => {
@@ -115,6 +119,7 @@ export default function LivePage({
               setTitle(item.title);
               setChannelName(item.channelName);
               setVideoId(item.videoId);
+              setStartSeconds(0);
               setIsLive(item.type === "live" || item.channelName.toLowerCase().includes("abj"));
             }}
           />

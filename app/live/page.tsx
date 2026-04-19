@@ -123,6 +123,31 @@ function findItemByVideoId(epg: DayProgram[], videoId: string): ProgramItem | nu
   return null;
 }
 
+function mapInitialTimelineOffsetSeconds(
+  timeline: ProgramBlock[],
+  targetVideoId: string | null
+): number {
+  if (!targetVideoId) return 0;
+  const now = new Date();
+  const nowTs = now.getTime();
+  if (!Number.isFinite(nowTs)) return 0;
+
+  const matchingBlocks = timeline
+    .filter((block) => block.videoId === targetVideoId)
+    .map((block) => {
+      const startTs = new Date(block.start).getTime();
+      const endTs = new Date(block.end).getTime();
+      return { startTs, endTs };
+    })
+    .filter((value) => Number.isFinite(value.startTs) && Number.isFinite(value.endTs) && value.endTs > value.startTs);
+
+  const activeBlock = matchingBlocks.find((block) => block.startTs <= nowTs && nowTs < block.endTs);
+  if (!activeBlock) return 0;
+
+  const elapsedSeconds = Math.floor((nowTs - activeBlock.startTs) / 1000);
+  return Math.max(0, elapsedSeconds);
+}
+
 export default async function LivePageServer(
   {
     searchParams,
@@ -131,6 +156,7 @@ export default async function LivePageServer(
   } = {}
 ) {
   let epg: DayProgram[] = [];
+  let timeline: ProgramBlock[] = [];
   let v3NowPlaying: ProgramBlock | null = null;
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
@@ -138,7 +164,7 @@ export default async function LivePageServer(
   const requestedVideoId = Array.isArray(rawVideoId) ? rawVideoId[0] : rawVideoId;
 
   try {
-    const timeline = await getProgram();
+    timeline = await getProgram();
     v3NowPlaying = await getNowPlaying();
     epg = mapTimelineToDays(timeline);
   } catch (error) {
@@ -178,6 +204,10 @@ export default async function LivePageServer(
     initialFromNowPlaying?.channelName ??
     initialItem?.channelName ??
     "";
+  const initialStartOffsetSeconds =
+    requestedVideoId && requestedVideoId.trim().length > 0
+      ? mapInitialTimelineOffsetSeconds(timeline, requestedVideoId.trim())
+      : mapInitialTimelineOffsetSeconds(timeline, initialVideoId);
 
   return (
     <LivePage
@@ -185,6 +215,7 @@ export default async function LivePageServer(
       initialVideoId={initialVideoId}
       initialTitle={initialTitle}
       initialChannelName={initialChannelName}
+      initialStartSeconds={initialStartOffsetSeconds}
     />
   );
 }

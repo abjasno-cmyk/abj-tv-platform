@@ -8,6 +8,7 @@ type VideoHeroProps = {
   title: string;
   channel: string;
   isLive: boolean;
+  startSeconds?: number;
   remainingLabel: string;
   progressPercent: number;
   onPlayToggle?: () => void;
@@ -18,6 +19,7 @@ export function VideoHero({
   title,
   channel,
   isLive,
+  startSeconds = 0,
   remainingLabel,
   progressPercent,
   onPlayToggle,
@@ -34,11 +36,12 @@ export function VideoHero({
       playerVars: {
         autoplay: 1,
         mute: isMuted ? 1 : 0,
+        start: Math.max(0, Math.floor(startSeconds)),
         rel: 0,
         modestbranding: 1,
       },
     }),
-    [isMuted]
+    [isMuted, startSeconds]
   );
 
   return (
@@ -55,7 +58,7 @@ export function VideoHero({
         {videoId ? (
           <>
             <YouTube
-              key={`${videoId}-${isMuted ? "muted" : "unmuted"}`}
+              key={`${videoId}-${isMuted ? "muted" : "unmuted"}-${Math.max(0, Math.floor(startSeconds))}`}
               videoId={videoId}
               title={title}
               iframeClassName="absolute inset-0 h-full w-full"
