@@ -116,12 +116,6 @@ function formatDuration(durationMin: number): string {
   return `${hours} h ${minutes} min`;
 }
 
-function getApiUrl(path: string): string {
-  const base = (process.env.NEXT_PUBLIC_API_BASE ?? "").trim().replace(/\/$/, "");
-  if (!base) return path;
-  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
-}
-
 function normalizeProgramPayload(raw: unknown): ProgramFeedView {
   const payload = isObjectLike(raw) ? raw : {};
   const rawBlocks = Array.isArray(payload.blocks)
@@ -184,7 +178,7 @@ function normalizeProgramPayload(raw: unknown): ProgramFeedView {
 
 async function trackEditorialEvent(videoId: string, eventType: "expand" | "play" | "skip") {
   try {
-    await fetch(getApiUrl("/editorial/event"), {
+    await fetch("/editorial/event", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -239,7 +233,7 @@ export default function ProgramPage() {
       setError(null);
 
       try {
-        const response = await fetch(getApiUrl("/api/program"), {
+        const response = await fetch("/api/program", {
           method: "GET",
           cache: "no-store",
         });
