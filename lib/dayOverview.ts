@@ -8,6 +8,21 @@ export type FeedVideo = {
   published_at: string;
   topics: string[];
   thumbnail: string;
+  tldr?: string;
+  context?: string;
+  impact?: string;
+  freshness: "breaking" | "today" | "week" | "evergreen";
+};
+
+export type FeedVideoFreshness = FeedVideo["freshness"];
+
+export type EditorialFreshness = FeedVideo["freshness"];
+
+export type FeedEditorial = {
+  tldr: string;
+  context?: string;
+  impact?: string;
+  freshness: EditorialFreshness;
 };
 
 export type StructuredFeedPayload = {
@@ -52,6 +67,12 @@ function asObject(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>;
 }
 
+function readString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
 function normalizeText(value: string): string {
   return value
     .normalize("NFD")
@@ -76,6 +97,27 @@ function toIsoOrEpoch(value: string | null | undefined): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return new Date(0).toISOString();
   return date.toISOString();
+}
+
+function freshnessFromPublishedAt(publishedAtIso: string): FeedVideo["freshness"] {
+  const publishedTs = parsePublishedTimestamp(publishedAtIso);
+  if (!publishedTs) return "evergreen";
+  const ageMs = Date.now() - publishedTs;
+  if (ageMs <= 6 * 60 * 60 * 1000) return "breaking";
+  if (ageMs <= 24 * 60 * 60 * 1000) return "today";
+  if (ageMs <= 7 * 24 * 60 * 60 * 1000) return "week";
+  return "evergreen";
+}
+
+function readFreshness(metadata: Record<string, unknown> | null, publishedAtIso: string): FeedVideo["freshness"] {
+  const freshnessRaw = readString(metadata?.freshness);
+  if (freshnessRaw) {
+    const normalized = normalizeText(freshnessRaw);
+    if (normalized === "breaking" || normalized === "today" || normalized === "week" || normalized === "evergreen") {
+      return normalized;
+    }
+  }
+  return freshnessFromPublishedAt(publishedAtIso);
 }
 
 function inferTopics(video: Omit<FeedVideo, "topics">, metadata: unknown): TopicName[] {
@@ -113,17 +155,22 @@ function inferTopics(video: Omit<FeedVideo, "topics">, metadata: unknown): Topic
 }
 
 function feedVideoFromRaw(video: RawVideo): FeedVideo {
+  const metadata = asObject(video.metadata);
   const base: Omit<FeedVideo, "topics"> = {
     video_id: video.video_id,
     title: video.title,
     channel: video.channel_name,
     published_at: toIsoOrEpoch(video.published_at ?? video.created_at),
     thumbnail: video.thumbnail ?? "/placeholder-thumb.jpg",
+    tldr: readString(metadata?.tldr) ?? readString(metadata?.summary),
+    context: readString(metadata?.context),
+    impact: readString(metadata?.impact),
+    freshness: readFreshness(metadata, toIsoOrEpoch(video.published_at ?? video.created_at)),
   };
 
   return {
     ...base,
-    topics: inferTopics(base, video.metadata),
+    topics: inferTopics(base, metadata),
   };
 }
 
