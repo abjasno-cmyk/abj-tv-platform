@@ -90,7 +90,8 @@ function mapTimelineToDays(timeline: ProgramBlock[]): DayProgram[] {
 
 function chooseInitialItem(epg: DayProgram[]): ProgramItem | null {
   const currentTime = getPragueTimeLabel(new Date());
-  const todayItems = epg[0]?.items ?? [];
+  const todayDateKey = getPragueDateKey(new Date());
+  const todayItems = epg.find((day) => day.date === todayDateKey)?.items ?? [];
 
   if (todayItems.length > 0) {
     let lastPlayable: ProgramItem | null = null;
@@ -190,20 +191,22 @@ export default async function LivePageServer(
 
   const requestedItem = requestedVideoId ? findItemByVideoId(epg, requestedVideoId) : null;
   const initialItem = chooseInitialItem(epg);
-  const initialVideoId =
-    requestedVideoId && requestedVideoId.trim().length > 0
-      ? requestedVideoId.trim()
-      : requestedItem?.videoId ?? initialFromNowPlaying?.videoId ?? initialItem?.videoId ?? null;
-  const initialTitle =
-    requestedItem?.title ??
-    initialFromNowPlaying?.title ??
-    initialItem?.title ??
-    "Dnes není plánované vysílání";
-  const initialChannelName =
-    requestedItem?.channelName ??
-    initialFromNowPlaying?.channelName ??
-    initialItem?.channelName ??
-    "";
+  const hasRequestedVideoId = Boolean(requestedVideoId && requestedVideoId.trim().length > 0);
+  const initialVideoId = hasRequestedVideoId
+    ? requestedVideoId!.trim()
+    : requestedItem?.videoId ?? initialItem?.videoId ?? initialFromNowPlaying?.videoId ?? null;
+  const initialTitle = hasRequestedVideoId
+    ? requestedItem?.title ??
+      initialFromNowPlaying?.title ??
+      initialItem?.title ??
+      "Dnes není plánované vysílání"
+    : requestedItem?.title ??
+      initialItem?.title ??
+      initialFromNowPlaying?.title ??
+      "Dnes není plánované vysílání";
+  const initialChannelName = hasRequestedVideoId
+    ? requestedItem?.channelName ?? initialFromNowPlaying?.channelName ?? initialItem?.channelName ?? ""
+    : requestedItem?.channelName ?? initialItem?.channelName ?? initialFromNowPlaying?.channelName ?? "";
   const initialStartOffsetSeconds =
     requestedVideoId && requestedVideoId.trim().length > 0
       ? mapInitialTimelineOffsetSeconds(timeline, requestedVideoId.trim())
