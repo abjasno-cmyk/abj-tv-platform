@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { ABJNav } from "@/components/abj/Nav";
+import { EditorialEventDebugPanel } from "@/components/dev/EditorialEventDebugPanel";
 
 export const metadata: Metadata = {
   title: "ABJ TV Platform",
@@ -24,11 +25,13 @@ const playfair = Playfair_Display({
 });
 
 export default function RootLayout({ children }: RootLayoutProps) {
+  const showEditorialDebug = process.env.NODE_ENV !== "production";
   return (
     <html lang="cs" className={`${playfair.variable} ${inter.variable}`}>
       <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
         <ABJNav />
         <main className="min-h-[calc(100vh-46px)] overflow-hidden">{children}</main>
+        {showEditorialDebug ? <EditorialEventDebugPanel /> : null}
       </body>
     </html>
   );
