@@ -4,6 +4,14 @@ import LivePage from "@/app/live/LivePage";
 import type { DayProgram, ProgramBlock, ProgramItem } from "@/lib/epg-types";
 
 export const dynamic = "force-dynamic";
+const DEFAULT_PROGRAM_FEED_URL = "https://attached-assets-abjasno.replit.app/program";
+
+type ExternalNowPlaying = {
+  videoId: string;
+  title: string;
+  channelName: string;
+  startIso: string;
+};
 
 function toParts(date: Date, options: Intl.DateTimeFormatOptions): Record<string, string> {
   return new Intl.DateTimeFormat("cs-CZ", {
@@ -35,6 +43,135 @@ function getPragueDateKey(date: Date): string {
     day: "2-digit",
   });
   return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function sanitizeEnvValue(value?: string): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  const equalsIdx = trimmed.indexOf("=");
+  const maybeAssigned =
+    equalsIdx > 0 && /^[A-Z0-9_]+$/.test(trimmed.slice(0, equalsIdx))
+      ? trimmed.slice(equalsIdx + 1).trim()
+      : trimmed;
+  if (
+    (maybeAssigned.startsWith('"') && maybeAssigned.endsWith('"')) ||
+    (maybeAssigned.startsWith("'") && maybeAssigned.endsWith("'"))
+  ) {
+    return maybeAssigned.slice(1, -1).trim();
+  }
+  return maybeAssigned;
+}
+
+function resolveProgramFeedUrlCandidates(): string[] {
+  const configured = sanitizeEnvValue(process.env.PROGRAM_FEED_URL);
+  const candidates: string[] = [];
+  const seen = new Set<string>();
+  const pushCandidate = (candidate: string | undefined) => {
+    if (!candidate) return;
+    const normalized = candidate.trim();
+    if (!normalized || seen.has(normalized)) return;
+    seen.add(normalized);
+    candidates.push(normalized);
+  };
+
+  pushCandidate(configured);
+  if (configured) {
+    try {
+      const url = new URL(configured);
+      const normalizedPath = url.pathname.replace(/\/+$/, "");
+      if (normalizedPath !== "/program") {
+        url.pathname = `${normalizedPath}/program`;
+        url.search = "";
+        url.hash = "";
+        pushCandidate(url.toString());
+      }
+    } catch {
+      // Keep original candidate only.
+    }
+  }
+  pushCandidate(DEFAULT_PROGRAM_FEED_URL);
+  return candidates;
+}
+
+function readString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function asObjectRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
+function parseExternalNowPlaying(payload: unknown): ExternalNowPlaying | null {
+  const root = asObjectRecord(payload);
+  if (!root) return null;
+  const blocksRaw = Array.isArray(root.blocks)
+    ? root.blocks
+    : Array.isArray(root.timeline)
+      ? root.timeline
+      : null;
+  if (!blocksRaw) return null;
+
+  const nowTs = Date.now();
+  const active = blocksRaw
+    .map((row) => asObjectRecord(row))
+    .filter((row): row is Record<string, unknown> => Boolean(row))
+    .map((row) => {
+      const startIso = readString(row.starts_at) ?? readString(row.start) ?? readString(row.startIso);
+      const endIso = readString(row.ends_at) ?? readString(row.end) ?? readString(row.endIso);
+      const videoId = readString(row.video_id) ?? readString(row.videoId);
+      const title = readString(row.title);
+      const channelName = readString(row.channel) ?? readString(row.channel_name) ?? "ABJ TV";
+      if (!startIso || !endIso || !videoId || !title) return null;
+      const startTs = new Date(startIso).getTime();
+      const endTs = new Date(endIso).getTime();
+      if (!Number.isFinite(startTs) || !Number.isFinite(endTs) || endTs <= startTs) return null;
+      return { videoId, title, channelName, startIso, startTs, endTs };
+    })
+    .filter((row): row is NonNullable<typeof row> => Boolean(row))
+    .filter((row) => row.startTs <= nowTs && nowTs < row.endTs)
+    .sort((a, b) => b.startTs - a.startTs);
+
+  const top = active[0];
+  if (!top) return null;
+  return {
+    videoId: top.videoId,
+    title: top.title,
+    channelName: top.channelName,
+    startIso: top.startIso,
+  };
+}
+
+async function loadExternalNowPlaying(): Promise<ExternalNowPlaying | null> {
+  const apiKey =
+    sanitizeEnvValue(process.env.FEED_API_KEY) ??
+    sanitizeEnvValue(process.env.PROGRAM_FEED_API_KEY) ??
+    null;
+  if (!apiKey) return null;
+
+  for (const candidate of resolveProgramFeedUrlCandidates()) {
+    try {
+      const response = await fetch(candidate, {
+        headers: {
+          Accept: "application/json",
+          "X-Api-Key": apiKey,
+        },
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        if (response.status === 404) continue;
+        continue;
+      }
+      const json = (await response.json()) as unknown;
+      const parsed = parseExternalNowPlaying(json);
+      if (parsed) return parsed;
+    } catch (error) {
+      console.warn("live-page-external-feed-now-playing-failed", error);
+    }
+  }
+  return null;
 }
 
 function getPragueDayLabel(date: Date): string {
@@ -149,6 +286,14 @@ function mapInitialTimelineOffsetSeconds(
   return Math.max(0, elapsedSeconds);
 }
 
+function mapOffsetFromStartIso(startIso: string | null): number {
+  if (!startIso) return 0;
+  const startTs = new Date(startIso).getTime();
+  const nowTs = Date.now();
+  if (!Number.isFinite(startTs) || !Number.isFinite(nowTs) || nowTs <= startTs) return 0;
+  return Math.max(0, Math.floor((nowTs - startTs) / 1000));
+}
+
 export default async function LivePageServer(
   {
     searchParams,
@@ -159,6 +304,7 @@ export default async function LivePageServer(
   let epg: DayProgram[] = [];
   let timeline: ProgramBlock[] = [];
   let v3NowPlaying: ProgramBlock | null = null;
+  let externalNowPlaying: ExternalNowPlaying | null = null;
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const rawVideoId = resolvedSearchParams?.videoId;
@@ -172,6 +318,12 @@ export default async function LivePageServer(
     console.error("live-page-v3-program-failed", error);
   }
 
+  try {
+    externalNowPlaying = await loadExternalNowPlaying();
+  } catch (error) {
+    console.error("live-page-external-now-playing-failed", error);
+  }
+
   if (epg.length === 0 || epg.every((day) => day.items.length === 0)) {
     try {
       epg = await buildEPG(7);
@@ -180,8 +332,13 @@ export default async function LivePageServer(
     }
   }
 
-  const initialFromNowPlaying =
-    v3NowPlaying?.videoId && v3NowPlaying.title
+  const initialFromNowPlaying = externalNowPlaying
+    ? {
+        videoId: externalNowPlaying.videoId,
+        title: externalNowPlaying.title,
+        channelName: externalNowPlaying.channelName,
+      }
+    : v3NowPlaying?.videoId && v3NowPlaying.title
       ? {
           videoId: v3NowPlaying.videoId,
           title: v3NowPlaying.title,
@@ -216,7 +373,9 @@ export default async function LivePageServer(
   const initialStartOffsetSeconds =
     requestedVideoId && requestedVideoId.trim().length > 0
       ? mapInitialTimelineOffsetSeconds(timeline, requestedVideoId.trim())
-      : mapInitialTimelineOffsetSeconds(timeline, initialVideoId);
+      : externalNowPlaying && initialVideoId === externalNowPlaying.videoId
+        ? mapOffsetFromStartIso(externalNowPlaying.startIso)
+        : mapInitialTimelineOffsetSeconds(timeline, initialVideoId);
 
   return (
     <LivePage
