@@ -55,3 +55,18 @@ a {
 .abj-msg-appear {
   animation: msgAppear 0.25s ease;
 }
+
+@keyframes expandPanel {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.abj-expand-panel {
+  animation: expandPanel 0.2s ease-out;
+}
