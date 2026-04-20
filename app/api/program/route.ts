@@ -86,6 +86,7 @@ export async function GET(request: Request) {
   let upstreamResponse: Response | null = null;
   let resolvedUrl = "";
   let lastNetworkError: unknown = null;
+  const upstreamAttempts: string[] = [];
 
   for (const candidate of candidateUrls) {
     const upstreamUrl = withForwardedQuery(candidate, request);
@@ -100,14 +101,17 @@ export async function GET(request: Request) {
       });
 
       if (response.status === 404) {
+        upstreamAttempts.push(`${upstreamUrl.toString()} => 404`);
         continue;
       }
 
+      upstreamAttempts.push(`${upstreamUrl.toString()} => ${response.status}`);
       upstreamResponse = response;
       resolvedUrl = upstreamUrl.toString();
       break;
     } catch (error) {
       lastNetworkError = error;
+      upstreamAttempts.push(`${upstreamUrl.toString()} => network-error`);
     }
   }
 
@@ -126,12 +130,18 @@ export async function GET(request: Request) {
   }
 
   const body = await upstreamResponse.text();
+  const headers = new Headers({
+    "Content-Type": upstreamResponse.headers.get("content-type") ?? "application/json; charset=utf-8",
+    "Cache-Control": "no-store, max-age=0",
+  });
+  if (process.env.NODE_ENV !== "production") {
+    headers.set("X-Program-Upstream", resolvedUrl);
+    if (upstreamAttempts.length > 0) {
+      headers.set("X-Program-Upstream-Trace", upstreamAttempts.join(" | "));
+    }
+  }
   return new Response(body, {
     status: upstreamResponse.status,
-    headers: {
-      "Content-Type": upstreamResponse.headers.get("content-type") ?? "application/json; charset=utf-8",
-      "Cache-Control": "no-store, max-age=0",
-      "X-Program-Upstream": resolvedUrl,
-    },
+    headers,
   });
 }

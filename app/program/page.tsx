@@ -28,6 +28,11 @@ type ProgramFeedView = {
   validUntil: string | null;
 };
 
+type ProgramDebugInfo = {
+  upstreamUrl: string | null;
+  upstreamTrace: string | null;
+};
+
 const PRAGUE_TIMEZONE = "Europe/Prague";
 const REFRESH_EVERY_MS = 5 * 60 * 1000;
 
@@ -217,6 +222,7 @@ function ProgramRowSkeleton() {
 
 export default function ProgramPage() {
   const [feed, setFeed] = useState<ProgramFeedView | null>(null);
+  const [debugInfo, setDebugInfo] = useState<ProgramDebugInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -236,6 +242,10 @@ export default function ProgramPage() {
         const response = await fetch("/api/program", {
           method: "GET",
           cache: "no-store",
+        });
+        setDebugInfo({
+          upstreamUrl: readString(response.headers.get("x-program-upstream")),
+          upstreamTrace: readString(response.headers.get("x-program-upstream-trace")),
         });
 
         const rawText = await response.text();
@@ -258,6 +268,7 @@ export default function ProgramPage() {
       } catch (cause) {
         const message =
           cause instanceof Error ? cause.message : "Nepodařilo se načíst program.";
+        setDebugInfo(null);
         setError(message);
       } finally {
         setIsLoading(false);
@@ -310,6 +321,7 @@ export default function ProgramPage() {
 
   const nowMs = clockNow.getTime();
   const rows = useMemo(() => feed?.blocks ?? [], [feed]);
+  const showDebugBadge = process.env.NODE_ENV !== "production";
   const currentBlockId = useMemo(() => {
     for (const block of rows) {
       const start = parseDateMs(block.startsAt);
@@ -335,6 +347,14 @@ export default function ProgramPage() {
           </div>
         </div>
       </header>
+      {showDebugBadge && debugInfo?.upstreamUrl ? (
+        <div className="mb-4 rounded-lg border border-[rgba(154,163,178,0.25)] bg-[rgba(6,12,23,0.76)] px-3 py-2 text-[10px] uppercase tracking-[0.06em] text-abj-text2">
+          <p className="truncate">
+            feed: <span className="text-abj-text1">{debugInfo.upstreamUrl}</span>
+          </p>
+          {debugInfo.upstreamTrace ? <p className="mt-1 truncate">{debugInfo.upstreamTrace}</p> : null}
+        </div>
+      ) : null}
 
       {isLoading ? (
         <div className="space-y-3">
@@ -391,13 +411,13 @@ export default function ProgramPage() {
                 }}
                 className={`overflow-hidden rounded-2xl border bg-abj-panel transition ${
                   active
-                    ? "border-[#C6A85B] shadow-[0_0_0_1px_rgba(198,168,91,0.4)]"
+                    ? "border-[#C6A85B] shadow-[0_0_0_1px_rgba(198,168,91,0.45),0_10px_24px_rgba(0,0,0,0.25)]"
                     : "border-[var(--abj-gold-dim)]"
                 }`}
               >
                 <button
                   type="button"
-                  className="w-full px-3 py-3 text-left sm:px-4"
+                  className="w-full px-3 py-3.5 text-left sm:px-4"
                   onClick={() => {
                     const nextExpanded = expanded ? null : block.id;
                     setExpandedId(nextExpanded);
@@ -406,21 +426,24 @@ export default function ProgramPage() {
                     }
                   }}
                 >
-                  <div className="flex gap-3">
+                  <div className="flex gap-4">
                     <Image
                       src={thumb}
                       alt=""
-                      className="h-[74px] w-[132px] flex-none rounded-lg border border-[rgba(255,255,255,0.08)] object-cover"
-                      width={132}
-                      height={74}
+                      className="h-[84px] w-[148px] flex-none rounded-lg border border-[rgba(255,255,255,0.08)] object-cover"
+                      width={148}
+                      height={84}
                       unoptimized
                     />
 
                     <div className="min-w-0 flex-1">
-                      <div className="mb-1 flex flex-wrap items-center gap-2">
+                      <div className="mb-1.5 flex flex-wrap items-center gap-2">
                         {active ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(166,58,58,0.25)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#F0B9B9]">
-                            <span className="abj-live-dot h-1.5 w-1.5 rounded-full bg-[#E25C5C]" />
+                            <span className="relative flex h-2.5 w-2.5 items-center justify-center">
+                              <span className="absolute inline-flex h-2.5 w-2.5 animate-ping rounded-full bg-[#E25C5C]/70" />
+                              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#E25C5C]" />
+                            </span>
                             Teď běží
                           </span>
                         ) : null}
@@ -444,9 +467,11 @@ export default function ProgramPage() {
                         </span>
                       </div>
 
-                      <p className="line-clamp-2 font-[var(--font-serif)] text-lg leading-tight text-abj-text1">{block.title}</p>
+                      <p className="line-clamp-2 font-[var(--font-serif)] text-[19px] leading-[1.15] text-abj-text1 sm:text-[20px]">
+                        {block.title}
+                      </p>
 
-                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-abj-text2">
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-abj-text2">
                         <span>{dateTime.dateLabel}</span>
                         <span className="font-semibold text-abj-gold">
                           {dateTime.timeLabel} – {endTime}
@@ -456,7 +481,7 @@ export default function ProgramPage() {
                       </div>
 
                       {block.editorial.tldr ? (
-                        <p className="mt-2 line-clamp-2 text-sm leading-snug text-[rgba(230,233,239,0.9)]">
+                        <p className="mt-2 line-clamp-2 text-[14px] leading-snug text-[rgba(230,233,239,0.9)]">
                           {block.editorial.tldr}
                         </p>
                       ) : null}
