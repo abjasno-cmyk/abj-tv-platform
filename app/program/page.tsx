@@ -520,8 +520,10 @@ export default function ProgramPage() {
                           <iframe
                             title={block.title}
                             className="aspect-video w-full"
-                            src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(block.videoId)}?rel=0&modestbranding=1&playsinline=1&autoplay=1`}
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(block.videoId)}?rel=0&modestbranding=1&playsinline=1&autoplay=1&iv_load_policy=3&disablekb=1&fs=0&loop=1&playlist=${encodeURIComponent(block.videoId)}`}
+                            allow="autoplay; encrypted-media; picture-in-picture"
+                            sandbox="allow-scripts allow-same-origin allow-presentation"
+                            referrerPolicy="origin"
                             allowFullScreen
                           />
                         )}
