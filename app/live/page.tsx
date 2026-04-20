@@ -194,19 +194,25 @@ export default async function LivePageServer(
   const hasRequestedVideoId = Boolean(requestedVideoId && requestedVideoId.trim().length > 0);
   const initialVideoId = hasRequestedVideoId
     ? requestedVideoId!.trim()
-    : requestedItem?.videoId ?? initialItem?.videoId ?? initialFromNowPlaying?.videoId ?? null;
+    : requestedItem?.videoId ??
+      initialFromNowPlaying?.videoId ??
+      initialItem?.videoId ??
+      null;
   const initialTitle = hasRequestedVideoId
     ? requestedItem?.title ??
       initialFromNowPlaying?.title ??
       initialItem?.title ??
       "Dnes není plánované vysílání"
     : requestedItem?.title ??
-      initialItem?.title ??
       initialFromNowPlaying?.title ??
+      initialItem?.title ??
       "Dnes není plánované vysílání";
   const initialChannelName = hasRequestedVideoId
     ? requestedItem?.channelName ?? initialFromNowPlaying?.channelName ?? initialItem?.channelName ?? ""
-    : requestedItem?.channelName ?? initialItem?.channelName ?? initialFromNowPlaying?.channelName ?? "";
+    : requestedItem?.channelName ??
+      initialFromNowPlaying?.channelName ??
+      initialItem?.channelName ??
+      "";
   const initialStartOffsetSeconds =
     requestedVideoId && requestedVideoId.trim().length > 0
       ? mapInitialTimelineOffsetSeconds(timeline, requestedVideoId.trim())
