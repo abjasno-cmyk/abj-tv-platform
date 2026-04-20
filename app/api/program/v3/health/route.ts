@@ -7,7 +7,8 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const probe = url.searchParams.get("probe") === "1";
     const includeFeedImport = url.searchParams.get("includeFeedImport") === "1";
-    const health = await getProgramHealth({ probeYouTube: probe });
+    const liveSmoke = url.searchParams.get("liveSmoke") === "1";
+    const health = await getProgramHealth({ probeYouTube: probe, includeLiveSmoke: liveSmoke });
     const enriched = includeFeedImport ? await attachProgramFeedImport(health) : health;
     const feedImportStatus =
       enriched && typeof enriched === "object" && "programFeedImport" in enriched
