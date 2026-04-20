@@ -409,7 +409,7 @@ export default function ProgramPage() {
                 ref={(node) => {
                   itemRefs.current[block.id] = node;
                 }}
-                className={`overflow-hidden rounded-2xl border bg-abj-panel transition ${
+                className={`overflow-hidden rounded-2xl border bg-abj-panel transition-all duration-300 ${
                   active
                     ? "border-[#C6A85B] shadow-[0_0_0_1px_rgba(198,168,91,0.45),0_10px_24px_rgba(0,0,0,0.25)]"
                     : "border-[var(--abj-gold-dim)]"
@@ -499,19 +499,22 @@ export default function ProgramPage() {
                 ) : null}
 
                 {expanded ? (
-                  <div className="space-y-3 border-t border-[rgba(198,168,91,0.18)] bg-[rgba(7,17,30,0.8)] px-3 py-3 sm:px-4">
+                  <div className="abj-expand-panel space-y-3 border-t border-[rgba(198,168,91,0.18)] bg-[rgba(7,17,30,0.8)] px-3 py-3 sm:px-4">
                     {block.videoId ? (
                       <div className="overflow-hidden rounded-xl border border-[rgba(198,168,91,0.2)] bg-black">
                         {!startedPlayback[block.id] ? (
                           <button
                             type="button"
-                            className="flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(198,168,91,0.28),rgba(0,0,0,0.8))] text-sm font-semibold text-abj-text1"
+                            className="abj-play-button group flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(198,168,91,0.28),rgba(0,0,0,0.8))] text-sm font-semibold text-abj-text1"
                             onClick={() => {
                               setStartedPlayback((prev) => ({ ...prev, [block.id]: true }));
                               void trackEditorialEvent(block.videoId!, "play");
                             }}
                           >
-                            Přehrát video
+                            <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(198,168,91,0.38)] bg-[rgba(6,12,23,0.68)] px-4 py-2 transition-all duration-200 group-hover:border-[rgba(198,168,91,0.62)] group-hover:bg-[rgba(10,20,36,0.92)] group-active:scale-[0.98]">
+                              <span className="inline-block h-2 w-2 rounded-full bg-[#C6A85B]" />
+                              Přehrát video
+                            </span>
                           </button>
                         ) : (
                           <iframe
