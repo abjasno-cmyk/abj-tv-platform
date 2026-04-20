@@ -25,6 +25,7 @@ type IngestRunRow = {
 
 type ProgramHealthOptions = {
   probeYouTube?: boolean;
+  includeLiveSmoke?: boolean;
 };
 
 function statusRank(status: HealthStatus): number {
@@ -42,6 +43,20 @@ function blockTypeCounts(blocks: ProgramBlock[]): Record<string, number> {
     acc[block.type] = (acc[block.type] ?? 0) + 1;
     return acc;
   }, {});
+}
+
+function pickActiveLiveLikeBlock(timeline: ProgramBlock[], now: Date): ProgramBlock | null {
+  const nowTs = now.getTime();
+  const active = timeline
+    .filter((block) => {
+      if (!block.videoId) return false;
+      if (block.type !== "live" && block.type !== "premiere") return false;
+      const startTs = new Date(block.start).getTime();
+      const endTs = new Date(block.end).getTime();
+      return Number.isFinite(startTs) && Number.isFinite(endTs) && startTs <= nowTs && nowTs < endTs;
+    })
+    .sort((a, b) => b.priority - a.priority || new Date(a.start).getTime() - new Date(b.start).getTime());
+  return active[0] ?? null;
 }
 
 function isMaybeSchemaMismatch(message: string): boolean {
@@ -161,6 +176,49 @@ export async function getProgramHealth(options: ProgramHealthOptions = {}) {
         channel: nowPlaying.channel,
       },
     });
+  }
+
+  if (options.includeLiveSmoke !== false) {
+    const activeLiveBlock = pickActiveLiveLikeBlock(timeline, now);
+    if (activeLiveBlock?.videoId && nowPlaying?.videoId && nowPlaying.videoId !== activeLiveBlock.videoId) {
+      checks.push({
+        id: "live-selection-consistency",
+        status: "error",
+        message:
+          "Neshoda výběru živého streamu: nowPlaying neodpovídá aktivnímu live/premiere bloku.",
+        details: {
+          nowPlaying: {
+            videoId: nowPlaying.videoId,
+            type: nowPlaying.type,
+            title: nowPlaying.title,
+            channel: nowPlaying.channel,
+          },
+          activeLive: {
+            videoId: activeLiveBlock.videoId,
+            type: activeLiveBlock.type,
+            title: activeLiveBlock.title,
+            channel: activeLiveBlock.channel,
+          },
+        },
+      });
+      overall = maxStatus(overall, "error");
+    } else if (activeLiveBlock?.videoId) {
+      checks.push({
+        id: "live-selection-consistency",
+        status: "ok",
+        message: "Výběr živého streamu je konzistentní.",
+        details: {
+          activeVideoId: activeLiveBlock.videoId,
+          activeType: activeLiveBlock.type,
+        },
+      });
+    } else {
+      checks.push({
+        id: "live-selection-consistency",
+        status: "ok",
+        message: "Aktivní live/premiere blok nyní není k dispozici.",
+      });
+    }
   }
 
   const activeSourcesQuery = await supabase
