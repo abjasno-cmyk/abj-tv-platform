@@ -1,7 +1,6 @@
 import { VideoCard } from "@/components/abj/VideoCard";
 import { VideoEditorial } from "@/components/abj/VideoEditorial";
 import {
-  TOPIC_ORDER,
   deduplicateVideos,
   deduplicateBySeen,
   groupChannelsForDisplay,
@@ -14,11 +13,6 @@ import type { FeedEditorial } from "@/lib/dayOverview";
 export const dynamic = "force-dynamic";
 
 const EMPTY_MESSAGE = "Zatím žádná nová videa";
-
-function topicLabel(topic: string): string {
-  if (!topic) return "";
-  return topic.charAt(0).toUpperCase() + topic.slice(1);
-}
 
 function buildEditorial(video: FeedVideo): FeedEditorial | null {
   const tldr = video.tldr?.trim();
@@ -40,30 +34,12 @@ async function loadStructuredFeed(): Promise<FeedResponse | null> {
   }
 }
 
-function pickTopicVideos(payload: FeedResponse): Array<{ topic: string; videos: FeedVideo[] }> {
-  return TOPIC_ORDER.map((topic) => {
-    const raw = payload.topics[topic] ?? [];
-    return {
-      topic,
-      videos: deduplicateVideos(raw).slice(0, 6),
-    };
-  }).filter((entry) => entry.videos.length > 0);
-}
-
 export default async function DayOverviewPage() {
   const payload = await loadStructuredFeed();
   const top = payload ? deduplicateVideos(payload.top).slice(0, 10) : [];
   const seenAcrossSections = new Set<string>();
   const topForDisplay = top.filter((video) => deduplicateBySeen(video, seenAcrossSections));
 
-  const topics = payload
-    ? pickTopicVideos(payload)
-        .map((entry) => ({
-          ...entry,
-          videos: entry.videos.filter((video) => deduplicateBySeen(video, seenAcrossSections)),
-        }))
-        .filter((entry) => entry.videos.length > 0)
-    : [];
   const channels = payload
     ? groupChannelsForDisplay(payload.channels)
         .map((entry) => ({
@@ -73,7 +49,7 @@ export default async function DayOverviewPage() {
         .filter((entry) => entry.videos.length > 0)
     : [];
 
-  const hasAnyContent = topForDisplay.length > 0 || topics.length > 0 || channels.length > 0;
+  const hasAnyContent = topForDisplay.length > 0 || channels.length > 0;
 
   return (
     <section className="space-y-12 py-6">
@@ -112,18 +88,43 @@ export default async function DayOverviewPage() {
         </section>
       ) : null}
 
-      {topics.length > 0 ? (
+      {channels.length > 0 ? (
         <section className="space-y-5">
-          <h2 className="text-lg font-semibold text-abj-text1">Podle témat</h2>
-          <div className="space-y-5">
-            {topics.map((entry) => (
-              <section key={entry.topic} className="space-y-3">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-abj-gold">
-                  {topicLabel(entry.topic)}
-                </h3>
+          <h2 className="text-lg font-semibold text-abj-text1">Podle kanálů</h2>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+            {channels.map((entry) => {
+              const sectionId = `channel-${entry.channel.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+              return (
+                <a
+                  key={`tile-${entry.channel}`}
+                  href={`#${sectionId}`}
+                  className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel px-3 py-2 transition-colors hover:bg-abj-card"
+                >
+                  <p className="truncate text-sm font-semibold uppercase tracking-[0.05em] text-abj-gold">
+                    {entry.channel}
+                  </p>
+                  <p className="mt-1 text-[11px] uppercase tracking-[0.08em] text-abj-text2">
+                    {entry.videos.length} videí
+                  </p>
+                </a>
+              );
+            })}
+          </div>
+          <div className="space-y-8">
+            {channels.map((entry) => (
+              <section
+                key={entry.channel}
+                id={`channel-${entry.channel.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                className="space-y-3 scroll-mt-20"
+              >
+                <div className="inline-flex rounded-lg border border-[var(--abj-gold-dim)] bg-abj-panel px-3 py-1.5">
+                  <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-abj-gold">
+                    {entry.channel}
+                  </h3>
+                </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {entry.videos.map((video) => (
-                    <div key={`${entry.topic}-${video.video_id}-${video.channel}`} className="space-y-2">
+                  {entry.videos.slice(0, 6).map((video) => (
+                    <div key={`${entry.channel}-${video.video_id}-${video.channel}`} className="space-y-2">
                       <VideoCard
                         videoId={video.video_id}
                         thumbnail={video.thumbnail}
@@ -136,37 +137,6 @@ export default async function DayOverviewPage() {
                       ) : null}
                     </div>
                   ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {channels.length > 0 ? (
-        <section className="space-y-5">
-          <h2 className="text-lg font-semibold text-abj-text1">Podle kanálů</h2>
-          <div className="space-y-6">
-            {channels.map((entry) => (
-              <section key={entry.channel} className="space-y-3">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-abj-gold">
-                  {entry.channel}
-                </h3>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {entry.videos.slice(0, 6).map((video) => (
-                      <div key={`${entry.channel}-${video.video_id}-${video.channel}`} className="space-y-2">
-                        <VideoCard
-                          videoId={video.video_id}
-                          thumbnail={video.thumbnail}
-                          title={video.title}
-                          channel={video.channel}
-                          publishedAt={video.published_at}
-                        />
-                        {buildEditorial(video) ? (
-                          <VideoEditorial videoId={video.video_id} {...buildEditorial(video)!} />
-                        ) : null}
-                      </div>
-                    ))}
                 </div>
               </section>
             ))}
