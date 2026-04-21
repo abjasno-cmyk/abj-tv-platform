@@ -656,6 +656,39 @@ function buildFallbackRecordedCandidate(candidates: ProgramCandidateVideo[]): Pr
   return bySubscribers[0] ?? null;
 }
 
+function pickDirectLiveCandidate(candidates: ProgramCandidateVideo[], now: Date): ProgramCandidateVideo | null {
+  const nowTs = now.getTime();
+  const maxAcceptedAgeMs = 18 * 60 * 60 * 1000;
+
+  const liveCandidates = candidates
+    .filter((video) => video.liveBroadcastContent === "live" && Boolean(video.videoId))
+    .map((video) => {
+      const startTs = new Date(
+        video.actualStartTime ?? video.scheduledStartTime ?? video.publishedAt ?? now.toISOString()
+      ).getTime();
+      return {
+        video,
+        startTs,
+      };
+    })
+    .filter(({ startTs }) => {
+      if (!Number.isFinite(startTs)) return false;
+      if (startTs > nowTs + 10 * 60_000) return false;
+      return nowTs - startTs <= maxAcceptedAgeMs;
+    })
+    .sort((a, b) => {
+      if (a.video.isABJ !== b.video.isABJ) {
+        return a.video.isABJ ? -1 : 1;
+      }
+      if (a.startTs !== b.startTs) return b.startTs - a.startTs;
+      const aPub = a.video.publishedAt ? new Date(a.video.publishedAt).getTime() : 0;
+      const bPub = b.video.publishedAt ? new Date(b.video.publishedAt).getTime() : 0;
+      return bPub - aPub;
+    });
+
+  return liveCandidates[0]?.video ?? null;
+}
+
 function shouldAvoidConsecutiveChannel(
   candidate: ProgramCandidateVideo,
   previousChannel: string | null
@@ -976,6 +1009,30 @@ function pickNowPlaying(timeline: ProgramBlock[], candidates: ProgramCandidateVi
     })
     .sort((a, b) => b.priority - a.priority || new Date(b.start).getTime() - new Date(a.start).getTime());
   if (activeLive.length > 0) return activeLive[0] ?? null;
+
+  const directLive = pickDirectLiveCandidate(candidates, now);
+  if (directLive) {
+    const directStart = new Date(
+      directLive.actualStartTime ?? directLive.scheduledStartTime ?? directLive.publishedAt ?? now.toISOString()
+    );
+    const safeStart =
+      Number.isFinite(directStart.getTime()) && directStart.getTime() <= nowTs ? directStart : now;
+    const duration = sanitizeDurationMin(directLive.durationMin > 0 ? directLive.durationMin : 180) || 180;
+    const end = addMinutes(safeStart, duration);
+    return {
+      id: `now-playing-live-${directLive.videoId}`,
+      start: safeStart.toISOString(),
+      end: end.toISOString(),
+      durationMin: sanitizeDurationMin(minutesDiff(safeStart, end)),
+      type: "live",
+      title: directLive.title,
+      videoId: directLive.videoId,
+      channel: directLive.channel,
+      isABJ: directLive.isABJ,
+      priority: directLive.isABJ ? 1300 : 1250,
+      thumbnail: directLive.thumbnail ?? undefined,
+    };
+  }
 
   const activeTimelineBlock = pickCurrentTimelineBlock(timeline, now);
   if (activeTimelineBlock?.videoId) return activeTimelineBlock;
