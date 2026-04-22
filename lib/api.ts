@@ -1,4 +1,5 @@
 const BASE = process.env.NEXT_PUBLIC_REPLIT_URL ?? "";
+const PROXY_BASE = "/api/replit";
 
 if (!BASE && typeof window !== "undefined") {
   console.warn("NEXT_PUBLIC_REPLIT_URL není nastaveno — API volání selžou.");
@@ -85,8 +86,10 @@ export interface HealthResponse {
 }
 
 export async function fetchProgram(date?: string): Promise<ProgramResponse | null> {
-  if (!BASE) return null;
-  const url = date ? `${BASE}/program?date=${encodeURIComponent(date)}` : `${BASE}/program`;
+  const qs = new URLSearchParams();
+  if (date) qs.set("date", date);
+  const query = qs.toString();
+  const url = query ? `${PROXY_BASE}/program?${query}` : `${PROXY_BASE}/program`;
   try {
     const res = await fetch(url, {
       next: { revalidate: 60 },
@@ -99,9 +102,8 @@ export async function fetchProgram(date?: string): Promise<ProgramResponse | nul
 }
 
 export async function fetchTomorrow(): Promise<ProgramResponse | null> {
-  if (!BASE) return null;
   try {
-    const res = await fetch(`${BASE}/program/tomorrow`);
+    const res = await fetch(`${PROXY_BASE}/program/tomorrow`);
     if (!res.ok) return null;
     return (await res.json()) as ProgramResponse;
   } catch {
@@ -115,7 +117,6 @@ export async function fetchFeed(params: {
   freshness?: string;
   urgency?: number;
 } = {}): Promise<FeedResponse | null> {
-  if (!BASE) return null;
   const qs = new URLSearchParams();
   if (params.page) qs.set("page", String(params.page));
   if (params.per_page) qs.set("per_page", String(params.per_page));
@@ -124,7 +125,7 @@ export async function fetchFeed(params: {
 
   try {
     const query = qs.toString();
-    const url = query ? `${BASE}/feed?${query}` : `${BASE}/feed`;
+    const url = query ? `${PROXY_BASE}/feed?${query}` : `${PROXY_BASE}/feed`;
     const res = await fetch(url, {
       cache: "no-store",
     });
@@ -136,9 +137,8 @@ export async function fetchFeed(params: {
 }
 
 export async function likePost(postId: string): Promise<boolean> {
-  if (!BASE) return false;
   try {
-    const res = await fetch(`${BASE}/feed/${encodeURIComponent(postId)}/like`, { method: "POST" });
+    const res = await fetch(`${PROXY_BASE}/feed/${encodeURIComponent(postId)}/like`, { method: "POST" });
     return res.ok;
   } catch {
     return false;
@@ -146,18 +146,16 @@ export async function likePost(postId: string): Promise<boolean> {
 }
 
 export async function trackView(postId: string): Promise<void> {
-  if (!BASE) return;
   try {
-    await fetch(`${BASE}/feed/${encodeURIComponent(postId)}/view`, { method: "POST" });
+    await fetch(`${PROXY_BASE}/feed/${encodeURIComponent(postId)}/view`, { method: "POST" });
   } catch {
     // Tracking není kritický.
   }
 }
 
 export async function fetchHealth(): Promise<HealthResponse | null> {
-  if (!BASE) return null;
   try {
-    const res = await fetch(`${BASE}/health`, { cache: "no-store" });
+    const res = await fetch(`${PROXY_BASE}/health`, { cache: "no-store" });
     if (!res.ok) return null;
     return (await res.json()) as HealthResponse;
   } catch {
