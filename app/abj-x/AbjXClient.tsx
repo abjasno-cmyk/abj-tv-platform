@@ -19,7 +19,8 @@ type FeedItem = {
 };
 
 function toItems(posts: FeedPost[]): FeedItem[] {
-  return posts.map((post) => ({
+  return posts
+    .map((post) => ({
     id: post.id,
     channel: post.channel_name || "Neznámý kanál",
     headline: post.headline?.trim() || post.what?.trim() || "Bez titulku",
@@ -30,7 +31,15 @@ function toItems(posts: FeedPost[]): FeedItem[] {
     urgency: post.urgency,
     createdAt: post.created_at,
     videoId: post.video_id,
-  }));
+    }))
+    .sort((a, b) => {
+      const aTs = new Date(a.createdAt).getTime();
+      const bTs = new Date(b.createdAt).getTime();
+      if (!Number.isFinite(aTs) && !Number.isFinite(bTs)) return 0;
+      if (!Number.isFinite(aTs)) return 1;
+      if (!Number.isFinite(bTs)) return -1;
+      return bTs - aTs;
+    });
 }
 
 function freshnessClass(value: FeedItem["freshness"]): string {

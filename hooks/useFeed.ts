@@ -72,7 +72,24 @@ export function useFeed(filter?: UseFeedFilter): UseFeedResult {
       });
       if (!data) return;
 
-      setPosts((prev) => [...prev, ...data.posts]);
+      setPosts((prev) => {
+        const merged = [...prev, ...data.posts];
+        merged.sort((a, b) => {
+          const aTs = Date.parse(a.created_at);
+          const bTs = Date.parse(b.created_at);
+          const safeATs = Number.isFinite(aTs) ? aTs : 0;
+          const safeBTs = Number.isFinite(bTs) ? bTs : 0;
+          return safeBTs - safeATs;
+        });
+        const deduped: FeedPost[] = [];
+        const seen = new Set<string>();
+        for (const item of merged) {
+          if (seen.has(item.id)) continue;
+          seen.add(item.id);
+          deduped.push(item);
+        }
+        return deduped;
+      });
       setHasMore(Boolean(data.has_more));
       setPage((prev) => prev + 1);
     } finally {
@@ -116,7 +133,16 @@ export function useFeed(filter?: UseFeedFilter): UseFeedResult {
       setPosts((prev) => {
         const existingIds = new Set(prev.map((post) => post.id));
         const trulyNew = data.posts.filter((post) => !existingIds.has(post.id));
-        return trulyNew.length > 0 ? [...trulyNew, ...prev] : prev;
+        if (trulyNew.length === 0) return prev;
+        const merged = [...trulyNew, ...prev];
+        merged.sort((a, b) => {
+          const aTs = Date.parse(a.created_at);
+          const bTs = Date.parse(b.created_at);
+          const safeATs = Number.isFinite(aTs) ? aTs : 0;
+          const safeBTs = Number.isFinite(bTs) ? bTs : 0;
+          return safeBTs - safeATs;
+        });
+        return merged;
       });
     };
 
@@ -160,7 +186,15 @@ export function useFeed(filter?: UseFeedFilter): UseFeedResult {
           setPosts((prev) => {
             const existingIds = new Set(prev.map((item) => item.id));
             if (existingIds.has(post.id)) return prev;
-            return [post, ...prev];
+            const merged = [post, ...prev];
+            merged.sort((a, b) => {
+              const aTs = Date.parse(a.created_at);
+              const bTs = Date.parse(b.created_at);
+              const safeATs = Number.isFinite(aTs) ? aTs : 0;
+              const safeBTs = Number.isFinite(bTs) ? bTs : 0;
+              return safeBTs - safeATs;
+            });
+            return merged;
           });
         } catch {
           // Ignore malformed SSE payload.
