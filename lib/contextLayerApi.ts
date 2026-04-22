@@ -27,7 +27,8 @@ export type PublishedVideo = {
   durationSeconds: number | null;
 };
 
-const API_BASE = "/api/replit";
+const REPLIT_BASE = "/api/replit";
+const ANALYTICAL_BASE = "/api/analytical";
 
 const videosCache: {
   data: PublishedVideo[] | null;
@@ -60,11 +61,60 @@ function readNumber(value: unknown): number | null {
 function asList(payload: unknown): unknown[] {
   if (Array.isArray(payload)) return payload;
   if (!isRecord(payload)) return [];
-  const candidates = [payload.videos, payload.items, payload.results, payload.data, payload.rows];
+  const candidates = [
+    payload.videos,
+    payload.items,
+    payload.results,
+    payload.data,
+    payload.rows,
+    payload.claims,
+    payload.context_blocks,
+    payload.contextBlocks,
+    payload.blocks,
+  ];
   for (const candidate of candidates) {
     if (Array.isArray(candidate)) return candidate;
   }
   return [];
+}
+
+type CandidateFetchResult = {
+  payload: unknown;
+  sourceUrl: string;
+};
+
+async function fetchFirstJsonCandidate(candidates: string[]): Promise<CandidateFetchResult | null> {
+  const errors: string[] = [];
+
+  for (const endpoint of candidates) {
+    try {
+      const response = await fetch(endpoint, { cache: "force-cache" });
+      if (response.status === 404) {
+        continue;
+      }
+
+      const payloadText = await response.text();
+      if (!response.ok) {
+        errors.push(`${endpoint} -> ${response.status}`);
+        continue;
+      }
+
+      try {
+        return {
+          payload: JSON.parse(payloadText) as unknown,
+          sourceUrl: endpoint,
+        };
+      } catch {
+        errors.push(`${endpoint} -> invalid-json`);
+        continue;
+      }
+    } catch {
+      errors.push(`${endpoint} -> network-error`);
+    }
+  }
+
+  if (errors.length === 0) return null;
+  throw new Error(`No valid JSON response from candidates: ${errors.join(" | ")}`);
 }
 
 function isPublishedRecord(row: Record<string, unknown>): boolean {
@@ -230,21 +280,20 @@ export async function fetchPublishedVideos(): Promise<PublishedVideo[]> {
   if (videosCache.data) return videosCache.data;
   if (videosCache.promise) return videosCache.promise;
 
-  videosCache.promise = fetch(`${API_BASE}/videos`, {
-    cache: "force-cache",
-  })
-    .then(async (response) => {
-      if (!response.ok) {
-        throw new Error(`GET /videos failed with ${response.status}`);
-      }
-      const payload = (await response.json()) as unknown;
+  videosCache.promise = (async () => {
+    const result = await fetchFirstJsonCandidate([`${REPLIT_BASE}/api/videos`, `${REPLIT_BASE}/videos`]);
+    if (!result) {
+      videosCache.data = [];
+      return [];
+    }
+
+    const payload = result.payload;
       const normalized = asList(payload)
         .map((row) => normalizeVideo(row))
         .filter((row): row is PublishedVideo => Boolean(row));
       videosCache.data = normalized;
       return normalized;
-    })
-    .finally(() => {
+  })().finally(() => {
       videosCache.promise = null;
     });
 
@@ -259,26 +308,29 @@ export async function fetchPublishedContext(videoId: string): Promise<ContextCla
     return contextPromiseCache.get(videoId) ?? Promise.resolve([]);
   }
 
-  const promise = fetch(`${API_BASE}/context/${encodeURIComponent(videoId)}`, {
-    cache: "force-cache",
-  })
-    .then(async (response) => {
-      if (response.status === 404) {
-        contextCache.set(videoId, []);
-        return [];
-      }
-      if (!response.ok) {
-        throw new Error(`GET /context/${videoId} failed with ${response.status}`);
-      }
-      const payload = (await response.json()) as unknown;
+  const encodedVideoId = encodeURIComponent(videoId);
+  const promise = (async () => {
+    const result = await fetchFirstJsonCandidate([
+      `${REPLIT_BASE}/context/${encodedVideoId}`,
+      `${ANALYTICAL_BASE}/context/${encodedVideoId}`,
+      `${ANALYTICAL_BASE}/api/context/${encodedVideoId}`,
+      `${ANALYTICAL_BASE}/context/video/${encodedVideoId}`,
+      `${ANALYTICAL_BASE}/context/job/${encodedVideoId}`,
+    ]);
+
+    if (!result) {
+      contextCache.set(videoId, []);
+      return [];
+    }
+
+    const payload = result.payload;
       const claims = asList(payload)
         .map((row, idx) => normalizeClaim(row, idx))
         .filter((row): row is ContextClaim => Boolean(row))
         .sort((a, b) => a.timeSeconds - b.timeSeconds);
       contextCache.set(videoId, claims);
       return claims;
-    })
-    .finally(() => {
+  })().finally(() => {
       contextPromiseCache.delete(videoId);
     });
 
