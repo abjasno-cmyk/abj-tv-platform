@@ -10,6 +10,7 @@ export function useProgram(date?: string) {
   const [program, setProgram] = useState<ProgramResponse | null>(null);
   const [loading, setLoading] = useState(() => true);
   const [stale, setStale] = useState(false);
+  const [reloadTick, setReloadTick] = useState(0);
   const revisionRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -44,7 +45,12 @@ export function useProgram(date?: string) {
       mounted = false;
       window.clearInterval(interval);
     };
-  }, [date]);
+  }, [date, reloadTick]);
 
-  return { program, loading, stale };
+  const reload = () => {
+    setLoading(true);
+    setReloadTick((prev) => prev + 1);
+  };
+
+  return { program, loading, stale, reload };
 }
