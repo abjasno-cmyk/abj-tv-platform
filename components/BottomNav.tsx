@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation";
 
 const tabs = [
   { href: "/live", label: "Vysílání", icon: "▶" },
-  { href: "/feed", label: "Program", icon: "◧" },
-  { href: "/conversations", label: "Hospoda", icon: "◉" },
+  { href: "/archiv", label: "Přehled dne", icon: "◧" },
+  { href: "/abj-x", label: "ABJ X", icon: "✦" },
+  { href: "/program", label: "Program", icon: "▦" },
 ];
 
 export function BottomNav() {
