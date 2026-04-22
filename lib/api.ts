@@ -73,6 +73,11 @@ export interface FeedResponse {
   posts: FeedPost[];
 }
 
+export type FeedEvent = {
+  type: "new_post";
+  post: FeedPost;
+};
+
 export interface HealthResponse {
   status: string;
   version: string;
@@ -165,4 +170,28 @@ export async function fetchHealth(): Promise<HealthResponse | null> {
 
 export function getReplitBaseUrl(): string {
   return BASE;
+}
+
+export function createFeedStream(params: { onEvent: (event: FeedEvent) => void; onError?: () => void }) {
+  const streamUrl = `${PROXY_BASE}/feed/stream`;
+  const eventSource = new EventSource(streamUrl);
+
+  eventSource.addEventListener("new_post", (event) => {
+    try {
+      const payload = JSON.parse((event as MessageEvent<string>).data) as FeedPost;
+      params.onEvent({ type: "new_post", post: payload });
+    } catch {
+      // Ignore invalid SSE payloads
+    }
+  });
+
+  if (params.onError) {
+    eventSource.addEventListener("error", () => {
+      params.onError?.();
+    });
+  }
+
+  return () => {
+    eventSource.close();
+  };
 }
