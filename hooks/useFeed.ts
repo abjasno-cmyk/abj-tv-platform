@@ -18,6 +18,7 @@ type UseFeedResult = {
   hasMore: boolean;
   loadMore: () => Promise<void>;
   reset: () => void;
+  sseConnected: boolean;
 };
 
 function makeFilterKey(filter: UseFeedFilter | undefined): string {
@@ -37,6 +38,7 @@ export function useFeed(filter?: UseFeedFilter): UseFeedResult {
   const hasMoreRef = useRef(true);
   const pageRef = useRef(1);
   const filterRef = useRef<UseFeedFilter | undefined>(filter);
+  const [sseConnected, setSseConnected] = useState(false);
 
   useEffect(() => {
     loadingRef.current = loading;
@@ -129,11 +131,68 @@ export function useFeed(filter?: UseFeedFilter): UseFeedResult {
     };
   }, [filterKey]);
 
+  useEffect(() => {
+    const usesFilter = Boolean(filterRef.current?.freshness || filterRef.current?.urgency);
+    if (usesFilter) return;
+
+    let cancelled = false;
+    let retries = 0;
+    let source: EventSource | null = null;
+
+    const connect = () => {
+      if (cancelled) return;
+      source = new EventSource("/api/replit/feed/stream");
+
+      source.addEventListener("open", () => {
+        retries = 0;
+        if (!cancelled) setSseConnected(true);
+      });
+
+      source.addEventListener("ping", () => {
+        if (!cancelled) setSseConnected(true);
+      });
+
+      source.addEventListener("new_post", (event) => {
+        try {
+          const post = JSON.parse(event.data) as FeedPost;
+          if (!post?.id || !post.video_id) return;
+          latestIdRef.current = post.id;
+          setPosts((prev) => {
+            const existingIds = new Set(prev.map((item) => item.id));
+            if (existingIds.has(post.id)) return prev;
+            return [post, ...prev];
+          });
+        } catch {
+          // Ignore malformed SSE payload.
+        }
+      });
+
+      source.addEventListener("error", () => {
+        setSseConnected(false);
+        source?.close();
+        source = null;
+        if (cancelled) return;
+        const delay = Math.min(30_000, 1_000 * 2 ** Math.min(retries, 5));
+        retries += 1;
+        window.setTimeout(connect, delay);
+      });
+    };
+
+    connect();
+
+    return () => {
+      cancelled = true;
+      setSseConnected(false);
+      source?.close();
+    };
+  }, [filterKey]);
+
   return {
     posts,
     loading,
     hasMore,
     loadMore,
     reset,
+    sseConnected,
   };
 }

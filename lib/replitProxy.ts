@@ -121,3 +121,7 @@ export async function proxyReplitGet(request: Request, upstreamPath: string): Pr
 export async function proxyReplitPost(request: Request, upstreamPath: string): Promise<Response> {
   return proxyReplitRequest(request, upstreamPath, "POST");
 }
+
+export function getReplitProxyBasePath(): string {
+  return "/api/replit";
+}
