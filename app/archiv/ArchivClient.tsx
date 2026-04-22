@@ -226,24 +226,6 @@ export function ArchivClient({ initialData }: ArchivClientProps) {
         </section>
       ) : null}
 
-      {topForDisplay.length > 0 ? (
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-abj-text1">ABJ X — textové zprávy</h2>
-          <div className="space-y-2">
-            {topForDisplay.slice(0, 12).map((video) => (
-              <article
-                key={`text-${video.video_id}-${video.channel}`}
-                className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel px-3 py-2.5"
-              >
-                <p className="text-[11px] uppercase tracking-[0.08em] text-abj-text2">{video.channel}</p>
-                <p className="mt-1 text-sm text-abj-text1">{video.tldr?.trim() || video.title}</p>
-                {video.context?.trim() ? <p className="mt-1 text-xs text-abj-text2">{video.context.trim()}</p> : null}
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
       {channels.length > 0 ? (
         <section className="space-y-5">
           <h2 className="text-lg font-semibold text-abj-text1">Podle kanálů</h2>
