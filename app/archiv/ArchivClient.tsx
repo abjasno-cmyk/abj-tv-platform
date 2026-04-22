@@ -66,6 +66,16 @@ function deduplicateVideos(videos: FeedVideoView[]): FeedVideoView[] {
   return deduped;
 }
 
+function parseTimestamp(value: string | null | undefined): number {
+  if (!value) return 0;
+  const ts = new Date(value).getTime();
+  return Number.isFinite(ts) ? ts : 0;
+}
+
+function sortNewest(videos: FeedVideoView[]): FeedVideoView[] {
+  return [...videos].sort((a, b) => parseTimestamp(b.published_at) - parseTimestamp(a.published_at));
+}
+
 function videoUniqKey(video: FeedVideoView): string {
   const idKey = video.video_id.trim();
   if (idKey) return idKey;
@@ -86,7 +96,7 @@ function groupChannelsForDisplay(
   return Object.entries(channels)
     .map(([channel, items]) => ({
       channel,
-      videos: deduplicateVideos(items),
+      videos: sortNewest(deduplicateVideos(items)),
     }))
     .sort((a, b) => b.videos.length - a.videos.length)
     .slice(0, limit);
@@ -123,11 +133,11 @@ type ArchivClientProps = {
 };
 
 function mergePayload(current: FeedResponseView, incoming: FeedResponseView): FeedResponseView {
-  const mergedTop = deduplicateVideos([...incoming.top, ...current.top]);
+  const mergedTop = sortNewest(deduplicateVideos([...incoming.top, ...current.top]));
   const mergedChannels: Record<string, FeedVideoView[]> = { ...current.channels };
 
   for (const [channel, videos] of Object.entries(incoming.channels)) {
-    mergedChannels[channel] = deduplicateVideos([...(mergedChannels[channel] ?? []), ...videos]);
+    mergedChannels[channel] = sortNewest(deduplicateVideos([...(mergedChannels[channel] ?? []), ...videos]));
   }
 
   return {
