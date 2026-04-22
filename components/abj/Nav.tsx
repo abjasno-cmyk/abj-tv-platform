@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
+import { ReplitHealthBadge } from "@/components/abj/ReplitHealthBadge";
 
 const NAV_LINKS = [
   { href: "/live", label: "Vysílání" },
@@ -69,6 +70,7 @@ export function ABJNav() {
         </div>
 
         <div className="flex items-center gap-5">
+          <ReplitHealthBadge />
           <div className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 animate-[blink_2s_ease-in-out_infinite] rounded-full bg-abj-red" />
             <span className="font-[var(--font-sans)] text-[10px] uppercase tracking-[0.12em] text-[#C07070]">

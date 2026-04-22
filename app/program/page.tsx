@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+import { useProgram } from "@/hooks/useProgram";
 
 type Freshness = "breaking" | "today" | "week" | "evergreen";
 
@@ -181,6 +183,11 @@ function normalizeProgramPayload(raw: unknown): ProgramFeedView {
   };
 }
 
+function mapApiProgramToView(program: ReturnType<typeof useProgram>["program"]): ProgramFeedView {
+  if (!program) return { blocks: [], validUntil: null };
+  return normalizeProgramPayload(program);
+}
+
 async function trackEditorialEvent(videoId: string, eventType: "expand" | "play" | "skip") {
   try {
     await fetch("/editorial/event", {
@@ -195,14 +202,6 @@ async function trackEditorialEvent(videoId: string, eventType: "expand" | "play"
   } catch {
     // Tracking failures are intentionally ignored.
   }
-}
-
-function getRefreshDelayMs(validUntil: string | null): number {
-  const validUntilMs = parseDateMs(validUntil);
-  if (validUntilMs === null) return REFRESH_EVERY_MS;
-  const untilExpiry = validUntilMs - Date.now();
-  if (untilExpiry <= 0) return 30_000;
-  return Math.max(30_000, Math.min(REFRESH_EVERY_MS, untilExpiry));
 }
 
 function ProgramRowSkeleton() {
@@ -221,66 +220,19 @@ function ProgramRowSkeleton() {
 }
 
 export default function ProgramPage() {
-  const [feed, setFeed] = useState<ProgramFeedView | null>(null);
+  const { program, loading: hookLoading, stale } = useProgram();
   const [debugInfo, setDebugInfo] = useState<ProgramDebugInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [manualReloadTick, setManualReloadTick] = useState(0);
   const [clockNow, setClockNow] = useState(() => new Date());
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [startedPlayback, setStartedPlayback] = useState<Record<string, boolean>>({});
   const itemRefs = useRef<Record<string, HTMLElement | null>>({});
   const skipTracked = useRef<Set<string>>(new Set());
-
-  const loadProgram = useCallback(
-    async (mode: "initial" | "refresh" | "retry" = "initial") => {
-      if (mode === "initial") setIsLoading(true);
-      if (mode === "refresh") setIsRefreshing(true);
-      setError(null);
-
-      try {
-        const response = await fetch("/api/program", {
-          method: "GET",
-          cache: "no-store",
-        });
-        setDebugInfo({
-          upstreamUrl: readString(response.headers.get("x-program-upstream")),
-          upstreamTrace: readString(response.headers.get("x-program-upstream-trace")),
-        });
-
-        const rawText = await response.text();
-        let json: unknown;
-        try {
-          json = rawText ? (JSON.parse(rawText) as unknown) : {};
-        } catch {
-          throw new Error("Neplatná odpověď programu (není JSON).");
-        }
-
-        if (!response.ok) {
-          const errObj = isObjectLike(json) ? json : {};
-          throw new Error(
-            readString(errObj.error) ??
-              `Program feed vrátil chybu ${response.status}.`,
-          );
-        }
-
-        setFeed(normalizeProgramPayload(json));
-      } catch (cause) {
-        const message =
-          cause instanceof Error ? cause.message : "Nepodařilo se načíst program.";
-        setDebugInfo(null);
-        setError(message);
-      } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
-      }
-    },
-    [],
-  );
-
-  useEffect(() => {
-    void loadProgram("initial");
-  }, [loadProgram]);
+  const feed = useMemo(() => mapApiProgramToView(program), [program]);
+  const rows = useMemo(() => feed.blocks ?? [], [feed.blocks]);
+  const isLoading = hookLoading && rows.length === 0;
+  const error = !hookLoading && rows.length === 0 ? "Replit program feed je prázdný nebo nedostupný." : null;
+  const isRefreshing = stale || manualReloadTick > 0;
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -290,16 +242,14 @@ export default function ProgramPage() {
   }, []);
 
   useEffect(() => {
-    const delay = getRefreshDelayMs(feed?.validUntil ?? null);
-    const timer = window.setTimeout(() => {
-      void loadProgram("refresh");
-    }, delay);
+    if (manualReloadTick <= 0) return;
+    const timer = window.setTimeout(() => setManualReloadTick(0), 1500);
     return () => window.clearTimeout(timer);
-  }, [feed?.validUntil, loadProgram]);
+  }, [manualReloadTick]);
 
   useEffect(() => {
-    if (!expandedId || !feed) return;
-    const block = feed.blocks.find((item) => item.id === expandedId);
+    if (!expandedId) return;
+    const block = rows.find((item) => item.id === expandedId);
     if (!block?.videoId) return;
     const skipKey = `${block.videoId}:skip`;
     if (skipTracked.current.has(skipKey)) return;
@@ -317,10 +267,9 @@ export default function ProgramPage() {
     }, 3_000);
 
     return () => window.clearTimeout(timer);
-  }, [expandedId, feed]);
+  }, [expandedId, rows]);
 
   const nowMs = clockNow.getTime();
-  const rows = useMemo(() => feed?.blocks ?? [], [feed]);
   const showDebugBadge = process.env.NODE_ENV !== "production";
   const currentBlockId = useMemo(() => {
     for (const block of rows) {
@@ -355,6 +304,11 @@ export default function ProgramPage() {
           {debugInfo.upstreamTrace ? <p className="mt-1 truncate">{debugInfo.upstreamTrace}</p> : null}
         </div>
       ) : null}
+      {stale ? (
+        <div className="mb-4 rounded-lg border border-[rgba(217,195,122,0.35)] bg-[rgba(65,55,19,0.35)] px-3 py-2 text-xs text-[#E9DBA8]">
+          Feed je stale (po `stale_after`). Zvaž kontrolu Replit `/health`.
+        </div>
+      ) : null}
 
       {isLoading ? (
         <div className="space-y-3">
@@ -370,7 +324,8 @@ export default function ProgramPage() {
             type="button"
             className="mt-3 rounded-lg border border-[rgba(198,168,91,0.4)] bg-[rgba(198,168,91,0.16)] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.08em] text-abj-text1"
             onClick={() => {
-              void loadProgram("retry");
+              setManualReloadTick((prev) => prev + 1);
+              window.location.reload();
             }}
           >
             Zkusit znovu

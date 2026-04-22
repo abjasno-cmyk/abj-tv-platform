@@ -164,3 +164,7 @@ export async function fetchHealth(): Promise<HealthResponse | null> {
     return null;
   }
 }
+
+export function getReplitBaseUrl(): string {
+  return BASE;
+}
