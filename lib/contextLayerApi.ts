@@ -154,7 +154,7 @@ function normalizeVideo(row: unknown): PublishedVideo | null {
     extractYoutubeId(readString(row.youtubeId) ?? "") ??
     extractYoutubeId(readString(row.external_video_id) ?? "") ??
     extractYoutubeId(readString(row.externalVideoId) ?? "") ??
-    extractYoutubeId(id);
+    extractYoutubeId(id ?? "");
   const directUrl =
     readString(row.video_url) ??
     readString(row.videoUrl) ??

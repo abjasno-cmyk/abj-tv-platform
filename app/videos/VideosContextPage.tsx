@@ -131,7 +131,7 @@ function ContextPanel({
   collapsed,
   onToggleCollapse,
 }: ContextPanelProps) {
-  const itemRefs = useRef(new Map<string, HTMLDivElement>());
+  const itemRefs = useRef(new Map<string, HTMLElement>());
 
   useEffect(() => {
     if (!activeClaimId) return;
@@ -285,6 +285,7 @@ export function VideosContextPage() {
     getDuration: () => number;
     seekTo: (seconds: number, allowSeekAhead?: boolean) => void;
   } | null>(null);
+  const contextRequestTokenRef = useRef(0);
   const youtubeOpts = useMemo<YouTubeProps["opts"]>(
     () => ({
       width: "100%",
@@ -320,25 +321,57 @@ export function VideosContextPage() {
     return Math.max(duration, claimTail + 15);
   }, [claims, duration]);
 
-  useEffect(() => {
+  const resetVideoScopedState = (nextDuration: number | null) => {
+    contextRequestTokenRef.current += 1;
+    youtubePlayerRef.current = null;
     setCurrentTime(0);
-    setDuration(selectedVideo?.durationSeconds ?? 0);
+    setDuration(nextDuration ?? 0);
     setPlayerReady(false);
     setClaims([]);
     setContextLoading(false);
     setContextUnavailable(false);
     setContextError(false);
-  }, [selectedVideoId, selectedVideo?.durationSeconds]);
+  };
+
+  const loadContextForVideo = (videoId: string) => {
+    const requestToken = ++contextRequestTokenRef.current;
+    setContextLoading(true);
+    setContextUnavailable(false);
+    setContextError(false);
+
+    void fetchPublishedContext(videoId)
+      .then((rows) => {
+        if (requestToken !== contextRequestTokenRef.current) return;
+        setClaims(rows);
+        setContextUnavailable(rows.length === 0);
+      })
+      .catch((error: unknown) => {
+        if (requestToken !== contextRequestTokenRef.current) return;
+        console.error("context-fetch-failed", error);
+        setClaims([]);
+        setContextError(true);
+      })
+      .finally(() => {
+        if (requestToken !== contextRequestTokenRef.current) return;
+        setContextLoading(false);
+      });
+  };
+
+  const handleVideoSelection = (videoId: string) => {
+    const nextVideo = videos.find((video) => video.id === videoId) ?? null;
+    resetVideoScopedState(nextVideo?.durationSeconds ?? null);
+    setSelectedVideoId(videoId);
+  };
 
   useEffect(() => {
     let cancelled = false;
-    setVideosLoading(true);
     void fetchPublishedVideos()
       .then((rows) => {
         if (cancelled) return;
         setVideos(rows);
         const preferredId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("videoId") : null;
         const initial = chooseInitialVideo(rows, preferredId);
+        resetVideoScopedState(initial?.durationSeconds ?? null);
         setSelectedVideoId(initial?.id ?? null);
       })
       .catch((error: unknown) => {
@@ -354,40 +387,6 @@ export function VideosContextPage() {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    if (!selectedVideoId || !playerReady) {
-      setClaims([]);
-      setContextUnavailable(false);
-      return;
-    }
-
-    let cancelled = false;
-    setContextLoading(true);
-    setContextUnavailable(false);
-    setContextError(false);
-
-    // Context načítáme až po připravení přehrávače konkrétního videa.
-    void fetchPublishedContext(selectedVideoId)
-      .then((rows) => {
-        if (cancelled) return;
-        setClaims(rows);
-        setContextUnavailable(rows.length === 0);
-      })
-      .catch((error: unknown) => {
-        console.error("context-fetch-failed", error);
-        if (cancelled) return;
-        setClaims([]);
-        setContextError(true);
-      })
-      .finally(() => {
-        if (!cancelled) setContextLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [playerReady, selectedVideoId]);
 
   useEffect(() => {
     if (playerMode !== "html5") return;
@@ -477,7 +476,7 @@ export function VideosContextPage() {
           <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel p-3">
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-base font-medium text-abj-text1">{selectedVideo.title}</h2>
-              <VideoSelect videos={videos} currentId={selectedVideo.id} onChange={(videoId) => setSelectedVideoId(videoId)} />
+              <VideoSelect videos={videos} currentId={selectedVideo.id} onChange={handleVideoSelection} />
             </div>
 
             <div className="relative overflow-hidden rounded-lg bg-black">
@@ -492,6 +491,7 @@ export function VideosContextPage() {
                       youtubePlayerRef.current = event.target;
                       setDuration(toSeconds(event.target.getDuration()) || selectedVideo.durationSeconds || 0);
                       setPlayerReady(true);
+                      loadContextForVideo(selectedVideo.id);
                     }}
                   />
                 </div>
@@ -505,6 +505,7 @@ export function VideosContextPage() {
                     const target = event.currentTarget;
                     setDuration(toSeconds(target.duration) || selectedVideo.durationSeconds || 0);
                     setPlayerReady(true);
+                    loadContextForVideo(selectedVideo.id);
                   }}
                 >
                   <source src={selectedVideo.videoUrl} />
