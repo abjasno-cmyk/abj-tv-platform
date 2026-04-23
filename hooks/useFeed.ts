@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { fetchFeed, type FeedPost } from "@/lib/api";
 
@@ -33,12 +33,52 @@ export function useFeed(filter?: UseFeedFilter): UseFeedResult {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
-  const latestIdRef = useRef<string | null>(null);
+  const latestMarkerRef = useRef<string | null>(null);
   const loadingRef = useRef(false);
   const hasMoreRef = useRef(true);
   const pageRef = useRef(1);
   const filterRef = useRef<UseFeedFilter | undefined>(filter);
   const [sseConnected, setSseConnected] = useState(false);
+
+  const getPostTimestamp = useCallback((post: FeedPost): number => {
+    const editorialAt = (post as FeedPost & { editorial_at?: string | null }).editorial_at;
+    const updatedAt = (post as FeedPost & { updated_at?: string | null }).updated_at;
+    const candidates = [editorialAt, updatedAt, post.created_at, post.video_published_at];
+    for (const candidate of candidates) {
+      if (!candidate) continue;
+      const parsed = Date.parse(candidate);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+    return 0;
+  }, []);
+
+  const makePostMarker = useCallback((post: FeedPost | null | undefined): string | null => {
+    if (!post) return null;
+    const ts = getPostTimestamp(post);
+    return `${post.id}|${ts}|${post.headline}|${post.what}|${post.why ?? ""}|${post.impact ?? ""}`;
+  }, [getPostTimestamp]);
+
+  const mergePosts = useCallback((current: FeedPost[], incoming: FeedPost[]): FeedPost[] => {
+    const byId = new Map<string, FeedPost>();
+    for (const post of current) {
+      byId.set(post.id, post);
+    }
+    for (const post of incoming) {
+      const existing = byId.get(post.id);
+      if (!existing) {
+        byId.set(post.id, post);
+        continue;
+      }
+      byId.set(post.id, {
+        ...existing,
+        ...post,
+        // Ensure stable id in case upstream sends inconsistent payload.
+        id: existing.id,
+      });
+    }
+
+    return [...byId.values()].sort((a, b) => getPostTimestamp(b) - getPostTimestamp(a));
+  }, [getPostTimestamp]);
 
   useEffect(() => {
     loadingRef.current = loading;
@@ -58,7 +98,7 @@ export function useFeed(filter?: UseFeedFilter): UseFeedResult {
     filterRef.current = filter;
   }, [filterKey, filter]);
 
-  const loadMore = async () => {
+  const loadMore = useCallback(async () => {
     if (loadingRef.current || !hasMoreRef.current) return;
     loadingRef.current = true;
     setLoading(true);
@@ -71,38 +111,21 @@ export function useFeed(filter?: UseFeedFilter): UseFeedResult {
         urgency: filterRef.current?.urgency,
       });
       if (!data) return;
-
-      setPosts((prev) => {
-        const merged = [...prev, ...data.posts];
-        merged.sort((a, b) => {
-          const aTs = Date.parse(a.created_at);
-          const bTs = Date.parse(b.created_at);
-          const safeATs = Number.isFinite(aTs) ? aTs : 0;
-          const safeBTs = Number.isFinite(bTs) ? bTs : 0;
-          return safeBTs - safeATs;
-        });
-        const deduped: FeedPost[] = [];
-        const seen = new Set<string>();
-        for (const item of merged) {
-          if (seen.has(item.id)) continue;
-          seen.add(item.id);
-          deduped.push(item);
-        }
-        return deduped;
-      });
+      setPosts((prev) => mergePosts(prev, data.posts));
+      latestMarkerRef.current = makePostMarker(data.posts[0]);
       setHasMore(Boolean(data.has_more));
       setPage((prev) => prev + 1);
     } finally {
       loadingRef.current = false;
       setLoading(false);
     }
-  };
+  }, [makePostMarker, mergePosts]);
 
   const reset = () => {
     setPosts([]);
     setPage(1);
     setHasMore(true);
-    latestIdRef.current = null;
+    latestMarkerRef.current = null;
     pageRef.current = 1;
     hasMoreRef.current = true;
   };
@@ -126,24 +149,11 @@ export function useFeed(filter?: UseFeedFilter): UseFeedResult {
       });
       if (!data || data.posts.length === 0 || cancelled) return;
 
-      const newest = data.posts[0]?.id ?? null;
-      if (!newest || newest === latestIdRef.current) return;
-      latestIdRef.current = newest;
+      const newestMarker = makePostMarker(data.posts[0]);
+      if (!newestMarker || newestMarker === latestMarkerRef.current) return;
+      latestMarkerRef.current = newestMarker;
 
-      setPosts((prev) => {
-        const existingIds = new Set(prev.map((post) => post.id));
-        const trulyNew = data.posts.filter((post) => !existingIds.has(post.id));
-        if (trulyNew.length === 0) return prev;
-        const merged = [...trulyNew, ...prev];
-        merged.sort((a, b) => {
-          const aTs = Date.parse(a.created_at);
-          const bTs = Date.parse(b.created_at);
-          const safeATs = Number.isFinite(aTs) ? aTs : 0;
-          const safeBTs = Number.isFinite(bTs) ? bTs : 0;
-          return safeBTs - safeATs;
-        });
-        return merged;
-      });
+      setPosts((prev) => mergePosts(prev, data.posts));
     };
 
     void initialLoad();
@@ -155,7 +165,7 @@ export function useFeed(filter?: UseFeedFilter): UseFeedResult {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [filterKey]);
+  }, [filterKey, loadMore, makePostMarker, mergePosts]);
 
   useEffect(() => {
     const usesFilter = Boolean(filterRef.current?.freshness || filterRef.current?.urgency);
@@ -182,20 +192,8 @@ export function useFeed(filter?: UseFeedFilter): UseFeedResult {
         try {
           const post = JSON.parse(event.data) as FeedPost;
           if (!post?.id || !post.video_id) return;
-          latestIdRef.current = post.id;
-          setPosts((prev) => {
-            const existingIds = new Set(prev.map((item) => item.id));
-            if (existingIds.has(post.id)) return prev;
-            const merged = [post, ...prev];
-            merged.sort((a, b) => {
-              const aTs = Date.parse(a.created_at);
-              const bTs = Date.parse(b.created_at);
-              const safeATs = Number.isFinite(aTs) ? aTs : 0;
-              const safeBTs = Number.isFinite(bTs) ? bTs : 0;
-              return safeBTs - safeATs;
-            });
-            return merged;
-          });
+          latestMarkerRef.current = makePostMarker(post);
+          setPosts((prev) => mergePosts(prev, [post]));
         } catch {
           // Ignore malformed SSE payload.
         }
@@ -219,7 +217,7 @@ export function useFeed(filter?: UseFeedFilter): UseFeedResult {
       setSseConnected(false);
       source?.close();
     };
-  }, [filterKey]);
+  }, [filterKey, makePostMarker, mergePosts]);
 
   return {
     posts,
