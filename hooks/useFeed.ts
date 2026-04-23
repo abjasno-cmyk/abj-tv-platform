@@ -34,6 +34,7 @@ export function useFeed(filter?: UseFeedFilter): UseFeedResult {
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const latestMarkerRef = useRef<string | null>(null);
+  const topBatchMarkerRef = useRef<string | null>(null);
   const loadingRef = useRef(false);
   const hasMoreRef = useRef(true);
   const pageRef = useRef(1);
@@ -113,6 +114,7 @@ export function useFeed(filter?: UseFeedFilter): UseFeedResult {
       if (!data) return;
       setPosts((prev) => mergePosts(prev, data.posts));
       latestMarkerRef.current = makePostMarker(data.posts[0]);
+      topBatchMarkerRef.current = data.posts.slice(0, 5).map((post) => makePostMarker(post) ?? "").join("||");
       setHasMore(Boolean(data.has_more));
       setPage((prev) => prev + 1);
     } finally {
@@ -150,8 +152,12 @@ export function useFeed(filter?: UseFeedFilter): UseFeedResult {
       if (!data || data.posts.length === 0 || cancelled) return;
 
       const newestMarker = makePostMarker(data.posts[0]);
-      if (!newestMarker || newestMarker === latestMarkerRef.current) return;
-      latestMarkerRef.current = newestMarker;
+      const nextBatchMarker = data.posts.slice(0, 5).map((post) => makePostMarker(post) ?? "").join("||");
+      if (nextBatchMarker && nextBatchMarker === topBatchMarkerRef.current) return;
+      topBatchMarkerRef.current = nextBatchMarker || null;
+      if (newestMarker) {
+        latestMarkerRef.current = newestMarker;
+      }
 
       setPosts((prev) => mergePosts(prev, data.posts));
     };
@@ -193,6 +199,7 @@ export function useFeed(filter?: UseFeedFilter): UseFeedResult {
           const post = JSON.parse(event.data) as FeedPost;
           if (!post?.id || !post.video_id) return;
           latestMarkerRef.current = makePostMarker(post);
+          topBatchMarkerRef.current = null;
           setPosts((prev) => mergePosts(prev, [post]));
         } catch {
           // Ignore malformed SSE payload.
