@@ -63,6 +63,8 @@ export interface FeedPost {
   comment_count: number;
   video_published_at: string | null;
   created_at: string;
+  editorial_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface FeedResponse {
@@ -72,6 +74,22 @@ export interface FeedResponse {
   has_more: boolean;
   posts: FeedPost[];
 }
+
+type StructuredFeedVideo = {
+  video_id: string;
+  title: string;
+  channel: string;
+  published_at: string;
+  topics: string[];
+  tldr?: string;
+  context?: string;
+  impact?: string;
+  freshness: "breaking" | "today" | "week" | "evergreen";
+};
+
+type StructuredFeedResponse = {
+  top?: StructuredFeedVideo[];
+};
 
 export type FeedEvent = {
   type: "new_post";
@@ -122,6 +140,51 @@ export async function fetchFeed(params: {
   freshness?: string;
   urgency?: number;
 } = {}): Promise<FeedResponse | null> {
+  const mapFreshnessToUrgency = (freshness: FeedPost["freshness"]): FeedPost["urgency"] => {
+    if (freshness === "breaking") return 3;
+    if (freshness === "today") return 2;
+    return 1;
+  };
+
+  const mapStructuredFallback = (payload: StructuredFeedResponse): FeedResponse => {
+    const rows = Array.isArray(payload.top) ? payload.top : [];
+    const posts: FeedPost[] = rows.map((row, index) => {
+      const createdAt = row.published_at || new Date(0).toISOString();
+      return {
+        id: `${row.video_id}-${createdAt}-${index}`,
+        video_id: row.video_id,
+        channel_name: row.channel || "Neznámý kanál",
+        category: null,
+        language: "cs",
+        headline: row.title || "Bez titulku",
+        what: row.tldr || row.title || "",
+        why: row.context ?? null,
+        impact: row.impact ?? null,
+        quote: null,
+        quote_author: null,
+        timestamp_s: null,
+        freshness: row.freshness,
+        urgency: mapFreshnessToUrgency(row.freshness),
+        confidence: 0.5,
+        has_transcript: false,
+        tags: Array.isArray(row.topics) ? row.topics : [],
+        like_count: 0,
+        view_count: 0,
+        comment_count: 0,
+        video_published_at: row.published_at || null,
+        created_at: createdAt,
+      };
+    });
+
+    return {
+      total: posts.length,
+      page: 1,
+      per_page: posts.length,
+      has_more: false,
+      posts,
+    };
+  };
+
   const qs = new URLSearchParams();
   if (params.page) qs.set("page", String(params.page));
   if (params.per_page) qs.set("per_page", String(params.per_page));
@@ -134,10 +197,22 @@ export async function fetchFeed(params: {
     const res = await fetch(url, {
       cache: "no-store",
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const fallbackRes = await fetch("/feed", { cache: "no-store" });
+      if (!fallbackRes.ok) return null;
+      const fallbackPayload = (await fallbackRes.json()) as StructuredFeedResponse;
+      return mapStructuredFallback(fallbackPayload);
+    }
     return (await res.json()) as FeedResponse;
   } catch {
-    return null;
+    try {
+      const fallbackRes = await fetch("/feed", { cache: "no-store" });
+      if (!fallbackRes.ok) return null;
+      const fallbackPayload = (await fallbackRes.json()) as StructuredFeedResponse;
+      return mapStructuredFallback(fallbackPayload);
+    } catch {
+      return null;
+    }
   }
 }
 
