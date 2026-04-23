@@ -15,8 +15,21 @@ type FeedItem = {
   freshness: "breaking" | "today" | "week" | "evergreen";
   urgency: 1 | 2 | 3;
   createdAt: string;
+  displayAt: string;
   videoId: string;
 };
+
+function getPostTimestamp(post: FeedPost): number {
+  const editorialAt = (post as FeedPost & { editorial_at?: string | null }).editorial_at;
+  const updatedAt = (post as FeedPost & { updated_at?: string | null }).updated_at;
+  const candidates = [editorialAt, updatedAt, post.created_at, post.video_published_at];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const parsed = Date.parse(candidate);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return 0;
+}
 
 function toItems(posts: FeedPost[]): FeedItem[] {
   return posts
@@ -30,11 +43,17 @@ function toItems(posts: FeedPost[]): FeedItem[] {
     freshness: post.freshness,
     urgency: post.urgency,
     createdAt: post.created_at,
+    displayAt:
+      (post as FeedPost & { editorial_at?: string | null }).editorial_at ??
+      (post as FeedPost & { updated_at?: string | null }).updated_at ??
+      post.created_at,
     videoId: post.video_id,
     }))
     .sort((a, b) => {
-      const aTs = new Date(a.createdAt).getTime();
-      const bTs = new Date(b.createdAt).getTime();
+      const sourceA = posts.find((post) => post.id === a.id) ?? null;
+      const sourceB = posts.find((post) => post.id === b.id) ?? null;
+      const aTs = sourceA ? getPostTimestamp(sourceA) : new Date(a.displayAt).getTime();
+      const bTs = sourceB ? getPostTimestamp(sourceB) : new Date(b.displayAt).getTime();
       if (!Number.isFinite(aTs) && !Number.isFinite(bTs)) return 0;
       if (!Number.isFinite(aTs)) return 1;
       if (!Number.isFinite(bTs)) return -1;
@@ -94,7 +113,7 @@ export function AbjXClient() {
                   {item.freshness}
                 </span>
                 <span className="text-[11px] uppercase tracking-[0.08em] text-abj-text2">{item.channel}</span>
-                <span className="text-[11px] text-abj-text2">{formatCreatedAt(item.createdAt)}</span>
+                <span className="text-[11px] text-abj-text2">{formatCreatedAt(item.displayAt)}</span>
               </div>
 
               <h2 className="text-base font-semibold text-abj-text1 sm:text-lg">{item.headline}</h2>

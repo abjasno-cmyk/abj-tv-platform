@@ -63,6 +63,8 @@ export interface FeedPost {
   comment_count: number;
   video_published_at: string | null;
   created_at: string;
+  editorial_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface FeedResponse {
