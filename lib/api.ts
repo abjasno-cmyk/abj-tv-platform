@@ -108,6 +108,29 @@ export interface HealthResponse {
   rebuild_running: boolean;
 }
 
+function getFeedPostTimestamp(post: FeedPost): number {
+  const editorialAt = (post as FeedPost & { editorial_at?: string | null }).editorial_at;
+  const updatedAt = (post as FeedPost & { updated_at?: string | null }).updated_at;
+  const candidates = [editorialAt, updatedAt, post.created_at, post.video_published_at];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const parsed = Date.parse(candidate);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return 0;
+}
+
+function dedupeAndSortFeedPosts(posts: FeedPost[]): FeedPost[] {
+  const byId = new Map<string, FeedPost>();
+  for (const post of posts) {
+    const existing = byId.get(post.id);
+    if (!existing || getFeedPostTimestamp(post) >= getFeedPostTimestamp(existing)) {
+      byId.set(post.id, post);
+    }
+  }
+  return [...byId.values()].sort((a, b) => getFeedPostTimestamp(b) - getFeedPostTimestamp(a));
+}
+
 export async function fetchProgram(date?: string): Promise<ProgramResponse | null> {
   const qs = new URLSearchParams();
   if (date) qs.set("date", date);
@@ -181,30 +204,11 @@ export async function fetchFeed(params: {
       page: 1,
       per_page: posts.length,
       has_more: false,
-      posts,
+      posts: dedupeAndSortFeedPosts(posts),
     };
   };
 
-  const qs = new URLSearchParams();
-  if (params.page) qs.set("page", String(params.page));
-  if (params.per_page) qs.set("per_page", String(params.per_page));
-  if (params.freshness) qs.set("freshness", params.freshness);
-  if (params.urgency) qs.set("urgency", String(params.urgency));
-
-  try {
-    const query = qs.toString();
-    const url = query ? `${PROXY_BASE}/feed?${query}` : `${PROXY_BASE}/feed`;
-    const res = await fetch(url, {
-      cache: "no-store",
-    });
-    if (!res.ok) {
-      const fallbackRes = await fetch("/feed", { cache: "no-store" });
-      if (!fallbackRes.ok) return null;
-      const fallbackPayload = (await fallbackRes.json()) as StructuredFeedResponse;
-      return mapStructuredFallback(fallbackPayload);
-    }
-    return (await res.json()) as FeedResponse;
-  } catch {
+  const fetchStructuredFallback = async (): Promise<FeedResponse | null> => {
     try {
       const fallbackRes = await fetch("/feed", { cache: "no-store" });
       if (!fallbackRes.ok) return null;
@@ -213,7 +217,74 @@ export async function fetchFeed(params: {
     } catch {
       return null;
     }
+  };
+
+  const fetchPrimaryFeed = async (request: {
+    page?: number;
+    per_page?: number;
+    freshness?: string;
+    urgency?: number;
+  }): Promise<FeedResponse | null> => {
+    const qs = new URLSearchParams();
+    if (request.page) qs.set("page", String(request.page));
+    if (request.per_page) qs.set("per_page", String(request.per_page));
+    if (request.freshness) qs.set("freshness", request.freshness);
+    if (request.urgency) qs.set("urgency", String(request.urgency));
+
+    const query = qs.toString();
+    const url = query ? `${PROXY_BASE}/feed?${query}` : `${PROXY_BASE}/feed`;
+    try {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) return null;
+      const payload = (await res.json()) as FeedResponse;
+      return {
+        ...payload,
+        posts: dedupeAndSortFeedPosts(payload.posts),
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  const targetPage = params.page ?? 1;
+  const targetPerPage = params.per_page ?? 20;
+  const canAggregateByUrgency = !params.freshness && !params.urgency;
+
+  if (canAggregateByUrgency) {
+    const bucketPerPage = Math.max(2, Math.ceil(targetPerPage / 3));
+    const bucketResponses = await Promise.all(
+      ([3, 2, 1] as const).map((urgency) =>
+        fetchPrimaryFeed({
+          page: targetPage,
+          per_page: bucketPerPage,
+          urgency,
+        })
+      )
+    );
+    const available = bucketResponses.filter((response): response is FeedResponse => Boolean(response));
+    if (available.length > 0) {
+      const merged = dedupeAndSortFeedPosts(available.flatMap((response) => response.posts));
+      return {
+        total: merged.length,
+        page: targetPage,
+        per_page: targetPerPage,
+        has_more: available.some((response) => response.has_more) || merged.length > targetPerPage,
+        posts: merged.slice(0, targetPerPage),
+      };
+    }
+    return fetchStructuredFallback();
   }
+
+  const primary = await fetchPrimaryFeed({
+    page: targetPage,
+    per_page: targetPerPage,
+    freshness: params.freshness,
+    urgency: params.urgency,
+  });
+  if (primary) {
+    return primary;
+  }
+  return fetchStructuredFallback();
 }
 
 export async function likePost(postId: string): Promise<boolean> {
