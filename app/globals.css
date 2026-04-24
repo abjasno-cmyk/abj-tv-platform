@@ -4,6 +4,10 @@
 
 :root {
   color-scheme: dark;
+  --bg: #0b1220;
+  --card: #111827;
+  --accent: #f59e0b;
+  --live: #ef4444;
   --abj-deep: #07111e;
   --abj-main: #0b1f3a;
   --abj-panel: #0e2745;
@@ -69,4 +73,12 @@ a {
 
 .abj-expand-panel {
   animation: expandPanel 0.2s ease-out;
+}
+
+.abj-tv-card {
+  transition: all 0.2s ease;
+}
+
+.abj-tv-card:hover {
+  transform: scale(1.02);
 }

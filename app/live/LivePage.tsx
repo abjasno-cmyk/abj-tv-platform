@@ -1,14 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import type { DayProgram } from "@/lib/epg-types";
-import { ABJNav } from "@/components/abj/Nav";
-import { VideoHero } from "@/components/abj/VideoHero";
-import { LiveAlert } from "@/components/abj/LiveAlert";
-import { NowNextBar } from "@/components/abj/NowNextBar";
-import { Timeline } from "@/components/abj/Timeline";
-import { Hospoda } from "@/components/abj/Hospoda";
+import { LiveNowPanel } from "@/components/live/LiveNowPanel";
+import { LiveTimeline } from "@/components/live/LiveTimeline";
+import { LiveVideoPlayer } from "@/components/live/LiveVideoPlayer";
 
 type LivePageProps = {
   epg: DayProgram[];
@@ -25,118 +22,84 @@ export default function LivePage({
   initialChannelName,
   initialStartSeconds = 0,
 }: LivePageProps) {
-  const safeEpg = epg;
+  const safeEpg = useMemo(
+    () =>
+      epg.length > 0
+        ? epg
+        : [
+            {
+              date: "fallback",
+              label: "Dnes",
+              items: [
+                {
+                  time: "12:00",
+                  title: "ABJ Live Studio",
+                  channelName: "ABJ Síť",
+                  thumbnail: null,
+                  videoId: initialVideoId,
+                  isABJ: true,
+                  type: "live" as const,
+                },
+                {
+                  time: "13:00",
+                  title: "Analýza dne",
+                  channelName: "ABJ Síť",
+                  thumbnail: null,
+                  videoId: initialVideoId,
+                  isABJ: true,
+                  type: "upcoming" as const,
+                },
+              ],
+            },
+          ],
+    [epg, initialVideoId]
+  );
   const [videoId, setVideoId] = useState<string | null>(initialVideoId);
   const [title, setTitle] = useState(initialTitle);
   const [channelName, setChannelName] = useState(initialChannelName);
-  const [isLive, setIsLive] = useState(() => initialChannelName.toLowerCase().includes("abj"));
-  const [startSeconds, setStartSeconds] = useState(() => Math.max(0, Math.floor(initialStartSeconds)));
-  const [remainingLabel, setRemainingLabel] = useState("za 12 min");
-  const [progressPercent, setProgressPercent] = useState(22);
-
-  const timelineItems = useMemo(
-    () => safeEpg.flatMap((day) => day.items),
-    [safeEpg]
-  );
-  const selectedIndex = useMemo(
-    () => timelineItems.findIndex((item) => item.videoId === videoId),
-    [timelineItems, videoId]
-  );
-  const nowItem = selectedIndex >= 0 ? timelineItems[selectedIndex] : timelineItems[0] ?? null;
-  const nextItem =
-    selectedIndex >= 0
-      ? timelineItems[selectedIndex + 1] ?? null
-      : timelineItems.length > 1
-        ? timelineItems[1]
-        : null;
-  const nowNextWindow = useMemo(() => {
-    const base = new Date();
-    const plus25 = new Date(base.getTime() + 25 * 60_000);
-    const plus55 = new Date(base.getTime() + 55 * 60_000);
-    return {
-      nowStartIso: base.toISOString(),
-      nowEndIso: plus25.toISOString(),
-      nextStartIso: plus25.toISOString(),
-      nextEndIso: plus55.toISOString(),
-    };
-  }, []);
-
-  useEffect(() => {
-    const tick = () => {
-      setProgressPercent((prev) => (prev >= 96 ? 8 : prev + 2));
-      if (nextItem) {
-        setRemainingLabel(`za ${Math.max(1, Math.round((100 - progressPercent) / 3))} min`);
-      } else {
-        setRemainingLabel("za chvíli");
-      }
-    };
-    const timer = setInterval(tick, 30_000);
-    return () => clearInterval(timer);
-  }, [nextItem, progressPercent]);
+  const startSeconds = Math.max(0, Math.floor(initialStartSeconds));
+  const timelineItems = useMemo(() => safeEpg.flatMap((day) => day.items), [safeEpg]);
+  const [viewerSeed] = useState(() => Math.floor(Math.random() * 900));
+  const realViewers = useMemo(() => Math.max(1200, timelineItems.length * 70 + viewerSeed), [timelineItems.length, viewerSeed]);
 
   return (
-    <section className="min-h-screen bg-abj-main text-abj-text1">
-      <ABJNav />
-      <div className="flex h-[calc(100vh-46px)] overflow-hidden">
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="px-5 pt-4">
-            <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">ABJ vysílání 24/7</p>
+    <section className="min-h-[calc(100vh-46px)] bg-[var(--bg)] px-5 py-5 text-abj-text1">
+      <div className="mx-auto max-w-[1700px] space-y-4">
+        <header className="space-y-1">
+          <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">ABJ vysílání 24/7</p>
+          <h1 className="text-2xl font-semibold text-abj-text1">Live přehled</h1>
+        </header>
+
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,7fr)_minmax(320px,3fr)]">
+          <div className="space-y-4">
+            <LiveVideoPlayer videoId={videoId} title={title} startSeconds={startSeconds} realViewers={realViewers} />
+            <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-[var(--card)] p-4">
+              <p className="text-xs uppercase tracking-[0.1em] text-abj-text2">Nyní sleduješ</p>
+              <h2 className="mt-1 text-xl font-semibold text-abj-text1">{title || "Čekáme na signál"}</h2>
+              <p className="mt-1 text-sm text-abj-text2">{channelName || "ABJ Síť"}</p>
+            </div>
           </div>
-          <div className="px-5 pt-5">
-            <VideoHero
-              key={`${videoId ?? "no-video"}-${startSeconds}`}
-              videoId={videoId}
-              title={title}
-              channel={channelName || "ABJ Síť"}
-              isLive={isLive}
-              startSeconds={startSeconds}
-              remainingLabel={remainingLabel}
-              progressPercent={progressPercent}
-              onPlayToggle={() => {
-                setIsLive((prev) => !prev);
-              }}
-            />
-          </div>
-          <LiveAlert
+
+          <LiveNowPanel
+            items={timelineItems}
             currentVideoId={videoId}
-            onWatchLive={(video) => {
-              setVideoId(video);
-              setStartSeconds(0);
-              setIsLive(true);
-            }}
-          />
-          <NowNextBar
-            nowItem={
-              nowItem
-                ? {
-                    title: nowItem.title,
-                    start: nowNextWindow.nowStartIso,
-                    end: nowNextWindow.nowEndIso,
-                  }
-                : null
-            }
-            nextItem={
-              nextItem
-                ? {
-                    title: nextItem.title,
-                    start: nowNextWindow.nextStartIso,
-                    end: nowNextWindow.nextEndIso,
-                  }
-                : null
-            }
-          />
-          <Timeline
-            days={safeEpg}
-            onSelect={(item) => {
+            onPlayPrevious={(item) => {
               setTitle(item.title);
               setChannelName(item.channelName);
               setVideoId(item.videoId);
-              setStartSeconds(0);
-              setIsLive(item.type === "live" || item.channelName.toLowerCase().includes("abj"));
             }}
           />
         </div>
-        <Hospoda />
+
+        <LiveTimeline
+          items={timelineItems}
+          currentVideoId={videoId}
+          onSeekToItem={(item) => {
+            setTitle(item.title);
+            setChannelName(item.channelName);
+            setVideoId(item.videoId);
+          }}
+        />
       </div>
     </section>
   );

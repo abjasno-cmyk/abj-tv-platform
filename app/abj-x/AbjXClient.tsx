@@ -17,6 +17,8 @@ type FeedItem = {
   createdAt: string;
   displayAt: string;
   videoId: string;
+  liked: boolean;
+  saved: boolean;
 };
 
 function getPostTimestamp(post: FeedPost): number {
@@ -48,6 +50,8 @@ function toItems(posts: FeedPost[]): FeedItem[] {
       (post as FeedPost & { updated_at?: string | null }).updated_at ??
       post.created_at,
     videoId: post.video_id,
+    liked: false,
+    saved: false,
     }))
     .sort((a, b) => {
       const sourceA = posts.find((post) => post.id === a.id) ?? null;
@@ -100,7 +104,10 @@ export function AbjXClient() {
       ) : (
         <div className="space-y-3">
           {items.map((item) => (
-            <article key={item.id} className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel p-3 sm:p-4">
+            <article
+              key={item.id}
+              className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel px-4 py-6 transition-all hover:scale-[1.01] hover:border-[rgba(245,158,11,0.35)]"
+            >
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 {item.urgency >= 3 ? (
                   <span className="rounded-full bg-[#B23B3B] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white">
@@ -116,10 +123,32 @@ export function AbjXClient() {
                 <span className="text-[11px] text-abj-text2">{formatCreatedAt(item.displayAt)}</span>
               </div>
 
-              <h2 className="text-base font-semibold text-abj-text1 sm:text-lg">{item.headline}</h2>
-              <p className="mt-1 text-sm text-abj-text1">{item.what}</p>
-              {item.why ? <p className="mt-1 text-sm text-abj-text2">{item.why}</p> : null}
-              {item.impact ? <p className="mt-1 text-sm font-medium text-abj-gold">{item.impact}</p> : null}
+              <h2 className="text-[20px] font-semibold leading-[1.45] text-abj-text1">{item.headline}</h2>
+              <p className="mt-2 text-[18px] leading-[1.6] text-abj-text1">{item.what}</p>
+              {item.why ? <p className="mt-2 text-[18px] leading-[1.6] text-abj-text2">{item.why}</p> : null}
+              {item.impact ? <p className="mt-2 text-[18px] font-medium leading-[1.6] text-abj-gold">{item.impact}</p> : null}
+              <div className="mt-4 flex items-center gap-2">
+                <button
+                  type="button"
+                  className={`rounded-md border px-3 py-1.5 text-xs uppercase tracking-[0.08em] transition ${
+                    item.liked
+                      ? "border-rose-400 bg-rose-500/20 text-rose-100"
+                      : "border-white/15 bg-white/[0.03] text-abj-text2 hover:text-abj-text1"
+                  }`}
+                >
+                  Líbí
+                </button>
+                <button
+                  type="button"
+                  className={`rounded-md border px-3 py-1.5 text-xs uppercase tracking-[0.08em] transition ${
+                    item.saved
+                      ? "border-sky-400 bg-sky-500/20 text-sky-100"
+                      : "border-white/15 bg-white/[0.03] text-abj-text2 hover:text-abj-text1"
+                  }`}
+                >
+                  Uložit
+                </button>
+              </div>
             </article>
           ))}
         </div>
