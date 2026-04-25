@@ -8,8 +8,9 @@ type RouteContext = {
 
 export async function POST(_: Request, context: RouteContext) {
   const user = await getSessionUser();
-  if (!user) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 });
+  const auth = ensureModerationAccess(user);
+  if (!auth.ok) {
+    return Response.json({ error: auth.error }, { status: auth.status });
   }
 
   const { messageId } = await Promise.resolve(context.params);

@@ -31,6 +31,9 @@ export async function POST(_request: Request, context: RouteContext) {
   if (!message || message.type !== "QUESTION") {
     return Response.json({ error: "Question not found" }, { status: 404 });
   }
+  if (message.status === "SENT_TO_YT") {
+    return Response.json({ ok: true, status: "SENT_TO_YT", duplicate: true });
+  }
 
   const bridgeResult = await sendQuestionToYoutubeBridge({
     channelType: message.stream.channel_type,
@@ -49,6 +52,17 @@ export async function POST(_request: Request, context: RouteContext) {
       status: "SENT_TO_YT",
     },
   });
+
+  await import("@/lib/hybridChat/realtime").then(({ emitModerationEvent }) =>
+    emitModerationEvent("question.sent_to_youtube", {
+      id: message.id,
+      streamId: message.stream_id,
+      content: message.content,
+      status: "SENT_TO_YT",
+      actorUserId: actor.id,
+      sentAt: new Date().toISOString(),
+    })
+  );
 
   return Response.json({
     ok: true,

@@ -27,20 +27,34 @@ type MessageListRow = {
   };
 };
 
+type ActiveStreamSummary = {
+  id: string;
+};
+
 function normalizeContent(content: string): string {
   return content.trim().replace(/\s+/g, " ");
 }
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const streamId = searchParams.get("stream_id");
+  const requestedStreamId = searchParams.get("stream_id");
   const type = searchParams.get("type");
 
-  if (!streamId) {
-    return Response.json({ error: "Missing stream_id query parameter." }, { status: 400 });
-  }
   if (type !== "CHAT" && type !== "QUESTION") {
     return Response.json({ error: "Query parameter type must be CHAT or QUESTION." }, { status: 400 });
+  }
+
+  let streamId = requestedStreamId;
+  if (!streamId) {
+    const activeStream = (await prisma.stream.findFirst({
+      where: { is_active: true },
+      select: { id: true },
+      orderBy: { updated_at: "desc" },
+    })) as ActiveStreamSummary | null;
+    streamId = activeStream?.id ?? null;
+  }
+  if (!streamId) {
+    return Response.json({ error: "No active stream found." }, { status: 404 });
   }
 
   const orderBy =

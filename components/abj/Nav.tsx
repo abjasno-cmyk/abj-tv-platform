@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: "/archiv", label: "Přehled dne" },
   { href: "/abj-x", label: "ABJ X" },
   { href: "/program", label: "Program" },
+  { href: "/admin/moderation", label: "Moderace" },
 ];
 
 function getPragueClockValue(date: Date): string {
@@ -38,6 +39,7 @@ export function ABJNav() {
     if (pathname.startsWith("/archiv") || pathname.startsWith("/feed")) return "/archiv";
     if (pathname.startsWith("/abj-x")) return "/abj-x";
     if (pathname.startsWith("/program")) return "/program";
+    if (pathname.startsWith("/admin/moderation")) return "/admin/moderation";
     if (pathname.startsWith("/live")) return "/live";
     return "";
   }, [pathname]);
