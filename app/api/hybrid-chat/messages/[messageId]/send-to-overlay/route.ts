@@ -1,6 +1,7 @@
 import { getSessionUser, ensureModerationAccess } from "@/lib/hybridChat/session";
 import { emitModerationEvent } from "@/lib/hybridChat/realtime";
 import { prisma } from "@/lib/prisma";
+import { writeModerationAudit } from "@/lib/hybridChat/audit";
 
 type RouteContext = {
   params: Promise<{ messageId: string }> | { messageId: string };
@@ -12,6 +13,7 @@ export async function POST(_: Request, context: RouteContext) {
   if (!auth.ok) {
     return Response.json({ error: auth.error }, { status: auth.status });
   }
+  const actorUserId = user?.id ?? "unknown";
 
   const { messageId } = await Promise.resolve(context.params);
   const message = await prisma.message.findUnique({
@@ -30,13 +32,13 @@ export async function POST(_: Request, context: RouteContext) {
     return Response.json({ error: "Only pending questions can be sent to overlay." }, { status: 400 });
   }
 
-  await prisma.moderation_action.create({
-    data: {
-      stream_id: message.stream_id,
-      message_id: message.id,
-      actor_user_id: user.id,
-      action: "SEND_TO_OVERLAY",
-      note: "Sent to overlay via moderation dashboard",
+  await writeModerationAudit({
+    streamId: message.stream_id,
+    messageId: message.id,
+    actorUserId,
+    action: "SENT_TO_OVERLAY",
+    payload: {
+      channelType: message.stream.channel_type,
     },
   });
 

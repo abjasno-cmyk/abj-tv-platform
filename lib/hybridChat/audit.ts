@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 export type ModerationActionType = "ANSWERED" | "SENT_TO_OVERLAY" | "SENT_TO_YT";
 
@@ -9,13 +10,14 @@ export async function writeModerationAudit(params: {
   action: ModerationActionType;
   payload?: Record<string, unknown>;
 }) {
+  const metadata = (params.payload ?? {}) as Prisma.InputJsonValue;
   await prisma.moderationAudit.create({
     data: {
       message_id: params.messageId,
       stream_id: params.streamId,
       actor_user_id: params.actorUserId,
       action: params.action,
-      payload_json: params.payload ? JSON.stringify(params.payload) : null,
+      metadata,
     },
   });
 }

@@ -1,17 +1,19 @@
 import { prisma } from "@/lib/prisma";
-import { ensureModeratorFromSession } from "@/lib/hybridChat/session";
+import { ensureModerationAccess, getSessionUser } from "@/lib/hybridChat/session";
 import { emitModerationEvent } from "@/lib/hybridChat/realtime";
+import { writeModerationAudit } from "@/lib/hybridChat/audit";
 
 type RouteContext = {
   params: Promise<{ messageId: string }> | { messageId: string };
 };
 
 export async function POST(_: Request, context: RouteContext) {
-  const auth = await ensureModeratorFromSession();
+  const user = await getSessionUser();
+  const auth = ensureModerationAccess(user);
   if (!auth.ok) {
     return Response.json({ error: auth.error }, { status: auth.status });
   }
-  const actorUserId = auth.user.id;
+  const actorUserId = user?.id ?? "unknown";
 
   const resolved = await Promise.resolve(context.params);
   const messageId = resolved.messageId;
@@ -25,6 +27,16 @@ export async function POST(_: Request, context: RouteContext) {
     include: {
       upvotes: true,
       likes: true,
+    },
+  });
+
+  await writeModerationAudit({
+    streamId: updated.stream_id,
+    messageId: updated.id,
+    actorUserId,
+    action: "ANSWERED",
+    payload: {
+      status: updated.status,
     },
   });
 

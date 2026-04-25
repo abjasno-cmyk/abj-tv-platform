@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { sendQuestionToYoutubeBridge } from "@/lib/hybridChat/youtubeBridge";
-import { assertModerator } from "@/lib/hybridChat/session";
+import { ensureModerationAccess, getSessionUser } from "@/lib/hybridChat/session";
+import { writeModerationAudit } from "@/lib/hybridChat/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -9,15 +10,10 @@ type RouteContext = {
 };
 
 export async function POST(_request: Request, context: RouteContext) {
-  let actor;
-  try {
-    actor = await assertModerator();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "UNAUTHORIZED";
-    if (message === "FORBIDDEN") {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
-    }
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const actor = await getSessionUser();
+  const moderationCheck = ensureModerationAccess(actor);
+  if (!moderationCheck.ok) {
+    return Response.json({ error: moderationCheck.error }, { status: moderationCheck.status });
   }
   const actorUserId = actor?.id ?? "unknown";
 
@@ -58,16 +54,14 @@ export async function POST(_request: Request, context: RouteContext) {
     select: { id: true, status: true, stream_id: true, content: true },
   });
 
-  await prisma.moderationAction.create({
-    data: {
-      message_id: message.id,
-      stream_id: message.stream_id,
-      actor_user_id: actorUserId,
-      action: "SEND_TO_YOUTUBE",
-      payload: {
-        channelType: message.stream.channel_type,
-        endpointHint: message.stream.channel_type === "OWNED_ABJ" ? "BOT1" : "BOT2",
-      },
+  await writeModerationAudit({
+    messageId: message.id,
+    streamId: message.stream_id,
+    actorUserId,
+    action: "SENT_TO_YT",
+    payload: {
+      channelType: message.stream.channel_type,
+      endpointHint: message.stream.channel_type === "OWNED_ABJ" ? "BOT1" : "BOT2",
     },
   });
 
