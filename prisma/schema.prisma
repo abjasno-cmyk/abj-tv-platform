@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ChannelType {
+  OWNED_ABJ
+  EXTERNAL
+}
+
+enum MessageType {
+  CHAT
+  QUESTION
+}
+
+enum MessageStatus {
+  PENDING
+  ANSWERED
+  SENT_TO_YT
+}
+
+model Stream {
+  id              String      @id @default(cuid())
+  title           String
+  youtube_live_id String
+  is_active       Boolean     @default(false)
+  channel_type    ChannelType
+  messages        Message[]
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+
+  @@index([is_active])
+  @@index([channel_type])
+  @@map("hybrid_streams")
+}
+
+model Message {
+  id         String        @id @default(cuid())
+  user_id    String
+  stream_id  String
+  content    String
+  type       MessageType
+  parent_id  String?
+  status     MessageStatus @default(PENDING)
+  stream     Stream        @relation(fields: [stream_id], references: [id], onDelete: Cascade)
+  parent     Message?      @relation("ThreadedMessageReplies", fields: [parent_id], references: [id], onDelete: SetNull)
+  replies    Message[]     @relation("ThreadedMessageReplies")
+  likes      Like[]
+  upvotes    Upvote[]
+  created_at DateTime      @default(now())
+  updated_at DateTime      @updatedAt
+
+  @@index([stream_id, type, created_at(sort: Desc)])
+  @@index([parent_id])
+  @@index([status])
+  @@map("hybrid_messages")
+}
+
+model Like {
+  id         String   @id @default(cuid())
+  user_id    String
+  message_id String
+  message    Message  @relation(fields: [message_id], references: [id], onDelete: Cascade)
+  created_at DateTime @default(now())
+
+  @@unique([user_id, message_id])
+  @@index([message_id])
+  @@map("hybrid_likes")
+}
+
+model Upvote {
+  id         String   @id @default(cuid())
+  user_id    String
+  message_id String
+  message    Message  @relation(fields: [message_id], references: [id], onDelete: Cascade)
+  created_at DateTime @default(now())
+
+  @@unique([user_id, message_id])
+  @@index([message_id])
+  @@map("hybrid_upvotes")
+}
