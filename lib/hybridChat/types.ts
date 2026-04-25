@@ -1,4 +1,4 @@
-import type { Message, MessageType, MessageStatus } from "@prisma/client";
+import type { MessageStatus, MessageType } from "@prisma/client";
 
 export type ChannelType = "OWNED_ABJ" | "EXTERNAL";
 export type InteractionMessageType = "CHAT" | "QUESTION";
@@ -38,6 +38,18 @@ export type HybridMessage = {
   upvoteCount: number;
 };
 
+type MessageLikeRecord = {
+  id: string;
+  user_id: string;
+  stream_id: string;
+  content: string;
+  type: MessageType;
+  parent_id: string | null;
+  status: MessageStatus;
+  created_at: Date;
+  _count?: { likes?: number; upvotes?: number };
+};
+
 export const messageIncludeWithCounts = {
   _count: { select: { likes: true, upvotes: true } },
 } as const;
@@ -55,7 +67,7 @@ export function jsonError(message: string, status = 500): Response {
 }
 
 export function toHybridMessage(
-  message: Message & { _count?: { likes?: number; upvotes?: number } }
+  message: MessageLikeRecord
 ): HybridMessage {
   return {
     id: message.id,
