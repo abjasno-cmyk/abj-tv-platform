@@ -17,7 +17,7 @@ type QueueRow = {
 
 export async function GET() {
   const user = await getSessionUser();
-  const auth = ensureModerationAccess(user);
+  const auth = await ensureModerationAccess(user);
   if (!auth.ok) {
     return Response.json({ error: auth.error }, { status: auth.status });
   }

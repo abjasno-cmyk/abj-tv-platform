@@ -7,6 +7,12 @@ export type SessionUser = {
   isModerator: boolean;
 };
 
+type ModeratorLookup = {
+  enabled: boolean;
+  emails: Set<string>;
+  ids: Set<string>;
+};
+
 function getBool(value: string | null): boolean {
   return value === "1" || value === "true" || value === "yes";
 }
@@ -26,6 +32,35 @@ export async function getSessionUserFromHeaders(): Promise<SessionUser | null> {
     email: hdrs.get("x-user-email"),
     isModerator: getBool(hdrs.get("x-user-moderator")),
   };
+}
+
+function parseList(value: string | undefined): Set<string> {
+  if (!value) return new Set<string>();
+  return new Set(
+    value
+      .split(",")
+      .map((entry) => entry.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
+function getModeratorLookup(): ModeratorLookup {
+  const emails = parseList(process.env.HYBRID_MODERATOR_EMAILS);
+  const ids = parseList(process.env.HYBRID_MODERATOR_IDS);
+  return {
+    enabled: emails.size > 0 || ids.size > 0,
+    emails,
+    ids,
+  };
+}
+
+export function isAllowedModerator(user: SessionUser | null): boolean {
+  if (!user) return false;
+  const lookup = getModeratorLookup();
+  if (!lookup.enabled) return user.isModerator;
+  const idMatch = lookup.ids.has(user.id.toLowerCase());
+  const emailMatch = user.email ? lookup.emails.has(user.email.toLowerCase()) : false;
+  return idMatch || emailMatch;
 }
 
 export async function getCurrentUserIdentity(): Promise<SessionUser | null> {
@@ -59,7 +94,7 @@ export function ensureModerationAccess(
   if (!user) {
     return { ok: false, status: 401, error: "Unauthorized" };
   }
-  if (!user.isModerator) {
+  if (!isAllowedModerator(user)) {
     return { ok: false, status: 403, error: "Forbidden" };
   }
   return { ok: true };

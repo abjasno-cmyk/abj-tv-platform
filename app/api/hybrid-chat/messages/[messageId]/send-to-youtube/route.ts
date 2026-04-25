@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { sendQuestionToYoutubeBridge } from "@/lib/hybridChat/youtubeBridge";
-import { getSessionUser, ensureModerationAccess } from "@/lib/hybridChat/session";
+import { assertModerator } from "@/lib/hybridChat/session";
 
 export const dynamic = "force-dynamic";
 
@@ -9,10 +9,15 @@ type RouteContext = {
 };
 
 export async function POST(_request: Request, context: RouteContext) {
-  const actor = await getSessionUser();
-  const moderationCheck = ensureModerationAccess(actor);
-  if (!moderationCheck.ok) {
-    return Response.json({ error: moderationCheck.error }, { status: moderationCheck.status });
+  let actor;
+  try {
+    actor = await assertModerator();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "UNAUTHORIZED";
+    if (message === "FORBIDDEN") {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   const actorUserId = actor?.id ?? "unknown";
 
@@ -47,19 +52,31 @@ export async function POST(_request: Request, context: RouteContext) {
     return Response.json({ error: bridgeResult.reason }, { status: 502 });
   }
 
-  await prisma.message.update({
+  const updated = await prisma.message.update({
     where: { id: message.id },
+    data: { status: "SENT_TO_YT" },
+    select: { id: true, status: true, stream_id: true, content: true },
+  });
+
+  await prisma.moderationAction.create({
     data: {
-      status: "SENT_TO_YT",
+      message_id: message.id,
+      stream_id: message.stream_id,
+      actor_user_id: actorUserId,
+      action: "SEND_TO_YOUTUBE",
+      payload: {
+        channelType: message.stream.channel_type,
+        endpointHint: message.stream.channel_type === "OWNED_ABJ" ? "BOT1" : "BOT2",
+      },
     },
   });
 
   await import("@/lib/hybridChat/realtime").then(({ emitModerationEvent }) =>
     emitModerationEvent("question.sent_to_youtube", {
-      id: message.id,
-      streamId: message.stream_id,
-      content: message.content,
-      status: "SENT_TO_YT",
+      id: updated.id,
+      streamId: updated.stream_id,
+      content: updated.content,
+      status: updated.status,
       actorUserId,
       sentAt: new Date().toISOString(),
     })

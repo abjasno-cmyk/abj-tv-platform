@@ -83,3 +83,30 @@ model Upvote {
   @@index([message_id])
   @@map("hybrid_upvotes")
 }
+
+model Moderator {
+  id          String   @id @default(cuid())
+  user_id     String   @unique
+  display_name String?
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@index([active])
+  @@map("hybrid_moderators")
+}
+
+model ModerationAudit {
+  id         String   @id @default(cuid())
+  stream_id  String
+  message_id String
+  action     String
+  actor_user_id String
+  metadata   Json?
+  created_at DateTime @default(now())
+
+  @@index([stream_id, created_at(sort: Desc)])
+  @@index([message_id, created_at(sort: Desc)])
+  @@index([actor_user_id, created_at(sort: Desc)])
+  @@map("hybrid_moderation_audit")
+}

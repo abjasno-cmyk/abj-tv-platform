@@ -26,6 +26,19 @@ export async function POST(_: Request, context: RouteContext) {
   if (message.type !== "QUESTION") {
     return Response.json({ error: "Only QUESTION messages can be sent to overlay." }, { status: 400 });
   }
+  if (message.status !== "PENDING") {
+    return Response.json({ error: "Only pending questions can be sent to overlay." }, { status: 400 });
+  }
+
+  await prisma.moderation_action.create({
+    data: {
+      stream_id: message.stream_id,
+      message_id: message.id,
+      actor_user_id: user.id,
+      action: "SEND_TO_OVERLAY",
+      note: "Sent to overlay via moderation dashboard",
+    },
+  });
 
   await emitModerationEvent("question.sent_to_overlay", {
     id: message.id,

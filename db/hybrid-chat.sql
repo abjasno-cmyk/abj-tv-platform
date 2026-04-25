@@ -68,10 +68,36 @@ create table if not exists hybrid_upvotes (
 
 create index if not exists hybrid_upvotes_message_idx on hybrid_upvotes (message_id);
 
+create table if not exists hybrid_moderators (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  role text not null default 'moderator',
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists hybrid_moderators_is_active_idx on hybrid_moderators (is_active);
+
+create table if not exists hybrid_moderation_actions (
+  id text primary key,
+  stream_id text not null references hybrid_streams(id) on delete cascade,
+  message_id text not null references hybrid_messages(id) on delete cascade,
+  actor_user_id uuid not null references auth.users(id),
+  action_type text not null,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists hybrid_moderation_actions_stream_idx on hybrid_moderation_actions (stream_id, created_at desc);
+create index if not exists hybrid_moderation_actions_message_idx on hybrid_moderation_actions (message_id, created_at desc);
+create index if not exists hybrid_moderation_actions_actor_idx on hybrid_moderation_actions (actor_user_id, created_at desc);
+
 alter table hybrid_streams enable row level security;
 alter table hybrid_messages enable row level security;
 alter table hybrid_likes enable row level security;
 alter table hybrid_upvotes enable row level security;
+alter table hybrid_moderators enable row level security;
+alter table hybrid_moderation_actions enable row level security;
 
 do $$ begin
   create policy "hybrid_streams_read_all" on hybrid_streams
@@ -132,6 +158,20 @@ end $$;
 do $$ begin
   create policy "hybrid_upvotes_delete_owner" on hybrid_upvotes
     for delete to authenticated using (auth.uid() = user_id);
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create policy "hybrid_moderators_select_self" on hybrid_moderators
+    for select to authenticated using (auth.uid() = user_id);
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create policy "hybrid_moderation_actions_read_all" on hybrid_moderation_actions
+    for select using (true);
 exception
   when duplicate_object then null;
 end $$;

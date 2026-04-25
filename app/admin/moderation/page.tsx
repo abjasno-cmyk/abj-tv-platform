@@ -12,6 +12,8 @@ type ModerationQuestion = {
   upvotes_count: number;
 };
 
+type PendingAction = "answer" | "overlay" | "youtube";
+
 type QueuePayload = {
   stream: {
     id: string;
@@ -54,7 +56,7 @@ export default function ModerationPage() {
   const [items, setItems] = useState<ModerationQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorText, setErrorText] = useState<string | null>(null);
-  const [pendingActionById, setPendingActionById] = useState<Record<string, string>>({});
+  const [pendingActionById, setPendingActionById] = useState<Record<string, PendingAction>>({});
 
   const loadQueue = useCallback(async () => {
     setLoading(true);
@@ -81,7 +83,8 @@ export default function ModerationPage() {
   );
 
   const runAction = useCallback(
-    async (messageId: string, action: "answer" | "overlay" | "youtube") => {
+    async (messageId: string, action: PendingAction) => {
+      if (pendingActionById[messageId]) return;
       const endpoint =
         action === "answer"
           ? `/api/hybrid-chat/messages/${encodeURIComponent(messageId)}/answer`
@@ -95,7 +98,7 @@ export default function ModerationPage() {
             ? "odeslání do obrazu"
             : "odeslání na YouTube";
 
-      setPendingActionById((prev) => ({ ...prev, [messageId]: label }));
+      setPendingActionById((prev) => ({ ...prev, [messageId]: action }));
       setErrorText(null);
       try {
         await callJson(endpoint, { method: "POST" });
@@ -110,7 +113,7 @@ export default function ModerationPage() {
         });
       }
     },
-    [loadQueue]
+    [loadQueue, pendingActionById]
   );
 
   return (
@@ -159,8 +162,16 @@ export default function ModerationPage() {
       ) : (
         <div className="space-y-3">
           {items.map((item) => {
-            const pendingLabel = pendingActionById[item.id];
-            const disabled = Boolean(pendingLabel);
+            const pendingAction = pendingActionById[item.id];
+            const disabled = Boolean(pendingAction);
+            const pendingLabel =
+              pendingAction === "answer"
+                ? "zodpovězení"
+                : pendingAction === "overlay"
+                  ? "odeslání do obrazu"
+                  : pendingAction === "youtube"
+                    ? "odeslání na YouTube"
+                    : null;
             return (
               <article
                 key={item.id}
