@@ -94,6 +94,38 @@ export function AbjXClient() {
   const todayCount = items.filter((item) => item.freshness === "today").length;
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem("abj-x-preferences");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { liked?: Record<string, boolean>; saved?: Record<string, boolean> };
+      if (parsed.liked && typeof parsed.liked === "object") {
+        setLikedIds(parsed.liked);
+      }
+      if (parsed.saved && typeof parsed.saved === "object") {
+        setSavedIds(parsed.saved);
+      }
+    } catch {
+      // Ignore malformed local storage payload.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        "abj-x-preferences",
+        JSON.stringify({
+          liked: likedIds,
+          saved: savedIds,
+        })
+      );
+    } catch {
+      // Ignore storage write failures (private mode, quota, etc.).
+    }
+  }, [likedIds, savedIds]);
+
+  useEffect(() => {
     const anchor = loadMoreAnchorRef.current;
     if (!anchor || !hasMore) return;
 
@@ -156,6 +188,7 @@ export function AbjXClient() {
                         ? "md:mt-2 xl:mt-7"
                         : "md:mt-0"
                   }
+                  videoHref={`/videos?videoId=${encodeURIComponent(item.videoId)}`}
                   title={item.headline}
                   summary={item.what}
                   source={item.channel}
