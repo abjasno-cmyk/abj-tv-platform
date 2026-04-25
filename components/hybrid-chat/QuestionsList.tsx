@@ -1,9 +1,9 @@
 "use client";
 
-import type { HybridMessageDto } from "@/hooks/useHybridChat";
+import type { HybridChatMessage } from "@/hooks/useHybridChat";
 
 type QuestionsListProps = {
-  items: HybridMessageDto[];
+  items: HybridChatMessage[];
   currentUserId: string | null;
   pendingUpvoteIds: Set<string>;
   onUpvote: (messageId: string) => Promise<void>;

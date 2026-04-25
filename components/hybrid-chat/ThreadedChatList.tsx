@@ -2,15 +2,18 @@
 
 import { FormEvent, useMemo, useState } from "react";
 
-import type { HybridMessage } from "@/hooks/useHybridChat";
+import type { HybridChatMessage } from "@/hooks/useHybridChat";
 
 type ThreadedChatListProps = {
-  items: HybridMessage[];
-  onLike: (messageId: string) => void;
+  messages: HybridChatMessage[];
+  currentUserId: string | null;
+  onLike: (messageId: string) => Promise<void>;
   onReply: (parentId: string, text: string) => Promise<void>;
+  pendingLikeIds: Set<string>;
+  pendingReplyParentId: string | null;
 };
 
-type ThreadNode = HybridMessage & {
+type ThreadNode = HybridChatMessage & {
   replies: ThreadNode[];
 };
 
@@ -25,7 +28,7 @@ function formatClock(iso: string): string {
   }).format(date);
 }
 
-function mapToTree(messages: HybridMessage[]): ThreadNode[] {
+function mapToTree(messages: HybridChatMessage[]): ThreadNode[] {
   const roots: ThreadNode[] = [];
   const byId = new Map<string, ThreadNode>();
 
@@ -93,35 +96,53 @@ function ReplyForm({ parentId, onReply }: { parentId: string; onReply: (parentId
 function ThreadMessage({
   node,
   depth,
+  currentUserId,
   onLike,
   onReply,
+  pendingLikeIds,
+  pendingReplyParentId,
 }: {
   node: ThreadNode;
   depth: number;
-  onLike: (messageId: string) => void;
+  currentUserId: string | null;
+  onLike: (messageId: string) => Promise<void>;
   onReply: (parentId: string, text: string) => Promise<void>;
+  pendingLikeIds: Set<string>;
+  pendingReplyParentId: string | null;
 }) {
   const [replyOpen, setReplyOpen] = useState(false);
+  const isOwn = currentUserId === node.user_id;
+  const isLikePending = pendingLikeIds.has(node.id);
+  const isReplyTarget = pendingReplyParentId === node.id;
 
   return (
     <article className="abj-msg-appear" style={{ marginLeft: `${Math.min(depth, 3) * 14}px` }}>
       <div className="rounded-lg border border-white/10 bg-white/[0.02] p-2.5">
         <div className="mb-1 flex items-center justify-between gap-2">
-          <p className="truncate text-[11px] font-semibold text-abj-gold">{`Uživatel ${node.user_id.slice(0, 6)}`}</p>
+          <p className="truncate text-[11px] font-semibold text-abj-gold">
+            {isOwn ? "Vy" : `Uživatel ${node.user_id.slice(0, 6)}`}
+          </p>
           <span className="text-[10px] text-abj-text3">{formatClock(node.created_at)}</span>
         </div>
         <p className="text-[12px] leading-relaxed text-abj-text1">{node.content}</p>
         <div className="mt-2 flex items-center gap-3 text-[11px]">
           <button
             type="button"
-            className="rounded border border-white/15 px-2 py-0.5 text-abj-text2 transition hover:text-abj-text1"
-            onClick={() => onLike(node.id)}
+            className="rounded border border-white/15 px-2 py-0.5 text-abj-text2 transition hover:text-abj-text1 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={isLikePending}
+            onClick={() => {
+              void onLike(node.id);
+            }}
           >
             ❤️ {node.likes_count}
           </button>
           <button
             type="button"
-            className="rounded border border-white/15 px-2 py-0.5 text-abj-text2 transition hover:text-abj-text1"
+            className={`rounded border px-2 py-0.5 transition ${
+              isReplyTarget
+                ? "border-yellow-400/60 bg-yellow-500/10 text-yellow-200"
+                : "border-white/15 text-abj-text2 hover:text-abj-text1"
+            }`}
             onClick={() => setReplyOpen((prev) => !prev)}
           >
             Odpovědět
@@ -132,7 +153,16 @@ function ThreadMessage({
       {node.replies.length > 0 ? (
         <div className="mt-2 space-y-2">
           {node.replies.map((reply) => (
-            <ThreadMessage key={reply.id} node={reply} depth={depth + 1} onLike={onLike} onReply={onReply} />
+            <ThreadMessage
+              key={reply.id}
+              node={reply}
+              depth={depth + 1}
+              currentUserId={currentUserId}
+              onLike={onLike}
+              onReply={onReply}
+              pendingLikeIds={pendingLikeIds}
+              pendingReplyParentId={pendingReplyParentId}
+            />
           ))}
         </div>
       ) : null}
@@ -140,8 +170,15 @@ function ThreadMessage({
   );
 }
 
-export function ThreadedChatList({ items, onLike, onReply }: ThreadedChatListProps) {
-  const threaded = useMemo(() => mapToTree(items), [items]);
+export function ThreadedChatList({
+  messages,
+  currentUserId,
+  onLike,
+  onReply,
+  pendingLikeIds,
+  pendingReplyParentId,
+}: ThreadedChatListProps) {
+  const threaded = useMemo(() => mapToTree(messages), [messages]);
 
   if (threaded.length === 0) {
     return (
@@ -154,7 +191,16 @@ export function ThreadedChatList({ items, onLike, onReply }: ThreadedChatListPro
   return (
     <div className="space-y-2">
       {threaded.map((node) => (
-        <ThreadMessage key={node.id} node={node} depth={0} onLike={onLike} onReply={onReply} />
+        <ThreadMessage
+          key={node.id}
+          node={node}
+          depth={0}
+          currentUserId={currentUserId}
+          onLike={onLike}
+          onReply={onReply}
+          pendingLikeIds={pendingLikeIds}
+          pendingReplyParentId={pendingReplyParentId}
+        />
       ))}
     </div>
   );

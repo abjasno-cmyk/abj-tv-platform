@@ -11,7 +11,6 @@ type TabKey = "chat" | "questions";
 export function HybridChatPanel() {
   const [tab, setTab] = useState<TabKey>("chat");
   const [draft, setDraft] = useState("");
-  const [replyParentId, setReplyParentId] = useState<string | null>(null);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [pendingLikeIds, setPendingLikeIds] = useState<Set<string>>(new Set());
   const [pendingUpvoteIds, setPendingUpvoteIds] = useState<Set<string>>(new Set());
@@ -33,14 +32,13 @@ export function HybridChatPanel() {
     const result = await postMessage({
       content,
       type: tab === "chat" ? "CHAT" : "QUESTION",
-      parentId: tab === "chat" ? replyParentId : null,
+      parentId: null,
     });
     if (!result.ok) {
       setErrorText(result.error ?? "Akce se nepodařila.");
       return;
     }
     setDraft("");
-    setReplyParentId(null);
   };
 
   const onLike = async (messageId: string) => {
@@ -122,9 +120,18 @@ export function HybridChatPanel() {
             messages={chatMessages}
             currentUserId={null}
             onLike={onLike}
-            onReply={(parentId) => setReplyParentId(parentId)}
+            onReply={async (parentId, text) => {
+              const result = await postMessage({
+                content: text,
+                type: "CHAT",
+                parentId,
+              });
+              if (!result.ok) {
+                setErrorText(result.error ?? "Nepodařilo se odeslat odpověď.");
+              }
+            }}
             pendingLikeIds={pendingLikeIds}
-            pendingReplyParentId={replyParentId}
+            pendingReplyParentId={null}
           />
         ) : (
           <QuestionsList
@@ -145,18 +152,6 @@ export function HybridChatPanel() {
             placeholder={tab === "chat" ? "Napište zprávu..." : "Položte otázku na hosta..."}
             className="w-full resize-none rounded border border-white/15 bg-white/[0.03] px-2.5 py-2 text-[12px] text-abj-text1 outline-none placeholder:text-abj-text3"
           />
-          {replyParentId && tab === "chat" ? (
-            <p className="text-[10px] text-yellow-200">
-              Odpověď ve vlákně
-              <button
-                type="button"
-                className="ml-1 underline"
-                onClick={() => setReplyParentId(null)}
-              >
-                zrušit
-              </button>
-            </p>
-          ) : null}
           {errorText ? <p className="text-[10px] text-rose-200">{errorText}</p> : null}
           <button
             type="submit"
