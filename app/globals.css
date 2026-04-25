@@ -82,3 +82,12 @@ a {
 .abj-tv-card:hover {
   transform: scale(1.02);
 }
+
+@keyframes pulseSoft {
+  0% {
+    box-shadow: 0 0 0px rgba(239, 68, 68, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
+  }
+}
