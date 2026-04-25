@@ -8,7 +8,7 @@ import { VideoHero } from "@/components/abj/VideoHero";
 import { LiveAlert } from "@/components/abj/LiveAlert";
 import { NowNextBar } from "@/components/abj/NowNextBar";
 import { Timeline } from "@/components/abj/Timeline";
-import { Hospoda } from "@/components/abj/Hospoda";
+import { HybridChatPanel } from "@/components/hybrid-chat/HybridChatPanel";
 
 type LivePageProps = {
   epg: DayProgram[];
@@ -136,7 +136,7 @@ export default function LivePage({
             }}
           />
         </div>
-        <Hospoda />
+        <HybridChatPanel />
       </div>
     </section>
   );
