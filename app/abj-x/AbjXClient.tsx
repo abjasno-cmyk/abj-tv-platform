@@ -85,30 +85,33 @@ function toTag(item: FeedItem): "BREAKING" | "DNES" | "TÝDEN" | "STÁLÉ" {
 export function AbjXClient() {
   const { posts, loading, hasMore, loadMore, sseConnected } = useFeed();
   const items = useMemo(() => toItems(posts), [posts]);
-  const [likedIds, setLikedIds] = useState<Record<string, boolean>>({});
-  const [savedIds, setSavedIds] = useState<Record<string, boolean>>({});
+  const [likedIds, setLikedIds] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = window.localStorage.getItem("abj-x-preferences");
+      if (!raw) return {};
+      const parsed = JSON.parse(raw) as { liked?: Record<string, boolean> };
+      return parsed.liked && typeof parsed.liked === "object" ? parsed.liked : {};
+    } catch {
+      return {};
+    }
+  });
+  const [savedIds, setSavedIds] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = window.localStorage.getItem("abj-x-preferences");
+      if (!raw) return {};
+      const parsed = JSON.parse(raw) as { saved?: Record<string, boolean> };
+      return parsed.saved && typeof parsed.saved === "object" ? parsed.saved : {};
+    } catch {
+      return {};
+    }
+  });
   const [expandedTopicIds, setExpandedTopicIds] = useState<Record<string, boolean>>({});
   const loadMoreAnchorRef = useRef<HTMLDivElement | null>(null);
   const totalCount = items.length;
   const breakingCount = items.filter((item) => item.freshness === "breaking").length;
   const todayCount = items.filter((item) => item.freshness === "today").length;
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = window.localStorage.getItem("abj-x-preferences");
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as { liked?: Record<string, boolean>; saved?: Record<string, boolean> };
-      if (parsed.liked && typeof parsed.liked === "object") {
-        setLikedIds(parsed.liked);
-      }
-      if (parsed.saved && typeof parsed.saved === "object") {
-        setSavedIds(parsed.saved);
-      }
-    } catch {
-      // Ignore malformed local storage payload.
-    }
-  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
