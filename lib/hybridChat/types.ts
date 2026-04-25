@@ -1,7 +1,7 @@
-import type { MessageStatus, MessageType } from "@prisma/client";
-
 export type ChannelType = "OWNED_ABJ" | "EXTERNAL";
 export type InteractionMessageType = "CHAT" | "QUESTION";
+export type MessageType = "CHAT" | "QUESTION";
+export type MessageStatus = "PENDING" | "ANSWERED" | "SENT_TO_YT";
 
 export type HybridChatEventName =
   | "message-created"
