@@ -10,6 +10,7 @@ const tagStyles: Record<NewsTileTag, string> = {
 };
 
 type NewsTileProps = {
+  className?: string;
   title: string;
   summary: string;
   source: string;
@@ -24,6 +25,7 @@ type NewsTileProps = {
 };
 
 export function NewsTile({
+  className,
   title,
   summary,
   source,
@@ -40,9 +42,9 @@ export function NewsTile({
 
   return (
     <article
-      className={`abj-tv-card rounded-xl border border-gray-800 bg-[#111827] p-5 transition-all hover:scale-[1.02] hover:border-yellow-500 hover:shadow-xl ${
+      className={`abj-tv-card h-full rounded-xl border border-gray-800 bg-[#111827] p-5 transition-all hover:scale-[1.02] hover:border-yellow-500 hover:shadow-xl ${
         isBreaking ? "ring-1 ring-red-500 shadow-lg [animation:pulseSoft_1.4s_ease-in-out_infinite_alternate]" : ""
-      }`}
+      } ${className ?? ""}`}
       style={{ contentVisibility: "auto", containIntrinsicSize: "420px" }}
     >
       <div className="mb-2 flex items-center justify-between">
@@ -60,8 +62,13 @@ export function NewsTile({
         <p className="text-sm text-yellow-200">{aiInsight}</p>
       </div>
 
-      <button type="button" className="mt-3 text-sm text-yellow-400 hover:text-yellow-300" onClick={onShowMore}>
-        Více k tématu →
+      <button
+        type="button"
+        className="mt-3 inline-flex items-center gap-1 rounded-md border border-yellow-400/40 bg-yellow-500/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-yellow-200 transition hover:bg-yellow-500/20 hover:text-yellow-100"
+        onClick={onShowMore}
+      >
+        Více k tématu
+        <span aria-hidden>→</span>
       </button>
 
       <div className="mt-4 flex items-center justify-between">

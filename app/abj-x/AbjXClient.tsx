@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { NewsTile } from "@/components/abj/NewsTile";
 import { useFeed } from "@/hooks/useFeed";
@@ -83,14 +83,36 @@ function toTag(item: FeedItem): "BREAKING" | "DNES" | "TÝDEN" | "STÁLÉ" {
 }
 
 export function AbjXClient() {
-  const { posts, loading, hasMore, loadMore } = useFeed();
+  const { posts, loading, hasMore, loadMore, sseConnected } = useFeed();
   const items = useMemo(() => toItems(posts), [posts]);
   const [likedIds, setLikedIds] = useState<Record<string, boolean>>({});
   const [savedIds, setSavedIds] = useState<Record<string, boolean>>({});
   const [expandedTopicIds, setExpandedTopicIds] = useState<Record<string, boolean>>({});
+  const loadMoreAnchorRef = useRef<HTMLDivElement | null>(null);
   const totalCount = items.length;
   const breakingCount = items.filter((item) => item.freshness === "breaking").length;
   const todayCount = items.filter((item) => item.freshness === "today").length;
+
+  useEffect(() => {
+    const anchor = loadMoreAnchorRef.current;
+    if (!anchor || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        if (loading) return;
+        void loadMore();
+      },
+      {
+        rootMargin: "220px 0px",
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(anchor);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore, loading]);
 
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-5">
@@ -102,6 +124,15 @@ export function AbjXClient() {
           <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1">{totalCount} zpráv</span>
           <span className="rounded-full border border-red-400/35 bg-red-500/10 px-2.5 py-1">{breakingCount} BREAKING</span>
           <span className="rounded-full border border-yellow-400/35 bg-yellow-500/10 px-2.5 py-1">{todayCount} DNES</span>
+          <span
+            className={`rounded-full border px-2.5 py-1 ${
+              sseConnected
+                ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-200"
+                : "border-white/10 bg-white/[0.03] text-abj-text2"
+            }`}
+          >
+            {sseConnected ? "Live sync aktivní" : "Live sync čeká"}
+          </span>
         </div>
       </header>
 
@@ -115,9 +146,16 @@ export function AbjXClient() {
             ? Array.from({ length: 6 }, (_, idx) => (
                 <div key={`skeleton-${idx}`} className="h-40 animate-pulse rounded-xl bg-gray-800" />
               ))
-            : items.map((item) => (
+            : items.map((item, index) => (
                 <NewsTile
                   key={item.id}
+                  className={
+                    index % 3 === 1
+                      ? "xl:mt-4"
+                      : index % 3 === 2
+                        ? "md:mt-2 xl:mt-7"
+                        : "md:mt-0"
+                  }
                   title={item.headline}
                   summary={item.what}
                   source={item.channel}
@@ -153,6 +191,8 @@ export function AbjXClient() {
           ) : null}
         </div>
       )}
+
+      {hasMore ? <div ref={loadMoreAnchorRef} className="h-2 w-full" aria-hidden /> : null}
 
       {hasMore ? (
         <div className="flex justify-center">
