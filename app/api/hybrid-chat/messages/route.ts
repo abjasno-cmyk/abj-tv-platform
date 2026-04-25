@@ -12,6 +12,21 @@ type CreateMessageBody = {
   parent_id?: string | null;
 };
 
+type MessageListRow = {
+  id: string;
+  stream_id: string;
+  user_id: string;
+  parent_id: string | null;
+  content: string;
+  type: "CHAT" | "QUESTION";
+  status: "PENDING" | "ANSWERED" | "SENT_TO_YT";
+  created_at: Date;
+  _count: {
+    likes: number;
+    upvotes: number;
+  };
+};
+
 function normalizeContent(content: string): string {
   return content.trim().replace(/\s+/g, " ");
 }
@@ -33,7 +48,7 @@ export async function GET(request: Request) {
       ? [{ upvotes: { _count: "desc" as const } }, { created_at: "desc" as const }]
       : [{ created_at: "desc" as const }];
 
-  const messages = await prisma.message.findMany({
+  const messages = (await prisma.message.findMany({
     where: {
       stream_id: streamId,
       type,
@@ -45,7 +60,7 @@ export async function GET(request: Request) {
       _count: { select: { likes: true, upvotes: true } },
     },
     take: 200,
-  });
+  })) as MessageListRow[];
 
   return Response.json({
     items: messages.map((message) => ({
