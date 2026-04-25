@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSessionUserOrThrow } from "@/lib/hybridChat/session";
 import { emitHybridChatEvent } from "@/lib/hybridChat/realtime";
-import { messageIncludeWithCounts, toHybridMessage } from "@/lib/hybridChat/types";
+import { toHybridMessage } from "@/lib/hybridChat/types";
 
 type RouteContext = {
   params: Promise<{ messageId: string }> | { messageId: string };
@@ -10,17 +10,15 @@ type RouteContext = {
 export const dynamic = "force-dynamic";
 
 export async function POST(_request: Request, context: RouteContext) {
-  let sessionUserId: string;
-  try {
-    sessionUserId = await getSessionUserOrThrow();
-  } catch {
+  const sessionUser = await getSessionUserOrThrow();
+  if (!sessionUser) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { messageId } = await Promise.resolve(context.params);
   const message = await prisma.message.findUnique({
     where: { id: messageId },
-    include: messageIncludeWithCounts,
+    include: { _count: { select: { likes: true, upvotes: true } } },
   });
 
   if (!message) {
@@ -31,7 +29,7 @@ export async function POST(_request: Request, context: RouteContext) {
     return Response.json({ error: "Only QUESTION messages can be upvoted" }, { status: 400 });
   }
 
-  if (message.user_id === sessionUserId) {
+  if (message.user_id === sessionUser.id) {
     return Response.json({ error: "You cannot upvote your own question" }, { status: 400 });
   }
 
@@ -39,7 +37,7 @@ export async function POST(_request: Request, context: RouteContext) {
     await prisma.upvote.create({
       data: {
         message_id: messageId,
-        user_id: sessionUserId,
+        user_id: sessionUser.id,
       },
     });
   } catch {
@@ -48,7 +46,7 @@ export async function POST(_request: Request, context: RouteContext) {
 
   const refreshed = await prisma.message.findUnique({
     where: { id: messageId },
-    include: messageIncludeWithCounts,
+    include: { _count: { select: { likes: true, upvotes: true } } },
   });
 
   if (!refreshed) {

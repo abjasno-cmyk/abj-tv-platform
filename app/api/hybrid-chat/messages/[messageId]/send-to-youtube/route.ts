@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { sendQuestionToYoutubeBridge } from "@/lib/hybridChat/youtubeBridge";
-import { ensureModerator, getSessionUser } from "@/lib/hybridChat/session";
+import { getSessionUser, ensureModerationAccess } from "@/lib/hybridChat/session";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +10,7 @@ type RouteContext = {
 
 export async function POST(_request: Request, context: RouteContext) {
   const actor = await getSessionUser();
-  const moderationCheck = ensureModerator(actor);
+  const moderationCheck = ensureModerationAccess(actor);
   if (!moderationCheck.ok) {
     return Response.json({ error: moderationCheck.error }, { status: moderationCheck.status });
   }
@@ -36,7 +36,7 @@ export async function POST(_request: Request, context: RouteContext) {
     channelType: message.stream.channel_type,
     streamId: message.stream_id,
     messageId: message.id,
-    userName: actor.name,
+    userName: actor?.name ?? actor?.email ?? "ABJ User",
     content: message.content,
   });
   if (!bridgeResult.ok) {

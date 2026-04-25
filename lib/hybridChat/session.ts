@@ -65,3 +65,20 @@ export function ensureModerationAccess(
   return { ok: true };
 }
 
+// Compatibility helpers used by Step 2 API scaffold routes.
+export async function requireSessionUser(): Promise<SessionUser | null> {
+  return getSessionUserFromHeaders();
+}
+
+export function ensureModerator(
+  user: SessionUser | null
+): { ok: true } | { ok: false; status: number; error: string } {
+  return ensureModerationAccess(user);
+}
+
+export async function ensureModeratorUserId(): Promise<string | null> {
+  const user = await getSessionUserFromHeaders();
+  if (!user || !user.isModerator) return null;
+  return user.id;
+}
+

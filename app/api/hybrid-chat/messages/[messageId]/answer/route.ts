@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { ensureModeratorUserId } from "@/lib/hybridChat/session";
+import { getSessionUser, ensureModerationAccess } from "@/lib/hybridChat/session";
 import { emitModerationEvent } from "@/lib/hybridChat/realtime";
 
 type RouteContext = {
@@ -7,10 +7,12 @@ type RouteContext = {
 };
 
 export async function POST(_: Request, context: RouteContext) {
-  const userId = await ensureModeratorUserId();
-  if (!userId) {
-    return Response.json({ error: "Forbidden" }, { status: 403 });
+  const user = await getSessionUser();
+  const auth = ensureModerationAccess(user);
+  if (!auth.ok) {
+    return Response.json({ error: auth.error }, { status: auth.status });
   }
+  const actorUserId = user?.id ?? "unknown";
 
   const resolved = await Promise.resolve(context.params);
   const messageId = resolved.messageId;
@@ -27,13 +29,13 @@ export async function POST(_: Request, context: RouteContext) {
     },
   });
 
-  emitModerationEvent("question_answered", {
+  await emitModerationEvent("question_answered", {
     id: updated.id,
-    stream_id: updated.stream_id,
+    streamId: updated.stream_id,
     content: updated.content,
     status: updated.status,
-    upvotes_count: updated.upvotes.length,
-    actor_user_id: userId,
+    upvotesCount: updated.upvotes.length,
+    actorUserId,
   });
 
   return Response.json({

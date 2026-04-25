@@ -1,4 +1,4 @@
-import { requireSessionUser } from "@/lib/hybridChat/session";
+import { getSessionUser } from "@/lib/hybridChat/session";
 import { emitModerationEvent } from "@/lib/hybridChat/realtime";
 import { prisma } from "@/lib/prisma";
 
@@ -7,7 +7,7 @@ type RouteContext = {
 };
 
 export async function POST(_: Request, context: RouteContext) {
-  const user = await requireSessionUser();
+  const user = await getSessionUser();
   if (!user) {
     return Response.json({ error: "Unauthorized." }, { status: 401 });
   }

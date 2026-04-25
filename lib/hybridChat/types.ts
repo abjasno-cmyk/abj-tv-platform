@@ -1,6 +1,7 @@
 import type { Message, MessageType, MessageStatus } from "@prisma/client";
 
 export type ChannelType = "OWNED_ABJ" | "EXTERNAL";
+export type InteractionMessageType = "CHAT" | "QUESTION";
 
 export type HybridChatEventName =
   | "message-created"
@@ -17,6 +18,13 @@ export type HybridChatEventPayload = {
   data: Record<string, unknown>;
 };
 
+export type HybridChatEventType = HybridChatEventName;
+
+export type HybridChatEvent = {
+  streamId: string;
+  [key: string]: unknown;
+};
+
 export type HybridMessage = {
   id: string;
   userId: string;
@@ -29,6 +37,22 @@ export type HybridMessage = {
   likeCount: number;
   upvoteCount: number;
 };
+
+export const messageIncludeWithCounts = {
+  _count: { select: { likes: true, upvotes: true } },
+} as const;
+
+export function canLikeMessage(type: MessageType | InteractionMessageType): boolean {
+  return type === "CHAT";
+}
+
+export function jsonOk<T>(payload: T, init?: ResponseInit): Response {
+  return Response.json(payload, init);
+}
+
+export function jsonError(message: string, status = 500): Response {
+  return Response.json({ error: message }, { status });
+}
 
 export function toHybridMessage(
   message: Message & { _count?: { likes?: number; upvotes?: number } }

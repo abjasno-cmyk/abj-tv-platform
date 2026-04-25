@@ -36,16 +36,6 @@ export async function POST(_request: Request, context: RouteContext) {
   }
 
   try {
-    const existing = await prisma.like.findUnique({
-      where: {
-        user_id_message_id: {
-          user_id: sessionUser.id,
-          message_id: message.id,
-        },
-      },
-      select: { id: true },
-    });
-
     await prisma.like.create({
       data: {
         user_id: sessionUser.id,
@@ -54,7 +44,9 @@ export async function POST(_request: Request, context: RouteContext) {
     });
 
     const refreshed = await prisma.message.findUnique({
-      where: { id: message.id },
+      where: {
+        id: message.id,
+      },
       include: { _count: { select: { likes: true, upvotes: true } } },
     });
     if (!refreshed) {
@@ -69,7 +61,7 @@ export async function POST(_request: Request, context: RouteContext) {
 
     return Response.json({
       ok: true,
-      liked: !existing,
+      liked: true,
       likeCount: refreshed._count.likes,
     });
   } catch (error) {
