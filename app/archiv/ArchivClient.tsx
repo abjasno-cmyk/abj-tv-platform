@@ -4,6 +4,7 @@ import { useMemo } from "react";
 
 import { VideoCard } from "@/components/abj/VideoCard";
 import { VideoEditorial } from "@/components/abj/VideoEditorial";
+import { HeroCard } from "@/components/archiv/HeroCard";
 import { useFeed } from "@/hooks/useFeed";
 import type { FeedPost } from "@/lib/api";
 
@@ -198,6 +199,12 @@ export function ArchivClient({ initialData }: ArchivClientProps) {
   }, [currentPayload, incomingPayload]);
 
   const hasAnyContent = topForDisplay.length > 0 || channels.length > 0;
+  const hero = topForDisplay[0] ?? null;
+  const heroInsight =
+    hero?.context?.trim() ||
+    hero?.impact?.trim() ||
+    hero?.tldr?.trim() ||
+    "Sleduj hlavní téma dne a kontextové souvislosti napříč kanály.";
 
   return (
     <section className="space-y-12 py-6">
@@ -216,8 +223,37 @@ export function ArchivClient({ initialData }: ArchivClientProps) {
       {topForDisplay.length > 0 ? (
         <section className="space-y-4">
           <h2 className="text-lg font-semibold text-abj-text1">Hlavní výběr</h2>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {topForDisplay.map((video) => (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            {hero ? (
+              <div className="lg:col-span-2">
+                <HeroCard
+                  title={hero.title}
+                  channel={hero.channel}
+                  publishedAt={hero.published_at}
+                  thumbnail={hero.thumbnail}
+                  insight={heroInsight}
+                  href={`/live?videoId=${encodeURIComponent(hero.video_id)}`}
+                />
+              </div>
+            ) : null}
+            <div className="space-y-4">
+              {(hero ? topForDisplay.slice(1) : topForDisplay).slice(0, 3).map((video) => (
+                <div key={`${video.video_id}-${video.channel}`} className="space-y-2">
+                  <VideoCard
+                    videoId={video.video_id}
+                    thumbnail={video.thumbnail}
+                    title={video.title}
+                    channel={video.channel}
+                    publishedAt={video.published_at}
+                    featured={false}
+                  />
+                  {buildEditorial(video) ? (
+                    <VideoEditorial videoId={video.video_id} {...buildEditorial(video)!} />
+                  ) : null}
+                </div>
+              ))}
+            </div>
+            {topForDisplay.slice(hero ? 4 : 3).map((video) => (
               <div key={`${video.video_id}-${video.channel}`} className="space-y-2">
                 <VideoCard
                   videoId={video.video_id}
