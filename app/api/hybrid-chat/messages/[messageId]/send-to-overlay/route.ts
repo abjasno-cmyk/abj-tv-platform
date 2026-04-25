@@ -1,4 +1,4 @@
-import { getSessionUser } from "@/lib/hybridChat/session";
+import { getSessionUser, ensureModerationAccess } from "@/lib/hybridChat/session";
 import { emitModerationEvent } from "@/lib/hybridChat/realtime";
 import { prisma } from "@/lib/prisma";
 

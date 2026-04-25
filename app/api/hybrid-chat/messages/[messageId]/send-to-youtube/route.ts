@@ -14,6 +14,7 @@ export async function POST(_request: Request, context: RouteContext) {
   if (!moderationCheck.ok) {
     return Response.json({ error: moderationCheck.error }, { status: moderationCheck.status });
   }
+  const actorUserId = actor?.id ?? "unknown";
 
   const resolved = await Promise.resolve(context.params);
   const messageId = resolved.messageId;
@@ -59,7 +60,7 @@ export async function POST(_request: Request, context: RouteContext) {
       streamId: message.stream_id,
       content: message.content,
       status: "SENT_TO_YT",
-      actorUserId: actor.id,
+      actorUserId,
       sentAt: new Date().toISOString(),
     })
   );
