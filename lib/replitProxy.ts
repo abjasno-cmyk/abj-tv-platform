@@ -26,6 +26,8 @@ export function resolveReplitBaseUrl(): string | null {
 
 function resolveApiKey(): string | null {
   return (
+    sanitizeEnvValue(process.env.NEXT_PUBLIC_FEED_API_KEY) ??
+    sanitizeEnvValue(process.env.NEXT_PUBLIC_PROGRAM_FEED_API_KEY) ??
     sanitizeEnvValue(process.env.FEED_API_KEY) ??
     sanitizeEnvValue(process.env.PROGRAM_FEED_API_KEY) ??
     null
@@ -63,7 +65,7 @@ async function proxyReplitRequest(request: Request, upstreamPath: string, method
     );
   }
 
-  const apiKey = resolveApiKey();
+  const apiKey = request.headers.get("x-api-key") ?? resolveApiKey();
   const contentType = request.headers.get("content-type");
   const body = method === "POST" ? await request.text() : undefined;
   const attempts: string[] = [];

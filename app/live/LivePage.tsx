@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import type { DayProgram } from "@/lib/epg-types";
+import type { ProgramItem, DayProgram } from "@/lib/epg-types";
 import { ABJNav } from "@/components/abj/Nav";
 import { VideoHero } from "@/components/abj/VideoHero";
 import { LiveAlert } from "@/components/abj/LiveAlert";
 import { NowNextBar } from "@/components/abj/NowNextBar";
 import { Timeline } from "@/components/abj/Timeline";
 import { HybridChatPanel } from "@/components/hybrid-chat/HybridChatPanel";
+import { UnderrunOverlayPlayer } from "@/components/live/UnderrunOverlayPlayer";
+import type { GapFillItem } from "@/lib/underrunProtection";
+import { fetchGapFillPlan, fetchSafetyBridge, readFeedApiKeyFromClientEnv } from "@/lib/underrunProtection";
 
 type LivePageProps = {
   epg: DayProgram[];
@@ -33,6 +36,15 @@ export default function LivePage({
   const [startSeconds, setStartSeconds] = useState(() => Math.max(0, Math.floor(initialStartSeconds)));
   const [remainingLabel, setRemainingLabel] = useState("za 12 min");
   const [progressPercent, setProgressPercent] = useState(22);
+  const [activeFiller, setActiveFiller] = useState<GapFillItem | null>(null);
+  const fillerDoneRef = useRef<(() => void) | null>(null);
+  const fillerFailRef = useRef<((error?: unknown) => void) | null>(null);
+  const handleFillerFinished = useCallback(() => {
+    fillerDoneRef.current?.();
+  }, []);
+  const handleFillerError = useCallback((error?: unknown) => {
+    fillerFailRef.current?.(error);
+  }, []);
 
   const timelineItems = useMemo(
     () => safeEpg.flatMap((day) => day.items),
@@ -60,6 +72,106 @@ export default function LivePage({
       nextEndIso: plus55.toISOString(),
     };
   }, []);
+  const feedApiKey = useMemo(() => readFeedApiKeyFromClientEnv(), []);
+
+  const toBlockRef = useCallback(
+    (item: ProgramItem, role: "current" | "next") => ({
+      block_id: item.videoId ?? `${role}-${item.time}-${item.title}`,
+      starts_at:
+        item.startIso ??
+        (role === "next" ? new Date(Date.now() + 60_000).toISOString() : new Date().toISOString()),
+      video_id: item.videoId,
+      title: item.title,
+      channelName: item.channelName,
+      type: item.type,
+    }),
+    []
+  );
+
+  const playBlock = useCallback((block: {
+    video_id: string | null;
+    title: string;
+    channelName: string;
+    type?: "upcoming" | "vod" | "live" | "override";
+  }) => {
+    setTitle(block.title);
+    setChannelName(block.channelName);
+    setVideoId(block.video_id);
+    setStartSeconds(0);
+    setIsLive(block.type === "live" || block.channelName.toLowerCase().includes("abj"));
+  }, []);
+
+  const playFiller = useCallback((filler: GapFillItem): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      fillerDoneRef.current = () => {
+        fillerDoneRef.current = null;
+        fillerFailRef.current = null;
+        setActiveFiller(null);
+        resolve();
+      };
+      fillerFailRef.current = (error?: unknown) => {
+        fillerDoneRef.current = null;
+        fillerFailRef.current = null;
+        setActiveFiller(null);
+        reject(error ?? new Error("filler-playback-error"));
+      };
+      setActiveFiller(filler);
+    });
+  }, []);
+
+  const playLocalFallback = useCallback(async () => {
+    console.error("FALLBACK_LOOP_STARTED");
+    await playFiller({
+      type: "boundary",
+      duration_sec: 60,
+      title: "Nouzová ABJ smyčka",
+      purpose: "local_fallback_loop",
+    });
+  }, [playFiller]);
+
+  const onVideoEnded = useCallback(async (currentBlock?: ProgramItem | null, nextFixedBlock?: ProgramItem | null) => {
+    const sourceCurrent = currentBlock ?? nowItem;
+    const sourceNext = nextFixedBlock ?? nextItem;
+    const current = sourceCurrent ? toBlockRef(sourceCurrent, "current") : null;
+    const next = sourceNext ? toBlockRef(sourceNext, "next") : null;
+    if (!current || !next) return;
+
+    const executeUnderrun = async (): Promise<void> => {
+      const now = Date.now();
+      const remainingSec = Math.max(0, Math.floor((Date.parse(next.starts_at) - now) / 1000));
+      if (remainingSec <= 0) {
+        playBlock(next);
+        return;
+      }
+
+      try {
+        const plan = await fetchGapFillPlan({
+          seconds: remainingSec,
+          currentBlockId: current.block_id,
+          nextBlockId: next.block_id,
+          apiKey: feedApiKey,
+        });
+        const fillers = Array.isArray(plan.fillers) ? plan.fillers : [];
+        for (const filler of fillers) {
+          await playFiller(filler);
+        }
+      } catch (error) {
+        console.error("fill-gap selhalo, jedu safety-bridge", error);
+        try {
+          const safety = await fetchSafetyBridge(feedApiKey);
+          await playFiller(safety.block);
+          return executeUnderrun();
+        } catch (safetyError) {
+          console.error("safety-bridge selhalo, jedu local fallback", safetyError);
+          await playLocalFallback();
+          return executeUnderrun();
+        }
+      }
+      playBlock(next);
+    };
+
+    await executeUnderrun();
+  }, [feedApiKey, nextItem, nowItem, playBlock, playFiller, playLocalFallback, toBlockRef]);
 
   useEffect(() => {
     const tick = () => {
@@ -95,6 +207,14 @@ export default function LivePage({
               onPlayToggle={() => {
                 setIsLive((prev) => !prev);
               }}
+              onVideoEnded={() => {
+                void onVideoEnded(nowItem, nextItem);
+              }}
+            />
+            <UnderrunOverlayPlayer
+              filler={activeFiller}
+            onFinished={handleFillerFinished}
+            onError={handleFillerError}
             />
           </div>
           <LiveAlert
