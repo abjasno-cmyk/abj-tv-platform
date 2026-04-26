@@ -194,7 +194,7 @@ export default function LivePage({
           <div className="px-5 pt-4">
             <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">ABJ vysílání 24/7</p>
           </div>
-          <div className="px-5 pt-5">
+          <div className="relative px-5 pt-5">
             <VideoHero
               key={`${videoId ?? "no-video"}-${startSeconds}`}
               videoId={videoId}
