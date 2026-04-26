@@ -14,6 +14,11 @@ const NAV_LINKS = [
   { href: "/admin/moderation", label: "Moderace" },
 ];
 
+type NavNowPlaying = {
+  channel: string;
+  title: string;
+};
+
 function getPragueClockValue(date: Date): string {
   return new Intl.DateTimeFormat("cs-CZ", {
     timeZone: "Europe/Prague",
@@ -23,7 +28,11 @@ function getPragueClockValue(date: Date): string {
   }).format(date);
 }
 
-export function ABJNav() {
+type ABJNavProps = {
+  nowPlaying?: NavNowPlaying | null;
+};
+
+export function ABJNav({ nowPlaying = null }: ABJNavProps) {
   const pathname = usePathname();
   const [clock, setClock] = useState(() => getPragueClockValue(new Date()));
 
@@ -43,6 +52,10 @@ export function ABJNav() {
     if (pathname.startsWith("/live")) return "/live";
     return "";
   }, [pathname]);
+
+  const nowPlayingLabel = nowPlaying
+    ? `Právě hraje: ${nowPlaying.channel} | ${nowPlaying.title}`
+    : "Právě hraje: ABJ TV | Program se aktualizuje";
 
   return (
     <header className="h-[46px] border-b border-[var(--abj-gold-dim)] bg-abj-deep px-5">
@@ -76,6 +89,10 @@ export function ABJNav() {
         </div>
 
         <div className="flex items-center gap-5">
+          <div className="hidden min-w-[340px] max-w-[460px] rounded-md border border-[rgba(198,168,91,0.45)] bg-[linear-gradient(145deg,rgba(24,36,58,0.92),rgba(8,16,29,0.95))] px-3 py-2 shadow-[0_8px_20px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.08)] xl:block">
+            <p className="mb-1 text-[9px] uppercase tracking-[0.16em] text-abj-gold">Live box</p>
+            <p className="truncate text-[12px] font-medium text-abj-text1">{nowPlayingLabel}</p>
+          </div>
           <ReplitHealthBadge />
           <div className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 animate-[blink_2s_ease-in-out_infinite] rounded-full bg-abj-red" />

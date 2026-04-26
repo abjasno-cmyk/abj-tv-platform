@@ -55,6 +55,7 @@ export default function LivePage({
     [timelineItems, videoId]
   );
   const nowItem = selectedIndex >= 0 ? timelineItems[selectedIndex] : timelineItems[0] ?? null;
+  const previousItem = selectedIndex > 0 ? timelineItems[selectedIndex - 1] : null;
   const nextItem =
     selectedIndex >= 0
       ? timelineItems[selectedIndex + 1] ?? null
@@ -63,9 +64,12 @@ export default function LivePage({
         : null;
   const nowNextWindow = useMemo(() => {
     const base = new Date();
+    const minus25 = new Date(base.getTime() - 25 * 60_000);
     const plus25 = new Date(base.getTime() + 25 * 60_000);
     const plus55 = new Date(base.getTime() + 55 * 60_000);
     return {
+      previousStartIso: minus25.toISOString(),
+      previousEndIso: base.toISOString(),
       nowStartIso: base.toISOString(),
       nowEndIso: plus25.toISOString(),
       nextStartIso: plus25.toISOString(),
@@ -188,7 +192,16 @@ export default function LivePage({
 
   return (
     <section className="min-h-screen bg-abj-main text-abj-text1">
-      <ABJNav />
+      <ABJNav
+        nowPlaying={
+          nowItem
+            ? {
+                channel: nowItem.channelName || "ABJ Síť",
+                title: nowItem.title,
+              }
+            : null
+        }
+      />
       <div className="flex h-[calc(100vh-46px)] overflow-hidden">
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="px-5 pt-4">
@@ -213,8 +226,8 @@ export default function LivePage({
             />
             <UnderrunOverlayPlayer
               filler={activeFiller}
-            onFinished={handleFillerFinished}
-            onError={handleFillerError}
+              onFinished={handleFillerFinished}
+              onError={handleFillerError}
             />
           </div>
           <LiveAlert
@@ -226,6 +239,15 @@ export default function LivePage({
             }}
           />
           <NowNextBar
+            previousItem={
+              previousItem
+                ? {
+                    title: previousItem.title,
+                    start: nowNextWindow.previousStartIso,
+                    end: nowNextWindow.previousEndIso,
+                  }
+                : null
+            }
             nowItem={
               nowItem
                 ? {
