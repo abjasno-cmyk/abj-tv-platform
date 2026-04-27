@@ -57,6 +57,16 @@ export function ABJNav({ nowPlaying = null }: ABJNavProps) {
     ? `Právě hraje: ${nowPlaying.channel} | ${nowPlaying.title}`
     : "Právě hraje: ABJ TV | Program se aktualizuje";
 
+  const handleNavClick = (event: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    // Keep modified clicks for new tabs/windows untouched.
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+      return;
+    }
+    // Force deterministic navigation even if another layer prevents SPA click handling.
+    event.preventDefault();
+    window.location.assign(href);
+  };
+
   return (
     <header
       className="fixed inset-x-0 top-0 h-[46px] border-b border-[var(--abj-gold-dim)] bg-abj-deep px-5 pointer-events-auto isolate"
@@ -76,6 +86,7 @@ export function ABJNav({ nowPlaying = null }: ABJNavProps) {
                   <li key={`${link.href}-${link.label}`}>
                     <Link
                       href={link.href}
+                      onClick={(event) => handleNavClick(event, link.href)}
                       className={`relative z-[2] pointer-events-auto border-b-[1.5px] pb-1 font-[var(--font-sans)] text-[12px] tracking-[0.06em] ${
                         isActive
                           ? "border-abj-gold text-abj-gold"
