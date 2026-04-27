@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ProgramItem, DayProgram } from "@/lib/epg-types";
-import { ABJNav } from "@/components/abj/Nav";
 import { VideoHero } from "@/components/abj/VideoHero";
 import { LiveAlert } from "@/components/abj/LiveAlert";
 import { NowNextBar } from "@/components/abj/NowNextBar";
@@ -32,6 +31,10 @@ type LivePageProps = {
   initialStartSeconds?: number;
 };
 
+function getTimelineSegmentId(item: ProgramItem): string {
+  return item.videoId ?? `${item.time}-${item.title}`;
+}
+
 export default function LivePage({
   epg,
   initialVideoId,
@@ -54,7 +57,7 @@ export default function LivePage({
 
 function mapProgramItemToTimelineSegment(item: ProgramItem, index: number): TimelineSegment {
   return {
-    id: item.videoId ?? `${item.time}-${item.title}-${index}`,
+    id: getTimelineSegmentId(item),
     title: item.title,
     duration: item.type === "live" ? "75 min" : item.type === "upcoming" ? "30 min" : "25 min",
     start_time: item.time,
@@ -348,16 +351,6 @@ function LivePageContent({
 
   return (
     <section className="min-h-screen bg-abj-main text-abj-text1">
-      <ABJNav
-        nowPlaying={
-          nowItem
-            ? {
-                channel: nowItem.channelName || "ABJ Síť",
-                title: nowItem.title,
-              }
-            : null
-        }
-      />
       <LiveStrip viewers={liveState.viewers_count} headline={title} />
       <div className="flex h-[calc(100vh-46px)] overflow-hidden">
         <div className="flex min-w-0 flex-1 flex-col">
@@ -380,7 +373,7 @@ function LivePageContent({
               items={liveState.timeline}
               onJump={(segment) => {
                 const target = timelineItems.find(
-                  (item) => (item.videoId ?? `${item.time}-${item.title}`) === segment.id
+                  (item) => getTimelineSegmentId(item) === segment.id
                 );
                 if (!target) return;
                 setTitle(target.title);
