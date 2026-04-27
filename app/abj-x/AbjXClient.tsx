@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+import { NewsTile } from "@/components/abj/NewsTile";
 import { useFeed } from "@/hooks/useFeed";
 import type { FeedPost } from "@/lib/api";
 
@@ -14,9 +15,9 @@ type FeedItem = {
   impact: string | null;
   freshness: "breaking" | "today" | "week" | "evergreen";
   urgency: 1 | 2 | 3;
-  createdAt: string;
   displayAt: string;
   videoId: string;
+  aiInsight: string;
 };
 
 function getPostTimestamp(post: FeedPost): number {
@@ -34,20 +35,20 @@ function getPostTimestamp(post: FeedPost): number {
 function toItems(posts: FeedPost[]): FeedItem[] {
   return posts
     .map((post) => ({
-    id: post.id,
-    channel: post.channel_name || "Neznámý kanál",
-    headline: post.headline?.trim() || post.what?.trim() || "Bez titulku",
-    what: post.what?.trim() || "",
-    why: post.why?.trim() || null,
-    impact: post.impact?.trim() || null,
-    freshness: post.freshness,
-    urgency: post.urgency,
-    createdAt: post.created_at,
-    displayAt:
-      (post as FeedPost & { editorial_at?: string | null }).editorial_at ??
-      (post as FeedPost & { updated_at?: string | null }).updated_at ??
-      post.created_at,
-    videoId: post.video_id,
+      id: post.id,
+      channel: post.channel_name || "Neznámý kanál",
+      headline: post.headline?.trim() || post.what?.trim() || "Bez titulku",
+      what: post.what?.trim() || "",
+      why: post.why?.trim() || null,
+      impact: post.impact?.trim() || null,
+      freshness: post.freshness,
+      urgency: post.urgency,
+      displayAt:
+        (post as FeedPost & { editorial_at?: string | null }).editorial_at ??
+        (post as FeedPost & { updated_at?: string | null }).updated_at ??
+        post.created_at,
+      videoId: post.video_id,
+      aiInsight: post.impact?.trim() || post.why?.trim() || post.what?.trim() || "Bez doplňujícího insightu.",
     }))
     .sort((a, b) => {
       const sourceA = posts.find((post) => post.id === a.id) ?? null;
@@ -59,13 +60,6 @@ function toItems(posts: FeedPost[]): FeedItem[] {
       if (!Number.isFinite(bTs)) return -1;
       return bTs - aTs;
     });
-}
-
-function freshnessClass(value: FeedItem["freshness"]): string {
-  if (value === "breaking") return "border-[#A63A3A] bg-[rgba(166,58,58,0.2)] text-[#F3D8D8]";
-  if (value === "today") return "border-[#4F79B8] bg-[rgba(79,121,184,0.2)] text-[#D8E4F3]";
-  if (value === "week") return "border-[rgba(154,163,178,0.5)] bg-[rgba(154,163,178,0.14)] text-[#D2D8E2]";
-  return "border-[#4A7E61] bg-[rgba(74,126,97,0.2)] text-[#D5EBDD]";
 }
 
 function formatCreatedAt(value: string): string {
@@ -81,16 +75,100 @@ function formatCreatedAt(value: string): string {
   }).format(date);
 }
 
+function toTag(item: FeedItem): "BREAKING" | "DNES" | "TÝDEN" | "STÁLÉ" {
+  if (item.freshness === "breaking") return "BREAKING";
+  if (item.freshness === "today") return "DNES";
+  if (item.freshness === "week") return "TÝDEN";
+  return "STÁLÉ";
+}
+
 export function AbjXClient() {
-  const { posts, loading, hasMore, loadMore } = useFeed();
+  const { posts, loading, hasMore, loadMore, sseConnected } = useFeed();
   const items = useMemo(() => toItems(posts), [posts]);
+  const [likedIds, setLikedIds] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = window.localStorage.getItem("abj-x-preferences");
+      if (!raw) return {};
+      const parsed = JSON.parse(raw) as { liked?: Record<string, boolean> };
+      return parsed.liked && typeof parsed.liked === "object" ? parsed.liked : {};
+    } catch {
+      return {};
+    }
+  });
+  const [savedIds, setSavedIds] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = window.localStorage.getItem("abj-x-preferences");
+      if (!raw) return {};
+      const parsed = JSON.parse(raw) as { saved?: Record<string, boolean> };
+      return parsed.saved && typeof parsed.saved === "object" ? parsed.saved : {};
+    } catch {
+      return {};
+    }
+  });
+  const [expandedTopicIds, setExpandedTopicIds] = useState<Record<string, boolean>>({});
+  const loadMoreAnchorRef = useRef<HTMLDivElement | null>(null);
+  const totalCount = items.length;
+  const breakingCount = items.filter((item) => item.freshness === "breaking").length;
+  const todayCount = items.filter((item) => item.freshness === "today").length;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        "abj-x-preferences",
+        JSON.stringify({
+          liked: likedIds,
+          saved: savedIds,
+        })
+      );
+    } catch {
+      // Ignore storage write failures (private mode, quota, etc.).
+    }
+  }, [likedIds, savedIds]);
+
+  useEffect(() => {
+    const anchor = loadMoreAnchorRef.current;
+    if (!anchor || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        if (loading) return;
+        void loadMore();
+      },
+      {
+        rootMargin: "220px 0px",
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(anchor);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore, loading]);
 
   return (
-    <section className="mx-auto w-full max-w-4xl space-y-6 px-3 py-6 sm:px-5">
-      <header className="space-y-2">
+    <section className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-5">
+      <header className="space-y-3">
         <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">ABJ X</p>
         <h1 className="font-[var(--font-serif)] text-3xl font-semibold text-abj-text1">Textové zprávy</h1>
         <p className="text-sm text-abj-text2">Krátké zprávy a souvislosti napříč ABJ sítí</p>
+        <div className="flex flex-wrap gap-2 text-xs text-abj-text2">
+          <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1">{totalCount} zpráv</span>
+          <span className="rounded-full border border-red-400/35 bg-red-500/10 px-2.5 py-1">{breakingCount} BREAKING</span>
+          <span className="rounded-full border border-yellow-400/35 bg-yellow-500/10 px-2.5 py-1">{todayCount} DNES</span>
+          <span
+            className={`rounded-full border px-2.5 py-1 ${
+              sseConnected
+                ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-200"
+                : "border-white/10 bg-white/[0.03] text-abj-text2"
+            }`}
+          >
+            {sseConnected ? "Live sync aktivní" : "Live sync čeká"}
+          </span>
+        </div>
       </header>
 
       {items.length === 0 && !loading ? (
@@ -98,32 +176,59 @@ export function AbjXClient() {
           Zatím žádné textové zprávy.
         </div>
       ) : (
-        <div className="space-y-3">
-          {items.map((item) => (
-            <article key={item.id} className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel p-3 sm:p-4">
-              <div className="mb-2 flex flex-wrap items-center gap-2">
-                {item.urgency >= 3 ? (
-                  <span className="rounded-full bg-[#B23B3B] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white">
-                    BREAKING
-                  </span>
-                ) : null}
-                <span
-                  className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] ${freshnessClass(item.freshness)}`}
-                >
-                  {item.freshness}
-                </span>
-                <span className="text-[11px] uppercase tracking-[0.08em] text-abj-text2">{item.channel}</span>
-                <span className="text-[11px] text-abj-text2">{formatCreatedAt(item.displayAt)}</span>
-              </div>
-
-              <h2 className="text-base font-semibold text-abj-text1 sm:text-lg">{item.headline}</h2>
-              <p className="mt-1 text-sm text-abj-text1">{item.what}</p>
-              {item.why ? <p className="mt-1 text-sm text-abj-text2">{item.why}</p> : null}
-              {item.impact ? <p className="mt-1 text-sm font-medium text-abj-gold">{item.impact}</p> : null}
-            </article>
-          ))}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {loading && items.length === 0
+            ? Array.from({ length: 6 }, (_, idx) => (
+                <div key={`skeleton-${idx}`} className="h-40 animate-pulse rounded-xl bg-gray-800" />
+              ))
+            : items.map((item, index) => (
+                <NewsTile
+                  key={item.id}
+                  className={
+                    index % 3 === 1
+                      ? "xl:mt-4"
+                      : index % 3 === 2
+                        ? "md:mt-2 xl:mt-7"
+                        : "md:mt-0"
+                  }
+                  videoHref={`/videos?videoId=${encodeURIComponent(item.videoId)}`}
+                  title={item.headline}
+                  summary={item.what}
+                  source={item.channel}
+                  time={formatCreatedAt(item.displayAt)}
+                  tag={toTag(item)}
+                  aiInsight={item.aiInsight}
+                  liked={Boolean(likedIds[item.id])}
+                  saved={Boolean(savedIds[item.id])}
+                  onToggleLike={() =>
+                    setLikedIds((prev) => ({
+                      ...prev,
+                      [item.id]: !prev[item.id],
+                    }))
+                  }
+                  onToggleSave={() =>
+                    setSavedIds((prev) => ({
+                      ...prev,
+                      [item.id]: !prev[item.id],
+                    }))
+                  }
+                  onShowMore={() =>
+                    setExpandedTopicIds((prev) => ({
+                      ...prev,
+                      [item.id]: !prev[item.id],
+                    }))
+                  }
+                />
+              ))}
+          {Object.values(expandedTopicIds).some(Boolean) ? (
+            <div className="md:col-span-2 xl:col-span-3 rounded-xl border border-yellow-400/30 bg-yellow-500/10 p-4 text-sm text-yellow-100">
+              Zobrazení podobných témat je připravené jako UX placeholder pro navazující implementaci filtrů.
+            </div>
+          ) : null}
         </div>
       )}
+
+      {hasMore ? <div ref={loadMoreAnchorRef} className="h-2 w-full" aria-hidden /> : null}
 
       {hasMore ? (
         <div className="flex justify-center">

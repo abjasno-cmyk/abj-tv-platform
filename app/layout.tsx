@@ -30,7 +30,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang="cs" className={`${playfair.variable} ${inter.variable}`}>
       <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
         <ABJNav />
-        <main className="min-h-[calc(100vh-46px)] overflow-hidden">{children}</main>
+        <main className="min-h-[calc(100vh-46px)] overflow-hidden pt-[46px]">{children}</main>
         {showEditorialDebug ? <EditorialEventDebugPanel /> : null}
       </body>
     </html>
