@@ -228,6 +228,7 @@ export default function ProgramPage() {
   const [startedPlayback, setStartedPlayback] = useState<Record<string, boolean>>({});
   const itemRefs = useRef<Record<string, HTMLElement | null>>({});
   const skipTracked = useRef<Set<string>>(new Set());
+  const lastAutoScrolledBlockId = useRef<string | null>(null);
   const feed = useMemo(() => mapApiProgramToView(program), [program]);
   const rows = useMemo(() => feed.blocks ?? [], [feed.blocks]);
   const isLoading = hookLoading && rows.length === 0;
@@ -280,6 +281,30 @@ export default function ProgramPage() {
     }
     return null;
   }, [nowMs, rows]);
+  const scrollTargetBlockId = useMemo(() => {
+    if (currentBlockId) return currentBlockId;
+    const firstUpcoming = rows.find((block) => {
+      const start = parseDateMs(block.startsAt);
+      return start !== null && start > nowMs;
+    });
+    if (firstUpcoming) return firstUpcoming.id;
+    return rows[rows.length - 1]?.id ?? null;
+  }, [currentBlockId, nowMs, rows]);
+
+  useEffect(() => {
+    if (!scrollTargetBlockId) return;
+    if (lastAutoScrolledBlockId.current === scrollTargetBlockId) return;
+    const target = itemRefs.current[scrollTargetBlockId];
+    if (!target) return;
+
+    const stickyOffset = 132;
+    const top = window.scrollY + target.getBoundingClientRect().top - stickyOffset;
+    window.scrollTo({
+      top: Math.max(0, top),
+      behavior: lastAutoScrolledBlockId.current ? "smooth" : "auto",
+    });
+    lastAutoScrolledBlockId.current = scrollTargetBlockId;
+  }, [scrollTargetBlockId]);
 
   return (
     <section className="mx-auto w-full max-w-4xl px-3 pb-6 pt-4 sm:px-5">
