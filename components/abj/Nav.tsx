@@ -58,14 +58,14 @@ export function ABJNav({ nowPlaying = null }: ABJNavProps) {
     : "Právě hraje: ABJ TV | Program se aktualizuje";
 
   return (
-    <header className="fixed inset-x-0 top-0 z-[200] h-[46px] border-b border-[var(--abj-gold-dim)] bg-abj-deep px-5">
+    <header className="fixed inset-x-0 top-0 z-[1000] h-[46px] border-b border-[var(--abj-gold-dim)] bg-abj-deep px-5 pointer-events-auto isolate">
       <div className="flex h-full items-center justify-between">
         <div className="flex items-center">
           <p className="font-[var(--font-serif)] text-[17px] font-bold tracking-[0.07em] text-abj-gold">ABJ</p>
           <span className="mx-[10px] text-[rgba(198,168,91,0.25)]">|</span>
           <p className="font-[var(--font-sans)] text-[10px] uppercase tracking-[0.2em] text-abj-text2">Síť</p>
 
-          <nav className="ml-[26px]">
+          <nav className="ml-[26px] pointer-events-auto">
             <ul className="flex items-center gap-[22px]">
               {NAV_LINKS.map((link) => {
                 const isActive = activeHref === link.href;
