@@ -58,7 +58,7 @@ export function ABJNav({ nowPlaying = null }: ABJNavProps) {
     : "Právě hraje: ABJ TV | Program se aktualizuje";
 
   return (
-    <header className="h-[46px] border-b border-[var(--abj-gold-dim)] bg-abj-deep px-5">
+    <header className="relative z-[90] h-[46px] border-b border-[var(--abj-gold-dim)] bg-abj-deep px-5">
       <div className="flex h-full items-center justify-between">
         <div className="flex items-center">
           <p className="font-[var(--font-serif)] text-[17px] font-bold tracking-[0.07em] text-abj-gold">ABJ</p>
