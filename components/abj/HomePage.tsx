@@ -21,6 +21,11 @@ type HomePageProps = {
   onPlayToggle?: () => void;
 };
 
+function fallbackThumb(videoId: string | null): string | null {
+  if (!videoId) return null;
+  return `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`;
+}
+
 export function HomePage({
   days,
   videoId,
@@ -48,7 +53,8 @@ export function HomePage({
             : item.type === "upcoming"
               ? "Navazuje v programu"
               : "Vybráno z aktuálního výběru",
-        image: item.thumbnail,
+        image: item.thumbnail ?? fallbackThumb(item.videoId),
+        fallbackImage: "/placeholder-thumb.jpg",
       }));
   }, [days, videoId]);
 
