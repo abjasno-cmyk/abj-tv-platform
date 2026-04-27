@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import type { RecommendedVideo } from "@/lib/liveRuntime";
 
 export type LiveSegment = {
   id: string;
@@ -26,6 +27,8 @@ export type LiveState = {
   next_segment: LiveSegment | null;
   timeline: TimelineSegment[];
   viewers_count: number;
+  mode: "live" | "on_demand";
+  onDemandVideo: RecommendedVideo | null;
 };
 
 type LiveStateContextValue = {
@@ -34,6 +37,8 @@ type LiveStateContextValue = {
   setNextSegment: (segment: LiveSegment | null) => void;
   setTimeline: (segments: TimelineSegment[]) => void;
   setViewersCount: (count: number) => void;
+  setMode: (mode: "live" | "on_demand") => void;
+  setOnDemandVideo: (video: RecommendedVideo | null) => void;
   setLiveState: React.Dispatch<React.SetStateAction<LiveState>>;
 };
 
@@ -49,6 +54,8 @@ const DEFAULT_LIVE_STATE: LiveState = {
   next_segment: null,
   timeline: [],
   viewers_count: 0,
+  mode: "live",
+  onDemandVideo: null,
 };
 
 export function LiveStateProvider({ initialState, children }: LiveStateProviderProps) {
@@ -71,6 +78,12 @@ export function LiveStateProvider({ initialState, children }: LiveStateProviderP
       },
       setViewersCount: (count: number) => {
         setLiveState((prev) => ({ ...prev, viewers_count: Math.max(0, Math.floor(count)) }));
+      },
+      setMode: (mode: "live" | "on_demand") => {
+        setLiveState((prev) => ({ ...prev, mode }));
+      },
+      setOnDemandVideo: (video: RecommendedVideo | null) => {
+        setLiveState((prev) => ({ ...prev, onDemandVideo: video }));
       },
       setLiveState,
     }),

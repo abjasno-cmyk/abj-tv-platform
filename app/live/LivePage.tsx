@@ -11,6 +11,7 @@ import { VideoPlayer as MobileFirstVideoPlayer } from "@/components/live/VideoPl
 import { Timeline as MobileFirstTimeline } from "@/components/live/Timeline";
 import { WhatItMeansCard } from "@/components/live/WhatItMeansCard";
 import { QuickActions } from "@/components/live/QuickActions";
+import { RecommendedStrip } from "@/components/live/RecommendedStrip";
 import {
   LiveStateProvider,
   useLiveState,
@@ -19,6 +20,7 @@ import {
 } from "@/components/live/LiveState";
 import type { GapFillItem } from "@/lib/underrunProtection";
 import { fetchGapFillPlan, fetchSafetyBridge, readFeedApiKeyFromClientEnv } from "@/lib/underrunProtection";
+import { fetchLiveRuntime, type LiveRuntimeResponse, type RecommendedVideo } from "@/lib/liveRuntime";
 
 type LivePageProps = {
   epg: DayProgram[];
@@ -30,6 +32,28 @@ type LivePageProps = {
 
 function getTimelineSegmentId(item: ProgramItem): string {
   return item.videoId ?? `${item.time}-${item.title}`;
+}
+
+function parseIsoMs(value: string): number {
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function toProgramItemFromRuntimeBlock(block: NonNullable<LiveRuntimeResponse["block"]>): ProgramItem {
+  const startMs = parseIsoMs(block.startedAt);
+  const nowMs = Date.now();
+  const type: ProgramItem["type"] = nowMs >= startMs ? "live" : "upcoming";
+  return {
+    time: block.startedAt,
+    title: block.title,
+    channelName: block.channel || "ABJ TV",
+    thumbnail: null,
+    videoId: block.videoId,
+    isABJ: (block.channel || "").toLowerCase().includes("abj"),
+    type,
+    startIso: block.startedAt,
+    endIso: block.endsAt,
+  };
 }
 
 export default function LivePage({
@@ -124,7 +148,20 @@ function LivePageContent({
     setNextSegment,
     setTimeline,
     setViewersCount,
+    setMode,
+    setOnDemandVideo,
   } = useLiveState();
+  const mode = liveState.mode;
+  const onDemandVideo = liveState.onDemandVideo;
+  const [runtimeRecommended, setRuntimeRecommended] = useState<RecommendedVideo[] | undefined>(undefined);
+  const [runtimeBlockEndsAt, setRuntimeBlockEndsAt] = useState<string | null>(null);
+  const [runtimeLoading, setRuntimeLoading] = useState(true);
+  const [returnOverlayStep, setReturnOverlayStep] = useState<number | null>(null);
+  const onDemandStartedAtRef = useRef<number | null>(null);
+  const runtimePrefetchRef = useRef<LiveRuntimeResponse | null>(null);
+  const runtimeRefreshTimerRef = useRef<number | null>(null);
+  const returnOverlayTimerRef = useRef<number | null>(null);
+  const staleRecoveryTimerRef = useRef<number | null>(null);
 
   const timelineItems = useMemo(
     () => safeEpg.flatMap((day) => day.items),
@@ -217,6 +254,99 @@ function LivePageContent({
     return () => clearInterval(timer);
   }, [setViewersCount, videoId]);
 
+  const playBlock = useCallback((block: {
+    video_id: string | null;
+    title: string;
+    channelName: string;
+    type?: "upcoming" | "vod" | "live" | "override";
+  }) => {
+    setTitle(block.title);
+    setChannelName(block.channelName);
+    setVideoId(block.video_id);
+    setStartSeconds(0);
+    setIsLive(block.type === "live" || block.channelName.toLowerCase().includes("abj"));
+  }, []);
+
+  const applyRuntimeToLive = useCallback(
+    (runtime: LiveRuntimeResponse) => {
+      setRuntimeRecommended(runtime.recommended);
+      setRuntimeBlockEndsAt(runtime.block?.endsAt ?? null);
+
+      if (runtime.block) {
+        const mapped = toProgramItemFromRuntimeBlock(runtime.block);
+        playBlock({
+          video_id: mapped.videoId,
+          title: mapped.title,
+          channelName: mapped.channelName,
+          type: mapped.type,
+        });
+        return;
+      }
+
+      if (Array.isArray(runtime.recommended) && runtime.recommended.length > 0) {
+        const fallback = runtime.recommended[0];
+        onDemandStartedAtRef.current = Date.now();
+        setMode("on_demand");
+        setOnDemandVideo(fallback);
+        console.info("[escape] open", { id: fallback.id, reason: fallback.reason });
+      }
+    },
+    [playBlock, setMode, setOnDemandVideo]
+  );
+
+  const fetchRuntimeAndApply = useCallback(
+    async (options?: { applyBlock?: boolean; signal?: AbortSignal }): Promise<LiveRuntimeResponse | null> => {
+      try {
+        const runtime = await fetchLiveRuntime({ signal: options?.signal });
+        setRuntimeRecommended(runtime.recommended);
+        setRuntimeBlockEndsAt(runtime.block?.endsAt ?? null);
+        if (options?.applyBlock) {
+          applyRuntimeToLive(runtime);
+        }
+        return runtime;
+      } catch (error) {
+        console.error("live-runtime-fetch-failed", error);
+        return null;
+      } finally {
+        setRuntimeLoading(false);
+      }
+    },
+    [applyRuntimeToLive]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+    void fetchRuntimeAndApply({ applyBlock: false, signal: controller.signal }).then((runtime) => {
+      if (cancelled || !runtime) return;
+      if (runtime.block === null && Array.isArray(runtime.recommended) && runtime.recommended.length > 0) {
+        const fallback = runtime.recommended[0];
+        onDemandStartedAtRef.current = Date.now();
+        setMode("on_demand");
+        setOnDemandVideo(fallback);
+        console.info("[escape] open", { id: fallback.id, reason: fallback.reason });
+      }
+    });
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [fetchRuntimeAndApply, setMode, setOnDemandVideo]);
+
+  useEffect(() => {
+    return () => {
+      if (runtimeRefreshTimerRef.current !== null) {
+        window.clearTimeout(runtimeRefreshTimerRef.current);
+      }
+      if (returnOverlayTimerRef.current !== null) {
+        window.clearTimeout(returnOverlayTimerRef.current);
+      }
+      if (staleRecoveryTimerRef.current !== null) {
+        window.clearTimeout(staleRecoveryTimerRef.current);
+      }
+    };
+  }, []);
+
   const toBlockRef = useCallback(
     (item: ProgramItem, role: "current" | "next") => ({
       block_id: item.videoId ?? `${role}-${item.time}-${item.title}`,
@@ -230,19 +360,6 @@ function LivePageContent({
     }),
     []
   );
-
-  const playBlock = useCallback((block: {
-    video_id: string | null;
-    title: string;
-    channelName: string;
-    type?: "upcoming" | "vod" | "live" | "override";
-  }) => {
-    setTitle(block.title);
-    setChannelName(block.channelName);
-    setVideoId(block.video_id);
-    setStartSeconds(0);
-    setIsLive(block.type === "live" || block.channelName.toLowerCase().includes("abj"));
-  }, []);
 
   const playFiller = useCallback((filler: GapFillItem): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -273,17 +390,55 @@ function LivePageContent({
   }, [playFiller]);
 
   const onVideoEnded = useCallback(async (currentBlock?: ProgramItem | null, nextFixedBlock?: ProgramItem | null) => {
+    if (mode === "on_demand") {
+      setReturnOverlayStep(3);
+      const countdown = (step: number) => {
+        setReturnOverlayStep(step);
+        if (step <= 1) {
+          const completeReturn = async () => {
+            setMode("live");
+            setOnDemandVideo(null);
+            const elapsedSec = onDemandStartedAtRef.current
+              ? Math.max(0, Math.floor((Date.now() - onDemandStartedAtRef.current) / 1000))
+              : 0;
+            console.info("[escape] return", { afterSec: elapsedSec });
+            onDemandStartedAtRef.current = null;
+            const runtime = runtimePrefetchRef.current ?? (await fetchRuntimeAndApply({ applyBlock: true }));
+            runtimePrefetchRef.current = null;
+            if (!runtime) {
+              if (staleRecoveryTimerRef.current !== null) window.clearTimeout(staleRecoveryTimerRef.current);
+              staleRecoveryTimerRef.current = window.setTimeout(() => {
+                void fetchRuntimeAndApply({ applyBlock: true });
+              }, 1000);
+            }
+            setReturnOverlayStep(null);
+          };
+          void completeReturn();
+          return;
+        }
+        returnOverlayTimerRef.current = window.setTimeout(() => countdown(step - 1), 1000);
+      };
+      countdown(3);
+      return;
+    }
+
     const sourceCurrent = currentBlock ?? nowItem;
     const sourceNext = nextFixedBlock ?? nextItem;
     const current = sourceCurrent ? toBlockRef(sourceCurrent, "current") : null;
     const next = sourceNext ? toBlockRef(sourceNext, "next") : null;
-    if (!current || !next) return;
+    if (!current || !next) {
+      await fetchRuntimeAndApply({ applyBlock: true });
+      return;
+    }
 
     const executeUnderrun = async (): Promise<void> => {
       const now = Date.now();
       const remainingSec = Math.max(0, Math.floor((Date.parse(next.starts_at) - now) / 1000));
       if (remainingSec <= 0) {
-        playBlock(next);
+        const refreshed = await fetchRuntimeAndApply({ applyBlock: true });
+        if (!refreshed?.block) {
+          playBlock(next);
+        }
         return;
       }
 
@@ -314,7 +469,19 @@ function LivePageContent({
     };
 
     await executeUnderrun();
-  }, [feedApiKey, nextItem, nowItem, playBlock, playFiller, playLocalFallback, toBlockRef]);
+  }, [
+    feedApiKey,
+    fetchRuntimeAndApply,
+    mode,
+    nextItem,
+    nowItem,
+    playBlock,
+    playFiller,
+    playLocalFallback,
+    setMode,
+    setOnDemandVideo,
+    toBlockRef,
+  ]);
 
   const progressNormalized = useMemo(
     () => Math.max(0, Math.min(1, progressPercent / 100)),
@@ -328,9 +495,12 @@ function LivePageContent({
   }, [fallbackNextStart, nextItem]);
 
   const activeVideoUrl = useMemo(() => {
+    if (mode === "on_demand") {
+      return onDemandVideo?.videoUrl ?? null;
+    }
     if (!videoId) return null;
     return `https://www.youtube.com/watch?v=${videoId}`;
-  }, [videoId]);
+  }, [mode, onDemandVideo, videoId]);
   const interpretationCopy = useMemo(
     () => getInterpretationCopy(nowItem, nextItem),
     [nowItem, nextItem]
@@ -363,6 +533,48 @@ function LivePageContent({
     return () => clearInterval(timer);
   }, [nextItem, progressPercent]);
 
+  useEffect(() => {
+    if (mode !== "on_demand" || !onDemandVideo?.durationSec) return;
+    const prefetchDelay = Math.max(0, (onDemandVideo.durationSec - 5) * 1000);
+    if (runtimeRefreshTimerRef.current !== null) {
+      window.clearTimeout(runtimeRefreshTimerRef.current);
+    }
+    runtimeRefreshTimerRef.current = window.setTimeout(() => {
+      void fetchRuntimeAndApply({ applyBlock: false }).then((runtime) => {
+        runtimePrefetchRef.current = runtime;
+      });
+    }, prefetchDelay);
+    return () => {
+      if (runtimeRefreshTimerRef.current !== null) {
+        window.clearTimeout(runtimeRefreshTimerRef.current);
+      }
+    };
+  }, [fetchRuntimeAndApply, mode, onDemandVideo]);
+
+  const handleRecommendedSelect = useCallback(
+    (video: RecommendedVideo) => {
+      setMode("on_demand");
+      setOnDemandVideo(video);
+      onDemandStartedAtRef.current = Date.now();
+      console.info("[escape] open", { id: video.id, reason: video.reason });
+    },
+    [setMode, setOnDemandVideo]
+  );
+
+  const shouldRenderRecommendedStrip =
+    runtimeRecommended !== undefined && Array.isArray(runtimeRecommended) && runtimeRecommended.length === 3;
+
+  useEffect(() => {
+    if (mode !== "live") return;
+    if (!runtimeBlockEndsAt) return;
+    const now = Date.now();
+    const endsAt = Date.parse(runtimeBlockEndsAt);
+    if (!Number.isFinite(endsAt)) return;
+    if (endsAt < now) {
+      void fetchRuntimeAndApply({ applyBlock: true });
+    }
+  }, [fetchRuntimeAndApply, mode, runtimeBlockEndsAt]);
+
   return (
     <section className="h-[calc(100vh-46px)] overflow-hidden bg-abj-main text-abj-text1">
       <LiveStrip viewers={liveState.viewers_count} headline={title} />
@@ -378,10 +590,20 @@ function LivePageContent({
               progress={progressNormalized}
               nextStartTimestamp={nextStartTimestamp}
               compact
+              showLiveUi={mode === "live"}
+              cornerBadgeText={mode === "on_demand" ? "Sledujete výběr" : null}
               onEnded={() => {
                 void onVideoEnded(nowItem, nextItem);
               }}
             />
+            {returnOverlayStep !== null ? (
+              <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-[#040B16]/88">
+                <div className="rounded-xl border border-[#3D5F87] bg-[#0A1D34]/90 px-6 py-5 text-center shadow-[0_16px_42px_rgba(0,0,0,0.45)]">
+                  <p className="text-sm font-semibold text-[#DCEBFF]">Vracíme vás do živého vysílání</p>
+                  <p className="mt-2 text-4xl font-bold text-white">{returnOverlayStep}</p>
+                </div>
+              </div>
+            ) : null}
             <UnderrunOverlayPlayer
               filler={activeFiller}
               onFinished={handleFillerFinished}
@@ -389,46 +611,59 @@ function LivePageContent({
             />
           </div>
           <div className="px-3 pb-2 md:px-5">
-            <MobileFirstTimeline
-              items={liveState.timeline}
-              onJump={(segment) => {
-                const target = timelineItems.find(
-                  (item) => getTimelineSegmentId(item) === segment.id
-                );
-                if (!target) return;
-                setTitle(target.title);
-                setChannelName(target.channelName);
-                setVideoId(target.videoId);
-                setStartSeconds(0);
-                setIsLive(target.type === "live" || target.channelName.toLowerCase().includes("abj"));
-              }}
-            />
+            {runtimeLoading || shouldRenderRecommendedStrip ? (
+              <div className="min-h-[170px]">
+                {shouldRenderRecommendedStrip ? (
+                  <RecommendedStrip items={runtimeRecommended ?? []} onSelect={handleRecommendedSelect} />
+                ) : null}
+              </div>
+            ) : null}
           </div>
-          <div className="grid gap-2 px-3 pb-2 md:grid-cols-[minmax(0,1fr)_320px] md:px-5">
-            <WhatItMeansCard
-              headline="Co to znamená právě teď"
-              summary={interpretationCopy.summary}
-              whyItMatters={interpretationCopy.whyItMatters}
-              impact={interpretationCopy.impact}
-            />
-            <QuickActions
-              onNextTopic={() => {
-                if (!nextItem) return;
-                setTitle(nextItem.title);
-                setChannelName(nextItem.channelName);
-                setVideoId(nextItem.videoId);
-                setStartSeconds(0);
-                setIsLive(nextItem.type === "live" || nextItem.channelName.toLowerCase().includes("abj"));
-              }}
-              onStayOnTopic={() => {
-                setStartSeconds((prev) => Math.max(0, prev - 15));
-              }}
-              onShowContext={() => {
-                if (!videoId) return;
-                window.location.href = `/videos?videoId=${encodeURIComponent(videoId)}`;
-              }}
-            />
-          </div>
+          {mode === "live" ? (
+            <>
+              <div className="px-3 pb-2 md:px-5">
+                <MobileFirstTimeline
+                  items={liveState.timeline}
+                  onJump={(segment) => {
+                    const target = timelineItems.find(
+                      (item) => getTimelineSegmentId(item) === segment.id
+                    );
+                    if (!target) return;
+                    setTitle(target.title);
+                    setChannelName(target.channelName);
+                    setVideoId(target.videoId);
+                    setStartSeconds(0);
+                    setIsLive(target.type === "live" || target.channelName.toLowerCase().includes("abj"));
+                  }}
+                />
+              </div>
+              <div className="grid gap-2 px-3 pb-2 md:grid-cols-[minmax(0,1fr)_320px] md:px-5">
+                <WhatItMeansCard
+                  headline="Co to znamená právě teď"
+                  summary={interpretationCopy.summary}
+                  whyItMatters={interpretationCopy.whyItMatters}
+                  impact={interpretationCopy.impact}
+                />
+                <QuickActions
+                  onNextTopic={() => {
+                    if (!nextItem) return;
+                    setTitle(nextItem.title);
+                    setChannelName(nextItem.channelName);
+                    setVideoId(nextItem.videoId);
+                    setStartSeconds(0);
+                    setIsLive(nextItem.type === "live" || nextItem.channelName.toLowerCase().includes("abj"));
+                  }}
+                  onStayOnTopic={() => {
+                    setStartSeconds((prev) => Math.max(0, prev - 15));
+                  }}
+                  onShowContext={() => {
+                    if (!videoId) return;
+                    window.location.href = `/videos?videoId=${encodeURIComponent(videoId)}`;
+                  }}
+                />
+              </div>
+            </>
+          ) : null}
           <details className="mx-4 mb-3 hidden rounded-xl border border-[#1A3352] bg-[#071321] md:mx-5 2xl:block">
             <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-[#B8CBE0]">
               Pokročilé panely (legacy)

@@ -10,6 +10,8 @@ type VideoPlayerProps = {
   nextStartTimestamp: number;
   onEnded?: () => void;
   compact?: boolean;
+  showLiveUi?: boolean;
+  cornerBadgeText?: string | null;
 };
 
 function parseVideoId(videoUrl: string | null): string | null {
@@ -45,6 +47,8 @@ export function VideoPlayer({
   nextStartTimestamp,
   onEnded,
   compact = false,
+  showLiveUi = true,
+  cornerBadgeText = null,
 }: VideoPlayerProps) {
   const [countdown, setCountdown] = useState(() => formatCountdown(nextStartTimestamp));
   const clampedProgress = Math.max(0, Math.min(1, progress));
@@ -89,21 +93,32 @@ export function VideoPlayer({
           </div>
         )}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#04070D] via-[#04070Dd9] to-transparent" />
-        <div className="absolute left-3 top-3 z-10 rounded-full border border-[#7A1F2A] bg-[#390A13]/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#FFD6DC] shadow-[0_0_16px_rgba(178,37,53,0.35)]">
-          Živě
-        </div>
+        {showLiveUi ? (
+          <div className="absolute left-3 top-3 z-10 rounded-full border border-[#7A1F2A] bg-[#390A13]/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#FFD6DC] shadow-[0_0_16px_rgba(178,37,53,0.35)]">
+            Živě
+          </div>
+        ) : null}
+        {cornerBadgeText ? (
+          <div className="absolute right-3 top-3 z-10 rounded-full border border-[#4A7FB3] bg-[#10253F]/85 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#D2E7FF]">
+            {cornerBadgeText}
+          </div>
+        ) : null}
         <div className="absolute inset-x-0 bottom-0 p-4 md:p-5">
           <p className="line-clamp-2 text-base font-semibold leading-tight text-white md:text-xl">{title}</p>
-          <div className="mt-3 h-2 w-full rounded-full bg-[#dbe9ff1a]">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-[#CF2D45] via-[#ED4559] to-[#3FA8FF] transition-all duration-500"
-              style={{ width: `${clampedProgress * 100}%` }}
-            />
-          </div>
-          <div className="mt-3 flex items-center justify-between gap-3">
-            <p className="text-xs uppercase tracking-[0.14em] text-[#91A9C8]">Průběh segmentu</p>
-            <p className="text-sm font-semibold text-[#A8D5FF]">Další segment za {countdown}</p>
-          </div>
+          {showLiveUi ? (
+            <>
+              <div className="mt-3 h-2 w-full rounded-full bg-[#dbe9ff1a]">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-[#CF2D45] via-[#ED4559] to-[#3FA8FF] transition-all duration-500"
+                  style={{ width: `${clampedProgress * 100}%` }}
+                />
+              </div>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <p className="text-xs uppercase tracking-[0.14em] text-[#91A9C8]">Průběh segmentu</p>
+                <p className="text-sm font-semibold text-[#A8D5FF]">Další segment za {countdown}</p>
+              </div>
+            </>
+          ) : null}
         </div>
       </div>
     </section>
