@@ -91,3 +91,16 @@ a {
     box-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
   }
 }
+
+@keyframes autoFocusPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(198, 168, 91, 0.72);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgba(198, 168, 91, 0);
+  }
+}
+
+.abj-autofocus {
+  animation: autoFocusPulse 1.3s ease-out 2;
+}

@@ -226,8 +226,11 @@ export default function ProgramPage() {
   const [clockNow, setClockNow] = useState(() => new Date());
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [startedPlayback, setStartedPlayback] = useState<Record<string, boolean>>({});
+  const [autoFocusBlockId, setAutoFocusBlockId] = useState<string | null>(null);
   const itemRefs = useRef<Record<string, HTMLElement | null>>({});
   const skipTracked = useRef<Set<string>>(new Set());
+  const hasAutoScrolledToCurrentRef = useRef(false);
+  const autoFocusTimerRef = useRef<number | null>(null);
   const feed = useMemo(() => mapApiProgramToView(program), [program]);
   const rows = useMemo(() => feed.blocks ?? [], [feed.blocks]);
   const isLoading = hookLoading && rows.length === 0;
@@ -280,6 +283,32 @@ export default function ProgramPage() {
     }
     return null;
   }, [nowMs, rows]);
+
+  useEffect(() => {
+    if (!currentBlockId || rows.length === 0 || hasAutoScrolledToCurrentRef.current) return;
+    const rowElement = itemRefs.current[currentBlockId];
+    if (!rowElement) return;
+    hasAutoScrolledToCurrentRef.current = true;
+    window.requestAnimationFrame(() => {
+      rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    setAutoFocusBlockId(currentBlockId);
+    if (autoFocusTimerRef.current !== null) {
+      window.clearTimeout(autoFocusTimerRef.current);
+    }
+    autoFocusTimerRef.current = window.setTimeout(() => {
+      setAutoFocusBlockId(null);
+      autoFocusTimerRef.current = null;
+    }, 2_500);
+  }, [currentBlockId, rows.length]);
+
+  useEffect(() => {
+    return () => {
+      if (autoFocusTimerRef.current !== null) {
+        window.clearTimeout(autoFocusTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <section className="mx-auto w-full max-w-4xl px-3 pb-6 pt-4 sm:px-5">
@@ -368,7 +397,7 @@ export default function ProgramPage() {
                   active
                     ? "border-[#C6A85B] shadow-[0_0_0_1px_rgba(198,168,91,0.45),0_10px_24px_rgba(0,0,0,0.25)]"
                     : "border-[var(--abj-gold-dim)]"
-                }`}
+                } ${autoFocusBlockId === block.id ? "abj-autofocus" : ""}`}
               >
                 <button
                   type="button"

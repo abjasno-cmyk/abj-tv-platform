@@ -7,7 +7,7 @@ import { ReplitHealthBadge } from "@/components/abj/ReplitHealthBadge";
 
 const NAV_LINKS = [
   { href: "/live", label: "Vysílání" },
-  { href: "/videos", label: "Context" },
+  { href: "/videos", label: "Kontext" },
   { href: "/archiv", label: "Přehled dne" },
   { href: "/abj-x", label: "ABJ X" },
   { href: "/program", label: "Program" },

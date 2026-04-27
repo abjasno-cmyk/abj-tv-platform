@@ -364,19 +364,20 @@ function LivePageContent({
   }, [nextItem, progressPercent]);
 
   return (
-    <section className="min-h-screen bg-abj-main text-abj-text1">
+    <section className="h-[calc(100vh-46px)] overflow-hidden bg-abj-main text-abj-text1">
       <LiveStrip viewers={liveState.viewers_count} headline={title} />
-      <div className="flex min-h-[calc(100vh-46px)] overflow-hidden">
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="px-4 pt-4 md:px-5">
-            <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">ABJ vysílání 24/7</p>
+      <div className="flex h-[calc(100vh-102px)] min-h-0 overflow-hidden">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
+          <div className="px-4 pt-2 md:px-5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-abj-text2">ABJ vysílání 24/7</p>
           </div>
-          <div className="relative px-4 pb-3 pt-3 md:px-5">
+          <div className="relative px-3 pb-2 pt-2 md:px-5">
             <MobileFirstVideoPlayer
               videoUrl={activeVideoUrl}
               title={title}
               progress={progressNormalized}
               nextStartTimestamp={nextStartTimestamp}
+              compact
               onEnded={() => {
                 void onVideoEnded(nowItem, nextItem);
               }}
@@ -387,7 +388,7 @@ function LivePageContent({
               onError={handleFillerError}
             />
           </div>
-          <div className="px-4 pb-3 md:px-5">
+          <div className="px-3 pb-2 md:px-5">
             <MobileFirstTimeline
               items={liveState.timeline}
               onJump={(segment) => {
@@ -403,7 +404,7 @@ function LivePageContent({
               }}
             />
           </div>
-          <div className="grid gap-3 px-4 pb-3 md:grid-cols-2 md:px-5">
+          <div className="grid gap-2 px-3 pb-2 md:grid-cols-[minmax(0,1fr)_320px] md:px-5">
             <WhatItMeansCard
               headline="Co to znamená právě teď"
               summary={interpretationCopy.summary}
@@ -428,7 +429,7 @@ function LivePageContent({
               }}
             />
           </div>
-          <details className="mx-4 mb-4 rounded-xl border border-[#1A3352] bg-[#071321] md:mx-5">
+          <details className="mx-4 mb-3 hidden rounded-xl border border-[#1A3352] bg-[#071321] md:mx-5 2xl:block">
             <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-[#B8CBE0]">
               Pokročilé panely (legacy)
             </summary>

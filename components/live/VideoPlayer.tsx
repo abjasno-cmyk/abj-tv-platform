@@ -9,6 +9,7 @@ type VideoPlayerProps = {
   progress: number;
   nextStartTimestamp: number;
   onEnded?: () => void;
+  compact?: boolean;
 };
 
 function parseVideoId(videoUrl: string | null): string | null {
@@ -43,6 +44,7 @@ export function VideoPlayer({
   progress,
   nextStartTimestamp,
   onEnded,
+  compact = false,
 }: VideoPlayerProps) {
   const [countdown, setCountdown] = useState(() => formatCountdown(nextStartTimestamp));
   const clampedProgress = Math.max(0, Math.min(1, progress));
@@ -73,7 +75,7 @@ export function VideoPlayer({
 
   return (
     <section className="relative overflow-hidden rounded-2xl border border-[#274268] bg-[#03060D] shadow-[0_18px_44px_rgba(0,0,0,0.55)]">
-      <div className="relative w-full pb-[56.25%]">
+      <div className={`relative aspect-video w-full ${compact ? "mx-auto max-w-[920px]" : ""}`}>
         {videoId ? (
           <YouTube
             videoId={videoId}
