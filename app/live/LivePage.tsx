@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ProgramItem, DayProgram } from "@/lib/epg-types";
 import { LiveAlert } from "@/components/abj/LiveAlert";
+import { ABJNav } from "@/components/abj/Nav";
 import { HybridChatPanel } from "@/components/hybrid-chat/HybridChatPanel";
 import { UnderrunOverlayPlayer } from "@/components/live/UnderrunOverlayPlayer";
 import { LiveStrip } from "@/components/live/LiveStrip";
@@ -365,6 +366,16 @@ function LivePageContent({
 
   return (
     <section className="min-h-screen bg-abj-main text-abj-text1">
+      <ABJNav
+        nowPlaying={
+          nowItem
+            ? {
+                channel: nowItem.channelName || "ABJ Síť",
+                title: nowItem.title,
+              }
+            : null
+        }
+      />
       <LiveStrip viewers={liveState.viewers_count} headline={title} />
       <div className="flex min-h-[calc(100vh-46px)] overflow-hidden">
         <div className="flex min-w-0 flex-1 flex-col">
