@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ProgramItem, DayProgram } from "@/lib/epg-types";
-import { VideoHero } from "@/components/abj/VideoHero";
 import { LiveAlert } from "@/components/abj/LiveAlert";
 import { NowNextBar } from "@/components/abj/NowNextBar";
 import { Timeline } from "@/components/abj/Timeline";
@@ -352,12 +351,12 @@ function LivePageContent({
   return (
     <section className="min-h-screen bg-abj-main text-abj-text1">
       <LiveStrip viewers={liveState.viewers_count} headline={title} />
-      <div className="flex h-[calc(100vh-46px)] overflow-hidden">
+      <div className="flex min-h-[calc(100vh-46px)] overflow-hidden">
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="px-5 pt-4">
             <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">ABJ vysílání 24/7</p>
           </div>
-          <div className="px-4 pb-3 pt-3 md:px-5">
+          <div className="relative px-4 pb-3 pt-3 md:px-5">
             <MobileFirstVideoPlayer
               videoUrl={activeVideoUrl}
               title={title}
@@ -366,6 +365,11 @@ function LivePageContent({
               onEnded={() => {
                 void onVideoEnded(nowItem, nextItem);
               }}
+            />
+            <UnderrunOverlayPlayer
+              filler={activeFiller}
+              onFinished={handleFillerFinished}
+              onError={handleFillerError}
             />
           </div>
           <div className="px-4 pb-3 md:px-5">
@@ -407,29 +411,6 @@ function LivePageContent({
                 if (!videoId) return;
                 window.location.href = `/videos?videoId=${encodeURIComponent(videoId)}`;
               }}
-            />
-          </div>
-          <div className="relative px-5 pt-5">
-            <VideoHero
-              key={`${videoId ?? "no-video"}-${startSeconds}`}
-              videoId={videoId}
-              title={title}
-              channel={channelName || "ABJ Síť"}
-              isLive={isLive}
-              startSeconds={startSeconds}
-              remainingLabel={remainingLabel}
-              progressPercent={progressPercent}
-              onPlayToggle={() => {
-                setIsLive((prev) => !prev);
-              }}
-              onVideoEnded={() => {
-                void onVideoEnded(nowItem, nextItem);
-              }}
-            />
-            <UnderrunOverlayPlayer
-              filler={activeFiller}
-              onFinished={handleFillerFinished}
-              onError={handleFillerError}
             />
           </div>
           <LiveAlert

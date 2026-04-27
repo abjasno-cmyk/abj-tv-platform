@@ -61,6 +61,8 @@ export function VideoPlayer({
       height: "100%",
       playerVars: {
         autoplay: 1,
+        mute: 1,
+        controls: 1,
         rel: 0,
         modestbranding: 1,
         playsinline: 1,
