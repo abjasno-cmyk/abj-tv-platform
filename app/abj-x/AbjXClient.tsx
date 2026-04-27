@@ -62,7 +62,7 @@ function toItems(posts: FeedPost[]): FeedItem[] {
 }
 
 function freshnessClass(value: FeedItem["freshness"]): string {
-  if (value === "breaking") return "border-[#A63A3A] bg-[rgba(166,58,58,0.2)] text-[#F3D8D8]";
+  if (value === "breaking") return "border-[#FF6A00] bg-[rgba(255,106,0,0.2)] text-[#FFE6D1]";
   if (value === "today") return "border-[#4F79B8] bg-[rgba(79,121,184,0.2)] text-[#D8E4F3]";
   if (value === "week") return "border-[rgba(154,163,178,0.5)] bg-[rgba(154,163,178,0.14)] text-[#D2D8E2]";
   return "border-[#4A7E61] bg-[rgba(74,126,97,0.2)] text-[#D5EBDD]";
@@ -103,7 +103,7 @@ export function AbjXClient() {
             <article key={item.id} className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel p-3 sm:p-4">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 {item.urgency >= 3 ? (
-                  <span className="rounded-full bg-[#B23B3B] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white">
+                  <span className="rounded-full bg-[#FF6A00] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white">
                     BREAKING
                   </span>
                 ) : null}

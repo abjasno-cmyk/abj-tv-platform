@@ -30,7 +30,7 @@ export function RecommendedStrip({ items, onSelect }: RecommendedStripProps) {
             key={item.id}
             type="button"
             onClick={() => onSelect?.(item.id)}
-            className="group relative overflow-hidden rounded-2xl border border-abj-goldDim bg-abj-card text-left shadow-[0_10px_30px_rgba(17,17,17,0.08)] transition-all duration-300 hover:-translate-y-[2px] hover:shadow-[0_16px_36px_rgba(17,17,17,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-abj-red focus-visible:ring-offset-2"
+            className="group relative overflow-hidden rounded-2xl border border-abj-goldDim bg-abj-card text-left shadow-[0_10px_30px_rgba(17,17,17,0.08)] transition-all duration-300 hover:-translate-y-[2px] hover:shadow-[0_16px_36px_rgba(17,17,17,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6A00] focus-visible:ring-offset-2"
           >
             <div className="relative aspect-[16/9] w-full overflow-hidden bg-abj-panel">
               {item.image ? (
@@ -45,7 +45,7 @@ export function RecommendedStrip({ items, onSelect }: RecommendedStripProps) {
               ) : (
                 <div className="h-full w-full bg-[linear-gradient(135deg,#F5F5F5_0%,#FFFFFF_100%)]" />
               )}
-              <span className="pointer-events-none absolute right-3 top-3 h-6 w-6 rounded-full border border-abj-red/35 bg-abj-red/10" />
+              <span className="pointer-events-none absolute right-3 top-3 h-6 w-6 rounded-full border border-[#FF6A00]/35 bg-[#FF6A00]/10" />
             </div>
 
             <div className="space-y-2 px-4 py-4">

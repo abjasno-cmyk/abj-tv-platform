@@ -17,7 +17,7 @@ function typeLabel(item: ProgramItem): string {
 
 function itemTone(item: ProgramItem, active: boolean): string {
   if (active) {
-    return "border-abj-red bg-abj-red text-white shadow-[0_14px_30px_rgba(227,6,19,0.26)]";
+    return "border-abj-red bg-abj-red text-white shadow-[0_14px_30px_rgba(255,106,0,0.26)]";
   }
   if (item.type === "live") {
     return "border-abj-red bg-white text-abj-red";
@@ -51,7 +51,7 @@ export function Timeline({ days, onSelect }: TimelineProps) {
               className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] transition ${
                 active
                   ? "border-abj-red bg-abj-red text-white"
-                  : "border-[rgba(17,17,17,0.2)] bg-white text-abj-text2 hover:text-abj-text1"
+                  : "border-[rgba(17,17,17,0.2)] bg-white text-abj-text2 hover:bg-[rgba(255,106,0,0.1)] hover:text-abj-text1"
               }`}
             >
               {day.label}
