@@ -58,7 +58,10 @@ export function ABJNav({ nowPlaying = null }: ABJNavProps) {
     : "Právě hraje: ABJ TV | Program se aktualizuje";
 
   return (
-    <header className="fixed inset-x-0 top-0 z-[1000] h-[46px] border-b border-[var(--abj-gold-dim)] bg-abj-deep px-5 pointer-events-auto isolate">
+    <header
+      className="fixed inset-x-0 top-0 h-[46px] border-b border-[var(--abj-gold-dim)] bg-abj-deep px-5 pointer-events-auto isolate"
+      style={{ zIndex: 2147483647 }}
+    >
       <div className="flex h-full items-center justify-between">
         <div className="flex items-center">
           <p className="font-[var(--font-serif)] text-[17px] font-bold tracking-[0.07em] text-abj-gold">ABJ</p>
@@ -73,7 +76,7 @@ export function ABJNav({ nowPlaying = null }: ABJNavProps) {
                   <li key={`${link.href}-${link.label}`}>
                     <Link
                       href={link.href}
-                      className={`border-b-[1.5px] pb-1 font-[var(--font-sans)] text-[12px] tracking-[0.06em] ${
+                      className={`relative z-[2] pointer-events-auto border-b-[1.5px] pb-1 font-[var(--font-sans)] text-[12px] tracking-[0.06em] ${
                         isActive
                           ? "border-abj-gold text-abj-gold"
                           : "border-transparent text-abj-text2 hover:text-abj-text1"
