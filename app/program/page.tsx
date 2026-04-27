@@ -39,7 +39,7 @@ const PRAGUE_TIMEZONE = "Europe/Prague";
 const REFRESH_EVERY_MS = 5 * 60 * 1000;
 
 const FRESHNESS_CLASS: Record<Freshness, string> = {
-  breaking: "border-[#A63A3A] bg-[rgba(166,58,58,0.2)] text-[#F3D8D8]",
+  breaking: "border-[#FF6A00] bg-[rgba(255,106,0,0.2)] text-[#FFE5D1]",
   today: "border-[#4F79B8] bg-[rgba(79,121,184,0.2)] text-[#D8E4F3]",
   week: "border-[rgba(154,163,178,0.5)] bg-[rgba(154,163,178,0.14)] text-[#D2D8E2]",
   evergreen: "border-[#4A7E61] bg-[rgba(74,126,97,0.2)] text-[#D5EBDD]",
@@ -318,8 +318,8 @@ export default function ProgramPage() {
           <ProgramRowSkeleton />
         </div>
       ) : error ? (
-        <div className="rounded-2xl border border-[rgba(166,58,58,0.45)] bg-[rgba(40,13,13,0.56)] p-4">
-          <p className="text-sm text-[#E5BBBB]">Načtení programu selhalo: {error}</p>
+        <div className="rounded-2xl border border-[rgba(255,106,0,0.45)] bg-[rgba(40,20,10,0.56)] p-4">
+          <p className="text-sm text-[#FFD7BE]">Načtení programu selhalo: {error}</p>
           <button
             type="button"
             className="mt-3 rounded-lg border border-[rgba(198,168,91,0.4)] bg-[rgba(198,168,91,0.16)] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.08em] text-abj-text1"
@@ -394,17 +394,17 @@ export default function ProgramPage() {
                     <div className="min-w-0 flex-1">
                       <div className="mb-1.5 flex flex-wrap items-center gap-2">
                         {active ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(166,58,58,0.25)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#F0B9B9]">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(255,106,0,0.25)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#FFE5D1]">
                             <span className="relative flex h-2.5 w-2.5 items-center justify-center">
-                              <span className="absolute inline-flex h-2.5 w-2.5 animate-ping rounded-full bg-[#E25C5C]/70" />
-                              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#E25C5C]" />
+                              <span className="absolute inline-flex h-2.5 w-2.5 animate-ping rounded-full bg-[#FF6A00]/70" />
+                              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#FF6A00]" />
                             </span>
                             Teď běží
                           </span>
                         ) : null}
 
                         {urgency3 ? (
-                          <span className="rounded-full bg-[#B23B3B] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white">
+                          <span className="rounded-full bg-[#FF6A00] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white">
                             BREAKING
                           </span>
                         ) : null}
