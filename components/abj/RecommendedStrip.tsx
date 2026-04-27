@@ -7,6 +7,7 @@ type RecommendedItem = {
   title: string;
   reason: string;
   image: string | null;
+  fallbackImage: string;
 };
 
 type RecommendedStripProps = {
@@ -43,7 +44,14 @@ export function RecommendedStrip({ items, onSelect }: RecommendedStripProps) {
                   unoptimized
                 />
               ) : (
-                <div className="h-full w-full bg-[linear-gradient(135deg,#F5F5F5_0%,#FFFFFF_100%)]" />
+                <Image
+                  src={item.fallbackImage}
+                  alt={item.title}
+                  fill
+                  sizes="(min-width: 1024px) 33vw, 100vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                  unoptimized
+                />
               )}
               <span className="pointer-events-none absolute right-3 top-3 h-6 w-6 rounded-full border border-[#FF6A00]/35 bg-[#FF6A00]/10" />
             </div>
