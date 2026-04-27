@@ -29,6 +29,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="cs" className={`${montserrat.variable} ${inter.variable}`}>
       <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
+        {/* Single global nav only — prevents duplicate legacy header stacks. */}
         <ABJNav />
         <main className="min-h-[calc(100vh-46px)] overflow-hidden">{children}</main>
         {showEditorialDebug ? <EditorialEventDebugPanel /> : null}

@@ -63,7 +63,10 @@ export default function LivePage({
   }, [nextItem, progressPercent]);
 
   return (
-    <section className="min-h-screen bg-abj-main text-abj-text1">
+    <section
+      data-ui-version="abj-geometric-v2"
+      className="min-h-screen bg-abj-main text-abj-text1"
+    >
       <HomePage
         days={safeEpg}
         videoId={videoId}
