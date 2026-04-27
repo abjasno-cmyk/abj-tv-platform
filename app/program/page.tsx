@@ -226,11 +226,11 @@ export default function ProgramPage() {
   const [clockNow, setClockNow] = useState(() => new Date());
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [startedPlayback, setStartedPlayback] = useState<Record<string, boolean>>({});
-  const [autoFocusBlockId, setAutoFocusBlockId] = useState<string | null>(null);
   const itemRefs = useRef<Record<string, HTMLElement | null>>({});
   const skipTracked = useRef<Set<string>>(new Set());
   const hasAutoScrolledToCurrentRef = useRef(false);
   const autoFocusTimerRef = useRef<number | null>(null);
+  const lastAutoFocusedElementRef = useRef<HTMLElement | null>(null);
   const feed = useMemo(() => mapApiProgramToView(program), [program]);
   const rows = useMemo(() => feed.blocks ?? [], [feed.blocks]);
   const isLoading = hookLoading && rows.length === 0;
@@ -292,12 +292,17 @@ export default function ProgramPage() {
     window.requestAnimationFrame(() => {
       rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
     });
-    setAutoFocusBlockId(currentBlockId);
+    lastAutoFocusedElementRef.current?.classList.remove("abj-autofocus");
+    rowElement.classList.add("abj-autofocus");
+    lastAutoFocusedElementRef.current = rowElement;
     if (autoFocusTimerRef.current !== null) {
       window.clearTimeout(autoFocusTimerRef.current);
     }
     autoFocusTimerRef.current = window.setTimeout(() => {
-      setAutoFocusBlockId(null);
+      rowElement.classList.remove("abj-autofocus");
+      if (lastAutoFocusedElementRef.current === rowElement) {
+        lastAutoFocusedElementRef.current = null;
+      }
       autoFocusTimerRef.current = null;
     }, 2_500);
   }, [currentBlockId, rows.length]);
@@ -307,6 +312,7 @@ export default function ProgramPage() {
       if (autoFocusTimerRef.current !== null) {
         window.clearTimeout(autoFocusTimerRef.current);
       }
+      lastAutoFocusedElementRef.current?.classList.remove("abj-autofocus");
     };
   }, []);
 
@@ -397,7 +403,7 @@ export default function ProgramPage() {
                   active
                     ? "border-[#C6A85B] shadow-[0_0_0_1px_rgba(198,168,91,0.45),0_10px_24px_rgba(0,0,0,0.25)]"
                     : "border-[var(--abj-gold-dim)]"
-                } ${autoFocusBlockId === block.id ? "abj-autofocus" : ""}`}
+                }`}
               >
                 <button
                   type="button"
