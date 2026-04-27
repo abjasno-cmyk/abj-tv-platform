@@ -10,6 +10,17 @@ import { NowNextBar } from "@/components/abj/NowNextBar";
 import { Timeline } from "@/components/abj/Timeline";
 import { HybridChatPanel } from "@/components/hybrid-chat/HybridChatPanel";
 import { UnderrunOverlayPlayer } from "@/components/live/UnderrunOverlayPlayer";
+import { LiveStrip } from "@/components/live/LiveStrip";
+import { VideoPlayer as MobileFirstVideoPlayer } from "@/components/live/VideoPlayer";
+import { Timeline as MobileFirstTimeline } from "@/components/live/Timeline";
+import { WhatItMeansCard } from "@/components/live/WhatItMeansCard";
+import { QuickActions } from "@/components/live/QuickActions";
+import {
+  LiveStateProvider,
+  useLiveState,
+  type LiveSegment,
+  type TimelineSegment,
+} from "@/components/live/LiveState";
 import type { GapFillItem } from "@/lib/underrunProtection";
 import { fetchGapFillPlan, fetchSafetyBridge, readFeedApiKeyFromClientEnv } from "@/lib/underrunProtection";
 
@@ -28,6 +39,54 @@ export default function LivePage({
   initialChannelName,
   initialStartSeconds = 0,
 }: LivePageProps) {
+  return (
+    <LiveStateProvider>
+      <LivePageContent
+        epg={epg}
+        initialVideoId={initialVideoId}
+        initialTitle={initialTitle}
+        initialChannelName={initialChannelName}
+        initialStartSeconds={initialStartSeconds}
+      />
+    </LiveStateProvider>
+  );
+}
+
+function mapProgramItemToTimelineSegment(item: ProgramItem, index: number): TimelineSegment {
+  return {
+    id: item.videoId ?? `${item.time}-${item.title}-${index}`,
+    title: item.title,
+    duration: item.type === "live" ? "75 min" : item.type === "upcoming" ? "30 min" : "25 min",
+    start_time: item.time,
+    explanation:
+      item.type === "live"
+        ? "Živé vysílání s přímým vstupem."
+        : item.type === "upcoming"
+          ? "Následující premiérový blok."
+          : "Kurátorovaný záznam s kontextem.",
+    phase: "later",
+    videoId: item.videoId,
+  };
+}
+
+function mapProgramItemToLiveSegment(item: ProgramItem): LiveSegment {
+  return {
+    id: item.videoId ?? `${item.time}-${item.title}`,
+    title: item.title,
+    channel: item.channelName,
+    videoId: item.videoId,
+    start_time: item.time,
+    duration: item.type === "live" ? "75 min" : item.type === "upcoming" ? "30 min" : "25 min",
+  };
+}
+
+function LivePageContent({
+  epg,
+  initialVideoId,
+  initialTitle,
+  initialChannelName,
+  initialStartSeconds = 0,
+}: LivePageProps) {
   const safeEpg = epg;
   const [videoId, setVideoId] = useState<string | null>(initialVideoId);
   const [title, setTitle] = useState(initialTitle);
@@ -36,6 +95,7 @@ export default function LivePage({
   const [startSeconds, setStartSeconds] = useState(() => Math.max(0, Math.floor(initialStartSeconds)));
   const [remainingLabel, setRemainingLabel] = useState("za 12 min");
   const [progressPercent, setProgressPercent] = useState(22);
+  const [fallbackNextStart] = useState(() => Date.now() + 10 * 60_000);
   const [activeFiller, setActiveFiller] = useState<GapFillItem | null>(null);
   const fillerDoneRef = useRef<(() => void) | null>(null);
   const fillerFailRef = useRef<((error?: unknown) => void) | null>(null);
@@ -45,6 +105,13 @@ export default function LivePage({
   const handleFillerError = useCallback((error?: unknown) => {
     fillerFailRef.current?.(error);
   }, []);
+  const {
+    liveState,
+    setCurrentSegment,
+    setNextSegment,
+    setTimeline,
+    setViewersCount,
+  } = useLiveState();
 
   const timelineItems = useMemo(
     () => safeEpg.flatMap((day) => day.items),
@@ -62,6 +129,12 @@ export default function LivePage({
       : timelineItems.length > 1
         ? timelineItems[1]
         : null;
+  const laterItems = useMemo(() => {
+    if (selectedIndex >= 0) {
+      return timelineItems.slice(selectedIndex + 2, selectedIndex + 8);
+    }
+    return timelineItems.slice(2, 8);
+  }, [selectedIndex, timelineItems]);
   const nowNextWindow = useMemo(() => {
     const base = new Date();
     const minus25 = new Date(base.getTime() - 25 * 60_000);
@@ -77,6 +150,59 @@ export default function LivePage({
     };
   }, []);
   const feedApiKey = useMemo(() => readFeedApiKeyFromClientEnv(), []);
+  const currentSegment = useMemo(
+    () => (nowItem ? mapProgramItemToLiveSegment(nowItem) : null),
+    [nowItem]
+  );
+  const nextSegment = useMemo(
+    () => (nextItem ? mapProgramItemToLiveSegment(nextItem) : null),
+    [nextItem]
+  );
+
+  useEffect(() => {
+    const mergedTimeline: TimelineSegment[] = [];
+    if (nowItem) {
+      mergedTimeline.push({
+        ...mapProgramItemToTimelineSegment(nowItem, 0),
+        phase: "now",
+      });
+    }
+    if (nextItem) {
+      mergedTimeline.push({
+        ...mapProgramItemToTimelineSegment(nextItem, 1),
+        phase: "next",
+      });
+    }
+    laterItems.forEach((item, idx) => {
+      mergedTimeline.push({
+        ...mapProgramItemToTimelineSegment(item, idx + 2),
+        phase: "later",
+      });
+    });
+    setTimeline(mergedTimeline);
+    setCurrentSegment(currentSegment);
+    setNextSegment(nextSegment);
+  }, [
+    currentSegment,
+    laterItems,
+    nextSegment,
+    nextItem,
+    nowItem,
+    setCurrentSegment,
+    setNextSegment,
+    setTimeline,
+  ]);
+
+  useEffect(() => {
+    const seed = (videoId?.length ?? 7) * 137;
+    const updateViewers = () => {
+      const swing = Math.floor(Math.abs(Math.sin(Date.now() / 45_000)) * 220);
+      setViewersCount(100 + ((seed + swing) % 800));
+    };
+    updateViewers();
+    const timer = setInterval(updateViewers, 15_000);
+    return () => clearInterval(timer);
+  }, [setViewersCount, videoId]);
 
   const toBlockRef = useCallback(
     (item: ProgramItem, role: "current" | "next") => ({
@@ -177,6 +303,36 @@ export default function LivePage({
     await executeUnderrun();
   }, [feedApiKey, nextItem, nowItem, playBlock, playFiller, playLocalFallback, toBlockRef]);
 
+  const progressNormalized = useMemo(
+    () => Math.max(0, Math.min(1, progressPercent / 100)),
+    [progressPercent]
+  );
+
+  const nextStartTimestamp = useMemo(() => {
+    if (!nextItem?.startIso) return fallbackNextStart;
+    const ts = Date.parse(nextItem.startIso);
+    return Number.isFinite(ts) ? ts : fallbackNextStart;
+  }, [fallbackNextStart, nextItem]);
+
+  const activeVideoUrl = useMemo(() => {
+    if (!videoId) return null;
+    return `https://www.youtube.com/watch?v=${videoId}`;
+  }, [videoId]);
+
+  const preloadNextSegment = useCallback(() => {
+    if (!nextItem?.videoId || typeof document === "undefined") return;
+    const link = document.createElement("link");
+    link.rel = "preconnect";
+    link.href = "https://www.youtube.com";
+    document.head.appendChild(link);
+    const image = new Image();
+    image.src = `https://i.ytimg.com/vi/${nextItem.videoId}/hqdefault.jpg`;
+  }, [nextItem]);
+
+  useEffect(() => {
+    preloadNextSegment();
+  }, [preloadNextSegment]);
+
   useEffect(() => {
     const tick = () => {
       setProgressPercent((prev) => (prev >= 96 ? 8 : prev + 2));
@@ -202,10 +358,63 @@ export default function LivePage({
             : null
         }
       />
+      <LiveStrip viewers={liveState.viewers_count} headline={title} />
       <div className="flex h-[calc(100vh-46px)] overflow-hidden">
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="px-5 pt-4">
             <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">ABJ vysílání 24/7</p>
+          </div>
+          <div className="px-4 pb-3 pt-3 md:px-5">
+            <MobileFirstVideoPlayer
+              videoUrl={activeVideoUrl}
+              title={title}
+              progress={progressNormalized}
+              nextStartTimestamp={nextStartTimestamp}
+              onEnded={() => {
+                void onVideoEnded(nowItem, nextItem);
+              }}
+            />
+          </div>
+          <div className="px-4 pb-3 md:px-5">
+            <MobileFirstTimeline
+              items={liveState.timeline}
+              onJump={(segment) => {
+                const target = timelineItems.find(
+                  (item) => (item.videoId ?? `${item.time}-${item.title}`) === segment.id
+                );
+                if (!target) return;
+                setTitle(target.title);
+                setChannelName(target.channelName);
+                setVideoId(target.videoId);
+                setStartSeconds(0);
+                setIsLive(target.type === "live" || target.channelName.toLowerCase().includes("abj"));
+              }}
+            />
+          </div>
+          <div className="grid gap-3 px-4 pb-3 md:grid-cols-2 md:px-5">
+            <WhatItMeansCard
+              headline="Co to znamená právě teď"
+              summary="Tento blok shrnuje hlavní bod vysílání v kontextu dnešního dění. Sledujeme, kdo je aktér a jaký má dopad na diváka."
+              whyItMatters="Divák okamžitě chápe význam, ne jen fakt. Díky tomu zůstává pozornost i mezi segmenty bez dead-air."
+              impact="Dopad: vyšší orientace, méně odchodů během přechodů."
+            />
+            <QuickActions
+              onNextTopic={() => {
+                if (!nextItem) return;
+                setTitle(nextItem.title);
+                setChannelName(nextItem.channelName);
+                setVideoId(nextItem.videoId);
+                setStartSeconds(0);
+                setIsLive(nextItem.type === "live" || nextItem.channelName.toLowerCase().includes("abj"));
+              }}
+              onStayOnTopic={() => {
+                setStartSeconds((prev) => Math.max(0, prev - 15));
+              }}
+              onShowContext={() => {
+                if (!videoId) return;
+                window.location.href = `/videos?videoId=${encodeURIComponent(videoId)}`;
+              }}
+            />
           </div>
           <div className="relative px-5 pt-5">
             <VideoHero
