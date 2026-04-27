@@ -15,14 +15,14 @@ export function Timeline({ items, onJump }: TimelineProps) {
   const ordered = useMemo(() => items.slice(0, 12), [items]);
 
   return (
-    <section className="rounded-xl border border-[#1E3550] bg-[#091425] p-3">
-      <div className="mb-2 flex items-center justify-between">
-        <p className="text-[10px] uppercase tracking-[0.16em] text-abj-gold">Live timeline</p>
-        <p className="text-[11px] text-abj-text3">NOW / NEXT / LATER</p>
+    <section className="rounded-2xl border border-[#244A73] bg-[linear-gradient(180deg,#0A1A2D,#071321)] p-4 shadow-[0_16px_36px_rgba(0,0,0,0.35)]">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-[11px] uppercase tracking-[0.16em] text-[#9CC9FF]">Timeline</p>
+        <p className="text-[11px] font-medium text-[#D4E5FF]">NOW / NEXT / LATER</p>
       </div>
 
       <div className="overflow-x-auto">
-        <div className="flex min-w-max gap-2">
+        <div className="flex min-w-max gap-3">
           {ordered.map((segment, idx) => {
             const bucket = segment.phase.toUpperCase();
             const selected = segment.phase === "now";
@@ -35,19 +35,19 @@ export function Timeline({ items, onJump }: TimelineProps) {
                 onMouseEnter={() => setPreviewId(segment.id)}
                 onMouseLeave={() => setPreviewId(null)}
                 onTouchStart={() => setPreviewId(segment.id)}
-                className={`w-[210px] shrink-0 rounded-lg border p-3 text-left transition-all duration-150 active:scale-[0.98] ${
+                className={`w-[230px] shrink-0 rounded-xl border p-3 text-left transition-all duration-150 active:scale-[0.98] ${
                   selected
-                    ? "border-[rgba(198,168,91,0.6)] bg-[linear-gradient(180deg,#112742,#0A1729)] shadow-[0_6px_18px_rgba(0,0,0,0.4)]"
-                    : "border-[#203A57] bg-[#0B192D] hover:border-[#2A4C70]"
+                    ? "border-[rgba(245,78,78,0.55)] bg-[linear-gradient(180deg,#1E3557,#10233D)] shadow-[0_10px_26px_rgba(0,0,0,0.45)]"
+                    : "border-[#305780] bg-[#0C2038] hover:border-[#4A78A8]"
                 }`}
               >
-                <p className="text-[9px] uppercase tracking-[0.14em] text-abj-gold">{bucket}</p>
-                <p className="mt-1 line-clamp-2 text-[14px] font-medium text-abj-text1">{segment.title}</p>
-                <p className="mt-2 text-[11px] text-abj-text2">
+                <p className="text-[10px] uppercase tracking-[0.15em] text-[#8EBEFF]">{bucket}</p>
+                <p className="mt-1 line-clamp-2 text-[15px] font-semibold text-[#F2F7FF]">{segment.title}</p>
+                <p className="mt-2 text-[12px] text-[#B3CAE7]">
                   {segment.duration} • {segment.start_time}
                 </p>
                 {preview ? (
-                  <p className="mt-2 text-[11px] text-[#AFC3D8]">
+                  <p className="mt-2 text-[12px] text-[#D8E7FA]">
                     {segment.explanation?.trim().length
                       ? segment.explanation
                       : "Pokračování živého vysílání."}

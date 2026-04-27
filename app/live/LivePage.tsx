@@ -4,8 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ProgramItem, DayProgram } from "@/lib/epg-types";
 import { LiveAlert } from "@/components/abj/LiveAlert";
-import { NowNextBar } from "@/components/abj/NowNextBar";
-import { Timeline } from "@/components/abj/Timeline";
+import { ABJNav } from "@/components/abj/Nav";
 import { HybridChatPanel } from "@/components/hybrid-chat/HybridChatPanel";
 import { UnderrunOverlayPlayer } from "@/components/live/UnderrunOverlayPlayer";
 import { LiveStrip } from "@/components/live/LiveStrip";
@@ -79,6 +78,19 @@ function mapProgramItemToLiveSegment(item: ProgramItem): LiveSegment {
     videoId: item.videoId,
     start_time: item.time,
     duration: item.type === "live" ? "75 min" : item.type === "upcoming" ? "30 min" : "25 min",
+  };
+}
+
+function getInterpretationCopy(
+  nowItem: ProgramItem | null,
+  nextItem: ProgramItem | null
+): { summary: string; whyItMatters: string; impact: string } {
+  const nowTitle = nowItem?.title ?? "aktuální vysílání";
+  const nextTitle = nextItem?.title ?? "následující blok";
+  return {
+    summary: `Právě sledujete segment „${nowTitle}“, který rámuje dnešní hlavní osu vysílání. Redakce průběžně filtruje klíčové body tak, aby byla orientace okamžitá i na mobilu.`,
+    whyItMatters: `Navazující část „${nextTitle}“ posune téma o další vrstvu kontextu a udrží kontinuitu bez hluchého místa. Divák tak ví, co se děje teď a proč má smysl zůstat i v přechodu.`,
+    impact: "Dopad: vyšší důvěra v tok vysílání, delší watch-time a méně odchodů při změně segmentu.",
   };
 }
 
@@ -320,6 +332,10 @@ function LivePageContent({
     if (!videoId) return null;
     return `https://www.youtube.com/watch?v=${videoId}`;
   }, [videoId]);
+  const interpretationCopy = useMemo(
+    () => getInterpretationCopy(nowItem, nextItem),
+    [nowItem, nextItem]
+  );
 
   const preloadNextSegment = useCallback(() => {
     if (!nextItem?.videoId || typeof document === "undefined") return;
@@ -350,10 +366,20 @@ function LivePageContent({
 
   return (
     <section className="min-h-screen bg-abj-main text-abj-text1">
+      <ABJNav
+        nowPlaying={
+          nowItem
+            ? {
+                channel: nowItem.channelName || "ABJ Síť",
+                title: nowItem.title,
+              }
+            : null
+        }
+      />
       <LiveStrip viewers={liveState.viewers_count} headline={title} />
       <div className="flex min-h-[calc(100vh-46px)] overflow-hidden">
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="px-5 pt-4">
+          <div className="px-4 pt-4 md:px-5">
             <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">ABJ vysílání 24/7</p>
           </div>
           <div className="relative px-4 pb-3 pt-3 md:px-5">
@@ -391,9 +417,9 @@ function LivePageContent({
           <div className="grid gap-3 px-4 pb-3 md:grid-cols-2 md:px-5">
             <WhatItMeansCard
               headline="Co to znamená právě teď"
-              summary="Tento blok shrnuje hlavní bod vysílání v kontextu dnešního dění. Sledujeme, kdo je aktér a jaký má dopad na diváka."
-              whyItMatters="Divák okamžitě chápe význam, ne jen fakt. Díky tomu zůstává pozornost i mezi segmenty bez dead-air."
-              impact="Dopad: vyšší orientace, méně odchodů během přechodů."
+              summary={interpretationCopy.summary}
+              whyItMatters={interpretationCopy.whyItMatters}
+              impact={interpretationCopy.impact}
             />
             <QuickActions
               onNextTopic={() => {
@@ -413,53 +439,21 @@ function LivePageContent({
               }}
             />
           </div>
-          <LiveAlert
-            currentVideoId={videoId}
-            onWatchLive={(video) => {
-              setVideoId(video);
-              setStartSeconds(0);
-              setIsLive(true);
-            }}
-          />
-          <NowNextBar
-            previousItem={
-              previousItem
-                ? {
-                    title: previousItem.title,
-                    start: nowNextWindow.previousStartIso,
-                    end: nowNextWindow.previousEndIso,
-                  }
-                : null
-            }
-            nowItem={
-              nowItem
-                ? {
-                    title: nowItem.title,
-                    start: nowNextWindow.nowStartIso,
-                    end: nowNextWindow.nowEndIso,
-                  }
-                : null
-            }
-            nextItem={
-              nextItem
-                ? {
-                    title: nextItem.title,
-                    start: nowNextWindow.nextStartIso,
-                    end: nowNextWindow.nextEndIso,
-                  }
-                : null
-            }
-          />
-          <Timeline
-            days={safeEpg}
-            onSelect={(item) => {
-              setTitle(item.title);
-              setChannelName(item.channelName);
-              setVideoId(item.videoId);
-              setStartSeconds(0);
-              setIsLive(item.type === "live" || item.channelName.toLowerCase().includes("abj"));
-            }}
-          />
+          <details className="mx-4 mb-4 rounded-xl border border-[#1A3352] bg-[#071321] md:mx-5">
+            <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-[#B8CBE0]">
+              Pokročilé panely (legacy)
+            </summary>
+            <div className="space-y-3 px-4 pb-4">
+              <LiveAlert
+                currentVideoId={videoId}
+                onWatchLive={(video) => {
+                  setVideoId(video);
+                  setStartSeconds(0);
+                  setIsLive(true);
+                }}
+              />
+            </div>
+          </details>
         </div>
         <HybridChatPanel />
       </div>
