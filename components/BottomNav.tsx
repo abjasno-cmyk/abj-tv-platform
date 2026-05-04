@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { PRIMARY_NAV_LINKS } from "@/lib/navigation";
 
-const tabs = [
-  { href: "/live", label: "Vysílání", icon: "▶" },
-  { href: "/archiv", label: "Přehled dne", icon: "◧" },
-  { href: "/abj-x", label: "ABJ X", icon: "✦" },
-  { href: "/program", label: "Program", icon: "▦" },
-];
+const ICON_BY_HREF: Record<string, string> = {
+  "/live": "▶",
+  "/videos": "◉",
+  "/archiv": "◧",
+  "/abj-x": "✦",
+  "/program": "▦",
+};
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -16,8 +18,9 @@ export function BottomNav() {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 bg-[var(--bg)]/70 px-4 pb-4 pt-2 backdrop-blur-md">
       <ul className="mx-auto flex max-w-3xl rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-2 shadow-[0_8px_32px_rgba(0,0,0,0.45)]">
-        {tabs.map((tab) => {
+        {PRIMARY_NAV_LINKS.map((tab) => {
           const isActive = pathname === tab.href;
+          const icon = ICON_BY_HREF[tab.href] ?? "•";
           return (
             <li key={tab.href} className="flex-1 py-2">
               <Link
@@ -28,7 +31,7 @@ export function BottomNav() {
                     : "text-[var(--text-soft)] hover:scale-[1.02] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--text-main)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
                 }`}
               >
-                <span className="text-sm leading-none">{tab.icon}</span>
+                <span className="text-sm leading-none">{icon}</span>
                 {tab.label}
               </Link>
             </li>

@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { DayProgram } from "@/lib/epg-types";
-import { ABJNav } from "@/components/abj/Nav";
 import { VideoHero } from "@/components/abj/VideoHero";
 import { LiveAlert } from "@/components/abj/LiveAlert";
 import { NowNextBar } from "@/components/abj/NowNextBar";
@@ -343,7 +342,6 @@ export default function LivePage({
 
   return (
     <section className="min-h-screen bg-abj-main text-abj-text1">
-      <ABJNav />
       <div className="flex h-[calc(100vh-46px)] overflow-hidden">
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="px-5 pt-4">
