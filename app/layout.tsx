@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter, Montserrat } from "next/font/google";
 import "./globals.css";
 import { ABJNav } from "@/components/abj/Nav";
 import { EditorialEventDebugPanel } from "@/components/dev/EditorialEventDebugPanel";
@@ -18,17 +18,18 @@ const inter = Inter({
   variable: "--font-sans",
 });
 
-const playfair = Playfair_Display({
+const montserrat = Montserrat({
   subsets: ["latin"],
   variable: "--font-serif",
-  weight: ["400", "600", "700"],
+  weight: ["600", "700", "800"],
 });
 
 export default function RootLayout({ children }: RootLayoutProps) {
   const showEditorialDebug = process.env.NODE_ENV !== "production";
   return (
-    <html lang="cs" className={`${playfair.variable} ${inter.variable}`}>
+    <html lang="cs" className={`${montserrat.variable} ${inter.variable}`}>
       <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
+        {/* Single global nav only — prevents duplicate legacy header stacks. */}
         <ABJNav />
         <main className="min-h-[calc(100vh-46px)] overflow-hidden">{children}</main>
         {showEditorialDebug ? <EditorialEventDebugPanel /> : null}

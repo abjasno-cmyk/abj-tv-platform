@@ -138,7 +138,7 @@ export function ProgramCarousel({ days, onVideoSelect }: ProgramCarouselProps) {
                     item.isABJ
                       ? "bg-[var(--abj-glow)] ring-1 ring-[rgba(59,130,246,0.3)]"
                       : "bg-[var(--surface-warm)]"
-                  } ${isNow ? "ring-1 ring-[var(--accent-red)]" : ""} ${
+                  } ${isNow ? "ring-1 ring-[#FF6A00]" : ""} ${
                     isPlayable ? "" : "cursor-default opacity-75"
                   }`}
                 >
@@ -152,7 +152,7 @@ export function ProgramCarousel({ days, onVideoSelect }: ProgramCarouselProps) {
                       unoptimized={item.thumbnail !== null}
                     />
                     {isNow ? (
-                      <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] uppercase tracking-wide text-[var(--accent-red)]">
+                      <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] uppercase tracking-wide text-[#FF6A00]">
                         ● Nyní
                       </span>
                     ) : null}

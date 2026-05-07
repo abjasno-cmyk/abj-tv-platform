@@ -13,6 +13,21 @@ type ExternalNowPlaying = {
   startIso: string;
 };
 
+function resolveProgramFeedApiKey(): string | null {
+  const candidates = [
+    process.env.FEED_API_KEY,
+    process.env.PROGRAM_FEED_API_KEY,
+    process.env.REPLIT_API_KEY,
+    process.env.PROGRAM_API_KEY,
+    process.env.API_KEY,
+  ];
+  for (const candidate of candidates) {
+    const resolved = sanitizeEnvValue(candidate);
+    if (resolved) return resolved;
+  }
+  return null;
+}
+
 function toParts(date: Date, options: Intl.DateTimeFormatOptions): Record<string, string> {
   return new Intl.DateTimeFormat("cs-CZ", {
     timeZone: "Europe/Prague",
@@ -104,6 +119,78 @@ function asObjectRecord(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>;
 }
 
+function readFiniteNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
+function normalizeExternalBlockType(value: string | null): ProgramBlock["type"] {
+  if (value === "live") return "live";
+  if (value === "premiere" || value === "upcoming") return "premiere";
+  if (value === "coming_up") return "coming_up";
+  if (value === "fixed_abj") return "fixed_abj";
+  if (value === "ceremonial") return "ceremonial";
+  return "recorded";
+}
+
+function parseExternalProgramTimeline(payload: unknown): ProgramBlock[] {
+  const root = asObjectRecord(payload);
+  const blocksRaw =
+    root && Array.isArray(root.blocks)
+      ? root.blocks
+      : root && Array.isArray(root.timeline)
+        ? root.timeline
+        : Array.isArray(payload)
+          ? payload
+          : [];
+
+  const parsed = blocksRaw
+    .map((row) => asObjectRecord(row))
+    .filter((row): row is Record<string, unknown> => Boolean(row))
+    .map((row, index) => {
+      const startIso = readString(row.starts_at) ?? readString(row.start) ?? readString(row.startIso);
+      const endIso = readString(row.ends_at) ?? readString(row.end) ?? readString(row.endIso);
+      const title = readString(row.title);
+      const channel = readString(row.channel) ?? readString(row.channel_name) ?? "ABJ TV";
+      if (!startIso || !endIso || !title) return null;
+
+      const startTs = new Date(startIso).getTime();
+      const endTs = new Date(endIso).getTime();
+      if (!Number.isFinite(startTs) || !Number.isFinite(endTs) || endTs <= startTs) return null;
+
+      const rawType = readString(row.type);
+      const isABJ = row.is_abj === true || channel.toLowerCase().includes("abj");
+      const priority = Math.round(readFiniteNumber(row.priority) ?? (isABJ ? 900 : 500));
+      const videoId = readString(row.video_id) ?? readString(row.videoId);
+      const thumbnail = readString(row.thumbnail);
+
+      return {
+        id:
+          readString(row.block_id) ??
+          readString(row.id) ??
+          `external-${startIso}-${videoId ?? index}`,
+        start: startIso,
+        end: endIso,
+        durationMin: Math.max(1, Math.round((endTs - startTs) / 60_000)),
+        type: normalizeExternalBlockType(rawType),
+        title,
+        channel,
+        isABJ,
+        priority,
+        ...(videoId ? { videoId } : {}),
+        ...(thumbnail ? { thumbnail } : {}),
+      } satisfies ProgramBlock;
+    })
+    .filter((row): row is ProgramBlock => row !== null)
+    .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+
+  return parsed;
+}
+
 function parseExternalNowPlaying(payload: unknown): ExternalNowPlaying | null {
   const root = asObjectRecord(payload);
   if (!root) return null;
@@ -145,10 +232,7 @@ function parseExternalNowPlaying(payload: unknown): ExternalNowPlaying | null {
 }
 
 async function loadExternalNowPlaying(): Promise<ExternalNowPlaying | null> {
-  const apiKey =
-    sanitizeEnvValue(process.env.FEED_API_KEY) ??
-    sanitizeEnvValue(process.env.PROGRAM_FEED_API_KEY) ??
-    null;
+  const apiKey = resolveProgramFeedApiKey();
   if (!apiKey) return null;
 
   for (const candidate of resolveProgramFeedUrlCandidates()) {
@@ -172,6 +256,45 @@ async function loadExternalNowPlaying(): Promise<ExternalNowPlaying | null> {
     }
   }
   return null;
+}
+
+async function loadExternalProgramTimeline(): Promise<ProgramBlock[]> {
+  const apiKey = resolveProgramFeedApiKey();
+  if (!apiKey) return [];
+
+  for (const candidate of resolveProgramFeedUrlCandidates()) {
+    try {
+      const response = await fetch(candidate, {
+        headers: {
+          Accept: "application/json",
+          "X-Api-Key": apiKey,
+        },
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        if (response.status === 404) continue;
+        continue;
+      }
+      const json = (await response.json()) as unknown;
+      const parsed = parseExternalProgramTimeline(json);
+      if (parsed.length > 0) return parsed;
+    } catch (error) {
+      console.warn("live-page-external-feed-timeline-failed", error);
+    }
+  }
+  return [];
+}
+
+function pickNowPlayingFromTimeline(timeline: ProgramBlock[]): ProgramBlock | null {
+  const nowTs = Date.now();
+  const active = timeline
+    .filter((block) => {
+      const startTs = new Date(block.start).getTime();
+      const endTs = new Date(block.end).getTime();
+      return Boolean(block.videoId) && Number.isFinite(startTs) && Number.isFinite(endTs) && startTs <= nowTs && nowTs < endTs;
+    })
+    .sort((a, b) => b.priority - a.priority || new Date(b.start).getTime() - new Date(a.start).getTime());
+  return active[0] ?? null;
 }
 
 function getPragueDayLabel(date: Date): string {
@@ -311,11 +434,23 @@ export default async function LivePageServer(
   const requestedVideoId = Array.isArray(rawVideoId) ? rawVideoId[0] : rawVideoId;
 
   try {
-    timeline = await getProgram();
-    v3NowPlaying = await getNowPlaying();
-    epg = mapTimelineToDays(timeline);
+    timeline = await loadExternalProgramTimeline();
+    if (timeline.length > 0) {
+      v3NowPlaying = pickNowPlayingFromTimeline(timeline);
+      epg = mapTimelineToDays(timeline);
+    }
   } catch (error) {
-    console.error("live-page-v3-program-failed", error);
+    console.error("live-page-external-feed-timeline-load-failed", error);
+  }
+
+  if (timeline.length === 0) {
+    try {
+      timeline = await getProgram();
+      v3NowPlaying = await getNowPlaying();
+      epg = mapTimelineToDays(timeline);
+    } catch (error) {
+      console.error("live-page-v3-program-failed", error);
+    }
   }
 
   try {

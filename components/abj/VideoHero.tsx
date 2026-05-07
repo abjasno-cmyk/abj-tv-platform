@@ -110,7 +110,7 @@ export function VideoHero({
       <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between bg-[rgba(5,9,15,0.90)] px-[18px] py-[13px]">
         <div className="min-w-0 pr-4">
           {isLive ? (
-            <span className="mb-[6px] inline-flex items-center gap-[5px] rounded-[2px] bg-[var(--abj-red)] px-2 py-[3px] font-[var(--font-sans)] text-[9px] uppercase tracking-[0.15em] text-[#F0D5D5]">
+            <span className="mb-[6px] inline-flex items-center gap-[5px] rounded-[2px] bg-[var(--abj-red)] px-2 py-[3px] font-[var(--font-sans)] text-[9px] uppercase tracking-[0.15em] text-[#FFE2D1]">
               <span className="h-[5px] w-[5px] animate-[blink_2s_ease-in-out_infinite] rounded-full bg-[#F0D5D5]" />
               VYSÍLÁNÍ
             </span>
