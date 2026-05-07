@@ -13,7 +13,7 @@ type VideoEditorialProps = {
 };
 
 const FRESHNESS_BORDER_CLASS: Record<FeedVideoFreshness, string> = {
-  breaking: "border-l-[#B84A4A]",
+  breaking: "border-l-[#FF6A00]",
   today: "border-l-[var(--abj-gold)]",
   week: "border-l-[#4F79B8]",
   evergreen: "border-l-[#5A9E74]",

@@ -3,12 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { DayProgram } from "@/lib/epg-types";
-import { ABJNav } from "@/components/abj/Nav";
-import { VideoHero } from "@/components/abj/VideoHero";
 import { LiveAlert } from "@/components/abj/LiveAlert";
-import { NowNextBar } from "@/components/abj/NowNextBar";
-import { Timeline } from "@/components/abj/Timeline";
-import { Hospoda } from "@/components/abj/Hospoda";
+import { HomePage } from "@/components/abj/HomePage";
 
 type LivePageProps = {
   epg: DayProgram[];
@@ -42,24 +38,16 @@ export default function LivePage({
     () => timelineItems.findIndex((item) => item.videoId === videoId),
     [timelineItems, videoId]
   );
-  const nowItem = selectedIndex >= 0 ? timelineItems[selectedIndex] : timelineItems[0] ?? null;
   const nextItem =
     selectedIndex >= 0
       ? timelineItems[selectedIndex + 1] ?? null
       : timelineItems.length > 1
         ? timelineItems[1]
         : null;
-  const nowNextWindow = useMemo(() => {
-    const base = new Date();
-    const plus25 = new Date(base.getTime() + 25 * 60_000);
-    const plus55 = new Date(base.getTime() + 55 * 60_000);
-    return {
-      nowStartIso: base.toISOString(),
-      nowEndIso: plus25.toISOString(),
-      nextStartIso: plus25.toISOString(),
-      nextEndIso: plus55.toISOString(),
-    };
-  }, []);
+  const isFiller = useMemo(() => {
+    const current = timelineItems[selectedIndex] ?? null;
+    return current?.type === "vod" && Boolean(current.isABJ) && !videoId;
+  }, [timelineItems, selectedIndex, videoId]);
 
   useEffect(() => {
     const tick = () => {
@@ -75,69 +63,39 @@ export default function LivePage({
   }, [nextItem, progressPercent]);
 
   return (
-    <section className="min-h-screen bg-abj-main text-abj-text1">
-      <ABJNav />
-      <div className="flex h-[calc(100vh-46px)] overflow-hidden">
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="px-5 pt-4">
-            <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">ABJ vysílání 24/7</p>
-          </div>
-          <div className="px-5 pt-5">
-            <VideoHero
-              key={`${videoId ?? "no-video"}-${startSeconds}`}
-              videoId={videoId}
-              title={title}
-              channel={channelName || "ABJ Síť"}
-              isLive={isLive}
-              startSeconds={startSeconds}
-              remainingLabel={remainingLabel}
-              progressPercent={progressPercent}
-              onPlayToggle={() => {
-                setIsLive((prev) => !prev);
-              }}
-            />
-          </div>
-          <LiveAlert
-            currentVideoId={videoId}
-            onWatchLive={(video) => {
-              setVideoId(video);
-              setStartSeconds(0);
-              setIsLive(true);
-            }}
-          />
-          <NowNextBar
-            nowItem={
-              nowItem
-                ? {
-                    title: nowItem.title,
-                    start: nowNextWindow.nowStartIso,
-                    end: nowNextWindow.nowEndIso,
-                  }
-                : null
-            }
-            nextItem={
-              nextItem
-                ? {
-                    title: nextItem.title,
-                    start: nowNextWindow.nextStartIso,
-                    end: nowNextWindow.nextEndIso,
-                  }
-                : null
-            }
-          />
-          <Timeline
-            days={safeEpg}
-            onSelect={(item) => {
-              setTitle(item.title);
-              setChannelName(item.channelName);
-              setVideoId(item.videoId);
-              setStartSeconds(0);
-              setIsLive(item.type === "live" || item.channelName.toLowerCase().includes("abj"));
-            }}
-          />
-        </div>
-        <Hospoda />
-      </div>
+    <section
+      data-ui-version="abj-geometric-v2"
+      className="min-h-screen bg-abj-main text-abj-text1"
+    >
+      <HomePage
+        days={safeEpg}
+        videoId={videoId}
+        title={title}
+        channelName={channelName}
+        isLive={isLive}
+        startSeconds={startSeconds}
+        remainingLabel={remainingLabel}
+        progressPercent={progressPercent}
+        isFiller={isFiller}
+        onPlayToggle={() => {
+          setIsLive((prev) => !prev);
+        }}
+        onSelect={(item) => {
+          setTitle(item.title);
+          setChannelName(item.channelName);
+          setVideoId(item.videoId);
+          setStartSeconds(0);
+          setIsLive(item.type === "live" || item.channelName.toLowerCase().includes("abj"));
+        }}
+      />
+      <LiveAlert
+        currentVideoId={videoId}
+        onWatchLive={(video) => {
+          setVideoId(video);
+          setStartSeconds(0);
+          setIsLive(true);
+        }}
+      />
     </section>
   );
 }

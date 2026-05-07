@@ -116,7 +116,7 @@ export function LiveAlert({ currentVideoId, onWatchLive }: LiveAlertProps) {
         ×
       </button>
 
-      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#E18282]">🔴 PRÁVĚ ŽIVĚ</p>
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#FF6A00]">🔴 PRÁVĚ ŽIVĚ</p>
 
       <div className="flex gap-3">
         {activeItem.thumbnail ? (
