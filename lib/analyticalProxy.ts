@@ -29,13 +29,20 @@ function resolveAnalyticalBaseUrl(): string | null {
 }
 
 function resolveApiKey(): string | null {
-  return (
-    sanitizeEnvValue(process.env.CONTEXT_API_KEY) ??
-    sanitizeEnvValue(process.env.ANALYTICAL_API_KEY) ??
-    sanitizeEnvValue(process.env.FEED_API_KEY) ??
-    sanitizeEnvValue(process.env.PROGRAM_FEED_API_KEY) ??
-    null
-  );
+  const candidates = [
+    process.env.CONTEXT_API_KEY,
+    process.env.ANALYTICAL_API_KEY,
+    process.env.FEED_API_KEY,
+    process.env.PROGRAM_FEED_API_KEY,
+    process.env.REPLIT_API_KEY,
+    process.env.PROGRAM_API_KEY,
+    process.env.API_KEY,
+  ];
+  for (const candidate of candidates) {
+    const resolved = sanitizeEnvValue(candidate);
+    if (resolved) return resolved;
+  }
+  return null;
 }
 
 function buildBaseCandidates(): string[] {
