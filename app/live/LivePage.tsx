@@ -31,6 +31,7 @@ type ExternalProgramBlock = {
 const NOW_REFRESH_INTERVAL_MS = 60_000;
 const END_TRIGGER_DEDUP_MS = 1_500;
 const MAX_TIMEOUT_MS = 2_147_483_647;
+const ENABLE_REPLIT_PROGRAM_PROXY = process.env.NEXT_PUBLIC_ENABLE_REPLIT_PROGRAM_PROXY === "1";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -217,7 +218,10 @@ export default function LivePage({
     }
 
     const request = (async () => {
-      const endpoints = ["/api/program/v3", "/api/replit/program/now", "/api/replit/program"];
+      const endpoints = ["/api/program/v3"];
+      if (ENABLE_REPLIT_PROGRAM_PROXY) {
+        endpoints.push("/api/replit/program/now", "/api/replit/program");
+      }
       for (const endpoint of endpoints) {
         try {
           const response = await fetch(endpoint, { cache: "no-store" });
@@ -251,7 +255,7 @@ export default function LivePage({
     const block = activeBlockRef.current;
     const slotEndMs = parseDateMs(block?.endsAt ?? null);
     const gapSeconds = slotEndMs === null ? 0 : Math.floor((slotEndMs - Date.now()) / 1000);
-    if (gapSeconds > 5 && block?.blockId) {
+    if (ENABLE_REPLIT_PROGRAM_PROXY && gapSeconds > 5 && block?.blockId) {
       const query = new URLSearchParams({
         seconds: String(Math.max(1, gapSeconds)),
         current_block_id: block.blockId,

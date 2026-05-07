@@ -1,6 +1,8 @@
 const BASE = process.env.NEXT_PUBLIC_REPLIT_URL ?? "";
 const PROXY_BASE = "/api/replit";
 let replitFeedAuthUnavailable = false;
+const ENABLE_REPLIT_PROGRAM_PROXY = process.env.NEXT_PUBLIC_ENABLE_REPLIT_PROGRAM_PROXY === "1";
+const ENABLE_REPLIT_FEED_PROXY = process.env.NEXT_PUBLIC_ENABLE_REPLIT_FEED_PROXY === "1";
 
 if (!BASE && typeof window !== "undefined") {
   console.warn("NEXT_PUBLIC_REPLIT_URL není nastaveno — API volání selžou.");
@@ -215,7 +217,9 @@ export async function fetchProgram(date?: string): Promise<ProgramResponse | nul
   if (!date) {
     candidateUrls.push("/api/program/v3");
   }
-  candidateUrls.push(query ? `${PROXY_BASE}/program?${query}` : `${PROXY_BASE}/program`);
+  if (ENABLE_REPLIT_PROGRAM_PROXY) {
+    candidateUrls.push(query ? `${PROXY_BASE}/program?${query}` : `${PROXY_BASE}/program`);
+  }
 
   for (const url of candidateUrls) {
     try {
@@ -233,6 +237,9 @@ export async function fetchProgram(date?: string): Promise<ProgramResponse | nul
 }
 
 export async function fetchTomorrow(): Promise<ProgramResponse | null> {
+  if (!ENABLE_REPLIT_PROGRAM_PROXY) {
+    return null;
+  }
   try {
     const res = await fetch(`${PROXY_BASE}/program/tomorrow`);
     if (!res.ok) return null;
@@ -310,6 +317,7 @@ export async function fetchFeed(params: {
     freshness?: string;
     urgency?: number;
   }): Promise<FeedResponse | null> => {
+    if (!ENABLE_REPLIT_FEED_PROXY) return null;
     if (replitFeedAuthUnavailable) return null;
     const qs = new URLSearchParams();
     if (request.page) qs.set("page", String(request.page));
