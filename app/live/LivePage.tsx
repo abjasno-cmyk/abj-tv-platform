@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { DayProgram, ProgramItem } from "@/lib/epg-types";
 import { LiveAlert } from "@/components/abj/LiveAlert";
@@ -50,6 +50,7 @@ export default function LivePage({
   const [startSeconds, setStartSeconds] = useState(() => Math.max(0, Math.floor(initialStartSeconds)));
   const [remainingLabel, setRemainingLabel] = useState("za chvíli");
   const [progressPercent, setProgressPercent] = useState(0);
+  const syncedBlockRef = useRef<string | null>(null);
 
   const timelineItems = useMemo(() => safeEpg.flatMap((day) => day.items), [safeEpg]);
   const timedTimeline = useMemo<TimelineItemWithBounds[]>(
@@ -102,19 +103,24 @@ export default function LivePage({
         return;
       }
 
-      setTitle(current.title);
-      setChannelName(current.channelName);
-      setVideoId(current.videoId ?? null);
-      setIsLive(current.type === "live" || current.channelName.toLowerCase().includes("abj"));
-
       const startMs = current.startMs ?? nowMs;
       const endMs = current.endMs ?? nowMs;
       const elapsedSec = Math.max(0, Math.floor((nowMs - startMs) / 1000));
       const remainingSec = Math.max(0, Math.floor((endMs - nowMs) / 1000));
       const durationMs = Math.max(1, endMs - startMs);
       const progress = Math.max(0, Math.min(100, ((nowMs - startMs) / durationMs) * 100));
+      const blockIdentity = `${current.videoId ?? "none"}-${startMs}-${endMs}`;
 
-      setStartSeconds(elapsedSec);
+      if (syncedBlockRef.current !== blockIdentity) {
+        syncedBlockRef.current = blockIdentity;
+        setTitle(current.title);
+        setChannelName(current.channelName);
+        setVideoId(current.videoId ?? null);
+        setIsLive(current.type === "live" || current.channelName.toLowerCase().includes("abj"));
+        // Only apply start offset on block change to avoid remount-looping the player.
+        setStartSeconds(elapsedSec);
+      }
+
       setRemainingLabel(formatRemainingLabel(remainingSec));
       setProgressPercent(Math.round(progress));
     };
