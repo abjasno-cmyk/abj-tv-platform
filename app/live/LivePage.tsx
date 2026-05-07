@@ -80,13 +80,13 @@ export default function LivePage({
   }, [timelineItems, selectedIndex, videoId]);
 
   useEffect(() => {
-    if (timedTimeline.length === 0) {
-      setRemainingLabel(nextItem ? "za chvíli" : "bez dalšího pořadu");
-      setProgressPercent(0);
-      return;
-    }
-
     const syncFromTimeline = () => {
+      if (timedTimeline.length === 0) {
+        setRemainingLabel(nextItem ? "za chvíli" : "bez dalšího pořadu");
+        setProgressPercent(0);
+        return;
+      }
+
       const nowMs = Date.now();
       const current = timedTimeline.find((item) => (item.startMs ?? 0) <= nowMs && nowMs < (item.endMs ?? 0)) ?? null;
 
