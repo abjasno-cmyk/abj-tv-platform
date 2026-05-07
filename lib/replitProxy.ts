@@ -1,52 +1,6 @@
 import "server-only";
 
-const DEFAULT_REPLIT_BASE_URL = "https://attached-assets-abjasno.replit.app";
-
-function sanitizeEnvValue(value?: string): string | undefined {
-  if (!value) return undefined;
-  const trimmed = value.trim();
-  const equalsIdx = trimmed.indexOf("=");
-  const maybeAssigned =
-    equalsIdx > 0 && /^[A-Z0-9_]+$/.test(trimmed.slice(0, equalsIdx))
-      ? trimmed.slice(equalsIdx + 1).trim()
-      : trimmed;
-
-  if (
-    (maybeAssigned.startsWith('"') && maybeAssigned.endsWith('"')) ||
-    (maybeAssigned.startsWith("'") && maybeAssigned.endsWith("'"))
-  ) {
-    return maybeAssigned.slice(1, -1).trim();
-  }
-  return maybeAssigned;
-}
-
-export function resolveReplitBaseUrl(): string | null {
-  return sanitizeEnvValue(process.env.NEXT_PUBLIC_REPLIT_URL) ?? sanitizeEnvValue(process.env.REPLIT_URL) ?? null;
-}
-
-function resolveApiKey(): string | null {
-  const candidates = [
-    process.env.FEED_API_KEY,
-    process.env.PROGRAM_FEED_API_KEY,
-    process.env.REPLIT_API_KEY,
-    process.env.PROGRAM_API_KEY,
-    process.env.API_KEY,
-  ];
-  for (const candidate of candidates) {
-    const resolved = sanitizeEnvValue(candidate);
-    if (resolved) return resolved;
-  }
-  return null;
-}
-
-function buildBaseCandidates(): string[] {
-  const configured = resolveReplitBaseUrl();
-  const candidates = [configured, DEFAULT_REPLIT_BASE_URL]
-    .filter((value): value is string => Boolean(value && value.trim().length > 0))
-    .map((value) => value.trim());
-
-  return Array.from(new Set(candidates));
-}
+import { resolveReplitApiKey, resolveReplitBaseUrlCandidates } from "@/lib/replitConfig";
 
 function makeUpstreamUrl(baseUrl: string, upstreamPath: string, request: Request): URL {
   const normalizedBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
@@ -60,17 +14,17 @@ function makeUpstreamUrl(baseUrl: string, upstreamPath: string, request: Request
 }
 
 async function proxyReplitRequest(request: Request, upstreamPath: string, method: "GET" | "POST"): Promise<Response> {
-  const baseCandidates = buildBaseCandidates();
+  const baseCandidates = resolveReplitBaseUrlCandidates();
   if (baseCandidates.length === 0) {
     return Response.json(
       {
-        error: "Missing NEXT_PUBLIC_REPLIT_URL/REPLIT_URL in environment.",
+        error: "Missing Replit base URL environment configuration.",
       },
       { status: 500 },
     );
   }
 
-  const apiKey = resolveApiKey();
+  const apiKey = resolveReplitApiKey();
   const contentType = request.headers.get("content-type");
   const body = method === "POST" ? await request.text() : undefined;
   const attempts: string[] = [];

@@ -1,10 +1,10 @@
 import { buildEPG } from "@/lib/buildEPG";
 import { getNowPlaying, getProgram } from "@/lib/programEngine";
+import { resolveProgramFeedUrlCandidates, resolveReplitApiKey } from "@/lib/replitConfig";
 import LivePage from "@/app/live/LivePage";
 import type { DayProgram, ProgramBlock, ProgramItem } from "@/lib/epg-types";
 
 export const dynamic = "force-dynamic";
-const DEFAULT_PROGRAM_FEED_URL = "https://attached-assets-abjasno.replit.app/program";
 
 type ExternalNowPlaying = {
   videoId: string;
@@ -12,21 +12,6 @@ type ExternalNowPlaying = {
   channelName: string;
   startIso: string;
 };
-
-function resolveProgramFeedApiKey(): string | null {
-  const candidates = [
-    process.env.FEED_API_KEY,
-    process.env.PROGRAM_FEED_API_KEY,
-    process.env.REPLIT_API_KEY,
-    process.env.PROGRAM_API_KEY,
-    process.env.API_KEY,
-  ];
-  for (const candidate of candidates) {
-    const resolved = sanitizeEnvValue(candidate);
-    if (resolved) return resolved;
-  }
-  return null;
-}
 
 function toParts(date: Date, options: Intl.DateTimeFormatOptions): Record<string, string> {
   return new Intl.DateTimeFormat("cs-CZ", {
@@ -58,54 +43,6 @@ function getPragueDateKey(date: Date): string {
     day: "2-digit",
   });
   return `${parts.year}-${parts.month}-${parts.day}`;
-}
-
-function sanitizeEnvValue(value?: string): string | undefined {
-  if (!value) return undefined;
-  const trimmed = value.trim();
-  const equalsIdx = trimmed.indexOf("=");
-  const maybeAssigned =
-    equalsIdx > 0 && /^[A-Z0-9_]+$/.test(trimmed.slice(0, equalsIdx))
-      ? trimmed.slice(equalsIdx + 1).trim()
-      : trimmed;
-  if (
-    (maybeAssigned.startsWith('"') && maybeAssigned.endsWith('"')) ||
-    (maybeAssigned.startsWith("'") && maybeAssigned.endsWith("'"))
-  ) {
-    return maybeAssigned.slice(1, -1).trim();
-  }
-  return maybeAssigned;
-}
-
-function resolveProgramFeedUrlCandidates(): string[] {
-  const configured = sanitizeEnvValue(process.env.PROGRAM_FEED_URL);
-  const candidates: string[] = [];
-  const seen = new Set<string>();
-  const pushCandidate = (candidate: string | undefined) => {
-    if (!candidate) return;
-    const normalized = candidate.trim();
-    if (!normalized || seen.has(normalized)) return;
-    seen.add(normalized);
-    candidates.push(normalized);
-  };
-
-  pushCandidate(configured);
-  if (configured) {
-    try {
-      const url = new URL(configured);
-      const normalizedPath = url.pathname.replace(/\/+$/, "");
-      if (normalizedPath !== "/program") {
-        url.pathname = `${normalizedPath}/program`;
-        url.search = "";
-        url.hash = "";
-        pushCandidate(url.toString());
-      }
-    } catch {
-      // Keep original candidate only.
-    }
-  }
-  pushCandidate(DEFAULT_PROGRAM_FEED_URL);
-  return candidates;
 }
 
 function readString(value: unknown): string | null {
@@ -153,7 +90,9 @@ function parseExternalProgramTimeline(payload: unknown): ProgramBlock[] {
     .filter((row): row is Record<string, unknown> => Boolean(row))
     .map((row, index) => {
       const startIso = readString(row.starts_at) ?? readString(row.start) ?? readString(row.startIso);
-      const endIso = readString(row.ends_at) ?? readString(row.end) ?? readString(row.endIso);
+      const expectedEndIso =
+        readString(row.expected_ends_at) ?? readString(row.expectedEndsAt);
+      const endIso = expectedEndIso ?? readString(row.ends_at) ?? readString(row.end) ?? readString(row.endIso);
       const title = readString(row.title);
       const channel = readString(row.channel) ?? readString(row.channel_name) ?? "ABJ TV";
       if (!startIso || !endIso || !title) return null;
@@ -165,6 +104,9 @@ function parseExternalProgramTimeline(payload: unknown): ProgramBlock[] {
       const rawType = readString(row.type);
       const isABJ = row.is_abj === true || channel.toLowerCase().includes("abj");
       const priority = Math.round(readFiniteNumber(row.priority) ?? (isABJ ? 900 : 500));
+      const videoDurationSec =
+        readFiniteNumber(row.video_duration_sec) ?? readFiniteNumber(row.videoDurationSec);
+      const derivedDurationMin = Math.max(1, Math.round((endTs - startTs) / 60_000));
       const videoId = readString(row.video_id) ?? readString(row.videoId);
       const thumbnail = readString(row.thumbnail);
 
@@ -175,7 +117,10 @@ function parseExternalProgramTimeline(payload: unknown): ProgramBlock[] {
           `external-${startIso}-${videoId ?? index}`,
         start: startIso,
         end: endIso,
-        durationMin: Math.max(1, Math.round((endTs - startTs) / 60_000)),
+        durationMin:
+          videoDurationSec && videoDurationSec > 0
+            ? Math.max(1, Math.round(videoDurationSec / 60))
+            : derivedDurationMin,
         type: normalizeExternalBlockType(rawType),
         title,
         channel,
@@ -207,7 +152,9 @@ function parseExternalNowPlaying(payload: unknown): ExternalNowPlaying | null {
     .filter((row): row is Record<string, unknown> => Boolean(row))
     .map((row) => {
       const startIso = readString(row.starts_at) ?? readString(row.start) ?? readString(row.startIso);
-      const endIso = readString(row.ends_at) ?? readString(row.end) ?? readString(row.endIso);
+      const expectedEndIso =
+        readString(row.expected_ends_at) ?? readString(row.expectedEndsAt);
+      const endIso = expectedEndIso ?? readString(row.ends_at) ?? readString(row.end) ?? readString(row.endIso);
       const videoId = readString(row.video_id) ?? readString(row.videoId);
       const title = readString(row.title);
       const channelName = readString(row.channel) ?? readString(row.channel_name) ?? "ABJ TV";
@@ -232,7 +179,7 @@ function parseExternalNowPlaying(payload: unknown): ExternalNowPlaying | null {
 }
 
 async function loadExternalNowPlaying(): Promise<ExternalNowPlaying | null> {
-  const apiKey = resolveProgramFeedApiKey();
+  const apiKey = resolveReplitApiKey();
   if (!apiKey) return null;
 
   for (const candidate of resolveProgramFeedUrlCandidates()) {
@@ -259,7 +206,7 @@ async function loadExternalNowPlaying(): Promise<ExternalNowPlaying | null> {
 }
 
 async function loadExternalProgramTimeline(): Promise<ProgramBlock[]> {
-  const apiKey = resolveProgramFeedApiKey();
+  const apiKey = resolveReplitApiKey();
   if (!apiKey) return [];
 
   for (const candidate of resolveProgramFeedUrlCandidates()) {
@@ -337,6 +284,8 @@ function mapTimelineToDays(timeline: ProgramBlock[]): DayProgram[] {
       videoId: block.videoId ?? null,
       isABJ: block.isABJ,
       type: toProgramItemType(block),
+      startIso: block.start,
+      endIso: block.end,
     });
   }
 
