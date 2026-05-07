@@ -44,7 +44,7 @@ export async function createSupabaseServerClient() {
           // We intentionally disable session cookie hydration here.
           return [];
         },
-        setAll(_cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
+        setAll() {
           // No-op by design: this server client is stateless.
         },
       },

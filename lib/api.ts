@@ -146,7 +146,37 @@ function normalizeProgramResponse(payload: unknown): ProgramResponse | null {
   if (!isObjectLike(payload)) return null;
 
   if (Array.isArray(payload.blocks)) {
-    return payload as ProgramResponse;
+    const date = readString(payload.date);
+    const feedVersion = readString(payload.feed_version);
+    const generatedBy = readString(payload.generated_by);
+    const timezone = readString(payload.timezone);
+    const revisionId = readString(payload.revision_id);
+    const generatedAt = readString(payload.generated_at);
+    const validUntil = readString(payload.valid_until);
+    const staleAfter = readString(payload.stale_after);
+
+    if (
+      date &&
+      feedVersion &&
+      generatedBy &&
+      timezone &&
+      revisionId &&
+      generatedAt &&
+      validUntil &&
+      staleAfter
+    ) {
+      return {
+        date,
+        feed_version: feedVersion,
+        generated_by: generatedBy,
+        timezone,
+        revision_id: revisionId,
+        generated_at: generatedAt,
+        valid_until: validUntil,
+        stale_after: staleAfter,
+        blocks: payload.blocks as ProgramBlock[],
+      };
+    }
   }
 
   if (!Array.isArray(payload.timeline)) {
