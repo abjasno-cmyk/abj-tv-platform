@@ -139,6 +139,36 @@ function parseExternalProgramTimeline(payload: unknown): ProgramBlock[] {
 function parseExternalNowPlaying(payload: unknown): ExternalNowPlaying | null {
   const root = asObjectRecord(payload);
   if (!root) return null;
+  const nowTs = Date.now();
+  const parseRow = (raw: unknown) => {
+    const row = asObjectRecord(raw);
+    if (!row) return null;
+    const startIso = readString(row.starts_at) ?? readString(row.start) ?? readString(row.startIso);
+    const expectedEndIso = readString(row.expected_ends_at) ?? readString(row.expectedEndsAt);
+    const endIso = expectedEndIso ?? readString(row.ends_at) ?? readString(row.end) ?? readString(row.endIso);
+    const videoId = readString(row.video_id) ?? readString(row.videoId);
+    const title = readString(row.title);
+    const channelName = readString(row.channel) ?? readString(row.channel_name) ?? "ABJ TV";
+    if (!startIso || !endIso || !videoId || !title) return null;
+    const startTs = new Date(startIso).getTime();
+    const endTs = new Date(endIso).getTime();
+    if (!Number.isFinite(startTs) || !Number.isFinite(endTs) || endTs <= startTs) return null;
+    return { videoId, title, channelName, startIso, startTs, endTs };
+  };
+
+  const directCandidates = [root.block, root.now_playing, root.nowPlaying, root.data];
+  for (const candidate of directCandidates) {
+    const parsed = parseRow(candidate);
+    if (parsed && parsed.startTs <= nowTs && nowTs < parsed.endTs) {
+      return {
+        videoId: parsed.videoId,
+        title: parsed.title,
+        channelName: parsed.channelName,
+        startIso: parsed.startIso,
+      };
+    }
+  }
+
   const blocksRaw = Array.isArray(root.blocks)
     ? root.blocks
     : Array.isArray(root.timeline)
@@ -146,24 +176,8 @@ function parseExternalNowPlaying(payload: unknown): ExternalNowPlaying | null {
       : null;
   if (!blocksRaw) return null;
 
-  const nowTs = Date.now();
   const active = blocksRaw
-    .map((row) => asObjectRecord(row))
-    .filter((row): row is Record<string, unknown> => Boolean(row))
-    .map((row) => {
-      const startIso = readString(row.starts_at) ?? readString(row.start) ?? readString(row.startIso);
-      const expectedEndIso =
-        readString(row.expected_ends_at) ?? readString(row.expectedEndsAt);
-      const endIso = expectedEndIso ?? readString(row.ends_at) ?? readString(row.end) ?? readString(row.endIso);
-      const videoId = readString(row.video_id) ?? readString(row.videoId);
-      const title = readString(row.title);
-      const channelName = readString(row.channel) ?? readString(row.channel_name) ?? "ABJ TV";
-      if (!startIso || !endIso || !videoId || !title) return null;
-      const startTs = new Date(startIso).getTime();
-      const endTs = new Date(endIso).getTime();
-      if (!Number.isFinite(startTs) || !Number.isFinite(endTs) || endTs <= startTs) return null;
-      return { videoId, title, channelName, startIso, startTs, endTs };
-    })
+    .map((row) => parseRow(row))
     .filter((row): row is NonNullable<typeof row> => Boolean(row))
     .filter((row) => row.startTs <= nowTs && nowTs < row.endTs)
     .sort((a, b) => b.startTs - a.startTs);
@@ -183,8 +197,20 @@ async function loadExternalNowPlaying(): Promise<ExternalNowPlaying | null> {
   if (!apiKey) return null;
 
   for (const candidate of resolveProgramFeedUrlCandidates()) {
+    const nowCandidate = (() => {
+      try {
+        const url = new URL(candidate);
+        const path = url.pathname.replace(/\/+$/, "");
+        url.pathname = `${path.endsWith("/program") ? path : `${path}/program`}/now`;
+        url.search = "";
+        url.hash = "";
+        return url.toString();
+      } catch {
+        return candidate;
+      }
+    })();
     try {
-      const response = await fetch(candidate, {
+      const response = await fetch(nowCandidate, {
         headers: {
           Accept: "application/json",
           "X-Api-Key": apiKey,
@@ -193,6 +219,18 @@ async function loadExternalNowPlaying(): Promise<ExternalNowPlaying | null> {
       });
       if (!response.ok) {
         if (response.status === 404) continue;
+        // Fall back to parsing full /program payload for compatibility.
+        const timelineResponse = await fetch(candidate, {
+          headers: {
+            Accept: "application/json",
+            "X-Api-Key": apiKey,
+          },
+          cache: "no-store",
+        });
+        if (!timelineResponse.ok) continue;
+        const timelineJson = (await timelineResponse.json()) as unknown;
+        const timelineParsed = parseExternalNowPlaying(timelineJson);
+        if (timelineParsed) return timelineParsed;
         continue;
       }
       const json = (await response.json()) as unknown;
