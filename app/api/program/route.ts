@@ -25,18 +25,11 @@ function resolveProgramFeedUrl(): string {
 }
 
 function resolveFeedApiKey(): string | null {
-  const candidates = [
-    process.env.FEED_API_KEY,
-    process.env.PROGRAM_FEED_API_KEY,
-    process.env.REPLIT_API_KEY,
-    process.env.PROGRAM_API_KEY,
-    process.env.API_KEY,
-  ];
-  for (const candidate of candidates) {
-    const resolved = sanitizeEnvValue(candidate);
-    if (resolved) return resolved;
-  }
-  return null;
+  return (
+    sanitizeEnvValue(process.env.FEED_API_KEY) ??
+    sanitizeEnvValue(process.env.PROGRAM_FEED_API_KEY) ??
+    null
+  );
 }
 
 function addCandidate(candidates: string[], seen: Set<string>, candidate: string) {
@@ -83,7 +76,7 @@ export async function GET(request: Request) {
     return Response.json(
       {
         error:
-          "Missing API key. Configure FEED_API_KEY, PROGRAM_FEED_API_KEY, or REPLIT_API_KEY in environment variables.",
+          "Missing FEED_API_KEY. Configure FEED_API_KEY (or PROGRAM_FEED_API_KEY) in environment variables.",
       },
       { status: 500 },
     );

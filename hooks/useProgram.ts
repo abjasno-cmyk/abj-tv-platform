@@ -23,16 +23,13 @@ export function useProgram(date?: string) {
         return;
       }
 
-      const revisionId = typeof data.revision_id === "string" ? data.revision_id : null;
-      if (revisionId === null || revisionId !== revisionRef.current) {
-        revisionRef.current = revisionId;
+      if (data.revision_id !== revisionRef.current) {
+        revisionRef.current = data.revision_id;
         setProgram(data);
         setStale(false);
       }
 
-      const staleAfterTs =
-        typeof data.stale_after === "string" ? Date.parse(data.stale_after) : NaN;
-      if (Number.isFinite(staleAfterTs) && staleAfterTs < Date.now()) {
+      if (new Date(data.stale_after) < new Date()) {
         setStale(true);
       }
 

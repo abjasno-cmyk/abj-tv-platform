@@ -12,7 +12,6 @@ type VideoHeroProps = {
   remainingLabel: string;
   progressPercent: number;
   onPlayToggle?: () => void;
-  onVideoEnded?: () => void;
 };
 
 export function VideoHero({
@@ -24,7 +23,6 @@ export function VideoHero({
   remainingLabel,
   progressPercent,
   onPlayToggle,
-  onVideoEnded,
 }: VideoHeroProps) {
   const clampedProgress = Math.max(0, Math.min(100, progressPercent));
   const [manualUnmuteVideoId, setManualUnmuteVideoId] = useState<string | null>(null);
@@ -73,12 +71,6 @@ export function VideoHero({
               title={title}
               iframeClassName="absolute inset-0 h-full w-full"
               opts={playerOptions}
-              onStateChange={(event) => {
-                // Keep ENDED only as fallback; primary switch is timer-driven by expected_ends_at.
-                if (event.data === 0) {
-                  onVideoEnded?.();
-                }
-              }}
             />
             {showUnmuteButton ? (
               <button

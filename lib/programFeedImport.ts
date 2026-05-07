@@ -121,18 +121,11 @@ function resolveSignatureSecret(): string | null {
 }
 
 function resolveFeedApiKey(): string | null {
-  const candidates = [
-    process.env.FEED_API_KEY,
-    process.env.PROGRAM_FEED_API_KEY,
-    process.env.REPLIT_API_KEY,
-    process.env.PROGRAM_API_KEY,
-    process.env.API_KEY,
-  ];
-  for (const candidate of candidates) {
-    const resolved = sanitizeEnvValue(candidate);
-    if (resolved) return resolved;
-  }
-  return null;
+  return (
+    sanitizeEnvValue(process.env.FEED_API_KEY) ??
+    sanitizeEnvValue(process.env.PROGRAM_FEED_API_KEY) ??
+    null
+  );
 }
 
 function allowStaleFeedWindow(): boolean {

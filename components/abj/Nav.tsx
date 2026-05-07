@@ -4,7 +4,14 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ReplitHealthBadge } from "@/components/abj/ReplitHealthBadge";
-import { NAV_LINKS } from "@/lib/navigation";
+
+const NAV_LINKS = [
+  { href: "/live", label: "Vysílání" },
+  { href: "/videos", label: "Context" },
+  { href: "/archiv", label: "Přehled dne" },
+  { href: "/abj-x", label: "ABJ X" },
+  { href: "/program", label: "Program" },
+];
 
 function getPragueClockValue(date: Date): string {
   return new Intl.DateTimeFormat("cs-CZ", {

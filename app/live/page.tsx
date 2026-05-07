@@ -145,21 +145,10 @@ function parseExternalNowPlaying(payload: unknown): ExternalNowPlaying | null {
 }
 
 async function loadExternalNowPlaying(): Promise<ExternalNowPlaying | null> {
-  const apiKeyCandidates = [
-    process.env.FEED_API_KEY,
-    process.env.PROGRAM_FEED_API_KEY,
-    process.env.REPLIT_API_KEY,
-    process.env.PROGRAM_API_KEY,
-    process.env.API_KEY,
-  ];
-  let apiKey: string | null = null;
-  for (const candidate of apiKeyCandidates) {
-    const resolved = sanitizeEnvValue(candidate);
-    if (resolved) {
-      apiKey = resolved;
-      break;
-    }
-  }
+  const apiKey =
+    sanitizeEnvValue(process.env.FEED_API_KEY) ??
+    sanitizeEnvValue(process.env.PROGRAM_FEED_API_KEY) ??
+    null;
   if (!apiKey) return null;
 
   for (const candidate of resolveProgramFeedUrlCandidates()) {

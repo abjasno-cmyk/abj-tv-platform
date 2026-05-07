@@ -1,9 +1,5 @@
 const BASE = process.env.NEXT_PUBLIC_REPLIT_URL ?? "";
 const PROXY_BASE = "/api/replit";
-let replitFeedAuthUnavailable = false;
-let replitFeedAuthBackoffUntil = 0;
-const DISABLE_REPLIT_PROGRAM_PROXY = process.env.NEXT_PUBLIC_DISABLE_REPLIT_PROGRAM_PROXY === "1";
-const DISABLE_REPLIT_FEED_PROXY = process.env.NEXT_PUBLIC_DISABLE_REPLIT_FEED_PROXY === "1";
 
 if (!BASE && typeof window !== "undefined") {
   console.warn("NEXT_PUBLIC_REPLIT_URL není nastaveno — API volání selžou.");
@@ -135,112 +131,23 @@ function dedupeAndSortFeedPosts(posts: FeedPost[]): FeedPost[] {
   return [...byId.values()].sort((a, b) => getFeedPostTimestamp(b) - getFeedPostTimestamp(a));
 }
 
-function readString(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
-
-function isObjectLike(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-function normalizeProgramResponse(payload: unknown): ProgramResponse | null {
-  if (!isObjectLike(payload)) return null;
-
-  if (Array.isArray(payload.blocks)) {
-    const date = readString(payload.date);
-    const feedVersion = readString(payload.feed_version);
-    const generatedBy = readString(payload.generated_by);
-    const timezone = readString(payload.timezone);
-    const revisionId = readString(payload.revision_id);
-    const generatedAt = readString(payload.generated_at);
-    const validUntil = readString(payload.valid_until);
-    const staleAfter = readString(payload.stale_after);
-
-    if (
-      date &&
-      feedVersion &&
-      generatedBy &&
-      timezone &&
-      revisionId &&
-      generatedAt &&
-      validUntil &&
-      staleAfter
-    ) {
-      return {
-        date,
-        feed_version: feedVersion,
-        generated_by: generatedBy,
-        timezone,
-        revision_id: revisionId,
-        generated_at: generatedAt,
-        valid_until: validUntil,
-        stale_after: staleAfter,
-        blocks: payload.blocks as ProgramBlock[],
-      };
-    }
-  }
-
-  if (!Array.isArray(payload.timeline)) {
-    return null;
-  }
-
-  const nowIso = new Date().toISOString();
-  const staleAfterIso = new Date(Date.now() + 5 * 60_000).toISOString();
-  const validUntilIso = new Date(Date.now() + 15 * 60_000).toISOString();
-  const dateLabel = readString(payload.date) ?? new Intl.DateTimeFormat("sv-SE").format(new Date());
-  const feedVersion = readString(payload.feed_version) ?? "program-v3";
-  const generatedBy = readString(payload.generated_by) ?? "program-v3";
-  const timezone = readString(payload.timezone) ?? "Europe/Prague";
-  const revisionId = `${dateLabel}:${feedVersion}:${(payload.timeline as unknown[]).length}`;
-
-  return {
-    date: dateLabel,
-    feed_version: feedVersion,
-    generated_by: generatedBy,
-    timezone,
-    revision_id: revisionId,
-    generated_at: nowIso,
-    valid_until: validUntilIso,
-    stale_after: staleAfterIso,
-    blocks: payload.timeline as ProgramBlock[],
-  };
-}
-
 export async function fetchProgram(date?: string): Promise<ProgramResponse | null> {
   const qs = new URLSearchParams();
   if (date) qs.set("date", date);
   const query = qs.toString();
-
-  const candidateUrls: string[] = [];
-  // Prefer local V3 route first so frontend is resilient even when Replit feed auth fails.
-  if (!date) {
-    candidateUrls.push("/api/program/v3");
+  const url = query ? `${PROXY_BASE}/program?${query}` : `${PROXY_BASE}/program`;
+  try {
+    const res = await fetch(url, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as ProgramResponse;
+  } catch {
+    return null;
   }
-  if (!DISABLE_REPLIT_PROGRAM_PROXY) {
-    candidateUrls.push(query ? `${PROXY_BASE}/program?${query}` : `${PROXY_BASE}/program`);
-  }
-
-  for (const url of candidateUrls) {
-    try {
-      const res = await fetch(url, { next: { revalidate: 60 } });
-      if (!res.ok) continue;
-      const payload = (await res.json()) as unknown;
-      const normalized = normalizeProgramResponse(payload);
-      if (normalized) return normalized;
-    } catch {
-      // Try next candidate.
-    }
-  }
-
-  return null;
 }
 
 export async function fetchTomorrow(): Promise<ProgramResponse | null> {
-  if (DISABLE_REPLIT_PROGRAM_PROXY) {
-    return null;
-  }
   try {
     const res = await fetch(`${PROXY_BASE}/program/tomorrow`);
     if (!res.ok) return null;
@@ -318,12 +225,6 @@ export async function fetchFeed(params: {
     freshness?: string;
     urgency?: number;
   }): Promise<FeedResponse | null> => {
-    if (DISABLE_REPLIT_FEED_PROXY) return null;
-    if (replitFeedAuthUnavailable && Date.now() >= replitFeedAuthBackoffUntil) {
-      replitFeedAuthUnavailable = false;
-    }
-    if (Date.now() < replitFeedAuthBackoffUntil) return null;
-    if (replitFeedAuthUnavailable) return null;
     const qs = new URLSearchParams();
     if (request.page) qs.set("page", String(request.page));
     if (request.per_page) qs.set("per_page", String(request.per_page));
@@ -334,11 +235,6 @@ export async function fetchFeed(params: {
     const url = query ? `${PROXY_BASE}/feed?${query}` : `${PROXY_BASE}/feed`;
     try {
       const res = await fetch(url, { cache: "no-store" });
-      if (res.status === 401 || res.status === 403) {
-        replitFeedAuthUnavailable = true;
-        replitFeedAuthBackoffUntil = Date.now() + 60_000;
-        return null;
-      }
       if (!res.ok) return null;
       const payload = (await res.json()) as FeedResponse;
       return {
@@ -356,18 +252,15 @@ export async function fetchFeed(params: {
 
   if (canAggregateByUrgency) {
     const bucketPerPage = Math.max(2, Math.ceil(targetPerPage / 3));
-    const bucketResponses: Array<FeedResponse | null> = [];
-    for (const urgency of [3, 2, 1] as const) {
-      const response = await fetchPrimaryFeed({
-        page: targetPage,
-        per_page: bucketPerPage,
-        urgency,
-      });
-      bucketResponses.push(response);
-      if (replitFeedAuthUnavailable || Date.now() < replitFeedAuthBackoffUntil) {
-        break;
-      }
-    }
+    const bucketResponses = await Promise.all(
+      ([3, 2, 1] as const).map((urgency) =>
+        fetchPrimaryFeed({
+          page: targetPage,
+          per_page: bucketPerPage,
+          urgency,
+        })
+      )
+    );
     const available = bucketResponses.filter((response): response is FeedResponse => Boolean(response));
     if (available.length > 0) {
       const merged = dedupeAndSortFeedPosts(available.flatMap((response) => response.posts));

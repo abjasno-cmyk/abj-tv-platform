@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 function sanitizeEnvValue(value?: string): string | undefined {
   if (!value) {
@@ -24,28 +25,26 @@ function sanitizeEnvValue(value?: string): string | undefined {
 }
 
 export async function createSupabaseServerClient() {
+  const cookieStore = await cookies();
   const supabaseUrl = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);
-  const supabaseServiceRoleKey = sanitizeEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY);
   const supabaseAnonKey = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-  const supabaseKey = supabaseServiceRoleKey ?? supabaseAnonKey;
 
-  if (!supabaseUrl || !supabaseKey) {
+  if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error("Supabase env vars not set");
   }
 
   return createServerClient(
     supabaseUrl,
-    supabaseKey,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
-          // Program/feed builders run inside cached server functions where
-          // Next.js forbids dynamic request APIs (cookies/headers).
-          // We intentionally disable session cookie hydration here.
-          return [];
+          return cookieStore.getAll();
         },
-        setAll() {
-          // No-op by design: this server client is stateless.
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
         },
       },
     },
