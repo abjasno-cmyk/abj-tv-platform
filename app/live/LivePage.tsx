@@ -217,7 +217,7 @@ export default function LivePage({
     }
 
     const request = (async () => {
-      const endpoints = ["/api/replit/program/now", "/api/replit/program"];
+      const endpoints = ["/api/program/v3", "/api/replit/program/now", "/api/replit/program"];
       for (const endpoint of endpoints) {
         try {
           const response = await fetch(endpoint, { cache: "no-store" });

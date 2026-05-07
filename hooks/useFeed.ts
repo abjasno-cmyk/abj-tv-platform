@@ -6,6 +6,7 @@ import { fetchFeed, type FeedPost } from "@/lib/api";
 
 const POLL_INTERVAL_MS = 3 * 60 * 1000; // 3 minutes
 const PAGE_SIZE = 20;
+const ENABLE_REPLIT_FEED_SSE = process.env.NEXT_PUBLIC_ENABLE_REPLIT_FEED_SSE === "1";
 
 type UseFeedFilter = {
   freshness?: string;
@@ -176,6 +177,7 @@ export function useFeed(filter?: UseFeedFilter): UseFeedResult {
   useEffect(() => {
     const usesFilter = Boolean(filterRef.current?.freshness || filterRef.current?.urgency);
     if (usesFilter) return;
+    if (!ENABLE_REPLIT_FEED_SSE) return;
 
     let cancelled = false;
     let retries = 0;
