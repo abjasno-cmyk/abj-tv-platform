@@ -1,8 +1,9 @@
 const BASE = process.env.NEXT_PUBLIC_REPLIT_URL ?? "";
 const PROXY_BASE = "/api/replit";
 let replitFeedAuthUnavailable = false;
-const ENABLE_REPLIT_PROGRAM_PROXY = process.env.NEXT_PUBLIC_ENABLE_REPLIT_PROGRAM_PROXY === "1";
-const ENABLE_REPLIT_FEED_PROXY = process.env.NEXT_PUBLIC_ENABLE_REPLIT_FEED_PROXY === "1";
+let replitFeedAuthBackoffUntil = 0;
+const DISABLE_REPLIT_PROGRAM_PROXY = process.env.NEXT_PUBLIC_DISABLE_REPLIT_PROGRAM_PROXY === "1";
+const DISABLE_REPLIT_FEED_PROXY = process.env.NEXT_PUBLIC_DISABLE_REPLIT_FEED_PROXY === "1";
 
 if (!BASE && typeof window !== "undefined") {
   console.warn("NEXT_PUBLIC_REPLIT_URL není nastaveno — API volání selžou.");
@@ -217,7 +218,7 @@ export async function fetchProgram(date?: string): Promise<ProgramResponse | nul
   if (!date) {
     candidateUrls.push("/api/program/v3");
   }
-  if (ENABLE_REPLIT_PROGRAM_PROXY) {
+  if (!DISABLE_REPLIT_PROGRAM_PROXY) {
     candidateUrls.push(query ? `${PROXY_BASE}/program?${query}` : `${PROXY_BASE}/program`);
   }
 
@@ -237,7 +238,7 @@ export async function fetchProgram(date?: string): Promise<ProgramResponse | nul
 }
 
 export async function fetchTomorrow(): Promise<ProgramResponse | null> {
-  if (!ENABLE_REPLIT_PROGRAM_PROXY) {
+  if (DISABLE_REPLIT_PROGRAM_PROXY) {
     return null;
   }
   try {
@@ -317,7 +318,11 @@ export async function fetchFeed(params: {
     freshness?: string;
     urgency?: number;
   }): Promise<FeedResponse | null> => {
-    if (!ENABLE_REPLIT_FEED_PROXY) return null;
+    if (DISABLE_REPLIT_FEED_PROXY) return null;
+    if (replitFeedAuthUnavailable && Date.now() >= replitFeedAuthBackoffUntil) {
+      replitFeedAuthUnavailable = false;
+    }
+    if (Date.now() < replitFeedAuthBackoffUntil) return null;
     if (replitFeedAuthUnavailable) return null;
     const qs = new URLSearchParams();
     if (request.page) qs.set("page", String(request.page));
@@ -331,6 +336,7 @@ export async function fetchFeed(params: {
       const res = await fetch(url, { cache: "no-store" });
       if (res.status === 401 || res.status === 403) {
         replitFeedAuthUnavailable = true;
+        replitFeedAuthBackoffUntil = Date.now() + 60_000;
         return null;
       }
       if (!res.ok) return null;
@@ -358,7 +364,7 @@ export async function fetchFeed(params: {
         urgency,
       });
       bucketResponses.push(response);
-      if (replitFeedAuthUnavailable) {
+      if (replitFeedAuthUnavailable || Date.now() < replitFeedAuthBackoffUntil) {
         break;
       }
     }
