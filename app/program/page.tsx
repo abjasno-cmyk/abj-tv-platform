@@ -228,6 +228,9 @@ export default function ProgramPage() {
   const [startedPlayback, setStartedPlayback] = useState<Record<string, boolean>>({});
   const itemRefs = useRef<Record<string, HTMLElement | null>>({});
   const skipTracked = useRef<Set<string>>(new Set());
+  const hasAutoScrolledToCurrentRef = useRef(false);
+  const autoFocusTimerRef = useRef<number | null>(null);
+  const lastAutoFocusedElementRef = useRef<HTMLElement | null>(null);
   const feed = useMemo(() => mapApiProgramToView(program), [program]);
   const rows = useMemo(() => feed.blocks ?? [], [feed.blocks]);
   const isLoading = hookLoading && rows.length === 0;
@@ -280,6 +283,38 @@ export default function ProgramPage() {
     }
     return null;
   }, [nowMs, rows]);
+
+  useEffect(() => {
+    if (!currentBlockId || rows.length === 0 || hasAutoScrolledToCurrentRef.current) return;
+    const rowElement = itemRefs.current[currentBlockId];
+    if (!rowElement) return;
+    hasAutoScrolledToCurrentRef.current = true;
+    window.requestAnimationFrame(() => {
+      rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    lastAutoFocusedElementRef.current?.classList.remove("abj-autofocus");
+    rowElement.classList.add("abj-autofocus");
+    lastAutoFocusedElementRef.current = rowElement;
+    if (autoFocusTimerRef.current !== null) {
+      window.clearTimeout(autoFocusTimerRef.current);
+    }
+    autoFocusTimerRef.current = window.setTimeout(() => {
+      rowElement.classList.remove("abj-autofocus");
+      if (lastAutoFocusedElementRef.current === rowElement) {
+        lastAutoFocusedElementRef.current = null;
+      }
+      autoFocusTimerRef.current = null;
+    }, 2_500);
+  }, [currentBlockId, rows.length]);
+
+  useEffect(() => {
+    return () => {
+      if (autoFocusTimerRef.current !== null) {
+        window.clearTimeout(autoFocusTimerRef.current);
+      }
+      lastAutoFocusedElementRef.current?.classList.remove("abj-autofocus");
+    };
+  }, []);
 
   return (
     <section className="mx-auto w-full max-w-4xl px-3 pb-6 pt-4 sm:px-5">

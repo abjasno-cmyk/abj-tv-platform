@@ -1,0 +1,119 @@
+import { headers } from "next/headers";
+
+export type SessionUser = {
+  id: string;
+  name: string;
+  email?: string | null;
+  isModerator: boolean;
+};
+
+type ModeratorLookup = {
+  enabled: boolean;
+  emails: Set<string>;
+  ids: Set<string>;
+};
+
+function getBool(value: string | null): boolean {
+  return value === "1" || value === "true" || value === "yes";
+}
+
+/**
+ * Temporary auth bridge for scaffold phase.
+ * Step 2 intentionally does not replace existing auth stack.
+ * Later this can be swapped to NextAuth session lookup.
+ */
+export async function getSessionUserFromHeaders(): Promise<SessionUser | null> {
+  const hdrs = await headers();
+  const id = hdrs.get("x-user-id");
+  if (!id) return null;
+  return {
+    id,
+    name: hdrs.get("x-user-name") ?? "ABJ User",
+    email: hdrs.get("x-user-email"),
+    isModerator: getBool(hdrs.get("x-user-moderator")),
+  };
+}
+
+function parseList(value: string | undefined): Set<string> {
+  if (!value) return new Set<string>();
+  return new Set(
+    value
+      .split(",")
+      .map((entry) => entry.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
+function getModeratorLookup(): ModeratorLookup {
+  const emails = parseList(process.env.HYBRID_MODERATOR_EMAILS);
+  const ids = parseList(process.env.HYBRID_MODERATOR_IDS);
+  return {
+    enabled: emails.size > 0 || ids.size > 0,
+    emails,
+    ids,
+  };
+}
+
+export function isAllowedModerator(user: SessionUser | null): boolean {
+  if (!user) return false;
+  const lookup = getModeratorLookup();
+  if (!lookup.enabled) return user.isModerator;
+  const idMatch = lookup.ids.has(user.id.toLowerCase());
+  const emailMatch = user.email ? lookup.emails.has(user.email.toLowerCase()) : false;
+  return idMatch || emailMatch;
+}
+
+export async function getCurrentUserIdentity(): Promise<SessionUser | null> {
+  return getSessionUserFromHeaders();
+}
+
+export async function getSessionUser(): Promise<SessionUser | null> {
+  return getSessionUserFromHeaders();
+}
+
+export async function getCurrentUser(): Promise<SessionUser | null> {
+  return getSessionUserFromHeaders();
+}
+
+export async function requireSessionUserId(): Promise<string | null> {
+  const user = await getSessionUserFromHeaders();
+  return user?.id ?? null;
+}
+
+export async function getSessionUserOrThrow(): Promise<SessionUser> {
+  const user = await getSessionUserFromHeaders();
+  if (!user) {
+    throw new Error("UNAUTHORIZED");
+  }
+  return user;
+}
+
+export function ensureModerationAccess(
+  user: SessionUser | null
+): { ok: true } | { ok: false; status: number; error: string } {
+  if (!user) {
+    return { ok: false, status: 401, error: "Unauthorized" };
+  }
+  if (!isAllowedModerator(user)) {
+    return { ok: false, status: 403, error: "Forbidden" };
+  }
+  return { ok: true };
+}
+
+// Compatibility helpers used by Step 2 API scaffold routes.
+export async function requireSessionUser(): Promise<SessionUser | null> {
+  return getSessionUserFromHeaders();
+}
+
+export function ensureModerator(
+  user: SessionUser | null
+): { ok: true } | { ok: false; status: number; error: string } {
+  return ensureModerationAccess(user);
+}
+
+export async function ensureModeratorUserId(): Promise<string | null> {
+  const user = await getSessionUserFromHeaders();
+  if (!user || !user.isModerator) return null;
+  return user.id;
+}
+

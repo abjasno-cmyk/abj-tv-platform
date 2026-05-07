@@ -158,7 +158,7 @@ function ContextPanel({
   }
 
   return (
-    <aside className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel">
+    <aside className="flex h-full min-h-0 flex-col rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
         <div>
           <p className="text-[11px] uppercase tracking-[0.1em] text-abj-text2">Context Engine v2</p>
@@ -173,7 +173,7 @@ function ContextPanel({
         </button>
       </div>
 
-      <div className="max-h-[70vh] space-y-3 overflow-y-auto p-4">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
         {loading ? <p className="text-sm text-abj-text2">Načítáme kontext…</p> : null}
         {!loading && unavailable ? <p className="text-sm text-abj-text2">Kontext zatím není k dispozici</p> : null}
         {!loading && !unavailable && claims.length === 0 ? (
@@ -464,24 +464,25 @@ export function VideosContextPage() {
   const showContextPanel = !contextError;
 
   return (
-    <section className="space-y-4 px-5 py-5">
-      <header className="space-y-2">
-        <p className="text-[11px] uppercase tracking-[0.12em] text-abj-text2">ABJ Frontend</p>
-        <h1 className="font-[var(--font-serif)] text-2xl font-semibold text-abj-text1">Context Layer v2</h1>
-        <p className="text-sm text-abj-text2">Neutrální kontext k tvrzením synchronně podle času videa.</p>
-      </header>
+    <section className="h-[calc(100vh-46px)] overflow-hidden px-4 py-3 md:px-5 md:py-4">
+      <div className="flex h-full min-h-0 flex-col gap-3">
+        <header className="shrink-0 space-y-1">
+          <p className="text-[10px] uppercase tracking-[0.12em] text-abj-text2">ABJ Frontend</p>
+          <h1 className="font-[var(--font-serif)] text-xl font-semibold text-abj-text1 md:text-2xl">Kontext</h1>
+          <p className="text-sm text-abj-text2">Neutrální kontext k tvrzením synchronně podle času videa.</p>
+        </header>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-3">
-          <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel p-3">
+        <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="flex min-h-0 flex-col gap-3 overflow-y-auto pr-0.5">
+            <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel p-3">
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-base font-medium text-abj-text1">{selectedVideo.title}</h2>
               <VideoSelect videos={videos} currentId={selectedVideo.id} onChange={handleVideoSelection} />
             </div>
 
-            <div className="relative overflow-hidden rounded-lg bg-black">
+            <div className="relative h-[32vh] overflow-hidden rounded-lg bg-black sm:h-[36vh] xl:h-[40vh] 2xl:h-[43vh]">
               {playerMode === "youtube" ? (
-                <div className="aspect-video w-full">
+                <div className="h-full w-full">
                   <YouTube
                     videoId={selectedVideo.youtubeId ?? undefined}
                     opts={youtubeOpts}
@@ -498,7 +499,7 @@ export function VideosContextPage() {
               ) : (
                 <video
                   ref={htmlVideoRef}
-                  className="aspect-video w-full"
+                  className="h-full w-full object-contain"
                   controls
                   preload="metadata"
                   onLoadedMetadata={(event) => {
@@ -520,8 +521,23 @@ export function VideosContextPage() {
             <MarkerBar duration={effectiveDuration} claims={claims} activeClaimId={activeClaimId} onSeek={seekTo} />
           </div>
 
+            {showContextPanel ? (
+              <div className="xl:hidden">
+              <ContextPanel
+                claims={claims}
+                activeClaimId={activeClaimId}
+                loading={contextLoading}
+                unavailable={contextUnavailable}
+                onTimestampClick={seekTo}
+                collapsed={panelCollapsed}
+                onToggleCollapse={() => setPanelCollapsed((prev) => !prev)}
+              />
+              </div>
+            ) : null}
+          </div>
+
           {showContextPanel ? (
-            <div className="xl:hidden">
+            <div className="hidden min-h-0 xl:block">
               <ContextPanel
                 claims={claims}
                 activeClaimId={activeClaimId}
@@ -534,20 +550,6 @@ export function VideosContextPage() {
             </div>
           ) : null}
         </div>
-
-        {showContextPanel ? (
-          <div className="hidden xl:block">
-            <ContextPanel
-              claims={claims}
-              activeClaimId={activeClaimId}
-              loading={contextLoading}
-              unavailable={contextUnavailable}
-              onTimestampClick={seekTo}
-              collapsed={panelCollapsed}
-              onToggleCollapse={() => setPanelCollapsed((prev) => !prev)}
-            />
-          </div>
-        ) : null}
       </div>
     </section>
   );

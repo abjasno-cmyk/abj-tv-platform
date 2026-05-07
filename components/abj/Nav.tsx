@@ -7,11 +7,17 @@ import { ReplitHealthBadge } from "@/components/abj/ReplitHealthBadge";
 
 const NAV_LINKS = [
   { href: "/live", label: "Vysílání" },
-  { href: "/videos", label: "Context" },
+  { href: "/videos", label: "Kontext" },
   { href: "/archiv", label: "Přehled dne" },
   { href: "/abj-x", label: "ABJ X" },
   { href: "/program", label: "Program" },
+  { href: "/admin/moderation", label: "Moderace" },
 ];
+
+type NavNowPlaying = {
+  channel: string;
+  title: string;
+};
 
 function getPragueClockValue(date: Date): string {
   return new Intl.DateTimeFormat("cs-CZ", {
@@ -22,7 +28,11 @@ function getPragueClockValue(date: Date): string {
   }).format(date);
 }
 
-export function ABJNav() {
+type ABJNavProps = {
+  nowPlaying?: NavNowPlaying | null;
+};
+
+export function ABJNav({ nowPlaying = null }: ABJNavProps) {
   const pathname = usePathname();
   const [clock, setClock] = useState(() => getPragueClockValue(new Date()));
 
@@ -38,19 +48,37 @@ export function ABJNav() {
     if (pathname.startsWith("/archiv") || pathname.startsWith("/feed")) return "/archiv";
     if (pathname.startsWith("/abj-x")) return "/abj-x";
     if (pathname.startsWith("/program")) return "/program";
+    if (pathname.startsWith("/admin/moderation")) return "/admin/moderation";
     if (pathname.startsWith("/live")) return "/live";
     return "";
   }, [pathname]);
 
+  const nowPlayingLabel = nowPlaying
+    ? `Právě hraje: ${nowPlaying.channel} | ${nowPlaying.title}`
+    : "Právě hraje: ABJ TV | Program se aktualizuje";
+
+  const handleNavClick = (event: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    // Keep modified clicks for new tabs/windows untouched.
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+      return;
+    }
+    // Force deterministic navigation even if another layer prevents SPA click handling.
+    event.preventDefault();
+    window.location.assign(href);
+  };
+
   return (
-    <header className="h-[46px] border-b border-[var(--abj-gold-dim)] bg-abj-deep px-5">
+    <header
+      className="fixed inset-x-0 top-0 h-[46px] border-b border-[var(--abj-gold-dim)] bg-abj-deep px-5 pointer-events-auto isolate"
+      style={{ zIndex: 2147483647 }}
+    >
       <div className="flex h-full items-center justify-between">
         <div className="flex items-center">
           <p className="font-[var(--font-serif)] text-[17px] font-bold tracking-[0.07em] text-abj-gold">ABJ</p>
           <span className="mx-[10px] text-[rgba(198,168,91,0.25)]">|</span>
           <p className="font-[var(--font-sans)] text-[10px] uppercase tracking-[0.2em] text-abj-text2">Síť</p>
 
-          <nav className="ml-[26px]">
+          <nav className="ml-[26px] pointer-events-auto">
             <ul className="flex items-center gap-[22px]">
               {NAV_LINKS.map((link) => {
                 const isActive = activeHref === link.href;
@@ -58,7 +86,8 @@ export function ABJNav() {
                   <li key={`${link.href}-${link.label}`}>
                     <Link
                       href={link.href}
-                      className={`border-b-[1.5px] pb-1 font-[var(--font-sans)] text-[12px] tracking-[0.06em] ${
+                      onClick={(event) => handleNavClick(event, link.href)}
+                      className={`relative z-[2] pointer-events-auto border-b-[1.5px] pb-1 font-[var(--font-sans)] text-[12px] tracking-[0.06em] ${
                         isActive
                           ? "border-abj-gold text-abj-gold"
                           : "border-transparent text-abj-text2 hover:text-abj-text1"
@@ -74,6 +103,10 @@ export function ABJNav() {
         </div>
 
         <div className="flex items-center gap-5">
+          <div className="hidden min-w-[340px] max-w-[460px] rounded-md border border-[rgba(198,168,91,0.45)] bg-[linear-gradient(145deg,rgba(24,36,58,0.92),rgba(8,16,29,0.95))] px-3 py-2 shadow-[0_8px_20px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.08)] xl:block">
+            <p className="mb-1 text-[9px] uppercase tracking-[0.16em] text-abj-gold">Live box</p>
+            <p className="truncate text-[12px] font-medium text-abj-text1">{nowPlayingLabel}</p>
+          </div>
           <ReplitHealthBadge />
           <div className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 animate-[blink_2s_ease-in-out_infinite] rounded-full bg-abj-red" />
