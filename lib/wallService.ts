@@ -84,6 +84,32 @@ const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 30;
 const DEFAULT_ADMIN_LIMIT = 80;
 const REACTION_TYPE = "like";
+const WALL_SCHEMA_MISSING_MESSAGE =
+  "Zeď není v databázi inicializována. Spusťte migraci `db/wall_community.sql` v Supabase.";
+
+type DbErrorLike = {
+  message?: string;
+  code?: string;
+} | null | undefined;
+
+function isWallSchemaMissingError(error: DbErrorLike): boolean {
+  if (!error) return false;
+  if (error.code === "42P01") return true;
+  const message = (error.message ?? "").toLowerCase();
+  if (!message) return false;
+  return (
+    (message.includes("wall_posts") || message.includes("wall_reactions") || message.includes("wall_reports")) &&
+    (message.includes("schema cache") || message.includes("does not exist") || message.includes("could not find table"))
+  );
+}
+
+function toDbServiceError(actionLabel: string, error: DbErrorLike): WallServiceError {
+  if (isWallSchemaMissingError(error)) {
+    return new WallServiceError(503, WALL_SCHEMA_MISSING_MESSAGE);
+  }
+  const message = error?.message?.trim();
+  return new WallServiceError(500, `${actionLabel}${message ? `: ${message}` : ""}`);
+}
 
 function normalizeLimit(value: number | undefined, defaultValue: number): number {
   const numeric = Number(value);
@@ -226,7 +252,7 @@ export async function listPublicWallPosts(params: ListPublicWallParams = {}): Pr
 
   const { data, error, count } = await query.range(offset, offset + limit - 1);
   if (error) {
-    throw new WallServiceError(500, `Načtení příspěvků selhalo: ${error.message}`);
+    throw toDbServiceError("Načtení příspěvků selhalo", error);
   }
 
   const rows = (data ?? []) as WallPostRow[];
@@ -322,7 +348,7 @@ export async function createWallPost(
     .single();
 
   if (error || !data) {
-    throw new WallServiceError(500, `Uložení příspěvku selhalo: ${error?.message ?? "unknown error"}`);
+    throw toDbServiceError("Uložení příspěvku selhalo", error);
   }
 
   const inserted = data as WallPostRow;
@@ -353,7 +379,10 @@ async function requirePublicPost(postId: string): Promise<WallPostRow> {
     )
     .eq("id", postId)
     .maybeSingle();
-  if (error || !data) {
+  if (error) {
+    throw toDbServiceError("Načtení příspěvku selhalo", error);
+  }
+  if (!data) {
     throw new WallServiceError(404, "Příspěvek nebyl nalezen.");
   }
   return data as WallPostRow;
@@ -380,7 +409,7 @@ export async function addWallReaction(postId: string, sessionHash: string): Prom
         likesCount: post.likes_count ?? 0,
       };
     }
-    throw new WallServiceError(500, `Uložení reakce selhalo: ${insert.error.message}`);
+    throw toDbServiceError("Uložení reakce selhalo", insert.error);
   }
 
   const reactionCount = await supabase
@@ -421,7 +450,7 @@ export async function reportWallPost(
       session_hash: sessionHash,
     });
     if (insert.error) {
-      throw new WallServiceError(500, `Nahlášení příspěvku selhalo: ${insert.error.message}`);
+      throw toDbServiceError("Nahlášení příspěvku selhalo", insert.error);
     }
   }
 
@@ -503,7 +532,7 @@ export async function listAdminWallPosts(params: ListAdminWallParams = {}): Prom
 
   const { data, error, count } = await query.range(offset, offset + limit - 1);
   if (error) {
-    throw new WallServiceError(500, `Admin výpis selhal: ${error.message}`);
+    throw toDbServiceError("Admin výpis selhal", error);
   }
   const rows = (data ?? []) as WallPostRow[];
   const videoIds = Array.from(
@@ -568,7 +597,7 @@ export async function updateWallPostStatusByAdmin(params: {
     .single();
 
   if (error || !data) {
-    throw new WallServiceError(500, `Změna statusu selhala: ${error?.message ?? "unknown error"}`);
+    throw toDbServiceError("Změna statusu selhala", error);
   }
 
   await addModerationLog({
