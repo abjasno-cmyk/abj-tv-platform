@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { href: "/videos", label: "Context" },
   { href: "/archiv", label: "Přehled dne" },
   { href: "/abj-x", label: "ABJ X" },
+  { href: "/zed", label: "Zeď" },
   { href: "/program", label: "Program" },
 ];
 
@@ -38,6 +39,7 @@ export function ABJNav() {
     if (pathname.startsWith("/videos")) return "/videos";
     if (pathname.startsWith("/archiv") || pathname.startsWith("/feed")) return "/archiv";
     if (pathname.startsWith("/abj-x")) return "/abj-x";
+    if (pathname.startsWith("/zed")) return "/zed";
     if (pathname.startsWith("/program")) return "/program";
     if (pathname.startsWith("/live")) return "/live";
     return "";
