@@ -1,5 +1,22 @@
 # abj-tv-platform
 
+## ABJ Zeď (komunitní vrstva) – nutná DB migrace
+
+Po nasazení feature branch je potřeba v Supabase spustit SQL migraci:
+
+- `db/wall_community.sql`
+
+Bez této migrace API vrátí hlášku, že tabulky Zdi (`wall_posts`, `wall_reactions`, `wall_reports`, `wall_moderation_log`) v DB neexistují.
+
+Pokud už tabulky existují, ale API vrací chybu `row-level security policy`, spusť navíc:
+
+```sql
+alter table wall_posts disable row level security;
+alter table wall_reactions disable row level security;
+alter table wall_reports disable row level security;
+alter table wall_moderation_log disable row level security;
+```
+
 ## Program feed auto-import (Replit)
 
 Program section can be automatically controlled from an external Replit feed.

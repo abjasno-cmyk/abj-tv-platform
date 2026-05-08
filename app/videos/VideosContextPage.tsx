@@ -10,6 +10,7 @@ import {
   type ContextStatus,
   type PublishedVideo,
 } from "@/lib/contextLayerApi";
+import { WallForVideo } from "@/components/wall/WallForVideo";
 
 type ClaimStatusStyle = {
   ring: string;
@@ -519,6 +520,15 @@ export function VideosContextPage() {
             </div>
             <MarkerBar duration={effectiveDuration} claims={claims} activeClaimId={activeClaimId} onSeek={seekTo} />
           </div>
+
+          {(selectedVideo.youtubeId ?? selectedVideo.id) ? (
+            <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel p-3">
+              <WallForVideo
+                videoId={selectedVideo.youtubeId ?? selectedVideo.id}
+                videoTitle={selectedVideo.title}
+              />
+            </div>
+          ) : null}
 
           {showContextPanel ? (
             <div className="xl:hidden">
