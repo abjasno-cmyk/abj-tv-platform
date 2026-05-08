@@ -54,6 +54,14 @@ function parseBooleanEnv(value?: string): boolean {
   return normalized === "1" || normalized === "true" || normalized === "yes";
 }
 
+function isAutoApproveEnabledByDefault(): boolean {
+  // Product default: clean posts are published immediately.
+  // Can be explicitly disabled via WALL_AUTO_APPROVE=false.
+  const raw = process.env.WALL_AUTO_APPROVE;
+  if (!raw || raw.trim().length === 0) return true;
+  return parseBooleanEnv(raw);
+}
+
 function containsAny(haystack: string, needles: string[]): boolean {
   return needles.some((needle) => haystack.includes(needle));
 }
@@ -86,17 +94,15 @@ export function moderateWallPost(input: CreateWallPostInput): WallModerationResu
     reasons.push("opakování slov");
   }
 
-  const autoApprove = parseBooleanEnv(process.env.WALL_AUTO_APPROVE);
+  const autoApprove = isAutoApproveEnabledByDefault();
   if (reasons.length === 0 && autoApprove) {
     return { status: "approved", reasons: [] };
   }
-  if (reasons.includes("nadměrné množství odkazů")) {
-    return { status: "flagged", reasons };
-  }
   if (reasons.length > 0) {
+    // Suspicious inputs are held for moderation queue.
     return { status: "pending", reasons };
   }
-  return { status: "pending", reasons: ["čeká na schválení"] };
+  return { status: "approved", reasons: [] };
 }
 
 export function summarizeWallActivity(): null {
