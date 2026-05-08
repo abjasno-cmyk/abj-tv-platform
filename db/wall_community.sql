@@ -44,6 +44,15 @@ create table if not exists wall_moderation_log (
   created_at timestamptz not null default now()
 );
 
+-- Current app routes use server-side Supabase client with anon key and
+-- internal API validation/rate-limits. To keep runtime behavior aligned with
+-- existing project tables (sources/messages), wall tables are explicitly
+-- non-RLS in V1.
+alter table wall_posts disable row level security;
+alter table wall_reactions disable row level security;
+alter table wall_reports disable row level security;
+alter table wall_moderation_log disable row level security;
+
 create index if not exists wall_posts_status_created_at_idx on wall_posts(status, created_at desc);
 create index if not exists wall_posts_video_status_created_at_idx on wall_posts(video_id, status, created_at desc);
 create index if not exists wall_posts_parent_id_idx on wall_posts(parent_id);

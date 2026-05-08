@@ -103,9 +103,21 @@ function isWallSchemaMissingError(error: DbErrorLike): boolean {
   );
 }
 
+function isRlsPolicyError(error: DbErrorLike): boolean {
+  if (!error) return false;
+  const message = (error.message ?? "").toLowerCase();
+  return message.includes("row-level security policy");
+}
+
 function toDbServiceError(actionLabel: string, error: DbErrorLike): WallServiceError {
   if (isWallSchemaMissingError(error)) {
     return new WallServiceError(503, WALL_SCHEMA_MISSING_MESSAGE);
+  }
+  if (isRlsPolicyError(error)) {
+    return new WallServiceError(
+      503,
+      "Zeď je blokována Supabase RLS politikou. Spusťte SQL: `alter table wall_posts disable row level security; alter table wall_reactions disable row level security; alter table wall_reports disable row level security; alter table wall_moderation_log disable row level security;`"
+    );
   }
   const message = error?.message?.trim();
   return new WallServiceError(500, `${actionLabel}${message ? `: ${message}` : ""}`);
