@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { WallPost, WallSort, WallStatus } from "@/lib/wallTypes";
@@ -373,9 +374,17 @@ export function WallBoard({
                 </header>
 
                 {post.video_id ? (
-                  <p className="mt-2 inline-flex rounded-full border border-[rgba(255,106,0,0.3)] bg-[rgba(255,106,0,0.08)] px-2 py-0.5 text-[11px] font-medium text-[#FF6A00]">
-                    Reakce na video: {post.video_title ?? post.video_id}
-                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex rounded-full border border-[rgba(255,106,0,0.3)] bg-[rgba(255,106,0,0.08)] px-2 py-0.5 text-[11px] font-medium text-[#FF6A00]">
+                      Reakce na video: {post.video_title ?? post.video_id}
+                    </span>
+                    <Link
+                      href={`/live?videoId=${encodeURIComponent(post.video_id)}`}
+                      className="text-[11px] font-medium text-abj-text2 underline decoration-[rgba(255,106,0,0.5)] underline-offset-2 hover:text-abj-text1"
+                    >
+                      Otevřít video
+                    </Link>
+                  </div>
                 ) : null}
 
                 <p className="mt-3 whitespace-pre-wrap text-base leading-relaxed text-abj-text1">{post.body}</p>

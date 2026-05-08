@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { LivePlayer } from "@/components/abj/LivePlayer";
 import { RecommendedStrip } from "@/components/abj/RecommendedStrip";
 import { Timeline } from "@/components/abj/Timeline";
+import { WallForVideo } from "@/components/wall/WallForVideo";
 import type { DayProgram, ProgramItem } from "@/lib/epg-types";
 
 type HomePageProps = {
@@ -85,6 +86,12 @@ export function HomePage({
           isFiller={isFiller}
           onPlayToggle={onPlayToggle}
         />
+
+        {videoId ? (
+          <div className="rounded-[26px] border border-[var(--abj-gold-dim)] bg-abj-panel p-4 shadow-[0_12px_28px_rgba(17,17,17,0.06)]">
+            <WallForVideo videoId={videoId} videoTitle={title} />
+          </div>
+        ) : null}
 
         <Timeline days={days} onSelect={onSelect} />
 

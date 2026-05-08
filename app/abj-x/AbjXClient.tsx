@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 
 import { useFeed } from "@/hooks/useFeed";
 import type { FeedPost } from "@/lib/api";
@@ -14,10 +15,18 @@ type FeedItem = {
   impact: string | null;
   freshness: "breaking" | "today" | "week" | "evergreen";
   urgency: 1 | 2 | 3;
-  createdAt: string;
   displayAt: string;
   videoId: string;
 };
+
+type CreatePostResponse = {
+  ok: boolean;
+  status: "pending" | "approved" | "rejected" | "hidden" | "flagged";
+  error?: string;
+};
+
+const WALL_AUTHOR_STORAGE_KEY = "abj.wall.author-name";
+const WALL_EMAIL_STORAGE_KEY = "abj.wall.author-email";
 
 function getPostTimestamp(post: FeedPost): number {
   const editorialAt = (post as FeedPost & { editorial_at?: string | null }).editorial_at;
@@ -42,7 +51,6 @@ function toItems(posts: FeedPost[]): FeedItem[] {
     impact: post.impact?.trim() || null,
     freshness: post.freshness,
     urgency: post.urgency,
-    createdAt: post.created_at,
     displayAt:
       (post as FeedPost & { editorial_at?: string | null }).editorial_at ??
       (post as FeedPost & { updated_at?: string | null }).updated_at ??
@@ -84,6 +92,117 @@ function formatCreatedAt(value: string): string {
 export function AbjXClient() {
   const { posts, loading, hasMore, loadMore } = useFeed();
   const items = useMemo(() => toItems(posts), [posts]);
+  const [wallAuthor, setWallAuthor] = useState("");
+  const [wallEmail, setWallEmail] = useState("");
+  const [composeTargetId, setComposeTargetId] = useState<string | null>(null);
+  const [composeText, setComposeText] = useState("");
+  const [postingLikeId, setPostingLikeId] = useState<string | null>(null);
+  const [postingCommentId, setPostingCommentId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const savedName = window.localStorage.getItem(WALL_AUTHOR_STORAGE_KEY);
+      const savedEmail = window.localStorage.getItem(WALL_EMAIL_STORAGE_KEY);
+      if (savedName) setWallAuthor(savedName);
+      if (savedEmail) setWallEmail(savedEmail);
+    } catch {
+      // Ignore storage read issues.
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(WALL_AUTHOR_STORAGE_KEY, wallAuthor);
+      window.localStorage.setItem(WALL_EMAIL_STORAGE_KEY, wallEmail);
+    } catch {
+      // Ignore storage write issues.
+    }
+  }, [wallAuthor, wallEmail]);
+
+  const resolveAuthor = (): string | null => {
+    const trimmed = wallAuthor.trim();
+    if (trimmed.length >= 2) return trimmed;
+    setError("Pro propsání na Zeď nejdříve vyplňte přezdívku (min. 2 znaky).");
+    return null;
+  };
+
+  const postToWall = async (payload: {
+    authorName: string;
+    authorEmail: string | null;
+    body: string;
+    videoId: string;
+  }): Promise<string> => {
+    const response = await fetch("/api/wall/posts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        author_name: payload.authorName,
+        author_email: payload.authorEmail,
+        body: payload.body,
+        video_id: payload.videoId,
+      }),
+    });
+    const result = (await response.json().catch(() => ({}))) as CreatePostResponse;
+    if (!response.ok) {
+      throw new Error(result.error ?? "Odeslání na Zeď selhalo.");
+    }
+    if (result.status === "approved") {
+      return "Příspěvek byl přidán na Zeď.";
+    }
+    return "Příspěvek byl přijat a čeká na schválení.";
+  };
+
+  const handleLikeToWall = async (item: FeedItem) => {
+    const author = resolveAuthor();
+    if (!author) return;
+    setPostingLikeId(item.id);
+    setError(null);
+    setFeedback(null);
+    try {
+      const info = await postToWall({
+        authorName: author,
+        authorEmail: wallEmail.trim() || null,
+        body: `Souhlasím s ABJ X: ${item.headline}`,
+        videoId: item.videoId,
+      });
+      setFeedback(info);
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : "Odeslání na Zeď selhalo.");
+    } finally {
+      setPostingLikeId(null);
+    }
+  };
+
+  const handleCommentToWall = async (item: FeedItem) => {
+    const author = resolveAuthor();
+    if (!author) return;
+    const trimmedText = composeText.trim();
+    if (trimmedText.length < 3) {
+      setError("Komentář pro Zeď musí mít alespoň 3 znaky.");
+      return;
+    }
+
+    setPostingCommentId(item.id);
+    setError(null);
+    setFeedback(null);
+    try {
+      const info = await postToWall({
+        authorName: author,
+        authorEmail: wallEmail.trim() || null,
+        body: trimmedText,
+        videoId: item.videoId,
+      });
+      setFeedback(info);
+      setComposeText("");
+      setComposeTargetId(null);
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : "Odeslání komentáře na Zeď selhalo.");
+    } finally {
+      setPostingCommentId(null);
+    }
+  };
 
   return (
     <section className="mx-auto w-full max-w-4xl space-y-6 px-3 py-6 sm:px-5">
@@ -92,6 +211,34 @@ export function AbjXClient() {
         <h1 className="font-[var(--font-serif)] text-3xl font-semibold text-abj-text1">Textové zprávy</h1>
         <p className="text-sm text-abj-text2">Krátké zprávy a souvislosti napříč ABJ sítí</p>
       </header>
+
+      <section className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel p-3 sm:p-4">
+        <p className="text-xs uppercase tracking-[0.08em] text-abj-text2">Rychlé propsání na Zeď</p>
+        <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label className="space-y-1">
+            <span className="text-xs text-abj-text2">Přezdívka pro Zeď</span>
+            <input
+              value={wallAuthor}
+              onChange={(event) => setWallAuthor(event.target.value)}
+              className="w-full rounded-lg border border-[var(--abj-gold-dim)] bg-white px-3 py-2 text-sm text-abj-text1 outline-none focus:border-[#FF6A00]"
+              placeholder="Např. Hana"
+              maxLength={60}
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-xs text-abj-text2">E-mail (volitelně, nezveřejní se)</span>
+            <input
+              value={wallEmail}
+              onChange={(event) => setWallEmail(event.target.value)}
+              className="w-full rounded-lg border border-[var(--abj-gold-dim)] bg-white px-3 py-2 text-sm text-abj-text1 outline-none focus:border-[#FF6A00]"
+              placeholder="vas@email.cz"
+              maxLength={120}
+            />
+          </label>
+        </div>
+        {feedback ? <p className="mt-2 text-sm text-abj-text1">{feedback}</p> : null}
+        {error ? <p className="mt-1 text-sm text-[#D14A2A]">{error}</p> : null}
+      </section>
 
       {items.length === 0 && !loading ? (
         <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel p-6 text-sm text-abj-text2">
@@ -120,6 +267,62 @@ export function AbjXClient() {
               <p className="mt-1 text-sm text-abj-text1">{item.what}</p>
               {item.why ? <p className="mt-1 text-sm text-abj-text2">{item.why}</p> : null}
               {item.impact ? <p className="mt-1 text-sm font-medium text-abj-gold">{item.impact}</p> : null}
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  className="rounded-lg border border-[rgba(255,106,0,0.35)] bg-[rgba(255,106,0,0.08)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#FF6A00]"
+                  onClick={() => {
+                    void handleLikeToWall(item);
+                  }}
+                  disabled={postingLikeId === item.id}
+                >
+                  {postingLikeId === item.id ? "Ukládám..." : "Souhlasím na Zdi"}
+                </button>
+                <button
+                  type="button"
+                  className="rounded-lg border border-[var(--abj-gold-dim)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1"
+                  onClick={() => {
+                    setComposeTargetId((prev) => (prev === item.id ? null : item.id));
+                    setComposeText("");
+                    setFeedback(null);
+                    setError(null);
+                  }}
+                >
+                  Komentovat na Zdi
+                </button>
+                <Link
+                  href={`/zed?video_id=${encodeURIComponent(item.videoId)}&video_title=${encodeURIComponent(item.headline)}`}
+                  className="text-[11px] font-medium text-abj-text2 underline decoration-[rgba(255,106,0,0.5)] underline-offset-2 hover:text-abj-text1"
+                >
+                  Otevřít vlákno
+                </Link>
+              </div>
+
+              {composeTargetId === item.id ? (
+                <div className="mt-3 space-y-2 rounded-lg border border-[var(--abj-gold-dim)] bg-white p-3">
+                  <textarea
+                    value={composeText}
+                    onChange={(event) => setComposeText(event.target.value)}
+                    className="min-h-[90px] w-full rounded-md border border-[var(--abj-gold-dim)] px-3 py-2 text-sm text-abj-text1 outline-none focus:border-[#FF6A00]"
+                    placeholder="Napište komentář k této zprávě ABJ X, který se propíše na Zeď..."
+                    maxLength={1500}
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      className="rounded-lg border border-[#FF6A00] bg-[#FF6A00] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-white"
+                      onClick={() => {
+                        void handleCommentToWall(item);
+                      }}
+                      disabled={postingCommentId === item.id}
+                    >
+                      {postingCommentId === item.id ? "Odesílám..." : "Odeslat na Zeď"}
+                    </button>
+                    <span className="text-[11px] text-abj-text2">{composeText.trim().length}/1500</span>
+                  </div>
+                </div>
+              ) : null}
             </article>
           ))}
         </div>
