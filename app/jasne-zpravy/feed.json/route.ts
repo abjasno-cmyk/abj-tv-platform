@@ -1,7 +1,6 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseNewsClient, type NewsEdition } from "@/lib/jasne-zpravy";
 
 export const revalidate = 300;
-export const dynamic = "force-dynamic";
 
 function siteOrigin(): string {
   const env =
@@ -11,7 +10,21 @@ function siteOrigin(): string {
 }
 
 export async function GET() {
-  const supabase = await createSupabaseServerClient();
+  let supabase;
+  try {
+    supabase = createSupabaseNewsClient();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Neznámá chyba";
+    return new Response(
+      JSON.stringify({ error: "Supabase není dostupná", message }, null, 2),
+      {
+        status: 503,
+        headers: {
+          "Content-Type": "application/feed+json; charset=utf-8",
+        },
+      },
+    );
+  }
   const { data: editions } = await supabase
     .from("news_editions")
     .select("id, slug, edition_type, title, subtitle, summary, published_at, generated_at")
@@ -27,15 +40,18 @@ export async function GET() {
     home_page_url: `${origin}/jasne-zpravy`,
     feed_url: `${origin}/jasne-zpravy/feed.json`,
     language: "cs-CZ",
-    items: (editions ?? []).map((e) => ({
-      id: `${origin}/jasne-zpravy/${e.slug}`,
-      url: `${origin}/jasne-zpravy/${e.slug}`,
-      title: e.title,
-      summary: e.subtitle ?? undefined,
-      content_text: e.summary ?? "",
-      date_published: new Date(e.published_at ?? e.generated_at).toISOString(),
-      tags: [e.edition_type],
-    })),
+    items: ((editions ?? []) as NewsEdition[]).map((e) => {
+      const timestamp = e.published_at ?? e.generated_at ?? new Date().toISOString();
+      return {
+        id: `${origin}/jasne-zpravy/${e.slug}`,
+        url: `${origin}/jasne-zpravy/${e.slug}`,
+        title: e.title,
+        summary: e.subtitle ?? undefined,
+        content_text: e.summary ?? "",
+        date_published: new Date(timestamp).toISOString(),
+        tags: [e.edition_type],
+      };
+    }),
   };
 
   return new Response(JSON.stringify(feed, null, 2), {

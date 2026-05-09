@@ -1,65 +1,63 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { Metadata } from "next";
+import { NewsSections } from "../_components/NewsSections";
+import {
+  createSupabaseNewsClient,
+  fetchAdjacentPublishedEditions,
+  fetchPublishedEditionBySlug,
+  fetchPublishedItemsForEdition,
+  fetchSourcesForItemIds,
+  formatPragueDateAndTimeCompact,
+  formatPragueDateTime,
+  formatPragueTime,
+  getEditionTimestamp,
+  getEditionTypeLabel,
+  groupSourcesByItemId,
+  type NewsEdition,
+} from "@/lib/jasne-zpravy";
 
-export const revalidate = 60;
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
-const EDITION_TYPE_LABEL: Record<string, string> = {
-  morning: "Ranní",
-  noon: "Polední",
-  evening: "Večerní",
-  manual: "Mimořádné",
-};
-
-const CATEGORY_LABEL: Record<string, string> = {
-  domestic: "Domácí",
-  foreign: "Zahraniční",
-  curiosity: "Perlička",
-};
-
-const CATEGORY_ORDER: Array<keyof typeof CATEGORY_LABEL> = [
-  "domestic",
-  "foreign",
-  "curiosity",
-];
-
-function formatPragueDateTime(iso: string | null | undefined): string {
-  if (!iso) return "";
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  let supabase;
   try {
-    return new Intl.DateTimeFormat("cs-CZ", {
-      timeZone: "Europe/Prague",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(iso));
+    supabase = createSupabaseNewsClient();
   } catch {
-    return iso;
+    return { title: "Jasné zprávy" };
   }
+  const editionRes = await fetchPublishedEditionBySlug(supabase, slug);
+  const edition = editionRes.data as NewsEdition | null;
+
+  if (!edition) {
+    return { title: "Vydání nenalezeno — Jasné zprávy" };
+  }
+
+  const description = edition.subtitle ?? edition.summary ?? undefined;
+  const title = `${edition.title} — Jasné zprávy`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "article",
+      publishedTime: edition.published_at ?? undefined,
+      siteName: "Jasné zprávy — ABJ",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  };
 }
-
-type Item = {
-  id: string;
-  category: "domestic" | "foreign" | "curiosity" | string;
-  rank: number;
-  headline: string;
-  short_headline: string | null;
-  lead: string | null;
-  body: string;
-  why_it_matters: string | null;
-  what_to_watch: string | null;
-  source_count: number | null;
-};
-
-type Source = {
-  id: string;
-  news_item_id: string;
-  source_title: string | null;
-  source_name: string | null;
-  source_url: string | null;
-};
 
 export default async function EditionPage({
   params,
@@ -67,179 +65,135 @@ export default async function EditionPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const supabase = await createSupabaseServerClient();
-
-  const { data: edition, error: editionErr } = await supabase
-    .from("news_editions")
-    .select("id, slug, edition_type, title, subtitle, summary, published_at, generated_at")
-    .eq("slug", slug)
-    .eq("status", "published")
-    .maybeSingle();
+  let supabase;
+  try {
+    supabase = createSupabaseNewsClient();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Neznámá chyba";
+    return (
+      <main className="mx-auto max-w-6xl px-4 py-12">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
+          Nepodařilo se navázat připojení k datům Jasných zpráv: {message}
+        </div>
+      </main>
+    );
+  }
+  const editionRes = await fetchPublishedEditionBySlug(supabase, slug);
+  const edition = editionRes.data as NewsEdition | null;
+  const editionErr = editionRes.error;
 
   if (editionErr) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-12">
-        <p className="text-red-600">Chyba: {editionErr.message}</p>
+      <main className="mx-auto max-w-6xl px-4 py-12">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
+          Nepodařilo se načíst vydání: {editionErr.message}
+        </div>
       </main>
     );
   }
   if (!edition) notFound();
 
-  const { data: items } = await supabase
-    .from("news_items")
-    .select(
-      "id, category, rank, headline, short_headline, lead, body, why_it_matters, what_to_watch, source_count",
-    )
-    .eq("edition_id", edition.id)
-    .eq("status", "published")
-    .order("category", { ascending: true })
-    .order("rank", { ascending: true });
+  const [itemsRes, adjacentRes] = await Promise.all([
+    fetchPublishedItemsForEdition(supabase, edition.id),
+    fetchAdjacentPublishedEditions(supabase, edition),
+  ]);
 
-  const itemList: Item[] = (items ?? []) as Item[];
-  const itemIds = itemList.map((i) => i.id);
-
-  let sourcesByItem = new Map<string, Source[]>();
-  if (itemIds.length > 0) {
-    const { data: sources } = await supabase
-      .from("news_sources")
-      .select("id, news_item_id, source_title, source_name, source_url")
-      .in("news_item_id", itemIds);
-    for (const s of (sources ?? []) as Source[]) {
-      const arr = sourcesByItem.get(s.news_item_id) ?? [];
-      arr.push(s);
-      sourcesByItem.set(s.news_item_id, arr);
-    }
+  if (itemsRes.error) {
+    return (
+      <main className="mx-auto max-w-6xl px-4 py-12">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
+          Nepodařilo se načíst zprávy vydání: {itemsRes.error.message}
+        </div>
+      </main>
+    );
   }
 
-  const grouped = new Map<string, Item[]>();
-  for (const it of itemList) {
-    const arr = grouped.get(it.category) ?? [];
-    arr.push(it);
-    grouped.set(it.category, arr);
+  const itemList = itemsRes.data ?? [];
+  const sourcesRes = await fetchSourcesForItemIds(
+    supabase,
+    itemList.map((item) => item.id),
+  );
+
+  if (sourcesRes.error) {
+    return (
+      <main className="mx-auto max-w-6xl px-4 py-12">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
+          Nepodařilo se načíst zdroje vydání: {sourcesRes.error.message}
+        </div>
+      </main>
+    );
   }
+
+  const editionTime = getEditionTimestamp(edition);
+  const sourcesByItem = groupSourcesByItemId(sourcesRes.data ?? []);
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-12">
-      <nav className="mb-6 text-sm">
-        <Link href="/jasne-zpravy" className="text-gray-500 hover:text-gray-900">
-          ← Všechna vydání
+    <main className="mx-auto max-w-6xl px-4 py-10 md:py-12">
+      <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+        <Link href="/jasne-zpravy" className="hover:text-gray-900">
+          Jasné zprávy
         </Link>
+        <span>/</span>
+        <Link href="/jasne-zpravy/archiv" className="hover:text-gray-900">
+          Archiv
+        </Link>
+        <span>/</span>
+        <span className="font-medium text-gray-700">
+          {getEditionTypeLabel(edition.edition_type)} vydání · {formatPragueDateAndTimeCompact(editionTime)}
+        </span>
       </nav>
 
-      <header className="mb-10 border-b border-gray-200 pb-6">
-        <div className="flex items-baseline justify-between gap-3">
-          <span className="text-xs font-bold uppercase tracking-widest text-red-600">
-            {EDITION_TYPE_LABEL[edition.edition_type] ?? edition.edition_type} vydání
+      <header className="mb-10 rounded-3xl border border-[#FF6A00]/20 bg-white p-6 shadow-sm md:p-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="rounded-full bg-[#FF6A00] px-3 py-1 text-xs font-bold uppercase tracking-wider text-white">
+            {getEditionTypeLabel(edition.edition_type)} vydání
           </span>
-          <time className="text-xs text-gray-500">
-            {formatPragueDateTime(edition.published_at ?? edition.generated_at)}
-          </time>
+          <time className="text-sm text-gray-500">{formatPragueDateTime(editionTime)}</time>
         </div>
-        <h1 className="mt-3 text-3xl font-black leading-tight">{edition.title}</h1>
-        {edition.subtitle && (
-          <p className="mt-2 text-lg text-gray-700">{edition.subtitle}</p>
-        )}
-        {edition.summary && (
-          <p className="mt-4 text-base text-gray-600">{edition.summary}</p>
-        )}
+        <h1 className="mt-4 text-3xl font-black leading-tight text-gray-950 md:text-4xl">{edition.title}</h1>
+        {edition.subtitle && <p className="mt-3 text-lg leading-7 text-gray-700">{edition.subtitle}</p>}
+        {edition.summary && <p className="mt-4 max-w-3xl leading-7 text-gray-700">{edition.summary}</p>}
+        <p className="mt-5 text-sm font-semibold text-gray-600">
+          {itemList.length} publikovaných zpráv · aktualizováno v {formatPragueTime(editionTime)}
+        </p>
       </header>
 
-      {CATEGORY_ORDER.map((cat) => {
-        const list = grouped.get(cat);
-        if (!list || list.length === 0) return null;
-        return (
-          <section key={cat} className="mb-12">
-            <h2 className="mb-4 text-xs font-bold uppercase tracking-widest text-gray-500">
-              {CATEGORY_LABEL[cat]} · {list.length}
-            </h2>
-            <ol className="space-y-8">
-              {list.map((it, idx) => (
-                <li
-                  key={it.id}
-                  className="rounded-lg border border-gray-200 bg-white p-6"
-                >
-                  <div className="flex items-baseline gap-3">
-                    <span className="font-mono text-xs text-gray-400">
-                      {String(idx + 1).padStart(2, "0")}
-                    </span>
-                    <h3 className="text-xl font-bold leading-snug">
-                      {it.headline}
-                    </h3>
-                  </div>
+      <NewsSections items={itemList} sourcesByItem={sourcesByItem} headingLevel="h2" />
 
-                  {it.lead && (
-                    <p className="mt-3 text-base font-medium text-gray-800">
-                      {it.lead}
-                    </p>
-                  )}
+      <footer className="mt-10 border-t border-gray-200 pt-6">
+        <nav className="flex flex-wrap items-center justify-between gap-3">
+          {adjacentRes.previous ? (
+            <Link
+              href={`/jasne-zpravy/${adjacentRes.previous.slug}`}
+              className="inline-flex items-center rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-[#FF6A00]/35 hover:text-[#FF6A00]"
+            >
+              ← Předchozí vydání
+            </Link>
+          ) : (
+            <span className="inline-flex items-center rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-400">
+              ← Předchozí vydání
+            </span>
+          )}
 
-                  {it.body && (
-                    <div className="mt-4 space-y-3 whitespace-pre-line text-[15px] leading-relaxed text-gray-800">
-                      {it.body}
-                    </div>
-                  )}
-
-                  {(it.why_it_matters || it.what_to_watch) && (
-                    <dl className="mt-5 grid grid-cols-1 gap-3 rounded-md bg-gray-50 p-4 text-sm sm:grid-cols-2">
-                      {it.why_it_matters && (
-                        <div>
-                          <dt className="font-bold uppercase tracking-wide text-xs text-gray-500">
-                            Proč to dnes řešíme
-                          </dt>
-                          <dd className="mt-1 text-gray-800">{it.why_it_matters}</dd>
-                        </div>
-                      )}
-                      {it.what_to_watch && (
-                        <div>
-                          <dt className="font-bold uppercase tracking-wide text-xs text-gray-500">
-                            Co sledovat
-                          </dt>
-                          <dd className="mt-1 text-gray-800">{it.what_to_watch}</dd>
-                        </div>
-                      )}
-                    </dl>
-                  )}
-
-                  {(() => {
-                    const srcs = sourcesByItem.get(it.id) ?? [];
-                    if (srcs.length === 0) return null;
-                    return (
-                      <div className="mt-5 border-t border-gray-100 pt-3">
-                        <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
-                          Zdroje · {srcs.length}
-                        </p>
-                        <ul className="mt-2 space-y-1 text-sm">
-                          {srcs.map((s) => (
-                            <li key={s.id}>
-                              {s.source_url ? (
-                                <a
-                                  href={s.source_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-700 hover:underline"
-                                >
-                                  {s.source_title ?? s.source_name ?? s.source_url}
-                                </a>
-                              ) : (
-                                <span className="text-gray-700">
-                                  {s.source_title ?? s.source_name}
-                                </span>
-                              )}
-                              {s.source_name && s.source_title && (
-                                <span className="text-gray-500"> · {s.source_name}</span>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })()}
-                </li>
-              ))}
-            </ol>
-          </section>
-        );
-      })}
+          {adjacentRes.next ? (
+            <Link
+              href={`/jasne-zpravy/${adjacentRes.next.slug}`}
+              className="inline-flex items-center rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-[#FF6A00]/35 hover:text-[#FF6A00]"
+            >
+              Další vydání →
+            </Link>
+          ) : (
+            <span className="inline-flex items-center rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-400">
+              Další vydání →
+            </span>
+          )}
+        </nav>
+        {(adjacentRes.previousError || adjacentRes.nextError) && (
+          <p className="mt-3 text-sm text-amber-700">
+            Navigace mezi vydáními je dočasně omezená. Zkuste načíst stránku znovu.
+          </p>
+        )}
+      </footer>
     </main>
   );
 }
