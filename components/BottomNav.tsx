@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const tabs = [
   { href: "/live", label: "Vysílání", icon: "▶" },
+  { href: "/jasne-zpravy", label: "Jasné zprávy", icon: "◉" },
   { href: "/archiv", label: "Přehled dne", icon: "◧" },
   { href: "/abj-x", label: "ABJ X", icon: "✦" },
   { href: "/program", label: "Program", icon: "▦" },
@@ -17,7 +18,7 @@ export function BottomNav() {
     <nav className="fixed inset-x-0 bottom-0 z-40 bg-[var(--bg)]/70 px-4 pb-4 pt-2 backdrop-blur-md">
       <ul className="mx-auto flex max-w-3xl rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-2 shadow-[0_8px_32px_rgba(0,0,0,0.45)]">
         {tabs.map((tab) => {
-          const isActive = pathname === tab.href;
+          const isActive = pathname === tab.href || pathname.startsWith(`${tab.href}/`);
           return (
             <li key={tab.href} className="flex-1 py-2">
               <Link
