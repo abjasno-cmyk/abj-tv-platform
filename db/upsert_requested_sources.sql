@@ -28,7 +28,11 @@ with incoming (
     ('V.O.X. NEWS', 'youtube', 'https://www.youtube.com/@vox-news', 'B', 'zprávy', 'CZ', 'cs', true, 'support', null),
     ('Kateřina Konečná', 'youtube', 'https://www.youtube.com/@KonecnaKaterina/featured', 'B', 'politika', 'CZ', 'cs', true, 'support', null),
     ('Echo Podcasty', 'youtube', 'https://www.youtube.com/@echopodcasty', 'B', 'podcast', 'CZ', 'cs', true, 'support', null),
-    ('Datarun', 'youtube', 'https://www.youtube.com/@Datarun_cz', 'B', 'analýza', 'CZ', 'cs', true, 'support', null)
+    ('Datarun', 'youtube', 'https://www.youtube.com/@Datarun_cz', 'B', 'analýza', 'CZ', 'cs', true, 'support', null),
+    ('Ministr & Mileniál', 'youtube', 'https://www.youtube.com/@MinistrMileni%C3%A1l', 'B', 'politika', 'CZ', 'cs', true, 'support', null),
+    ('Janina z Londýna', 'youtube', 'https://www.youtube.com/@JANINAzLondyna', 'B', 'komentář', 'CZ', 'cs', true, 'support', null),
+    ('Goscha a Igor Chaun', 'youtube', 'https://www.youtube.com/@GoschaTV1', 'B', 'ezo', 'CZ', 'cs', true, 'support', null),
+    ('Institut Václava Klause', 'youtube', 'https://www.youtube.com/@institutvk', 'B', 'politika', 'CZ', 'cs', true, 'support', null)
 ),
 updated as (
   update sources s
