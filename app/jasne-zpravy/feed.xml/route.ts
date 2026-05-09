@@ -1,7 +1,6 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseNewsClient, type NewsEdition } from "@/lib/jasne-zpravy";
 
 export const revalidate = 300;
-export const dynamic = "force-dynamic";
 
 const SITE_TITLE = "Jasné zprávy — ABJ";
 const SITE_DESCRIPTION =
@@ -25,7 +24,21 @@ function siteOrigin(): string {
 }
 
 export async function GET() {
-  const supabase = await createSupabaseServerClient();
+  let supabase;
+  try {
+    supabase = createSupabaseNewsClient();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Neznámá chyba";
+    return new Response(
+      `<?xml version="1.0" encoding="UTF-8"?><error>${escapeXml(message)}</error>`,
+      {
+        status: 503,
+        headers: {
+          "Content-Type": "application/rss+xml; charset=utf-8",
+        },
+      },
+    );
+  }
   const { data: editions } = await supabase
     .from("news_editions")
     .select("id, slug, edition_type, title, subtitle, summary, published_at, generated_at")
@@ -34,9 +47,10 @@ export async function GET() {
     .limit(40);
 
   const origin = siteOrigin();
-  const items = (editions ?? []).map((e) => {
+  const items = ((editions ?? []) as NewsEdition[]).map((e) => {
     const url = `${origin}/jasne-zpravy/${e.slug}`;
-    const pubDate = new Date(e.published_at ?? e.generated_at).toUTCString();
+    const timestamp = e.published_at ?? e.generated_at ?? new Date().toISOString();
+    const pubDate = new Date(timestamp).toUTCString();
     return `
     <item>
       <title>${escapeXml(e.title)}</title>

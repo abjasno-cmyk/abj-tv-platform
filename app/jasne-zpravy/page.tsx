@@ -1,285 +1,311 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import type { Metadata } from "next";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { NewsSections } from "./_components/NewsSections";
+import {
+  createSupabaseNewsClient,
+  dayKeyToOrdinal,
+  fetchLatestPublishedEdition,
+  fetchPublishedItemCountsByEditionIds,
+  fetchPublishedItemsForEdition,
+  fetchRecentPublishedEditions,
+  fetchSourcesForItemIds,
+  formatPragueDate,
+  formatPragueDateWithWeekday,
+  formatPragueDateTime,
+  formatPragueTime,
+  getEditionTimestamp,
+  getEditionTypeLabel,
+  groupSourcesByItemId,
+  toPragueDayKey,
+  type NewsEdition,
+  type NewsItem,
+  type NewsSource,
+} from "@/lib/jasne-zpravy";
 
 export const revalidate = 60;
-export const dynamic = "force-dynamic";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
-  const { slug } = await params;
-  const supabase = await createSupabaseServerClient();
-  const { data: edition } = await supabase
-    .from("news_editions")
-    .select("title, subtitle, summary, published_at")
-    .eq("slug", slug)
-    .eq("status", "published")
-    .maybeSingle();
+const RECENT_EDITIONS_LIMIT = 220;
 
-  if (!edition) {
-    return { title: "Vydání nenalezeno — Jasné zprávy" };
-  }
-
-  const description = edition.subtitle ?? edition.summary ?? undefined;
-  const title = `${edition.title} — Jasné zprávy`;
-
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      type: "article",
-      publishedTime: edition.published_at ?? undefined,
-      siteName: "Jasné zprávy — ABJ",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-    },
-  };
+function itemRank(item: NewsItem): number {
+  return item.rank ?? Number.MAX_SAFE_INTEGER;
 }
 
-const EDITION_TYPE_LABEL: Record<string, string> = {
-  morning: "Ranní",
-  noon: "Polední",
-  evening: "Večerní",
-  manual: "Mimořádné",
-};
+function byEditionTimeDesc(a: NewsEdition, b: NewsEdition): number {
+  const aTs = new Date(getEditionTimestamp(a) ?? 0).getTime();
+  const bTs = new Date(getEditionTimestamp(b) ?? 0).getTime();
+  return bTs - aTs;
+}
 
-const CATEGORY_LABEL: Record<string, string> = {
-  domestic: "Domácí",
-  foreign: "Zahraniční",
-  curiosity: "Perlička",
-};
-
-const CATEGORY_ORDER: Array<keyof typeof CATEGORY_LABEL> = [
-  "domestic",
-  "foreign",
-  "curiosity",
-];
-
-function formatPragueDateTime(iso: string | null | undefined): string {
-  if (!iso) return "";
+export default async function JasneZpravyPage() {
+  let supabase;
   try {
-    return new Intl.DateTimeFormat("cs-CZ", {
-      timeZone: "Europe/Prague",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(iso));
-  } catch {
-    return iso;
-  }
-}
-
-type Item = {
-  id: string;
-  category: "domestic" | "foreign" | "curiosity" | string;
-  rank: number;
-  headline: string;
-  short_headline: string | null;
-  lead: string | null;
-  body: string;
-  why_it_matters: string | null;
-  what_to_watch: string | null;
-  source_count: number | null;
-};
-
-type Source = {
-  id: string;
-  news_item_id: string;
-  source_title: string | null;
-  source_name: string | null;
-  source_url: string | null;
-};
-
-export default async function EditionPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
-  const supabase = await createSupabaseServerClient();
-
-  const { data: edition, error: editionErr } = await supabase
-    .from("news_editions")
-    .select("id, slug, edition_type, title, subtitle, summary, published_at, generated_at")
-    .eq("slug", slug)
-    .eq("status", "published")
-    .maybeSingle();
-
-  if (editionErr) {
+    supabase = createSupabaseNewsClient();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Neznámá chyba";
     return (
-      <main className="mx-auto max-w-3xl px-4 py-12">
-        <p className="text-red-600">Chyba: {editionErr.message}</p>
+      <main className="mx-auto max-w-6xl px-4 py-12">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
+          Nepodařilo se navázat připojení k datům Jasných zpráv: {message}
+        </div>
       </main>
     );
   }
-  if (!edition) notFound();
 
-  const { data: items } = await supabase
-    .from("news_items")
-    .select(
-      "id, category, rank, headline, short_headline, lead, body, why_it_matters, what_to_watch, source_count",
-    )
-    .eq("edition_id", edition.id)
-    .eq("status", "published")
-    .order("category", { ascending: true })
-    .order("rank", { ascending: true });
-
-  const itemList: Item[] = (items ?? []) as Item[];
-  const itemIds = itemList.map((i) => i.id);
-
-  let sourcesByItem = new Map<string, Source[]>();
-  if (itemIds.length > 0) {
-    const { data: sources } = await supabase
-      .from("news_sources")
-      .select("id, news_item_id, source_title, source_name, source_url")
-      .in("news_item_id", itemIds);
-    for (const s of (sources ?? []) as Source[]) {
-      const arr = sourcesByItem.get(s.news_item_id) ?? [];
-      arr.push(s);
-      sourcesByItem.set(s.news_item_id, arr);
-    }
+  const latestRes = await fetchLatestPublishedEdition(supabase);
+  if (latestRes.error) {
+    return (
+      <main className="mx-auto max-w-6xl px-4 py-12">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
+          Nepodařilo se načíst poslední vydání: {latestRes.error.message}
+        </div>
+      </main>
+    );
   }
 
-  const grouped = new Map<string, Item[]>();
-  for (const it of itemList) {
-    const arr = grouped.get(it.category) ?? [];
-    arr.push(it);
-    grouped.set(it.category, arr);
+  const latestEdition = latestRes.data as NewsEdition | null;
+  if (!latestEdition) {
+    return (
+      <main className="mx-auto max-w-6xl px-4 py-12">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 text-gray-700">
+          Zatím není publikované žádné vydání Jasných zpráv.
+        </div>
+      </main>
+    );
   }
+
+  const [latestItemsRes, recentEditionsRes] = await Promise.all([
+    fetchPublishedItemsForEdition(supabase, latestEdition.id),
+    fetchRecentPublishedEditions(supabase, RECENT_EDITIONS_LIMIT),
+  ]);
+
+  if (latestItemsRes.error) {
+    return (
+      <main className="mx-auto max-w-6xl px-4 py-12">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
+          Nepodařilo se načíst obsah vydání: {latestItemsRes.error.message}
+        </div>
+      </main>
+    );
+  }
+
+  const latestItems = [...((latestItemsRes.data ?? []) as NewsItem[])].sort(
+    (a, b) => itemRank(a) - itemRank(b),
+  );
+  const latestItemIds = latestItems.map((item) => item.id);
+  const latestSourcesRes = await fetchSourcesForItemIds(supabase, latestItemIds);
+
+  if (latestSourcesRes.error) {
+    return (
+      <main className="mx-auto max-w-6xl px-4 py-12">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
+          Nepodařilo se načíst zdroje zpráv: {latestSourcesRes.error.message}
+        </div>
+      </main>
+    );
+  }
+
+  const recentEditions = ((recentEditionsRes.data ?? []) as NewsEdition[]).filter(
+    (edition) => edition.id !== latestEdition.id,
+  );
+  const editionsForCounts = [latestEdition, ...recentEditions];
+  const countRes = await fetchPublishedItemCountsByEditionIds(
+    supabase,
+    editionsForCounts.map((edition) => edition.id),
+  );
+
+  const countError = countRes.error;
+  const itemCounts = countRes.counts;
+  const latestEditionTime = getEditionTimestamp(latestEdition);
+  const latestItemCount = itemCounts.get(latestEdition.id) ?? latestItems.length;
+
+  const todayDayKey = toPragueDayKey(new Date());
+  const todayEditions = recentEditions
+    .filter((edition) => toPragueDayKey(getEditionTimestamp(edition)) === todayDayKey)
+    .sort(byEditionTimeDesc);
+
+  const todayOrdinal = dayKeyToOrdinal(todayDayKey);
+  const olderByDay = new Map<string, NewsEdition[]>();
+
+  for (const edition of recentEditions) {
+    const dayKey = toPragueDayKey(getEditionTimestamp(edition));
+    const dayOrdinal = dayKeyToOrdinal(dayKey);
+    if (todayOrdinal === null || dayOrdinal === null) continue;
+
+    const daysAgo = todayOrdinal - dayOrdinal;
+    if (daysAgo < 1 || daysAgo > 14) continue;
+
+    const grouped = olderByDay.get(dayKey) ?? [];
+    grouped.push(edition);
+    olderByDay.set(dayKey, grouped);
+  }
+
+  const olderDayKeys = Array.from(olderByDay.keys()).sort((a, b) => {
+    const aOrd = dayKeyToOrdinal(a) ?? 0;
+    const bOrd = dayKeyToOrdinal(b) ?? 0;
+    return bOrd - aOrd;
+  });
+
+  const topHeadlines = latestItems
+    .slice(0, 3)
+    .map((item) => item.short_headline ?? item.headline)
+    .filter(Boolean);
+  const sourcesByItem = groupSourcesByItemId((latestSourcesRes.data ?? []) as NewsSource[]);
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-12">
-      <nav className="mb-6 text-sm">
-        <Link href="/jasne-zpravy" className="text-gray-500 hover:text-gray-900">
-          ← Všechna vydání
-        </Link>
-      </nav>
-
-      <header className="mb-10 border-b border-gray-200 pb-6">
-        <div className="flex items-baseline justify-between gap-3">
-          <span className="text-xs font-bold uppercase tracking-widest text-red-600">
-            {EDITION_TYPE_LABEL[edition.edition_type] ?? edition.edition_type} vydání
-          </span>
-          <time className="text-xs text-gray-500">
-            {formatPragueDateTime(edition.published_at ?? edition.generated_at)}
-          </time>
+    <main className="mx-auto max-w-6xl px-4 py-10 md:py-12">
+      {countError && (
+        <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Nepodařilo se spočítat všechny počty zpráv. Obsah je zobrazen, ale některé počty mohou být nepřesné.
         </div>
-        <h1 className="mt-3 text-3xl font-black leading-tight">{edition.title}</h1>
-        {edition.subtitle && (
-          <p className="mt-2 text-lg text-gray-700">{edition.subtitle}</p>
-        )}
-        {edition.summary && (
-          <p className="mt-4 text-base text-gray-600">{edition.summary}</p>
-        )}
-      </header>
+      )}
 
-      {CATEGORY_ORDER.map((cat) => {
-        const list = grouped.get(cat);
-        if (!list || list.length === 0) return null;
-        return (
-          <section key={cat} className="mb-12">
-            <h2 className="mb-4 text-xs font-bold uppercase tracking-widest text-gray-500">
-              {CATEGORY_LABEL[cat]} · {list.length}
-            </h2>
-            <ol className="space-y-8">
-              {list.map((it, idx) => (
+      <section className="mb-10 rounded-3xl border border-[#FF6A00]/20 bg-gradient-to-b from-white to-orange-50/40 p-6 shadow-sm md:p-8">
+        <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-[#B04A00]">ABJ NEWSROOM</p>
+        <h1 className="mt-2 text-3xl font-black leading-tight text-gray-950 md:text-4xl">Jasné zprávy</h1>
+        <p className="mt-2 max-w-2xl text-gray-700">Dnešní přehled bez zbytečné mlhy.</p>
+        <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+          <span className="font-semibold text-gray-800">
+            {getEditionTypeLabel(latestEdition.edition_type)} vydání
+          </span>
+          <span className="text-gray-500">{formatPragueDateTime(latestEditionTime)}</span>
+          <span className="rounded-full border border-[#FF6A00]/25 bg-[#FF6A00]/10 px-2.5 py-1 text-xs font-semibold text-[#B04A00]">
+            {latestItemCount} zpráv
+          </span>
+        </div>
+      </section>
+
+      <section className="mb-10">
+        <h2 className="mb-4 text-lg font-extrabold uppercase tracking-[0.16em] text-gray-800">
+          Nejnovější vydání
+        </h2>
+        <article className="rounded-3xl border border-[#FF6A00]/25 bg-white p-6 shadow-md md:p-7">
+          <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-wider">
+            <span className="rounded-full bg-[#FF6A00] px-2.5 py-1 font-bold text-white">
+              {getEditionTypeLabel(latestEdition.edition_type)} vydání
+            </span>
+            <time className="font-semibold text-gray-500">{formatPragueDateTime(latestEditionTime)}</time>
+          </div>
+          <h3 className="mt-4 text-2xl font-black leading-tight text-gray-950">{latestEdition.title}</h3>
+          {latestEdition.summary && (
+            <p className="mt-3 max-w-3xl text-base leading-7 text-gray-700">{latestEdition.summary}</p>
+          )}
+          {topHeadlines.length > 0 && (
+            <ul className="mt-5 grid gap-2 sm:grid-cols-3">
+              {topHeadlines.map((headline) => (
                 <li
-                  key={it.id}
-                  className="rounded-lg border border-gray-200 bg-white p-6"
+                  key={headline}
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-800"
                 >
-                  <div className="flex items-baseline gap-3">
-                    <span className="font-mono text-xs text-gray-400">
-                      {String(idx + 1).padStart(2, "0")}
-                    </span>
-                    <h3 className="text-xl font-bold leading-snug">
-                      {it.headline}
-                    </h3>
-                  </div>
-
-                  {it.lead && (
-                    <p className="mt-3 text-base font-medium text-gray-800">
-                      {it.lead}
-                    </p>
-                  )}
-
-                  {it.body && (
-                    <div className="mt-4 space-y-3 whitespace-pre-line text-[15px] leading-relaxed text-gray-800">
-                      {it.body}
-                    </div>
-                  )}
-
-                  {(it.why_it_matters || it.what_to_watch) && (
-                    <dl className="mt-5 grid grid-cols-1 gap-3 rounded-md bg-gray-50 p-4 text-sm sm:grid-cols-2">
-                      {it.why_it_matters && (
-                        <div>
-                          <dt className="font-bold uppercase tracking-wide text-xs text-gray-500">
-                            Proč to dnes řešíme
-                          </dt>
-                          <dd className="mt-1 text-gray-800">{it.why_it_matters}</dd>
-                        </div>
-                      )}
-                      {it.what_to_watch && (
-                        <div>
-                          <dt className="font-bold uppercase tracking-wide text-xs text-gray-500">
-                            Co sledovat
-                          </dt>
-                          <dd className="mt-1 text-gray-800">{it.what_to_watch}</dd>
-                        </div>
-                      )}
-                    </dl>
-                  )}
-
-                  {(() => {
-                    const srcs = sourcesByItem.get(it.id) ?? [];
-                    if (srcs.length === 0) return null;
-                    return (
-                      <div className="mt-5 border-t border-gray-100 pt-3">
-                        <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
-                          Zdroje · {srcs.length}
-                        </p>
-                        <ul className="mt-2 space-y-1 text-sm">
-                          {srcs.map((s) => (
-                            <li key={s.id}>
-                              {s.source_url ? (
-                                <a
-                                  href={s.source_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-700 hover:underline"
-                                >
-                                  {s.source_title ?? s.source_name ?? s.source_url}
-                                </a>
-                              ) : (
-                                <span className="text-gray-700">
-                                  {s.source_title ?? s.source_name}
-                                </span>
-                              )}
-                              {s.source_name && s.source_title && (
-                                <span className="text-gray-500"> · {s.source_name}</span>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })()}
+                  {headline}
                 </li>
               ))}
-            </ol>
-          </section>
-        );
-      })}
+            </ul>
+          )}
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+            <span className="text-sm text-gray-600">{latestItemCount} publikovaných zpráv</span>
+            <Link
+              href={`/jasne-zpravy/${latestEdition.slug}`}
+              className="inline-flex items-center text-sm font-bold text-[#FF6A00] hover:text-[#cc5500]"
+            >
+              Otevřít celé vydání →
+            </Link>
+          </div>
+        </article>
+      </section>
+
+      <section className="mb-10">
+        <h2 className="mb-4 text-lg font-extrabold uppercase tracking-[0.16em] text-gray-800">Dnes</h2>
+        {todayEditions.length === 0 ? (
+          <p className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600">
+            Dnes zatím nebylo publikováno další vydání.
+          </p>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2">
+            {todayEditions.map((edition) => (
+              <article
+                key={edition.id}
+                className="rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-[#FF6A00]/35 hover:shadow-sm"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <time className="font-mono text-sm text-gray-500">
+                    {formatPragueTime(getEditionTimestamp(edition))}
+                  </time>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-600">
+                    {getEditionTypeLabel(edition.edition_type)}
+                  </span>
+                </div>
+                <h3 className="mt-2 text-lg font-bold leading-snug text-gray-900">{edition.title}</h3>
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="text-sm text-gray-500">
+                    {itemCounts.get(edition.id) ?? 0} zpráv
+                  </span>
+                  <Link
+                    href={`/jasne-zpravy/${edition.slug}`}
+                    className="text-sm font-semibold text-[#FF6A00] hover:text-[#cc5500]"
+                  >
+                    Otevřít →
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="mb-12">
+        <header className="mb-6 border-b border-gray-200 pb-4">
+          <h2 className="text-2xl font-black tracking-tight text-gray-950">Aktuální obsah nejnovějšího vydání</h2>
+          <p className="mt-2 text-sm text-gray-600">
+            {getEditionTypeLabel(latestEdition.edition_type)} vydání · {formatPragueDate(latestEditionTime)}
+          </p>
+        </header>
+        <NewsSections items={latestItems} sourcesByItem={sourcesByItem} headingLevel="h3" />
+      </section>
+
+      <section className="mb-4">
+        <h2 className="mb-4 text-lg font-extrabold uppercase tracking-[0.16em] text-gray-800">Starší vydání</h2>
+        {olderDayKeys.length === 0 ? (
+          <p className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600">
+            V posledních 14 dnech zatím nejsou dostupná starší vydání.
+          </p>
+        ) : (
+          <div className="space-y-5">
+            {olderDayKeys.map((dayKey) => {
+              const editions = [...(olderByDay.get(dayKey) ?? [])].sort(byEditionTimeDesc);
+              const dayMoment = getEditionTimestamp(editions[0]);
+              return (
+                <div key={dayKey} className="rounded-2xl border border-gray-200 bg-white p-4">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-gray-600">
+                    {formatPragueDateWithWeekday(dayMoment)}
+                  </h3>
+                  <ul className="mt-3 space-y-2">
+                    {editions.map((edition) => (
+                      <li key={edition.id}>
+                        <Link
+                          href={`/jasne-zpravy/${edition.slug}`}
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm text-gray-700 transition hover:bg-orange-50 hover:text-gray-900"
+                        >
+                          <span>
+                            {formatPragueTime(getEditionTimestamp(edition))} ·{" "}
+                            {getEditionTypeLabel(edition.edition_type)} vydání
+                          </span>
+                          <span className="font-semibold text-gray-500">
+                            {itemCounts.get(edition.id) ?? 0} zpráv
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <div className="mt-5">
+          <Link href="/jasne-zpravy/archiv" className="text-sm font-bold text-[#FF6A00] hover:text-[#cc5500]">
+            Zobrazit celý archiv →
+          </Link>
+        </div>
+      </section>
     </main>
   );
 }
