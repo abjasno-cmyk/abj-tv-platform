@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useFeed } from "@/hooks/useFeed";
 import type { FeedPost } from "@/lib/api";
@@ -10,6 +10,8 @@ import type { FeedPost } from "@/lib/api";
 const EMPTY_MESSAGE = "Zatím nejsou dostupná žádná nová videa.";
 const LATEST_VIDEO_LIMIT = 16;
 const CHANNEL_PANEL_VIDEO_LIMIT = 4;
+const CHANNEL_TARGET_COUNT = 50;
+const CHANNEL_AUTO_LOAD_MAX_PAGES = 18;
 
 type CountryCode = "CZ" | "SK" | null;
 type ChannelFilter = "ALL" | "CZ" | "SK";
@@ -48,6 +50,11 @@ type FeedVideoView = {
 type FeedResponseView = {
   top: FeedVideoView[];
   channels: Record<string, FeedVideoView[]>;
+};
+
+type StructuredFeedPayloadView = {
+  top?: unknown[];
+  channels?: Record<string, unknown[]>;
 };
 
 type ChannelSummary = {
@@ -330,6 +337,11 @@ function getChannelAvatarGradient(channelName: string): string {
   return `linear-gradient(135deg, ${left}, ${right})`;
 }
 
+function getChannelAccentColor(channelName: string): string {
+  const [left] = AVATAR_GRADIENTS[hashString(normalizeText(channelName)) % AVATAR_GRADIENTS.length];
+  return left;
+}
+
 function groupVideosByChannel(videos: FeedVideoView[]): ChannelSummary[] {
   const grouped = new Map<string, ChannelSummary>();
   for (const video of videos) {
@@ -422,6 +434,69 @@ function mapPostToFeedVideo(post: FeedPost): FeedVideoView {
     is_short: readBoolean(raw.is_short) ?? readBoolean(raw.isShort),
     format: pickFirstString(raw, ["format", "video_format"]),
     freshness: post.freshness,
+  };
+}
+
+function mapStructuredFeedVideo(rawVideo: unknown): FeedVideoView | null {
+  if (!rawVideo || typeof rawVideo !== "object" || Array.isArray(rawVideo)) return null;
+  const row = rawVideo as Record<string, unknown>;
+  const videoId = readString(row.video_id) ?? extractYoutubeVideoId(readString(row.youtube_url)) ?? "";
+  const title = readString(row.title) ?? "Bez titulku";
+  const channelName = readString(row.channel) ?? readString(row.channel_name) ?? "Neznámý kanál";
+  const publishedAt = readString(row.published_at) ?? new Date(0).toISOString();
+  const thumbnail =
+    pickFirstString(row, ["thumbnail", "thumbnail_url", "image_url", "image", "preview_url"]) ??
+    (videoId ? `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg` : "/placeholder-thumb.jpg");
+  const topics = Array.isArray(row.topics) ? row.topics.filter((topic): topic is string => typeof topic === "string") : [];
+  const freshnessRaw = normalizeText(readString(row.freshness) ?? "");
+  const freshness: FeedVideoView["freshness"] =
+    freshnessRaw === "breaking" || freshnessRaw === "today" || freshnessRaw === "week" || freshnessRaw === "evergreen"
+      ? freshnessRaw
+      : "evergreen";
+
+  return {
+    video_id: videoId,
+    title,
+    channel: channelName,
+    published_at: publishedAt,
+    topics,
+    thumbnail,
+    tldr: readString(row.tldr) ?? undefined,
+    context: readString(row.context) ?? undefined,
+    impact: readString(row.impact) ?? undefined,
+    duration_seconds:
+      readNumber(row.duration_seconds) ??
+      readNumber(row.duration_sec) ??
+      readNumber(row.duration_s) ??
+      readNumber(row.length_seconds) ??
+      null,
+    language: readString(row.language),
+    country: readString(row.country),
+    locale: readString(row.locale),
+    channel_logo: pickFirstString(row, ["channel_logo", "channel_avatar", "channel_thumbnail", "avatar_url", "logo_url"]),
+    youtube_url: pickFirstString(row, ["youtube_url", "youtubeUrl", "video_url", "url"]),
+    aspect_ratio: pickFirstString(row, ["aspect_ratio", "aspectRatio"]),
+    width: readNumber(row.width),
+    height: readNumber(row.height),
+    orientation: pickFirstString(row, ["orientation", "video_orientation"]),
+    is_short: readBoolean(row.is_short) ?? readBoolean(row.isShort),
+    format: pickFirstString(row, ["format", "video_format"]),
+    freshness,
+  };
+}
+
+function mapStructuredFeedPayload(payload: StructuredFeedPayloadView | null): FeedResponseView {
+  if (!payload) return { top: [], channels: {} };
+  const top = Array.isArray(payload.top) ? payload.top.map(mapStructuredFeedVideo).filter((entry): entry is FeedVideoView => Boolean(entry)) : [];
+  const channels = Object.entries(payload.channels ?? {}).reduce<Record<string, FeedVideoView[]>>((acc, [channelName, rows]) => {
+    const mapped = (rows ?? []).map(mapStructuredFeedVideo).filter((entry): entry is FeedVideoView => Boolean(entry));
+    if (mapped.length === 0) return acc;
+    acc[channelName] = mapped;
+    return acc;
+  }, {});
+  return {
+    top: deduplicateVideos(top),
+    channels,
   };
 }
 
@@ -606,6 +681,53 @@ function ChannelAvatar({ channelName, logoUrl, size = "md" }: { channelName: str
   );
 }
 
+type ChannelTileCardProps = {
+  entry: ChannelSummary;
+  active: boolean;
+  onSelect: (channelKey: string) => void;
+  featured?: boolean;
+};
+
+function ChannelTileCard({ entry, active, onSelect, featured = false }: ChannelTileCardProps) {
+  const isAbj = isAbjChannel(entry.name);
+  const newestLabel = formatPublishedLabel(entry.videos[0]?.published_at);
+  const accentColor = getChannelAccentColor(entry.name);
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(entry.key)}
+      className={`relative min-w-[190px] rounded-xl border text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6A00]/60 sm:min-w-0 ${
+        active
+          ? "border-[#FF6A00]/55 bg-[rgba(255,106,0,0.08)] shadow-[0_8px_20px_rgba(255,106,0,0.12)]"
+          : isAbj
+            ? "border-[#FF6A00]/30 bg-white hover:border-[#FF6A00]/55 hover:shadow-[0_8px_20px_rgba(255,106,0,0.1)]"
+            : "border-[var(--abj-gold-dim)] bg-white hover:border-[rgba(17,17,17,0.28)] hover:shadow-[0_8px_20px_rgba(17,17,17,0.08)]"
+      } ${featured ? "p-3.5" : "p-3"}`}
+      style={{ boxShadow: active ? undefined : `inset 0 2px 0 0 ${accentColor}22` }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <ChannelAvatar channelName={entry.name} logoUrl={entry.logoUrl} size={featured ? "md" : "sm"} />
+          <div className="min-w-0">
+            <p className={`truncate font-semibold text-abj-text1 ${featured ? "text-[15px]" : "text-sm"}`}>{entry.name}</p>
+            <p className="text-[11px] uppercase tracking-[0.08em] text-abj-text2">{entry.videos.length} videí</p>
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <CountryBadge country={entry.country} />
+          {isAbj ? (
+            <span className="rounded-full bg-[#FF6A00]/14 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#C14900]">
+              Hlavní kanál
+            </span>
+          ) : null}
+        </div>
+      </div>
+      <p className="mt-2 text-[11px] text-abj-text3">{newestLabel ? `Poslední: ${newestLabel}` : "Nově přidáno"}</p>
+    </button>
+  );
+}
+
 type FeaturedAbjSectionProps = {
   primary: FeedVideoView | null;
   secondary: FeedVideoView[];
@@ -666,6 +788,7 @@ type ChannelTilesProps = {
   filter: ChannelFilter;
   onFilterChange: (filter: ChannelFilter) => void;
   loading: boolean;
+  isExpandingChannels: boolean;
 };
 
 function ChannelTiles({
@@ -678,10 +801,24 @@ function ChannelTiles({
   filter,
   onFilterChange,
   loading,
+  isExpandingChannels,
 }: ChannelTilesProps) {
   if (channels.length === 0 && !loading) return null;
   const showSearch = channels.length >= 10;
   const showCountryFilters = channels.some((entry) => entry.country === "CZ" || entry.country === "SK");
+  const abjPriority = filteredChannels.find((entry) => isAbjChannel(entry.name));
+  const topByFreshness = [...filteredChannels]
+    .sort((a, b) => b.latestPublishedAt - a.latestPublishedAt)
+    .slice(0, 5);
+  const spotlightChannels = Array.from(
+    new Map(
+      [abjPriority, ...topByFreshness]
+        .filter((entry): entry is ChannelSummary => Boolean(entry))
+        .map((entry) => [entry.key, entry])
+    ).values()
+  ).slice(0, 4);
+  const spotlightKeys = new Set(spotlightChannels.map((entry) => entry.key));
+  const remainingChannels = filteredChannels.filter((entry) => !spotlightKeys.has(entry.key));
 
   return (
     <section className="space-y-3">
@@ -731,56 +868,52 @@ function ChannelTiles({
         <span>Celkem {channels.length} kanálů</span>
       </div>
 
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-        {filteredChannels.length > 0
-          ? filteredChannels.map((entry) => {
-              const active = selectedChannelKey === entry.key;
-              const isAbj = isAbjChannel(entry.name);
-              const newestLabel = formatPublishedLabel(entry.videos[0]?.published_at);
-              return (
-                <button
-                  key={`channel-tile-${entry.key}`}
-                  type="button"
-                  onClick={() => onSelect(entry.key)}
-                  className={`min-w-[190px] rounded-xl border px-3 py-2 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6A00]/60 sm:min-w-0 ${
-                    active
-                      ? "border-[#FF6A00]/55 bg-[rgba(255,106,0,0.08)] shadow-[0_8px_20px_rgba(255,106,0,0.12)]"
-                      : isAbj
-                        ? "border-[#FF6A00]/30 bg-white hover:border-[#FF6A00]/50"
-                        : "border-[var(--abj-gold-dim)] bg-white hover:border-[rgba(17,17,17,0.28)]"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-2.5">
-                      <ChannelAvatar channelName={entry.name} logoUrl={entry.logoUrl} size="sm" />
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-abj-text1">{entry.name}</p>
-                        <p className="text-[11px] uppercase tracking-[0.08em] text-abj-text2">{entry.videos.length} videí</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <CountryBadge country={entry.country} />
-                      {isAbj ? (
-                        <span className="rounded-full bg-[#FF6A00]/14 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#C14900]">
-                          Hlavní kanál
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                  <p className="mt-2 text-[11px] text-abj-text3">{newestLabel ? `Poslední: ${newestLabel}` : "Nově přidáno"}</p>
-                </button>
-              );
-            })
-          : [0, 1, 2, 3].map((slot) => (
-              <div
-                key={`channel-skeleton-${slot}`}
-                className="min-w-[190px] animate-pulse rounded-xl border border-[var(--abj-gold-dim)] bg-white p-3 sm:min-w-0"
-              >
-                <div className="mb-2 h-4 w-28 rounded bg-[rgba(17,17,17,0.1)]" />
-                <div className="h-3 w-20 rounded bg-[rgba(17,17,17,0.08)]" />
-              </div>
+      {spotlightChannels.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-abj-text2">Doporučené kanály</p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            {spotlightChannels.map((entry) => (
+              <ChannelTileCard
+                key={`channel-featured-${entry.key}`}
+                entry={entry}
+                active={selectedChannelKey === entry.key}
+                onSelect={onSelect}
+                featured
+              />
             ))}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="space-y-2">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-abj-text2">Všechny kanály</p>
+        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          {(remainingChannels.length > 0 ? remainingChannels : filteredChannels).length > 0
+            ? (remainingChannels.length > 0 ? remainingChannels : filteredChannels).map((entry) => (
+                <ChannelTileCard
+                  key={`channel-grid-${entry.key}`}
+                  entry={entry}
+                  active={selectedChannelKey === entry.key}
+                  onSelect={onSelect}
+                />
+              ))
+            : [0, 1, 2, 3].map((slot) => (
+                <div
+                  key={`channel-skeleton-${slot}`}
+                  className="min-w-[190px] animate-pulse rounded-xl border border-[var(--abj-gold-dim)] bg-white p-3 sm:min-w-0"
+                >
+                  <div className="mb-2 h-4 w-28 rounded bg-[rgba(17,17,17,0.1)]" />
+                  <div className="h-3 w-20 rounded bg-[rgba(17,17,17,0.08)]" />
+                </div>
+              ))}
+        </div>
       </div>
+
+      {isExpandingChannels ? (
+        <div className="rounded-xl border border-[rgba(255,106,0,0.24)] bg-[rgba(255,106,0,0.07)] px-3 py-2 text-xs uppercase tracking-[0.08em] text-[#C14900]">
+          Načítám další kanály...
+        </div>
+      ) : null}
       {!loading && filteredChannels.length === 0 ? (
         <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-white p-4 text-sm text-abj-text2">
           Pro zadaný filtr nebyly nalezeny žádné kanály.
@@ -1010,6 +1143,8 @@ export function ArchivClient({ initialData }: ArchivClientProps) {
   const [channelPanelOpen, setChannelPanelOpen] = useState(false);
   const [channelQuery, setChannelQuery] = useState("");
   const [channelFilter, setChannelFilter] = useState<ChannelFilter>("ALL");
+  const [structuredFeedPayload, setStructuredFeedPayload] = useState<StructuredFeedPayloadView | null>(null);
+  const [autoLoadPages, setAutoLoadPages] = useState(0);
 
   const currentPayload = useMemo<FeedResponseView>(
     () => ({
@@ -1036,7 +1171,11 @@ export function ArchivClient({ initialData }: ArchivClientProps) {
     };
   }, [posts]);
 
-  const mergedPayload = useMemo(() => mergePayload(currentPayload, incomingPayload), [currentPayload, incomingPayload]);
+  const supplementalPayload = useMemo(() => mapStructuredFeedPayload(structuredFeedPayload), [structuredFeedPayload]);
+  const mergedPayload = useMemo(
+    () => mergePayload(mergePayload(currentPayload, incomingPayload), supplementalPayload),
+    [currentPayload, incomingPayload, supplementalPayload]
+  );
 
   const allVideos = useMemo(() => {
     const videosFromChannels = Object.values(mergedPayload.channels).flat();
@@ -1045,6 +1184,39 @@ export function ArchivClient({ initialData }: ArchivClientProps) {
   const channels = useMemo(() => groupVideosByChannel(allVideos), [allVideos]);
   const hasAnyContent = allVideos.length > 0;
   const isInitialLoading = loading && !hasAnyContent;
+  const isExpandingChannels = hasMore && channels.length < CHANNEL_TARGET_COUNT && autoLoadPages < CHANNEL_AUTO_LOAD_MAX_PAGES;
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchStructuredFeed = async () => {
+      try {
+        const response = await fetch("/feed", { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = (await response.json()) as StructuredFeedPayloadView;
+        if (!cancelled) setStructuredFeedPayload(payload);
+      } catch {
+        // Optional supplemental source; failures are intentionally ignored.
+      }
+    };
+    void fetchStructuredFeed();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasMore) return;
+    if (loading) return;
+    if (channels.length >= CHANNEL_TARGET_COUNT) return;
+    if (autoLoadPages >= CHANNEL_AUTO_LOAD_MAX_PAGES) return;
+
+    const timer = window.setTimeout(() => {
+      setAutoLoadPages((prev) => prev + 1);
+      void loadMore();
+    }, 180);
+
+    return () => window.clearTimeout(timer);
+  }, [autoLoadPages, channels.length, hasMore, loadMore, loading]);
 
   const featuredSelection = useMemo(() => {
     if (allVideos.length === 0) {
@@ -1128,6 +1300,7 @@ export function ArchivClient({ initialData }: ArchivClientProps) {
         filter={channelFilter}
         onFilterChange={setChannelFilter}
         loading={isInitialLoading}
+        isExpandingChannels={isExpandingChannels}
       />
 
       <ChannelDetailPanel
