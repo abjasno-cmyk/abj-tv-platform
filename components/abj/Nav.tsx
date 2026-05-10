@@ -8,7 +8,6 @@ import { ReplitHealthBadge } from "@/components/abj/ReplitHealthBadge";
 const NAV_LINKS = [
   { href: "/live", label: "Vysílání" },
   { href: "/jasne-zpravy", label: "Jasné zprávy" },
-  { href: "/videos", label: "Context" },
   { href: "/archiv", label: "Přehled dne" },
   { href: "/abj-x", label: "ABJ X" },
   { href: "/program", label: "Program" },
@@ -37,7 +36,6 @@ export function ABJNav() {
 
   const activeHref = useMemo(() => {
     if (pathname.startsWith("/jasne-zpravy")) return "/jasne-zpravy";
-    if (pathname.startsWith("/videos")) return "/videos";
     if (pathname.startsWith("/archiv") || pathname.startsWith("/feed")) return "/archiv";
     if (pathname.startsWith("/abj-x")) return "/abj-x";
     if (pathname.startsWith("/program")) return "/program";
