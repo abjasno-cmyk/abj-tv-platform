@@ -8,9 +8,12 @@ import { useFeed } from "@/hooks/useFeed";
 import type { FeedPost } from "@/lib/api";
 
 const EMPTY_MESSAGE = "Zatím nejsou dostupná žádná nová videa.";
-const CHANNEL_LIMIT = 12;
 const LATEST_VIDEO_LIMIT = 16;
-const FILTERED_VIDEO_LIMIT = 12;
+const CHANNEL_PANEL_VIDEO_LIMIT = 4;
+
+type CountryCode = "CZ" | "SK" | null;
+type ChannelFilter = "ALL" | "CZ" | "SK";
+type VideoAspect = "landscape" | "portrait";
 
 export type ArchivViewData = {
   topForDisplay: FeedVideoView[];
@@ -23,10 +26,22 @@ type FeedVideoView = {
   channel: string;
   published_at: string;
   topics: string[];
-  thumbnail: string;
+  thumbnail: string | null;
   tldr?: string;
   context?: string;
   impact?: string;
+  duration_seconds?: number | null;
+  language?: string | null;
+  country?: string | null;
+  locale?: string | null;
+  channel_logo?: string | null;
+  youtube_url?: string | null;
+  aspect_ratio?: string | null;
+  width?: number | null;
+  height?: number | null;
+  orientation?: string | null;
+  is_short?: boolean | null;
+  format?: string | null;
   freshness: "breaking" | "today" | "week" | "evergreen";
 };
 
@@ -34,6 +49,29 @@ type FeedResponseView = {
   top: FeedVideoView[];
   channels: Record<string, FeedVideoView[]>;
 };
+
+type ChannelSummary = {
+  key: string;
+  name: string;
+  videos: FeedVideoView[];
+  logoUrl: string | null;
+  country: CountryCode;
+  latestPublishedAt: number;
+};
+
+const KNOWN_CHANNEL_COUNTRY_HINTS: Array<{ pattern: RegExp; country: CountryCode }> = [
+  { pattern: /\b(abj|aby bylo jasno|xtv|xaver|vajicko|vajíčko)\b/i, country: "CZ" },
+  { pattern: /\b(infovojna|slobodny vysielac|slobodný vysielač|tv slovan)\b/i, country: "SK" },
+];
+
+const AVATAR_GRADIENTS: Array<[string, string]> = [
+  ["#FF6A00", "#F0983B"],
+  ["#4250A0", "#7C92F1"],
+  ["#0F766E", "#22A6A0"],
+  ["#A16207", "#D79F2A"],
+  ["#6D28D9", "#9F67F3"],
+  ["#BE185D", "#E54886"],
+];
 
 function normalizeText(value: string): string {
   return value
@@ -62,6 +100,40 @@ function deduplicateVideos(videos: FeedVideoView[]): FeedVideoView[] {
   return deduped;
 }
 
+function readString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function readNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
+function readBoolean(value: unknown): boolean | null {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value > 0;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true" || normalized === "1" || normalized === "yes") return true;
+    if (normalized === "false" || normalized === "0" || normalized === "no") return false;
+  }
+  return null;
+}
+
+function pickFirstString(source: Record<string, unknown>, keys: string[]): string | null {
+  for (const key of keys) {
+    const value = readString(source[key]);
+    if (value) return value;
+  }
+  return null;
+}
+
 function parseTimestamp(value: string | null | undefined): number {
   if (!value) return 0;
   const ts = new Date(value).getTime();
@@ -86,6 +158,18 @@ function sortNewest(videos: FeedVideoView[]): FeedVideoView[] {
   return [...videos].sort((a, b) => parseTimestamp(b.published_at) - parseTimestamp(a.published_at));
 }
 
+function formatDurationLabel(value: number | null | undefined): string | null {
+  if (!Number.isFinite(value) || !value || value <= 0) return null;
+  const total = Math.floor(value);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 function videoUniqKey(video: FeedVideoView): string {
   const idKey = video.video_id.trim();
   if (idKey) return idKey;
@@ -104,47 +188,239 @@ function isAbjChannel(channelName: string): boolean {
   return normalized.includes("abj") || normalized.includes("aby bylo jasno");
 }
 
-function makeChannelSlug(channel: string): string {
-  return channel.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+function inferCountryFromLocale(value: string | null | undefined): CountryCode {
+  const normalized = normalizeText(value ?? "");
+  if (!normalized) return null;
+  if (normalized === "cz" || normalized === "cs" || normalized.includes("cs-cz") || normalized.includes("cz-cz")) {
+    return "CZ";
+  }
+  if (normalized === "sk" || normalized === "sk-sk" || normalized.includes("sk")) {
+    return "SK";
+  }
+  return null;
 }
 
-function groupChannelsForDisplay(
-  channels: Record<string, FeedVideoView[]>,
-  limit: number = CHANNEL_LIMIT
-): Array<{ channel: string; videos: FeedVideoView[] }> {
-  return Object.entries(channels)
-    .map(([channel, items]) => ({
-      channel,
-      videos: sortNewest(deduplicateVideos(items)),
-    }))
-    .filter((entry) => entry.videos.length > 0)
-    .sort((a, b) => {
-      const aAbj = isAbjChannel(a.channel);
-      const bAbj = isAbjChannel(b.channel);
-      if (aAbj !== bAbj) return aAbj ? -1 : 1;
+function inferCountryFromName(channelName: string): CountryCode {
+  for (const hint of KNOWN_CHANNEL_COUNTRY_HINTS) {
+    if (hint.pattern.test(channelName)) return hint.country;
+  }
+  const normalized = normalizeText(channelName);
+  if (normalized.includes("slovensko") || normalized.includes("slovak")) return "SK";
+  if (normalized.includes("cesko") || normalized.includes("cesky") || normalized.includes("ceska")) return "CZ";
+  return null;
+}
 
-      if (b.videos.length !== a.videos.length) return b.videos.length - a.videos.length;
+function inferCountryFromVideo(video: FeedVideoView): CountryCode {
+  return (
+    inferCountryFromLocale(video.country) ??
+    inferCountryFromLocale(video.locale) ??
+    inferCountryFromLocale(video.language)
+  );
+}
 
-      const newestA = parseTimestamp(a.videos[0]?.published_at);
-      const newestB = parseTimestamp(b.videos[0]?.published_at);
-      return newestB - newestA;
+function resolveChannelCountry(channelName: string, videos: FeedVideoView[]): CountryCode {
+  let cz = 0;
+  let sk = 0;
+  for (const video of videos) {
+    const inferred = inferCountryFromVideo(video);
+    if (inferred === "CZ") cz += 1;
+    if (inferred === "SK") sk += 1;
+  }
+  if (cz > sk && cz > 0) return "CZ";
+  if (sk > cz && sk > 0) return "SK";
+  return inferCountryFromName(channelName);
+}
+
+function parseAspectRatioValue(rawValue: string): number | null {
+  const cleaned = rawValue.trim().toLowerCase();
+  if (!cleaned) return null;
+  if (cleaned.includes(":")) {
+    const [left, right] = cleaned.split(":").map((value) => Number(value));
+    if (Number.isFinite(left) && Number.isFinite(right) && right > 0) return left / right;
+    return null;
+  }
+  if (cleaned.includes("/")) {
+    const [left, right] = cleaned.split("/").map((value) => Number(value));
+    if (Number.isFinite(left) && Number.isFinite(right) && right > 0) return left / right;
+    return null;
+  }
+  const numeric = Number(cleaned);
+  if (Number.isFinite(numeric) && numeric > 0) return numeric;
+  return null;
+}
+
+function getVideoAspectRatio(video: FeedVideoView): VideoAspect {
+  if (Number.isFinite(video.width) && Number.isFinite(video.height) && (video.height ?? 0) > 0) {
+    return (video.height ?? 0) > (video.width ?? 0) ? "portrait" : "landscape";
+  }
+
+  const parsedAspect = video.aspect_ratio ? parseAspectRatioValue(video.aspect_ratio) : null;
+  if (parsedAspect !== null) return parsedAspect < 1 ? "portrait" : "landscape";
+
+  const orientation = normalizeText(video.orientation ?? "");
+  if (orientation.includes("portrait") || orientation.includes("vertical")) return "portrait";
+  if (orientation.includes("landscape") || orientation.includes("horizontal")) return "landscape";
+
+  if (video.is_short) return "portrait";
+  const formatNormalized = normalizeText(video.format ?? "");
+  if (formatNormalized.includes("short")) return "portrait";
+
+  const textHint = normalizeText(`${video.title} ${video.tldr ?? ""} ${(video.topics ?? []).join(" ")}`);
+  if (textHint.includes("shorts") || textHint.includes("#shorts")) return "portrait";
+
+  return "landscape";
+}
+
+function extractYoutubeVideoId(value: string | null | undefined): string | null {
+  const raw = readString(value);
+  if (!raw) return null;
+  const youtuBe = raw.match(/youtu\.be\/([a-zA-Z0-9_-]{6,})/);
+  if (youtuBe?.[1]) return youtuBe[1];
+  const query = raw.match(/[?&]v=([a-zA-Z0-9_-]{6,})/);
+  if (query?.[1]) return query[1];
+  const shorts = raw.match(/shorts\/([a-zA-Z0-9_-]{6,})/);
+  if (shorts?.[1]) return shorts[1];
+  const embed = raw.match(/embed\/([a-zA-Z0-9_-]{6,})/);
+  if (embed?.[1]) return embed[1];
+  return null;
+}
+
+function getEffectiveVideoId(video: FeedVideoView): string | null {
+  if (video.video_id?.trim()) return video.video_id.trim();
+  return extractYoutubeVideoId(video.youtube_url);
+}
+
+function getYoutubeEmbedUrl(video: FeedVideoView): string | null {
+  const videoId = getEffectiveVideoId(video);
+  if (!videoId) return null;
+  return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?rel=0&modestbranding=1&playsinline=1`;
+}
+
+function getVideoExternalUrl(video: FeedVideoView): string | null {
+  const videoId = getEffectiveVideoId(video);
+  if (videoId) {
+    return `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
+  }
+  const fallback = readString(video.youtube_url);
+  if (fallback && /^https?:\/\//i.test(fallback)) return fallback;
+  return null;
+}
+
+function getChannelInitials(channelName: string): string {
+  const cleaned = channelName
+    .split(/\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (cleaned.length === 0) return "CH";
+  if (cleaned.length === 1) return cleaned[0].slice(0, 2).toUpperCase();
+  return `${cleaned[0].charAt(0)}${cleaned[1].charAt(0)}`.toUpperCase();
+}
+
+function hashString(value: string): number {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(index);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function getChannelAvatarGradient(channelName: string): string {
+  const [left, right] = AVATAR_GRADIENTS[hashString(normalizeText(channelName)) % AVATAR_GRADIENTS.length];
+  return `linear-gradient(135deg, ${left}, ${right})`;
+}
+
+function groupVideosByChannel(videos: FeedVideoView[]): ChannelSummary[] {
+  const grouped = new Map<string, ChannelSummary>();
+  for (const video of videos) {
+    const channelName = video.channel?.trim() || "Neznámý kanál";
+    const key = normalizeText(channelName) || "neznamy-kanal";
+    const existing = grouped.get(key);
+    if (!existing) {
+      grouped.set(key, {
+        key,
+        name: channelName,
+        videos: [video],
+        logoUrl: video.channel_logo ?? null,
+        country: null,
+        latestPublishedAt: parseTimestamp(video.published_at),
+      });
+      continue;
+    }
+
+    existing.videos.push(video);
+    if (!existing.logoUrl && video.channel_logo) {
+      existing.logoUrl = video.channel_logo;
+    }
+    if (channelName.length > existing.name.length) {
+      existing.name = channelName;
+    }
+  }
+
+  return [...grouped.values()]
+    .map((entry) => {
+      const sortedVideos = sortNewest(deduplicateVideos(entry.videos));
+      return {
+        ...entry,
+        videos: sortedVideos,
+        latestPublishedAt: parseTimestamp(sortedVideos[0]?.published_at),
+        country: resolveChannelCountry(entry.name, sortedVideos),
+      };
     })
-    .slice(0, limit);
+    .sort((a, b) => {
+      const aAbj = isAbjChannel(a.name);
+      const bAbj = isAbjChannel(b.name);
+      if (aAbj !== bAbj) return aAbj ? -1 : 1;
+      if (b.videos.length !== a.videos.length) return b.videos.length - a.videos.length;
+      if (b.latestPublishedAt !== a.latestPublishedAt) return b.latestPublishedAt - a.latestPublishedAt;
+      return a.name.localeCompare(b.name, "cs");
+    });
 }
 
 function mapPostToFeedVideo(post: FeedPost): FeedVideoView {
+  const raw = post as FeedPost & Record<string, unknown>;
+  const videoId = readString(post.video_id) ?? "";
+  const fallbackThumbnail = videoId
+    ? `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`
+    : "/placeholder-thumb.jpg";
+
   return {
-    video_id: post.video_id,
+    video_id: videoId,
     title: post.headline?.trim() || post.what?.trim() || "Bez titulku",
     channel: post.channel_name || "Neznámý kanál",
     published_at: post.video_published_at ?? post.created_at,
     topics: post.tags ?? [],
-    thumbnail: post.video_id
-      ? `https://i.ytimg.com/vi/${encodeURIComponent(post.video_id)}/hqdefault.jpg`
-      : "/placeholder-thumb.jpg",
+    thumbnail:
+      pickFirstString(raw, ["thumbnail_url", "thumbnail", "image_url", "image", "preview_url"]) ?? fallbackThumbnail,
     tldr: post.what,
     context: post.why ?? undefined,
     impact: post.impact ?? undefined,
+    duration_seconds:
+      readNumber(raw.duration_seconds) ??
+      readNumber(raw.duration_sec) ??
+      readNumber(raw.duration_s) ??
+      readNumber(raw.length_seconds) ??
+      null,
+    language: readString(post.language),
+    country: pickFirstString(raw, ["country", "channel_country"]),
+    locale: pickFirstString(raw, ["locale", "channel_locale"]),
+    channel_logo: pickFirstString(raw, [
+      "channel_logo",
+      "channel_avatar",
+      "channel_thumbnail",
+      "channel_image",
+      "channel_image_url",
+      "channel_logo_url",
+      "avatar_url",
+      "logo_url",
+    ]),
+    youtube_url: pickFirstString(raw, ["youtube_url", "youtubeUrl", "video_url", "url"]),
+    aspect_ratio: pickFirstString(raw, ["aspect_ratio", "aspectRatio"]),
+    width: readNumber(raw.width),
+    height: readNumber(raw.height),
+    orientation: pickFirstString(raw, ["orientation", "video_orientation"]),
+    is_short: readBoolean(raw.is_short) ?? readBoolean(raw.isShort),
+    format: pickFirstString(raw, ["format", "video_format"]),
     freshness: post.freshness,
   };
 }
@@ -176,22 +452,44 @@ type ArchiveVideoCardProps = {
 };
 
 function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: ArchiveVideoCardProps) {
-  const href = `/live?videoId=${encodeURIComponent(video.video_id)}`;
+  const videoId = getEffectiveVideoId(video);
+  const internalHref = videoId ? `/live?videoId=${encodeURIComponent(videoId)}` : null;
+  const externalHref = getVideoExternalUrl(video);
+  const href = internalHref ?? externalHref ?? "#";
+  const isExternal = !internalHref && Boolean(externalHref);
+  const isDisabled = href === "#";
   const publishedLabel = formatPublishedLabel(video.published_at);
-  const thumbnailSrc = video.thumbnail?.trim() ? video.thumbnail : "/placeholder-thumb.jpg";
+  const thumbnailSrc = readString(video.thumbnail) ?? "/placeholder-thumb.jpg";
   const isHero = variant === "hero";
   const isFeatured = variant === "featured";
+  const durationLabel = formatDurationLabel(video.duration_seconds);
+  const aspect = getVideoAspectRatio(video);
+  const isPortrait = aspect === "portrait";
+  const mediaRatioClass = isPortrait
+    ? isHero
+      ? "mx-auto aspect-[9/16] max-h-[70vh] max-w-[360px]"
+      : "aspect-[9/16]"
+    : "aspect-video";
 
   return (
     <Link
       href={href}
+      target={isExternal ? "_blank" : undefined}
+      rel={isExternal ? "noreferrer" : undefined}
+      onClick={
+        isDisabled
+          ? (event) => {
+              event.preventDefault();
+            }
+          : undefined
+      }
       className={`group block overflow-hidden rounded-2xl border bg-white transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6A00]/60 ${
         accent
           ? "border-[#FF6A00]/35 shadow-[0_8px_24px_rgba(255,106,0,0.12)] hover:border-[#FF6A00]/55"
           : "border-[var(--abj-gold-dim)] shadow-[0_8px_22px_rgba(17,17,17,0.08)] hover:border-[rgba(17,17,17,0.28)]"
-      } hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(17,17,17,0.12)]`}
+      } ${isDisabled ? "cursor-default opacity-70" : "hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(17,17,17,0.12)]"}`}
     >
-      <div className="relative aspect-video overflow-hidden bg-[#F2F2F2]">
+      <div className={`relative overflow-hidden bg-[#F2F2F2] ${mediaRatioClass}`}>
         <Image
           src={thumbnailSrc}
           alt={video.title}
@@ -205,11 +503,16 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: A
                 ? "(max-width: 1024px) 100vw, 33vw"
                 : "(max-width: 768px) 100vw, (max-width: 1400px) 33vw, 25vw"
           }
-          unoptimized={Boolean(video.thumbnail)}
+          unoptimized={thumbnailSrc.startsWith("http")}
         />
         {tag ? (
           <span className="absolute left-2 top-2 rounded-full border border-[#FF6A00]/35 bg-white/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#C14900]">
             {tag}
+          </span>
+        ) : null}
+        {durationLabel ? (
+          <span className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-[10px] font-medium text-white">
+            {durationLabel}
           </span>
         ) : null}
         {isHero ? (
@@ -251,6 +554,55 @@ function VideoCardSkeleton({ variant = "compact" }: { variant?: "hero" | "featur
         </div>
       ) : null}
     </div>
+  );
+}
+
+function CountryBadge({ country }: { country: CountryCode }) {
+  if (!country) return null;
+  const flagGradient =
+    country === "CZ"
+      ? "linear-gradient(135deg, #11457E 0%, #11457E 38%, #FFFFFF 38%, #FFFFFF 70%, #D7141A 70%)"
+      : "linear-gradient(135deg, #0B4EA2 0%, #0B4EA2 25%, #FFFFFF 25%, #FFFFFF 62%, #EE1C25 62%)";
+
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-[rgba(17,17,17,0.16)] bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-abj-text2">
+      <span
+        className="inline-block h-[10px] w-[14px] rounded-[2px] border border-[rgba(17,17,17,0.1)]"
+        style={{ backgroundImage: flagGradient }}
+        aria-hidden="true"
+      />
+      {country}
+    </span>
+  );
+}
+
+function ChannelAvatar({ channelName, logoUrl, size = "md" }: { channelName: string; logoUrl: string | null; size?: "sm" | "md" }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const sizeClass = size === "sm" ? "h-9 w-9 text-xs" : "h-11 w-11 text-sm";
+  const initials = getChannelInitials(channelName);
+  const shouldRenderImage = Boolean(logoUrl) && !imageFailed;
+
+  return (
+    <span className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full ${sizeClass}`}>
+      {shouldRenderImage ? (
+        <Image
+          src={logoUrl!}
+          alt={`${channelName} logo`}
+          fill
+          className="object-cover"
+          onError={() => setImageFailed(true)}
+          unoptimized
+        />
+      ) : (
+        <span
+          className="inline-flex h-full w-full items-center justify-center font-semibold text-white"
+          style={{ backgroundImage: getChannelAvatarGradient(channelName) }}
+          aria-label={channelName}
+        >
+          {initials}
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -305,35 +657,91 @@ function FeaturedAbjSection({ primary, secondary, loading }: FeaturedAbjSectionP
 }
 
 type ChannelTilesProps = {
-  channels: Array<{ channel: string; videos: FeedVideoView[] }>;
-  selectedChannel: string | null;
-  onSelect: (channel: string) => void;
+  channels: ChannelSummary[];
+  filteredChannels: ChannelSummary[];
+  selectedChannelKey: string | null;
+  onSelect: (channelKey: string) => void;
+  query: string;
+  onQueryChange: (value: string) => void;
+  filter: ChannelFilter;
+  onFilterChange: (filter: ChannelFilter) => void;
   loading: boolean;
 };
 
-function ChannelTiles({ channels, selectedChannel, onSelect, loading }: ChannelTilesProps) {
+function ChannelTiles({
+  channels,
+  filteredChannels,
+  selectedChannelKey,
+  onSelect,
+  query,
+  onQueryChange,
+  filter,
+  onFilterChange,
+  loading,
+}: ChannelTilesProps) {
   if (channels.length === 0 && !loading) return null;
+  const showSearch = channels.length >= 10;
+  const showCountryFilters = channels.some((entry) => entry.country === "CZ" || entry.country === "SK");
 
   return (
     <section className="space-y-3">
       <div className="space-y-1">
         <h2 className="text-xl font-semibold text-abj-text1">Kanály</h2>
-        <p className="text-sm text-abj-text2">Vyberte kanál pro rychlý přehled nově publikovaných videí.</p>
+        <p className="text-sm text-abj-text2">Přehled všech načtených kanálů a rychlý vstup do posledních videí.</p>
       </div>
 
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-        {channels.length > 0
-          ? channels.map((entry) => {
-              const active = selectedChannel === entry.channel;
-              const isAbj = isAbjChannel(entry.channel);
-              const newestLabel = formatPublishedLabel(entry.videos[0]?.published_at);
-              const initial = entry.channel.trim().charAt(0).toUpperCase() || "•";
+      {showSearch ? (
+        <div className="flex flex-col gap-2 rounded-xl border border-[var(--abj-gold-dim)] bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:max-w-xs">
+            <input
+              type="text"
+              value={query}
+              onChange={(event) => onQueryChange(event.target.value)}
+              placeholder="Hledat kanál..."
+              className="w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2 text-sm text-abj-text1 outline-none transition focus:border-[#FF6A00]/65 focus:ring-2 focus:ring-[#FF6A00]/25"
+            />
+          </div>
+          {showCountryFilters ? (
+            <div className="flex items-center gap-2">
+              {(["ALL", "CZ", "SK"] as const).map((entry) => {
+                const active = filter === entry;
+                const label = entry === "ALL" ? "Vše" : entry;
+                return (
+                  <button
+                    key={`country-filter-${entry}`}
+                    type="button"
+                    onClick={() => onFilterChange(entry)}
+                    className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] transition ${
+                      active
+                        ? "border-[#FF6A00]/55 bg-[rgba(255,106,0,0.1)] text-[#C14900]"
+                        : "border-[var(--abj-gold-dim)] bg-white text-abj-text2 hover:text-abj-text1"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
+      <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.08em] text-abj-text2">
+        <span>Zobrazeno {filteredChannels.length}</span>
+        <span>Celkem {channels.length} kanálů</span>
+      </div>
+
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+        {filteredChannels.length > 0
+          ? filteredChannels.map((entry) => {
+              const active = selectedChannelKey === entry.key;
+              const isAbj = isAbjChannel(entry.name);
+              const newestLabel = formatPublishedLabel(entry.videos[0]?.published_at);
               return (
                 <button
-                  key={`channel-tile-${makeChannelSlug(entry.channel)}`}
+                  key={`channel-tile-${entry.key}`}
                   type="button"
-                  onClick={() => onSelect(entry.channel)}
+                  onClick={() => onSelect(entry.key)}
                   className={`min-w-[190px] rounded-xl border px-3 py-2 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6A00]/60 sm:min-w-0 ${
                     active
                       ? "border-[#FF6A00]/55 bg-[rgba(255,106,0,0.08)] shadow-[0_8px_20px_rgba(255,106,0,0.12)]"
@@ -344,23 +752,20 @@ function ChannelTiles({ channels, selectedChannel, onSelect, loading }: ChannelT
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2.5">
-                      <span
-                        className={`inline-flex h-7 w-7 flex-none items-center justify-center rounded-full text-xs font-semibold ${
-                          isAbj ? "bg-[#FF6A00]/14 text-[#C14900]" : "bg-[rgba(17,17,17,0.08)] text-abj-text2"
-                        }`}
-                      >
-                        {initial}
-                      </span>
+                      <ChannelAvatar channelName={entry.name} logoUrl={entry.logoUrl} size="sm" />
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-abj-text1">{entry.channel}</p>
+                        <p className="truncate text-sm font-semibold text-abj-text1">{entry.name}</p>
                         <p className="text-[11px] uppercase tracking-[0.08em] text-abj-text2">{entry.videos.length} videí</p>
                       </div>
                     </div>
-                    {isAbj ? (
-                      <span className="rounded-full bg-[#FF6A00]/14 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#C14900]">
-                        Hlavní kanál
-                      </span>
-                    ) : null}
+                    <div className="flex flex-col items-end gap-1">
+                      <CountryBadge country={entry.country} />
+                      {isAbj ? (
+                        <span className="rounded-full bg-[#FF6A00]/14 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#C14900]">
+                          Hlavní kanál
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
                   <p className="mt-2 text-[11px] text-abj-text3">{newestLabel ? `Poslední: ${newestLabel}` : "Nově přidáno"}</p>
                 </button>
@@ -376,6 +781,11 @@ function ChannelTiles({ channels, selectedChannel, onSelect, loading }: ChannelT
               </div>
             ))}
       </div>
+      {!loading && filteredChannels.length === 0 ? (
+        <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-white p-4 text-sm text-abj-text2">
+          Pro zadaný filtr nebyly nalezeny žádné kanály.
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -411,35 +821,182 @@ function VideoGrid({ title, subtitle, videos, loading, emptyMessage }: VideoGrid
   );
 }
 
-type ChannelFilteredSectionProps = {
-  selectedChannel: string | null;
-  videos: FeedVideoView[];
-  loading: boolean;
-};
+function ChannelVideoPlayer({ video }: { video: FeedVideoView }) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const embedUrl = getYoutubeEmbedUrl(video);
+  const fallbackUrl = getVideoExternalUrl(video);
+  const aspect = getVideoAspectRatio(video);
+  const isPortrait = aspect === "portrait";
+  const publishedLabel = formatPublishedLabel(video.published_at);
 
-function ChannelFilteredSection({ selectedChannel, videos, loading }: ChannelFilteredSectionProps) {
-  if (!selectedChannel && !loading) return null;
+  if (!embedUrl) {
+    return (
+      <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-white p-4">
+        <p className="text-sm text-abj-text2">Video nelze vložit do přehrávače.</p>
+        {fallbackUrl ? (
+          <a
+            href={fallbackUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex rounded-lg border border-[#FF6A00]/45 bg-[rgba(255,106,0,0.08)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[#C14900]"
+          >
+            Otevřít na YouTube
+          </a>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
-    <section className="space-y-4">
-      <div className="space-y-1">
-        <h2 className="text-xl font-semibold text-abj-text1">Podle kanálu</h2>
-        <p className="text-sm text-abj-text2">
-          {selectedChannel ? `Aktuálně vybraný kanál: ${selectedChannel}` : "Vyberte kanál pro filtrovaný výpis."}
-        </p>
+    <div className="space-y-3">
+      <div
+        className={`relative overflow-hidden rounded-xl border border-[var(--abj-gold-dim)] bg-black ${
+          isPortrait ? "mx-auto aspect-[9/16] w-full max-w-[380px] max-h-[70vh]" : "aspect-video w-full"
+        }`}
+      >
+        {!error ? (
+          <iframe
+            title={video.title}
+            src={embedUrl}
+            className="h-full w-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            onLoad={() => setLoading(false)}
+            onError={() => {
+              setError(true);
+              setLoading(false);
+            }}
+            loading="lazy"
+          />
+        ) : null}
+        {loading ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/55 text-xs uppercase tracking-[0.08em] text-white/85">
+            Načítám přehrávač...
+          </div>
+        ) : null}
+        {error ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70 p-4 text-center text-sm text-white/90">
+            <p>Přehrávač se nepodařilo načíst.</p>
+            {fallbackUrl ? (
+              <a
+                href={fallbackUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-lg border border-white/40 px-3 py-1.5 text-xs uppercase tracking-[0.08em] text-white"
+              >
+                Otevřít na YouTube
+              </a>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
-      {videos.length === 0 && !loading ? (
-        <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-white p-5 text-sm text-abj-text2">
-          Pro vybraný kanál zatím nejsou novější videa.
+      <div className="space-y-1">
+        <p className="line-clamp-2 text-sm font-semibold text-abj-text1">{video.title}</p>
+        <p className="text-xs text-abj-text2">
+          {video.channel}
+          {publishedLabel ? ` · ${publishedLabel}` : ""}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+type ChannelDetailPanelProps = {
+  channel: ChannelSummary | null;
+  selectedVideo: FeedVideoView | null;
+  open: boolean;
+  loading: boolean;
+  onClose: () => void;
+  onSelectVideo: (videoKey: string) => void;
+};
+
+function ChannelDetailPanel({ channel, selectedVideo, open, loading, onClose, onSelectVideo }: ChannelDetailPanelProps) {
+  if (!open) return null;
+
+  if (!channel) {
+    return (
+      <section className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-5">
+        <p className="text-sm text-abj-text2">{loading ? "Načítám data kanálu..." : "Vyberte kanál pro zobrazení detailu."}</p>
+      </section>
+    );
+  }
+
+  const videos = channel.videos.slice(0, CHANNEL_PANEL_VIDEO_LIMIT);
+  const activeVideo = selectedVideo ?? videos[0] ?? null;
+  const activeVideoKey = activeVideo ? videoUniqKey(activeVideo) : null;
+
+  return (
+    <section className="space-y-4 rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-4 sm:p-5">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <ChannelAvatar channelName={channel.name} logoUrl={channel.logoUrl} />
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-abj-text1">{channel.name}</h3>
+              <CountryBadge country={channel.country} />
+            </div>
+            <p className="text-xs uppercase tracking-[0.08em] text-abj-text2">{channel.videos.length} načtených videí</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-lg border border-[var(--abj-gold-dim)] px-3 py-1.5 text-xs uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6A00]/50"
+        >
+          Zavřít panel
+        </button>
+      </header>
+
+      {videos.length === 0 ? (
+        <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-[rgba(17,17,17,0.03)] p-5 text-sm text-abj-text2">
+          Pro tento kanál zatím nejsou dostupná poslední videa.
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-          {videos.length > 0
-            ? videos.map((video) => (
-                <ArchiveVideoCard key={`channel-grid-${videoUniqKey(video)}`} video={video} variant="compact" accent={isAbjChannel(video.channel)} />
-              ))
-            : [0, 1, 2, 3].map((slot) => <VideoCardSkeleton key={`channel-grid-skeleton-${slot}`} />)}
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
+          <div>{activeVideo ? <ChannelVideoPlayer key={`channel-player-${videoUniqKey(activeVideo)}`} video={activeVideo} /> : null}</div>
+          <div className="space-y-2">
+            {videos.map((video) => {
+              const key = videoUniqKey(video);
+              const active = activeVideoKey === key;
+              const publishedLabel = formatPublishedLabel(video.published_at);
+              const aspect = getVideoAspectRatio(video);
+              const thumbnail = readString(video.thumbnail) ?? "/placeholder-thumb.jpg";
+              const canPlay = Boolean(getYoutubeEmbedUrl(video) || getVideoExternalUrl(video));
+
+              return (
+                <button
+                  key={`channel-video-${key}`}
+                  type="button"
+                  onClick={() => onSelectVideo(key)}
+                  className={`w-full rounded-xl border p-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6A00]/55 ${
+                    active
+                      ? "border-[#FF6A00]/55 bg-[rgba(255,106,0,0.08)]"
+                      : "border-[var(--abj-gold-dim)] bg-white hover:border-[rgba(17,17,17,0.26)]"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`relative shrink-0 overflow-hidden rounded-lg bg-[rgba(17,17,17,0.08)] ${
+                        aspect === "portrait" ? "h-24 w-[54px]" : "h-16 w-28"
+                      }`}
+                    >
+                      <Image src={thumbnail} alt={video.title} fill className="object-cover" unoptimized={thumbnail.startsWith("http")} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 text-sm font-medium text-abj-text1">{video.title}</p>
+                      <p className="mt-1 text-[11px] text-abj-text2">{publishedLabel ?? "Datum neuvedeno"}</p>
+                      {video.tldr ? <p className="mt-1 line-clamp-1 text-[11px] text-abj-text3">{video.tldr}</p> : null}
+                      {!canPlay ? (
+                        <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[#C14900]">Pouze odkaz</p>
+                      ) : null}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </section>
@@ -448,7 +1005,11 @@ function ChannelFilteredSection({ selectedChannel, videos, loading }: ChannelFil
 
 export function ArchivClient({ initialData }: ArchivClientProps) {
   const { posts, loading, hasMore, loadMore } = useFeed();
-  const [userSelectedChannel, setUserSelectedChannel] = useState<string | null>(null);
+  const [userSelectedChannelKey, setUserSelectedChannelKey] = useState<string | null>(null);
+  const [userSelectedVideoKey, setUserSelectedVideoKey] = useState<string | null>(null);
+  const [channelPanelOpen, setChannelPanelOpen] = useState(false);
+  const [channelQuery, setChannelQuery] = useState("");
+  const [channelFilter, setChannelFilter] = useState<ChannelFilter>("ALL");
 
   const currentPayload = useMemo<FeedResponseView>(
     () => ({
@@ -477,11 +1038,11 @@ export function ArchivClient({ initialData }: ArchivClientProps) {
 
   const mergedPayload = useMemo(() => mergePayload(currentPayload, incomingPayload), [currentPayload, incomingPayload]);
 
-  const allVideos = useMemo(() => sortNewest(deduplicateVideos(mergedPayload.top)), [mergedPayload.top]);
-  const channels = useMemo(
-    () => groupChannelsForDisplay(mergedPayload.channels, CHANNEL_LIMIT),
-    [mergedPayload.channels]
-  );
+  const allVideos = useMemo(() => {
+    const videosFromChannels = Object.values(mergedPayload.channels).flat();
+    return sortNewest(deduplicateVideos([...mergedPayload.top, ...videosFromChannels]));
+  }, [mergedPayload]);
+  const channels = useMemo(() => groupVideosByChannel(allVideos), [allVideos]);
   const hasAnyContent = allVideos.length > 0;
   const isInitialLoading = loading && !hasAnyContent;
 
@@ -503,29 +1064,37 @@ export function ArchivClient({ initialData }: ArchivClientProps) {
     return { primary, secondary };
   }, [allVideos]);
 
-  const selectedChannel = useMemo(() => {
+  const selectedChannel = useMemo<ChannelSummary | null>(() => {
     if (channels.length === 0) return null;
-    if (userSelectedChannel && channels.some((entry) => entry.channel === userSelectedChannel)) {
-      return userSelectedChannel;
+    if (userSelectedChannelKey) {
+      const selected = channels.find((entry) => entry.key === userSelectedChannelKey);
+      if (selected) return selected;
     }
-    const preferred = channels.find((entry) => isAbjChannel(entry.channel));
-    return preferred?.channel ?? channels[0].channel;
-  }, [channels, userSelectedChannel]);
+    return channels[0];
+  }, [channels, userSelectedChannelKey]);
 
   const latestVideos = useMemo(() => allVideos.slice(0, LATEST_VIDEO_LIMIT), [allVideos]);
+  const filteredChannels = useMemo(() => {
+    const query = normalizeText(channelQuery);
+    return channels.filter((entry) => {
+      if (channelFilter !== "ALL" && entry.country !== channelFilter) return false;
+      if (!query) return true;
+      return normalizeText(entry.name).includes(query);
+    });
+  }, [channels, channelFilter, channelQuery]);
 
-  const channelFilteredVideos = useMemo(() => {
-    if (!selectedChannel) return [];
-    const normalizedSelected = normalizeText(selectedChannel);
-    return allVideos
-      .filter((video) => normalizeText(video.channel) === normalizedSelected)
-      .slice(0, FILTERED_VIDEO_LIMIT);
-  }, [allVideos, selectedChannel]);
-
-  const selectedChannelCount = useMemo(() => {
-    if (!selectedChannel) return 0;
-    return allVideos.filter((video) => normalizeText(video.channel) === normalizeText(selectedChannel)).length;
-  }, [allVideos, selectedChannel]);
+  const selectedChannelPanelVideos = useMemo(
+    () => (selectedChannel ? selectedChannel.videos.slice(0, CHANNEL_PANEL_VIDEO_LIMIT) : []),
+    [selectedChannel]
+  );
+  const selectedChannelPanelVideo = useMemo(() => {
+    if (selectedChannelPanelVideos.length === 0) return null;
+    if (userSelectedVideoKey) {
+      const matched = selectedChannelPanelVideos.find((video) => videoUniqKey(video) === userSelectedVideoKey);
+      if (matched) return matched;
+    }
+    return selectedChannelPanelVideos[0];
+  }, [selectedChannelPanelVideos, userSelectedVideoKey]);
 
   return (
     <section className="mx-auto w-full max-w-[1280px] space-y-10 px-4 py-6 sm:px-6 lg:space-y-12">
@@ -547,9 +1116,27 @@ export function ArchivClient({ initialData }: ArchivClientProps) {
 
       <ChannelTiles
         channels={channels}
-        selectedChannel={selectedChannel}
-        onSelect={setUserSelectedChannel}
+        filteredChannels={filteredChannels}
+        selectedChannelKey={selectedChannel?.key ?? null}
+        onSelect={(channelKey) => {
+          setUserSelectedChannelKey(channelKey);
+          setUserSelectedVideoKey(null);
+          setChannelPanelOpen(true);
+        }}
+        query={channelQuery}
+        onQueryChange={setChannelQuery}
+        filter={channelFilter}
+        onFilterChange={setChannelFilter}
         loading={isInitialLoading}
+      />
+
+      <ChannelDetailPanel
+        channel={selectedChannel}
+        selectedVideo={selectedChannelPanelVideo}
+        open={channelPanelOpen}
+        loading={isInitialLoading}
+        onClose={() => setChannelPanelOpen(false)}
+        onSelectVideo={setUserSelectedVideoKey}
       />
 
       <VideoGrid
@@ -559,14 +1146,6 @@ export function ArchivClient({ initialData }: ArchivClientProps) {
         loading={isInitialLoading}
         emptyMessage={EMPTY_MESSAGE}
       />
-
-      <ChannelFilteredSection selectedChannel={selectedChannel} videos={channelFilteredVideos} loading={isInitialLoading} />
-
-      {selectedChannel ? (
-        <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-white px-3 py-2 text-xs uppercase tracking-[0.08em] text-abj-text2">
-          Kanál <span className="font-semibold text-abj-text1">{selectedChannel}</span> · {selectedChannelCount} videí
-        </div>
-      ) : null}
 
       {hasMore ? (
         <div className="flex justify-center">
