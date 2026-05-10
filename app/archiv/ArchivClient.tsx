@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useFeed } from "@/hooks/useFeed";
 import type { FeedPost } from "@/lib/api";
@@ -448,7 +448,7 @@ function ChannelFilteredSection({ selectedChannel, videos, loading }: ChannelFil
 
 export function ArchivClient({ initialData }: ArchivClientProps) {
   const { posts, loading, hasMore, loadMore } = useFeed();
-  const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
+  const [userSelectedChannel, setUserSelectedChannel] = useState<string | null>(null);
 
   const currentPayload = useMemo<FeedResponseView>(
     () => ({
@@ -503,18 +503,14 @@ export function ArchivClient({ initialData }: ArchivClientProps) {
     return { primary, secondary };
   }, [allVideos]);
 
-  useEffect(() => {
-    if (channels.length === 0) {
-      setSelectedChannel(null);
-      return;
+  const selectedChannel = useMemo(() => {
+    if (channels.length === 0) return null;
+    if (userSelectedChannel && channels.some((entry) => entry.channel === userSelectedChannel)) {
+      return userSelectedChannel;
     }
-
-    setSelectedChannel((prev) => {
-      if (prev && channels.some((entry) => entry.channel === prev)) return prev;
-      const preferred = channels.find((entry) => isAbjChannel(entry.channel));
-      return preferred?.channel ?? channels[0].channel;
-    });
-  }, [channels]);
+    const preferred = channels.find((entry) => isAbjChannel(entry.channel));
+    return preferred?.channel ?? channels[0].channel;
+  }, [channels, userSelectedChannel]);
 
   const latestVideos = useMemo(() => allVideos.slice(0, LATEST_VIDEO_LIMIT), [allVideos]);
 
@@ -552,7 +548,7 @@ export function ArchivClient({ initialData }: ArchivClientProps) {
       <ChannelTiles
         channels={channels}
         selectedChannel={selectedChannel}
-        onSelect={setSelectedChannel}
+        onSelect={setUserSelectedChannel}
         loading={isInitialLoading}
       />
 
