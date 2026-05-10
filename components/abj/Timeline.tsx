@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { DayProgram, ProgramItem } from "@/lib/epg-types";
 
@@ -104,6 +104,9 @@ export function Timeline({ days, onSelect }: TimelineProps) {
   });
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
+  const timelineScrollRef = useRef<HTMLDivElement | null>(null);
+  const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const autoScrolledDayRef = useRef<string | null>(null);
 
   const activeDay = days[activeDayIndex] ?? days[0];
   const items = useMemo(() => activeDay?.items ?? [], [activeDay]);
@@ -116,6 +119,25 @@ export function Timeline({ days, onSelect }: TimelineProps) {
     }, 30_000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    autoScrolledDayRef.current = null;
+  }, [activeDay?.date]);
+
+  useEffect(() => {
+    if (!activeDay?.date || !currentSlot) return;
+    if (autoScrolledDayRef.current === activeDay.date) return;
+    const container = timelineScrollRef.current;
+    const target = itemRefs.current[currentSlot.key];
+    if (!container || !target) return;
+
+    const targetLeft = target.offsetLeft - container.clientWidth / 2 + target.clientWidth / 2;
+    container.scrollTo({
+      left: Math.max(0, targetLeft),
+      behavior: "smooth",
+    });
+    autoScrolledDayRef.current = activeDay.date;
+  }, [activeDay?.date, currentSlot]);
 
   return (
     <section className="rounded-[26px] border border-abj-goldDim bg-abj-panel px-5 py-4 shadow-[0_12px_28px_rgba(17,17,17,0.06)]">
@@ -152,7 +174,10 @@ export function Timeline({ days, onSelect }: TimelineProps) {
         })}
       </div>
 
-      <div className="abj-dot-grid -mx-1 overflow-x-auto rounded-2xl border border-[rgba(17,17,17,0.11)] bg-white p-3">
+      <div
+        ref={timelineScrollRef}
+        className="abj-dot-grid -mx-1 overflow-x-auto rounded-2xl border border-[rgba(17,17,17,0.11)] bg-white p-3"
+      >
         <div className="flex min-w-max gap-3">
           {items.length === 0 ? (
             <p className="px-2 py-4 text-sm text-abj-text2">Program se připravuje.</p>
@@ -165,6 +190,9 @@ export function Timeline({ days, onSelect }: TimelineProps) {
                 <button
                   key={key}
                   type="button"
+                  ref={(node) => {
+                    itemRefs.current[key] = node;
+                  }}
                   onClick={() => {
                     setSelectedKey(key);
                     onSelect(item);
