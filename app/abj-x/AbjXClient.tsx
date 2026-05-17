@@ -1,10 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useFeed } from "@/hooks/useFeed";
-import { likePost, trackView, type FeedPost } from "@/lib/api";
+import {
+  createAbjXComment,
+  fetchAbjXComments,
+  fetchAbjXStats,
+  likePost,
+  sendAbjXReaction,
+  sendAbjXShare,
+  trackView,
+  type AbjXComment,
+  type AbjXSocialStats,
+  type FeedPost,
+} from "@/lib/api";
 
 type FeedItem = {
   id: string;
@@ -22,10 +33,11 @@ type FeedItem = {
   commentCount: number;
 };
 
-type WallComment = {
-  id: string;
-  body: string;
-  createdAt: string;
+const EMPTY_STATS: AbjXSocialStats = {
+  reactionCount: 0,
+  commentCount: 0,
+  shareCount: 0,
+  reactedByMe: false,
 };
 
 function getPostTimestamp(post: FeedPost): number {
@@ -105,15 +117,65 @@ function formatWallCommentAt(value: string): string {
   }).format(date);
 }
 
+function buildSessionId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `abjx-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 export function AbjXClient() {
   const { posts, loading, hasMore, loadMore } = useFeed();
   const router = useRouter();
   const items = useMemo(() => toItems(posts), [posts]);
-  const [likedByPost, setLikedByPost] = useState<Record<string, boolean>>({});
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [socialByPost, setSocialByPost] = useState<Record<string, AbjXSocialStats>>({});
+  const [reactingByPost, setReactingByPost] = useState<Record<string, boolean>>({});
   const [shareHintByPost, setShareHintByPost] = useState<Record<string, string>>({});
   const [wallOpenByPost, setWallOpenByPost] = useState<Record<string, boolean>>({});
   const [wallDraftByPost, setWallDraftByPost] = useState<Record<string, string>>({});
-  const [wallCommentsByPost, setWallCommentsByPost] = useState<Record<string, WallComment[]>>({});
+  const [wallCommentsByPost, setWallCommentsByPost] = useState<Record<string, AbjXComment[]>>({});
+  const [wallLoadingByPost, setWallLoadingByPost] = useState<Record<string, boolean>>({});
+  const [wallErrorByPost, setWallErrorByPost] = useState<Record<string, string>>({});
+  const [wallSubmittingByPost, setWallSubmittingByPost] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const key = "abjx_session_id";
+    let resolved = window.localStorage.getItem(key);
+    if (!resolved) {
+      resolved = buildSessionId();
+      window.localStorage.setItem(key, resolved);
+    }
+    setSessionId(resolved);
+  }, []);
+
+  useEffect(() => {
+    const postIds = items.map((item) => item.id).filter((id) => id.length > 0);
+    if (postIds.length === 0) {
+      setSocialByPost({});
+      return;
+    }
+
+    let cancelled = false;
+    void fetchAbjXStats({
+      postIds,
+      sessionId,
+    }).then((stats) => {
+      if (cancelled || !stats) return;
+      setSocialByPost((prev) => {
+        const next: Record<string, AbjXSocialStats> = {};
+        for (const postId of postIds) {
+          next[postId] = stats[postId] ?? prev[postId] ?? EMPTY_STATS;
+        }
+        return next;
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [items, sessionId]);
 
   const navigateToVideo = (item: FeedItem) => {
     if (!item.videoId) return;
@@ -121,19 +183,65 @@ export function AbjXClient() {
     router.push(`/live?videoId=${encodeURIComponent(item.videoId)}`);
   };
 
+  const loadWallComments = async (postId: string) => {
+    if (!postId || wallLoadingByPost[postId]) return;
+    setWallLoadingByPost((prev) => ({ ...prev, [postId]: true }));
+    setWallErrorByPost((prev) => ({ ...prev, [postId]: "" }));
+    const comments = await fetchAbjXComments(postId);
+    if (!comments) {
+      setWallErrorByPost((prev) => ({ ...prev, [postId]: "Komentáře se nepodařilo načíst." }));
+      setWallLoadingByPost((prev) => ({ ...prev, [postId]: false }));
+      return;
+    }
+    setWallCommentsByPost((prev) => ({ ...prev, [postId]: comments }));
+    setWallLoadingByPost((prev) => ({ ...prev, [postId]: false }));
+  };
+
   const handleReact = async (item: FeedItem) => {
-    if (!item.id) return;
-    const alreadyReacted = Boolean(likedByPost[item.id]);
-    if (alreadyReacted) {
-      setLikedByPost((prev) => ({ ...prev, [item.id]: false }));
+    if (!item.id || !item.videoId || !sessionId || reactingByPost[item.id]) return;
+    const current = socialByPost[item.id] ?? EMPTY_STATS;
+    if (current.reactedByMe) {
       return;
     }
 
-    setLikedByPost((prev) => ({ ...prev, [item.id]: true }));
-    const ok = await likePost(item.id);
-    if (!ok) {
-      setLikedByPost((prev) => ({ ...prev, [item.id]: false }));
+    setReactingByPost((prev) => ({ ...prev, [item.id]: true }));
+    const persisted = await sendAbjXReaction({
+      postId: item.id,
+      videoId: item.videoId,
+      sessionId,
+    });
+    if (persisted) {
+      setSocialByPost((prev) => {
+        const base = prev[item.id] ?? EMPTY_STATS;
+        return {
+          ...prev,
+          [item.id]: {
+            ...base,
+            reactionCount: persisted.reactionCount,
+            reactedByMe: true,
+          },
+        };
+      });
+      if (persisted.reactedNow) {
+        void likePost(item.id);
+      }
+    } else {
+      const ok = await likePost(item.id);
+      if (ok) {
+        setSocialByPost((prev) => {
+          const base = prev[item.id] ?? EMPTY_STATS;
+          return {
+            ...prev,
+            [item.id]: {
+              ...base,
+              reactionCount: base.reactionCount + 1,
+              reactedByMe: true,
+            },
+          };
+        });
+      }
     }
+    setReactingByPost((prev) => ({ ...prev, [item.id]: false }));
   };
 
   const handleShare = async (item: FeedItem) => {
@@ -141,6 +249,7 @@ export function AbjXClient() {
     const url = `${window.location.origin}/live?videoId=${encodeURIComponent(item.videoId)}`;
     const text = `${item.headline}\n${url}`;
 
+    let sharePerformed = false;
     try {
       if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
         await navigator.share({
@@ -149,31 +258,94 @@ export function AbjXClient() {
           url,
         });
         setShareHintByPost((prev) => ({ ...prev, [item.id]: "Sdíleno." }));
+        sharePerformed = true;
       } else if (navigator?.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
         setShareHintByPost((prev) => ({ ...prev, [item.id]: "Odkaz zkopírován." }));
+        sharePerformed = true;
       } else {
         setShareHintByPost((prev) => ({ ...prev, [item.id]: "Sdílení není v tomto prohlížeči dostupné." }));
       }
     } catch {
       setShareHintByPost((prev) => ({ ...prev, [item.id]: "Sdílení bylo zrušeno." }));
     }
+
+    if (!sharePerformed) return;
+    const persisted = await sendAbjXShare({
+      postId: item.id,
+      videoId: item.videoId,
+      sessionId,
+    });
+    if (!persisted) return;
+    setSocialByPost((prev) => {
+      const base = prev[item.id] ?? EMPTY_STATS;
+      return {
+        ...prev,
+        [item.id]: {
+          ...base,
+          shareCount: persisted.shareCount,
+        },
+      };
+    });
   };
 
-  const addWallComment = (itemId: string) => {
-    const nextText = wallDraftByPost[itemId]?.trim();
+  const addWallComment = async (item: FeedItem) => {
+    const nextText = wallDraftByPost[item.id]?.trim();
     if (!nextText) return;
-    const nextComment: WallComment = {
-      id: `${itemId}-${Date.now()}`,
+    setWallSubmittingByPost((prev) => ({ ...prev, [item.id]: true }));
+
+    const created = await createAbjXComment({
+      postId: item.id,
+      videoId: item.videoId,
       body: nextText,
-      createdAt: new Date().toISOString(),
-    };
-    setWallCommentsByPost((prev) => ({
-      ...prev,
-      [itemId]: [...(prev[itemId] ?? []), nextComment].slice(-20),
-    }));
-    setWallDraftByPost((prev) => ({ ...prev, [itemId]: "" }));
-    setWallOpenByPost((prev) => ({ ...prev, [itemId]: true }));
+      sessionId,
+    });
+
+    if (created) {
+      setWallCommentsByPost((prev) => ({
+        ...prev,
+        [item.id]: [...(prev[item.id] ?? []), created.comment],
+      }));
+      setSocialByPost((prev) => {
+        const base = prev[item.id] ?? EMPTY_STATS;
+        return {
+          ...prev,
+          [item.id]: {
+            ...base,
+            commentCount: created.commentCount,
+          },
+        };
+      });
+      setWallErrorByPost((prev) => ({ ...prev, [item.id]: "" }));
+    } else {
+      // Keep wall usable even when backend is temporarily unavailable.
+      const localComment: AbjXComment = {
+        id: `local-${item.id}-${Date.now()}`,
+        postId: item.id,
+        authorName: "Vy",
+        body: nextText,
+        createdAt: new Date().toISOString(),
+      };
+      setWallCommentsByPost((prev) => ({
+        ...prev,
+        [item.id]: [...(prev[item.id] ?? []), localComment],
+      }));
+      setSocialByPost((prev) => {
+        const base = prev[item.id] ?? EMPTY_STATS;
+        return {
+          ...prev,
+          [item.id]: {
+            ...base,
+            commentCount: base.commentCount + 1,
+          },
+        };
+      });
+      setWallErrorByPost((prev) => ({ ...prev, [item.id]: "Komentář uložen jen lokálně (backend nedostupný)." }));
+    }
+
+    setWallDraftByPost((prev) => ({ ...prev, [item.id]: "" }));
+    setWallOpenByPost((prev) => ({ ...prev, [item.id]: true }));
+    setWallSubmittingByPost((prev) => ({ ...prev, [item.id]: false }));
   };
 
   return (
@@ -191,13 +363,19 @@ export function AbjXClient() {
       ) : (
         <div className="space-y-3">
           {items.map((item) => {
-            const reacted = Boolean(likedByPost[item.id]);
+            const social = socialByPost[item.id] ?? EMPTY_STATS;
+            const reacted = social.reactedByMe;
             const wallOpen = Boolean(wallOpenByPost[item.id]);
             const wallComments = wallCommentsByPost[item.id] ?? [];
             const shareHint = shareHintByPost[item.id];
-            const shownReactionCount = Math.max(0, item.likeCount + (reacted ? 1 : 0));
-            const shownCommentCount = Math.max(0, item.commentCount + wallComments.length);
+            const shownReactionCount = Math.max(0, item.likeCount + social.reactionCount);
+            const shownCommentCount = Math.max(0, item.commentCount + social.commentCount);
+            const shownShareCount = Math.max(0, social.shareCount);
             const videoAvailable = Boolean(item.videoId);
+            const isReacting = Boolean(reactingByPost[item.id]);
+            const commentsLoading = Boolean(wallLoadingByPost[item.id]);
+            const commentsSubmitting = Boolean(wallSubmittingByPost[item.id]);
+            const wallError = wallErrorByPost[item.id];
 
             return (
               <article
@@ -252,17 +430,22 @@ export function AbjXClient() {
                         ? "border-abj-gold bg-[rgba(198,168,91,0.17)] text-abj-gold"
                         : "border-[var(--abj-gold-dim)] text-abj-text2 hover:text-abj-text1"
                     }`}
+                    disabled={reacted || isReacting}
                     onClick={() => {
                       void handleReact(item);
                     }}
                   >
-                    Reagovat ({shownReactionCount})
+                    {reacted ? `Reagováno (${shownReactionCount})` : isReacting ? "Ukládám..." : `Reagovat (${shownReactionCount})`}
                   </button>
                   <button
                     type="button"
                     className="rounded-lg border border-[var(--abj-gold-dim)] px-2.5 py-1 text-xs uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1"
                     onClick={() => {
-                      setWallOpenByPost((prev) => ({ ...prev, [item.id]: !wallOpen }));
+                      const nextOpen = !wallOpen;
+                      setWallOpenByPost((prev) => ({ ...prev, [item.id]: nextOpen }));
+                      if (nextOpen && wallCommentsByPost[item.id] === undefined) {
+                        void loadWallComments(item.id);
+                      }
                     }}
                   >
                     Komentáře ({shownCommentCount})
@@ -274,7 +457,7 @@ export function AbjXClient() {
                       void handleShare(item);
                     }}
                   >
-                    Sdílet
+                    Sdílet ({shownShareCount})
                   </button>
                   {shareHint ? <span className="text-xs text-abj-text2">{shareHint}</span> : null}
                 </div>
@@ -287,13 +470,14 @@ export function AbjXClient() {
                   >
                     <h3 className="text-xs uppercase tracking-[0.1em] text-abj-text2">Zeď komentářů</h3>
                     <div className="mt-2 max-h-52 space-y-2 overflow-y-auto pr-1">
-                      {wallComments.length === 0 ? (
+                      {commentsLoading ? <p className="text-sm text-abj-text2">Načítám komentáře…</p> : null}
+                      {!commentsLoading && wallComments.length === 0 ? (
                         <p className="text-sm text-abj-text2">Zatím bez komentářů. Napište první.</p>
                       ) : (
                         wallComments.map((comment) => (
                           <article key={comment.id} className="rounded-md border border-white/10 bg-abj-panel px-2.5 py-2">
                             <div className="flex items-center justify-between gap-2">
-                              <span className="text-xs font-semibold text-abj-gold">Vy</span>
+                              <span className="text-xs font-semibold text-abj-gold">{comment.authorName}</span>
                               <span className="text-[11px] text-abj-text2">{formatWallCommentAt(comment.createdAt)}</span>
                             </div>
                             <p className="mt-1 text-sm text-abj-text1">{comment.body}</p>
@@ -301,6 +485,7 @@ export function AbjXClient() {
                         ))
                       )}
                     </div>
+                    {wallError ? <p className="mt-2 text-xs text-abj-text2">{wallError}</p> : null}
 
                     <div className="mt-3 flex items-end gap-2">
                       <textarea
@@ -315,10 +500,13 @@ export function AbjXClient() {
                       />
                       <button
                         type="button"
+                        disabled={commentsSubmitting}
                         className="rounded-md border border-[var(--abj-gold-dim)] px-3 py-1.5 text-xs uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1"
-                        onClick={() => addWallComment(item.id)}
+                        onClick={() => {
+                          void addWallComment(item);
+                        }}
                       >
-                        Přidat
+                        {commentsSubmitting ? "Ukládám..." : "Přidat"}
                       </button>
                     </div>
                   </div>
