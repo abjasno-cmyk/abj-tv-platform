@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { useFeed } from "@/hooks/useFeed";
@@ -303,6 +302,13 @@ function getYoutubeEmbedUrl(video: FeedVideoView): string | null {
   return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?rel=0&modestbranding=1&playsinline=1`;
 }
 
+function getYoutubeAutoplayEmbedUrl(video: FeedVideoView): string | null {
+  const base = getYoutubeEmbedUrl(video);
+  if (!base) return null;
+  const join = base.includes("?") ? "&" : "?";
+  return `${base}${join}autoplay=1&iv_load_policy=3&disablekb=1`;
+}
+
 function getVideoExternalUrl(video: FeedVideoView): string | null {
   const videoId = getEffectiveVideoId(video);
   if (videoId) {
@@ -528,11 +534,11 @@ type ArchiveVideoCardProps = {
 
 function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: ArchiveVideoCardProps) {
   const videoId = getEffectiveVideoId(video);
-  const internalHref = videoId ? `/live?videoId=${encodeURIComponent(videoId)}` : null;
+  const [expanded, setExpanded] = useState(false);
+  const [startedPlayback, setStartedPlayback] = useState(false);
   const externalHref = getVideoExternalUrl(video);
-  const href = internalHref ?? externalHref ?? "#";
-  const isExternal = !internalHref && Boolean(externalHref);
-  const isDisabled = href === "#";
+  const embedUrl = getYoutubeAutoplayEmbedUrl(video);
+  const isDisabled = !videoId && !externalHref;
   const publishedLabel = formatPublishedLabel(video.published_at);
   const thumbnailSrc = readString(video.thumbnail) ?? "/placeholder-thumb.jpg";
   const isHero = variant === "hero";
@@ -547,72 +553,121 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: A
     : "aspect-video";
 
   return (
-    <Link
-      href={href}
-      target={isExternal ? "_blank" : undefined}
-      rel={isExternal ? "noreferrer" : undefined}
-      onClick={
-        isDisabled
-          ? (event) => {
-              event.preventDefault();
-            }
-          : undefined
-      }
+    <article
+      aria-expanded={expanded}
       className={`group block overflow-hidden rounded-2xl border bg-white transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6A00]/60 ${
         accent
           ? "border-[#FF6A00]/35 shadow-[0_8px_24px_rgba(255,106,0,0.12)] hover:border-[#FF6A00]/55"
           : "border-[var(--abj-gold-dim)] shadow-[0_8px_22px_rgba(17,17,17,0.08)] hover:border-[rgba(17,17,17,0.28)]"
       } ${isDisabled ? "cursor-default opacity-70" : "hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(17,17,17,0.12)]"}`}
     >
-      <div className={`relative overflow-hidden bg-[#F2F2F2] ${mediaRatioClass}`}>
-        <Image
-          src={thumbnailSrc}
-          alt={video.title}
-          fill
-          loading="lazy"
-          className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-          sizes={
-            isHero
-              ? "(max-width: 1024px) 100vw, 66vw"
-              : isFeatured
-                ? "(max-width: 1024px) 100vw, 33vw"
-                : "(max-width: 768px) 100vw, (max-width: 1400px) 33vw, 25vw"
+      <button
+        type="button"
+        className="w-full text-left"
+        disabled={isDisabled}
+        onClick={() => {
+          const nextExpanded = !expanded;
+          setExpanded(nextExpanded);
+          if (!nextExpanded) {
+            setStartedPlayback(false);
           }
-          unoptimized={thumbnailSrc.startsWith("http")}
-        />
-        {tag ? (
-          <span className="absolute left-2 top-2 rounded-full border border-[#FF6A00]/35 bg-white/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#C14900]">
-            {tag}
-          </span>
-        ) : null}
-        {durationLabel ? (
-          <span className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-[10px] font-medium text-white">
-            {durationLabel}
-          </span>
-        ) : null}
-        {isHero ? (
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/45 to-transparent px-3 pb-3 pt-10 text-white">
-            <p className="line-clamp-2 font-[var(--font-serif)] text-[22px] leading-tight">{video.title}</p>
-            <p className="mt-2 text-xs text-white/85">
-              {video.channel}
-              {publishedLabel ? ` · ${publishedLabel}` : ""}
+        }}
+      >
+        <div className={`relative overflow-hidden bg-[#F2F2F2] ${mediaRatioClass}`}>
+          <Image
+            src={thumbnailSrc}
+            alt={video.title}
+            fill
+            loading="lazy"
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            sizes={
+              isHero
+                ? "(max-width: 1024px) 100vw, 66vw"
+                : isFeatured
+                  ? "(max-width: 1024px) 100vw, 33vw"
+                  : "(max-width: 768px) 100vw, (max-width: 1400px) 33vw, 25vw"
+            }
+            unoptimized={thumbnailSrc.startsWith("http")}
+          />
+          {tag ? (
+            <span className="absolute left-2 top-2 rounded-full border border-[#FF6A00]/35 bg-white/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#C14900]">
+              {tag}
+            </span>
+          ) : null}
+          {durationLabel ? (
+            <span className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-[10px] font-medium text-white">
+              {durationLabel}
+            </span>
+          ) : null}
+          {isHero ? (
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/45 to-transparent px-3 pb-3 pt-10 text-white">
+              <p className="line-clamp-2 font-[var(--font-serif)] text-[22px] leading-tight">{video.title}</p>
+              <p className="mt-2 text-xs text-white/85">
+                {video.channel}
+                {publishedLabel ? ` · ${publishedLabel}` : ""}
+              </p>
+            </div>
+          ) : null}
+        </div>
+
+        {!isHero ? (
+          <div className={`${isFeatured ? "space-y-1.5 p-3.5" : "space-y-1 p-3"}`}>
+            <p
+              className={`line-clamp-2 text-abj-text1 ${isFeatured ? "text-[15px] font-semibold leading-snug" : "text-sm font-medium"}`}
+            >
+              {video.title}
+            </p>
+            <p className="truncate text-xs font-medium text-abj-text2">{video.channel}</p>
+            {publishedLabel ? <p className="text-[11px] text-abj-text3">{publishedLabel}</p> : null}
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#C14900]">
+              {expanded ? "Skrýt video" : "Rozkliknout video"}
             </p>
           </div>
         ) : null}
-      </div>
+      </button>
 
-      {!isHero ? (
-        <div className={`${isFeatured ? "space-y-1.5 p-3.5" : "space-y-1 p-3"}`}>
-          <p
-            className={`line-clamp-2 text-abj-text1 ${isFeatured ? "text-[15px] font-semibold leading-snug" : "text-sm font-medium"}`}
-          >
-            {video.title}
-          </p>
-          <p className="truncate text-xs font-medium text-abj-text2">{video.channel}</p>
-          {publishedLabel ? <p className="text-[11px] text-abj-text3">{publishedLabel}</p> : null}
+      {expanded ? (
+        <div className="space-y-2 border-t border-[var(--abj-gold-dim)] bg-[rgba(255,106,0,0.03)] p-3">
+          {embedUrl ? (
+            <div className="overflow-hidden rounded-lg border border-[rgba(255,106,0,0.25)] bg-black">
+              {!startedPlayback ? (
+                <button
+                  type="button"
+                  className="flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(255,106,0,0.22),rgba(0,0,0,0.8))]"
+                  onClick={() => setStartedPlayback(true)}
+                >
+                  <span className="rounded-full border border-[rgba(255,106,0,0.4)] bg-[rgba(255,255,255,0.1)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white">
+                    Přehrát video
+                  </span>
+                </button>
+              ) : (
+                <iframe
+                  title={video.title}
+                  className="aspect-video w-full"
+                  src={embedUrl}
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                  sandbox="allow-scripts allow-same-origin allow-presentation"
+                  referrerPolicy="origin"
+                  allowFullScreen
+                />
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-abj-text2">Video nelze vložit do přehrávače.</p>
+          )}
+          {externalHref ? (
+            <a
+              href={externalHref}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex rounded-lg border border-[#FF6A00]/45 bg-[rgba(255,106,0,0.08)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[#C14900]"
+            >
+              Otevřít na YouTube
+            </a>
+          ) : null}
         </div>
       ) : null}
-    </Link>
+    </article>
   );
 }
 

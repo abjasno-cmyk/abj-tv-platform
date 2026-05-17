@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { useFeed } from "@/hooks/useFeed";
 import {
@@ -39,6 +38,8 @@ const EMPTY_STATS: AbjXSocialStats = {
   shareCount: 0,
   reactedByMe: false,
 };
+const LOCAL_SOCIAL_KEY = "abjx_social_by_post_v1";
+const LOCAL_WALL_KEY = "abjx_wall_comments_v1";
 
 function getPostTimestamp(post: FeedPost): number {
   const editorialAt = (post as FeedPost & { editorial_at?: string | null }).editorial_at;
@@ -124,11 +125,48 @@ function buildSessionId(): string {
   return `abjx-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function readLocalJson<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeLocalJson(key: string, value: unknown): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Ignore storage errors (quota / privacy mode).
+  }
+}
+
+function mergeComments(existing: AbjXComment[], incoming: AbjXComment[]): AbjXComment[] {
+  const byId = new Map<string, AbjXComment>();
+  for (const comment of existing) {
+    byId.set(comment.id, comment);
+  }
+  for (const comment of incoming) {
+    byId.set(comment.id, comment);
+  }
+  return [...byId.values()].sort((a, b) => {
+    const aTs = Date.parse(a.createdAt);
+    const bTs = Date.parse(b.createdAt);
+    if (!Number.isFinite(aTs) && !Number.isFinite(bTs)) return 0;
+    if (!Number.isFinite(aTs)) return -1;
+    if (!Number.isFinite(bTs)) return 1;
+    return aTs - bTs;
+  });
+}
+
 export function AbjXClient() {
   const { posts, loading, hasMore, loadMore } = useFeed();
-  const router = useRouter();
   const items = useMemo(() => toItems(posts), [posts]);
-  const sessionId = useMemo(() => {
+  const [sessionId] = useState(() => {
     if (typeof window === "undefined") return "";
     const key = "abjx_session_id";
     let resolved = window.localStorage.getItem(key);
@@ -137,16 +175,30 @@ export function AbjXClient() {
       window.localStorage.setItem(key, resolved);
     }
     return resolved;
-  }, []);
-  const [socialByPost, setSocialByPost] = useState<Record<string, AbjXSocialStats>>({});
+  });
+  const [socialByPost, setSocialByPost] = useState<Record<string, AbjXSocialStats>>(() =>
+    readLocalJson<Record<string, AbjXSocialStats>>(LOCAL_SOCIAL_KEY, {})
+  );
   const [reactingByPost, setReactingByPost] = useState<Record<string, boolean>>({});
   const [shareHintByPost, setShareHintByPost] = useState<Record<string, string>>({});
+  const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
+  const [startedPlaybackByPost, setStartedPlaybackByPost] = useState<Record<string, boolean>>({});
   const [wallOpenByPost, setWallOpenByPost] = useState<Record<string, boolean>>({});
   const [wallDraftByPost, setWallDraftByPost] = useState<Record<string, string>>({});
-  const [wallCommentsByPost, setWallCommentsByPost] = useState<Record<string, AbjXComment[]>>({});
+  const [wallCommentsByPost, setWallCommentsByPost] = useState<Record<string, AbjXComment[]>>(() =>
+    readLocalJson<Record<string, AbjXComment[]>>(LOCAL_WALL_KEY, {})
+  );
   const [wallLoadingByPost, setWallLoadingByPost] = useState<Record<string, boolean>>({});
   const [wallErrorByPost, setWallErrorByPost] = useState<Record<string, string>>({});
   const [wallSubmittingByPost, setWallSubmittingByPost] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    writeLocalJson(LOCAL_SOCIAL_KEY, socialByPost);
+  }, [socialByPost]);
+
+  useEffect(() => {
+    writeLocalJson(LOCAL_WALL_KEY, wallCommentsByPost);
+  }, [wallCommentsByPost]);
 
   useEffect(() => {
     const postIds = items.map((item) => item.id).filter((id) => id.length > 0);
@@ -159,7 +211,7 @@ export function AbjXClient() {
     }).then((stats) => {
       if (cancelled || !stats) return;
       setSocialByPost((prev) => {
-        const next: Record<string, AbjXSocialStats> = {};
+        const next: Record<string, AbjXSocialStats> = { ...prev };
         for (const postId of postIds) {
           next[postId] = stats[postId] ?? prev[postId] ?? EMPTY_STATS;
         }
@@ -172,10 +224,12 @@ export function AbjXClient() {
     };
   }, [items, sessionId]);
 
-  const navigateToVideo = (item: FeedItem) => {
-    if (!item.videoId) return;
-    void trackView(item.id);
-    router.push(`/live?videoId=${encodeURIComponent(item.videoId)}`);
+  const toggleExpanded = (item: FeedItem) => {
+    const nextOpen = expandedPostId !== item.id;
+    setExpandedPostId(nextOpen ? item.id : null);
+    if (nextOpen) {
+      void trackView(item.id);
+    }
   };
 
   const loadWallComments = async (postId: string) => {
@@ -188,7 +242,10 @@ export function AbjXClient() {
       setWallLoadingByPost((prev) => ({ ...prev, [postId]: false }));
       return;
     }
-    setWallCommentsByPost((prev) => ({ ...prev, [postId]: comments }));
+    setWallCommentsByPost((prev) => ({
+      ...prev,
+      [postId]: mergeComments(prev[postId] ?? [], comments),
+    }));
     setWallLoadingByPost((prev) => ({ ...prev, [postId]: false }));
   };
 
@@ -360,6 +417,8 @@ export function AbjXClient() {
           {items.map((item) => {
             const social = socialByPost[item.id] ?? EMPTY_STATS;
             const reacted = social.reactedByMe;
+            const isExpanded = expandedPostId === item.id;
+            const playbackStarted = Boolean(startedPlaybackByPost[item.id]);
             const wallOpen = Boolean(wallOpenByPost[item.id]);
             const wallComments = wallCommentsByPost[item.id] ?? [];
             const shareHint = shareHintByPost[item.id];
@@ -376,16 +435,15 @@ export function AbjXClient() {
               <article
                 key={item.id}
                 className={`rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel p-3 transition-colors sm:p-4 ${
-                  videoAvailable ? "cursor-pointer hover:border-abj-gold" : ""
+                  videoAvailable ? "cursor-pointer hover:border-abj-gold" : "cursor-default"
                 }`}
-                role={videoAvailable ? "link" : undefined}
-                tabIndex={videoAvailable ? 0 : undefined}
-                onClick={() => navigateToVideo(item)}
+                role="button"
+                tabIndex={0}
+                onClick={() => toggleExpanded(item)}
                 onKeyDown={(event) => {
-                  if (!videoAvailable) return;
                   if (event.key !== "Enter" && event.key !== " ") return;
                   event.preventDefault();
-                  navigateToVideo(item);
+                  toggleExpanded(item);
                 }}
               >
                 <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -403,7 +461,7 @@ export function AbjXClient() {
                   <span className="text-[11px] text-abj-text2">{formatCreatedAt(item.displayAt)}</span>
                   {videoAvailable ? (
                     <span className="ml-auto text-[11px] font-semibold uppercase tracking-[0.08em] text-abj-gold">
-                      Otevřít video
+                      {isExpanded ? "Skrýt video" : "Rozkliknout video"}
                     </span>
                   ) : null}
                 </div>
@@ -412,6 +470,44 @@ export function AbjXClient() {
                 <p className="mt-1 text-sm text-abj-text1">{item.what}</p>
                 {item.why ? <p className="mt-1 text-sm text-abj-text2">{item.why}</p> : null}
                 {item.impact ? <p className="mt-1 text-sm font-medium text-abj-gold">{item.impact}</p> : null}
+
+                {isExpanded ? (
+                  <div
+                    className="mt-3 space-y-2 border-t border-[var(--abj-gold-dim)] pt-3"
+                    onClick={(event) => event.stopPropagation()}
+                    onKeyDown={(event) => event.stopPropagation()}
+                  >
+                    {item.videoId ? (
+                      <div className="overflow-hidden rounded-lg border border-[var(--abj-gold-dim)] bg-black">
+                        {!playbackStarted ? (
+                          <button
+                            type="button"
+                            className="flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(198,168,91,0.24),rgba(0,0,0,0.85))]"
+                            onClick={() => {
+                              setStartedPlaybackByPost((prev) => ({ ...prev, [item.id]: true }));
+                            }}
+                          >
+                            <span className="rounded-full border border-[var(--abj-gold-dim)] bg-[rgba(6,12,23,0.72)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-abj-text1">
+                              Přehrát video
+                            </span>
+                          </button>
+                        ) : (
+                          <iframe
+                            title={item.headline}
+                            className="aspect-video w-full"
+                            src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(item.videoId)}?rel=0&modestbranding=1&playsinline=1&autoplay=1&iv_load_policy=3`}
+                            allow="autoplay; encrypted-media; picture-in-picture"
+                            sandbox="allow-scripts allow-same-origin allow-presentation"
+                            referrerPolicy="origin"
+                            allowFullScreen
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-abj-text2">Video k této zprávě není dostupné.</p>
+                    )}
+                  </div>
+                ) : null}
 
                 <div
                   className="mt-3 flex flex-wrap items-center gap-2 border-t border-[var(--abj-gold-dim)] pt-3"
