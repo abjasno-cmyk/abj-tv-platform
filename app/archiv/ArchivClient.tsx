@@ -654,16 +654,6 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: A
           ) : (
             <p className="text-sm text-abj-text2">Video nelze vložit do přehrávače.</p>
           )}
-          {externalHref ? (
-            <a
-              href={externalHref}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex rounded-lg border border-[#FF6A00]/45 bg-[rgba(255,106,0,0.08)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[#C14900]"
-            >
-              Otevřít na YouTube
-            </a>
-          ) : null}
         </div>
       ) : null}
     </article>
@@ -1012,7 +1002,6 @@ function ChannelVideoPlayer({ video }: { video: FeedVideoView }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const embedUrl = getYoutubeEmbedUrl(video);
-  const fallbackUrl = getVideoExternalUrl(video);
   const aspect = getVideoAspectRatio(video);
   const isPortrait = aspect === "portrait";
   const publishedLabel = formatPublishedLabel(video.published_at);
@@ -1021,16 +1010,6 @@ function ChannelVideoPlayer({ video }: { video: FeedVideoView }) {
     return (
       <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-white p-4">
         <p className="text-sm text-abj-text2">Video nelze vložit do přehrávače.</p>
-        {fallbackUrl ? (
-          <a
-            href={fallbackUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-3 inline-flex rounded-lg border border-[#FF6A00]/45 bg-[rgba(255,106,0,0.08)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[#C14900]"
-          >
-            Otevřít na YouTube
-          </a>
-        ) : null}
       </div>
     );
   }
@@ -1065,16 +1044,6 @@ function ChannelVideoPlayer({ video }: { video: FeedVideoView }) {
         {error ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70 p-4 text-center text-sm text-white/90">
             <p>Přehrávač se nepodařilo načíst.</p>
-            {fallbackUrl ? (
-              <a
-                href={fallbackUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-lg border border-white/40 px-3 py-1.5 text-xs uppercase tracking-[0.08em] text-white"
-              >
-                Otevřít na YouTube
-              </a>
-            ) : null}
           </div>
         ) : null}
       </div>
