@@ -75,6 +75,21 @@ export interface FeedResponse {
   posts: FeedPost[];
 }
 
+export interface AbjXSocialStats {
+  reactionCount: number;
+  commentCount: number;
+  shareCount: number;
+  reactedByMe: boolean;
+}
+
+export interface AbjXComment {
+  id: string;
+  postId: string;
+  body: string;
+  authorName: string;
+  createdAt: string;
+}
+
 type StructuredFeedVideo = {
   video_id: string;
   title: string;
@@ -301,6 +316,135 @@ export async function trackView(postId: string): Promise<void> {
     await fetch(`${PROXY_BASE}/feed/${encodeURIComponent(postId)}/view`, { method: "POST" });
   } catch {
     // Tracking není kritický.
+  }
+}
+
+export async function fetchAbjXStats(params: {
+  postIds: string[];
+  sessionId?: string | null;
+}): Promise<Record<string, AbjXSocialStats> | null> {
+  const uniquePostIds = Array.from(new Set(params.postIds.map((id) => id.trim()).filter((id) => id.length > 0)));
+  if (uniquePostIds.length === 0) return {};
+
+  const query = new URLSearchParams();
+  query.set("postIds", uniquePostIds.join(","));
+  if (params.sessionId && params.sessionId.trim().length > 0) {
+    query.set("sessionId", params.sessionId.trim());
+  }
+
+  try {
+    const res = await fetch(`/api/abj-x/stats?${query.toString()}`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const payload = (await res.json()) as { stats?: Record<string, AbjXSocialStats> };
+    return payload.stats ?? {};
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchAbjXComments(postId: string): Promise<AbjXComment[] | null> {
+  const normalized = postId.trim();
+  if (!normalized) return null;
+  const query = new URLSearchParams({ postId: normalized });
+  try {
+    const res = await fetch(`/api/abj-x/comments?${query.toString()}`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const payload = (await res.json()) as { comments?: AbjXComment[] };
+    return Array.isArray(payload.comments) ? payload.comments : [];
+  } catch {
+    return null;
+  }
+}
+
+export async function createAbjXComment(input: {
+  postId: string;
+  videoId: string;
+  body: string;
+  sessionId?: string | null;
+}): Promise<{ comment: AbjXComment; commentCount: number } | null> {
+  try {
+    const res = await fetch("/api/abj-x/comments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        postId: input.postId,
+        videoId: input.videoId,
+        body: input.body,
+        sessionId: input.sessionId ?? null,
+      }),
+    });
+    if (!res.ok) return null;
+    const payload = (await res.json()) as {
+      comment?: AbjXComment;
+      commentCount?: number;
+    };
+    if (!payload.comment || !Number.isFinite(payload.commentCount)) return null;
+    return {
+      comment: payload.comment,
+      commentCount: Number(payload.commentCount),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function sendAbjXReaction(input: {
+  postId: string;
+  videoId: string;
+  sessionId?: string | null;
+}): Promise<{ reactedNow: boolean; reactionCount: number } | null> {
+  try {
+    const res = await fetch("/api/abj-x/reactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        postId: input.postId,
+        videoId: input.videoId,
+        sessionId: input.sessionId ?? null,
+      }),
+    });
+    if (!res.ok) return null;
+    const payload = (await res.json()) as {
+      reactedNow?: boolean;
+      reactionCount?: number;
+    };
+    if (typeof payload.reactedNow !== "boolean" || !Number.isFinite(payload.reactionCount)) {
+      return null;
+    }
+    return {
+      reactedNow: payload.reactedNow,
+      reactionCount: Number(payload.reactionCount),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function sendAbjXShare(input: {
+  postId: string;
+  videoId: string;
+  sessionId?: string | null;
+}): Promise<{ shareCount: number } | null> {
+  try {
+    const res = await fetch("/api/abj-x/shares", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        postId: input.postId,
+        videoId: input.videoId,
+        sessionId: input.sessionId ?? null,
+      }),
+    });
+    if (!res.ok) return null;
+    const payload = (await res.json()) as { shareCount?: number };
+    if (!Number.isFinite(payload.shareCount)) return null;
+    return { shareCount: Number(payload.shareCount) };
+  } catch {
+    return null;
   }
 }
 
