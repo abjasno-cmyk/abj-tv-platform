@@ -128,7 +128,16 @@ export function AbjXClient() {
   const { posts, loading, hasMore, loadMore } = useFeed();
   const router = useRouter();
   const items = useMemo(() => toItems(posts), [posts]);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const sessionId = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    const key = "abjx_session_id";
+    let resolved = window.localStorage.getItem(key);
+    if (!resolved) {
+      resolved = buildSessionId();
+      window.localStorage.setItem(key, resolved);
+    }
+    return resolved;
+  }, []);
   const [socialByPost, setSocialByPost] = useState<Record<string, AbjXSocialStats>>({});
   const [reactingByPost, setReactingByPost] = useState<Record<string, boolean>>({});
   const [shareHintByPost, setShareHintByPost] = useState<Record<string, string>>({});
@@ -140,22 +149,8 @@ export function AbjXClient() {
   const [wallSubmittingByPost, setWallSubmittingByPost] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const key = "abjx_session_id";
-    let resolved = window.localStorage.getItem(key);
-    if (!resolved) {
-      resolved = buildSessionId();
-      window.localStorage.setItem(key, resolved);
-    }
-    setSessionId(resolved);
-  }, []);
-
-  useEffect(() => {
     const postIds = items.map((item) => item.id).filter((id) => id.length > 0);
-    if (postIds.length === 0) {
-      setSocialByPost({});
-      return;
-    }
+    if (postIds.length === 0) return;
 
     let cancelled = false;
     void fetchAbjXStats({
