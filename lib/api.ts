@@ -108,6 +108,52 @@ export interface HealthResponse {
   rebuild_running: boolean;
 }
 
+function isObjectLike(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function readString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeProgramResponse(payload: unknown): ProgramResponse | null {
+  if (!isObjectLike(payload)) return null;
+  const blocks = Array.isArray(payload.blocks)
+    ? payload.blocks
+    : Array.isArray(payload.timeline)
+      ? payload.timeline
+      : [];
+  const generatedAt =
+    readString(payload.generated_at) ??
+    readString(payload.generatedAt) ??
+    new Date().toISOString();
+  const validUntil =
+    readString(payload.valid_until) ??
+    readString(payload.validUntil) ??
+    generatedAt;
+  const staleAfter =
+    readString(payload.stale_after) ??
+    readString(payload.staleAfter) ??
+    validUntil;
+
+  return {
+    date: readString(payload.date) ?? generatedAt.slice(0, 10),
+    feed_version: readString(payload.feed_version) ?? readString(payload.feedVersion) ?? "unknown",
+    generated_by: readString(payload.generated_by) ?? readString(payload.generatedBy) ?? "replit-proxy",
+    timezone: readString(payload.timezone) ?? "Europe/Prague",
+    revision_id:
+      readString(payload.revision_id) ??
+      readString(payload.revision) ??
+      `${generatedAt}-${blocks.length}`,
+    generated_at: generatedAt,
+    valid_until: validUntil,
+    stale_after: staleAfter,
+    blocks: blocks as ProgramBlock[],
+  };
+}
+
 function getFeedPostTimestamp(post: FeedPost): number {
   const editorialAt = (post as FeedPost & { editorial_at?: string | null }).editorial_at;
   const updatedAt = (post as FeedPost & { updated_at?: string | null }).updated_at;
@@ -135,13 +181,62 @@ export async function fetchProgram(date?: string): Promise<ProgramResponse | nul
   const qs = new URLSearchParams();
   if (date) qs.set("date", date);
   const query = qs.toString();
-  const url = query ? `${PROXY_BASE}/program?${query}` : `${PROXY_BASE}/program`;
+  const primaryEndpoints = [
+    query ? "/api/program?" + query : "/api/program",
+    query ? `${PROXY_BASE}/program?${query}` : `${PROXY_BASE}/program`,
+  ];
+  const fallbackEndpoint = query ? `/api/program/v3?${query}` : "/api/program/v3";
+  let blockFallbackToV3 = false;
+
+  const shouldBlockFallback = (status: number, payloadText: string): boolean => {
+    if (status === 401 || status === 403) return true;
+    if (status !== 500) return false;
+    const normalized = payloadText.toLowerCase();
+    return (
+      normalized.includes("missing api key") ||
+      normalized.includes("x-api-key") ||
+      normalized.includes("neplatný nebo chybějící")
+    );
+  };
+
+  for (const endpoint of primaryEndpoints) {
+    try {
+      const res = await fetch(endpoint, {
+        cache: "no-store",
+      });
+      const payloadText = await res.text();
+      if (!res.ok) {
+        if (shouldBlockFallback(res.status, payloadText)) {
+          blockFallbackToV3 = true;
+        }
+        continue;
+      }
+
+      let payload: unknown = null;
+      try {
+        payload = payloadText ? (JSON.parse(payloadText) as unknown) : null;
+      } catch {
+        payload = null;
+      }
+      const normalized = normalizeProgramResponse(payload);
+      if (normalized) return normalized;
+    } catch {
+      // Try the next endpoint.
+    }
+  }
+
+  if (blockFallbackToV3) {
+    // Do not mask Replit auth/config issues by silently switching to V3 fallback.
+    return null;
+  }
+
   try {
-    const res = await fetch(url, {
-      next: { revalidate: 60 },
+    const res = await fetch(fallbackEndpoint, {
+      cache: "no-store",
     });
     if (!res.ok) return null;
-    return (await res.json()) as ProgramResponse;
+    const payload = (await res.json()) as unknown;
+    return normalizeProgramResponse(payload);
   } catch {
     return null;
   }
