@@ -554,7 +554,6 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: A
 
   return (
     <article
-      aria-expanded={expanded}
       className={`group block overflow-hidden rounded-2xl border bg-white transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6A00]/60 ${
         accent
           ? "border-[#FF6A00]/35 shadow-[0_8px_24px_rgba(255,106,0,0.12)] hover:border-[#FF6A00]/55"
