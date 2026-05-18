@@ -12,6 +12,7 @@ import {
   formatPragueDateWithWeekday,
   formatPragueDateTime,
   formatPragueTime,
+  getCategoryLabel,
   getEditionTimestamp,
   getEditionTypeLabel,
   groupSourcesByItemId,
