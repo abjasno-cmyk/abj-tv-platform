@@ -239,14 +239,14 @@ export default async function JasneZpravyPage() {
   const curiosityOfDay = latestItems.find((item) => item.category === "curiosity") ?? null;
 
   return (
-    <main className="mx-auto w-full max-w-[1240px] px-4 py-8 md:py-12">
+    <main className="mx-auto w-full max-w-[1240px] px-4 py-8 text-[#111827] md:py-12">
       {countError && (
         <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           Nepodařilo se spočítat všechny počty zpráv. Obsah je zobrazen, ale některé počty mohou být nepřesné.
         </div>
       )}
 
-      <section className="mb-8 rounded-3xl border border-[#FF6A00]/20 bg-gradient-to-b from-[#fffaf3] to-white p-6 shadow-[0_12px_28px_rgba(17,17,17,0.06)] md:p-8">
+      <section className="mb-8 rounded-3xl border border-[#FF6A00]/20 bg-gradient-to-b from-[#fffaf3] via-[#fffdf9] to-white p-6 shadow-[0_12px_28px_rgba(17,17,17,0.06)] ring-1 ring-[#FF6A00]/5 md:p-8">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div>
             <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-[#B04A00]">ABJ NEWSROOM</p>
@@ -268,7 +268,7 @@ export default async function JasneZpravyPage() {
                 {topHeadlines.map((headline) => (
                   <span
                     key={headline}
-                    className="rounded-full border border-gray-200 bg-white/90 px-3 py-1 text-xs font-medium text-gray-700"
+                    className="line-clamp-1 rounded-full border border-gray-200 bg-white/90 px-3 py-1 text-xs font-medium text-gray-700"
                   >
                     {headline}
                   </span>
@@ -276,7 +276,7 @@ export default async function JasneZpravyPage() {
               </div>
             ) : null}
           </div>
-          <aside className="rounded-2xl border border-gray-200 bg-white/95 p-4">
+          <aside className="rounded-2xl border border-gray-200 bg-white/95 p-4 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500">Aktuální vydání</p>
             <h2 className="mt-2 text-lg font-black leading-tight text-gray-900">{latestEdition.title}</h2>
             <p className="mt-2 text-sm text-gray-600">
@@ -284,7 +284,7 @@ export default async function JasneZpravyPage() {
             </p>
             <Link
               href={`/jasne-zpravy/${latestEdition.slug}`}
-              className="mt-4 inline-flex rounded-lg border border-[#FF6A00]/25 bg-[#FF6A00]/10 px-3 py-2 text-sm font-bold text-[#B04A00] hover:bg-[#FF6A00]/15"
+              className="mt-4 inline-flex min-h-10 items-center rounded-lg border border-[#FF6A00]/25 bg-[#FF6A00]/10 px-3 py-2 text-sm font-bold text-[#B04A00] hover:bg-[#FF6A00]/15"
             >
               Otevřít celé vydání →
             </Link>
@@ -296,7 +296,7 @@ export default async function JasneZpravyPage() {
         <h2 className="mb-4 text-lg font-extrabold uppercase tracking-[0.16em] text-gray-800">
           Nejnovější vydání
         </h2>
-        <article className="rounded-3xl border border-[#FF6A00]/25 bg-white p-5 shadow-[0_12px_28px_rgba(17,17,17,0.08)] md:p-7">
+        <article className="rounded-3xl border border-[#FF6A00]/25 bg-white p-5 shadow-[0_12px_28px_rgba(17,17,17,0.08)] ring-1 ring-[#FF6A00]/5 md:p-7">
           <div className="flex flex-wrap items-center justify-between gap-3 text-xs uppercase tracking-wider">
             <span className="rounded-full bg-[#FF6A00] px-3 py-1 font-bold text-white">
               {getEditionTypeLabel(latestEdition.edition_type)} vydání
@@ -323,13 +323,13 @@ export default async function JasneZpravyPage() {
               ))}
             </ul>
           )}
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4">
             <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-sm text-gray-700">
               {latestItemCount} publikovaných zpráv
             </span>
             <Link
               href={`/jasne-zpravy/${latestEdition.slug}`}
-              className="inline-flex items-center rounded-lg border border-[#FF6A00]/20 bg-[#FF6A00]/10 px-3 py-2 text-sm font-bold text-[#B04A00] hover:bg-[#FF6A00]/15"
+              className="inline-flex min-h-10 items-center rounded-lg border border-[#FF6A00]/20 bg-[#FF6A00]/10 px-3 py-2 text-sm font-bold text-[#B04A00] hover:bg-[#FF6A00]/15"
             >
               Otevřít celé vydání →
             </Link>
@@ -378,28 +378,28 @@ export default async function JasneZpravyPage() {
 
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_330px]">
         <section className="min-w-0">
-          <div className="mb-6 rounded-2xl border border-gray-200 bg-[#fffdf9] p-4">
+          <div className="mb-6 rounded-2xl border border-gray-200 bg-[#fffdf9] p-4 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500">Rychlá orientace</p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <div className="rounded-xl border border-gray-200 bg-white px-3 py-2">
+              <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-[0_2px_8px_rgba(17,17,17,0.03)]">
                 <p className="text-[11px] uppercase tracking-[0.12em] text-gray-500">Domácí</p>
                 <p className="mt-1 text-xl font-black text-gray-900">{categoryStats.domestic}</p>
               </div>
-              <div className="rounded-xl border border-gray-200 bg-white px-3 py-2">
+              <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-[0_2px_8px_rgba(17,17,17,0.03)]">
                 <p className="text-[11px] uppercase tracking-[0.12em] text-gray-500">Zahraničí</p>
                 <p className="mt-1 text-xl font-black text-gray-900">{categoryStats.foreign}</p>
               </div>
-              <div className="rounded-xl border border-gray-200 bg-white px-3 py-2">
+              <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-[0_2px_8px_rgba(17,17,17,0.03)]">
                 <p className="text-[11px] uppercase tracking-[0.12em] text-gray-500">Zajímavosti</p>
                 <p className="mt-1 text-xl font-black text-gray-900">{categoryStats.curiosity}</p>
               </div>
-              <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 sm:col-span-2">
+              <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-[0_2px_8px_rgba(17,17,17,0.03)] sm:col-span-2">
                 <p className="text-[11px] uppercase tracking-[0.12em] text-gray-500">Odhad čtení</p>
                 <p className="mt-1 text-sm font-semibold text-gray-900">
                   {readEstimate.quickMinutes} min rychlý přehled / {readEstimate.fullMinutes} min celé vydání
                 </p>
               </div>
-              <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 sm:col-span-2 lg:col-span-5">
+              <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-[0_2px_8px_rgba(17,17,17,0.03)] sm:col-span-2 lg:col-span-5">
                 <p className="text-[11px] uppercase tracking-[0.12em] text-gray-500">Poslední aktualizace</p>
                 <p className="mt-1 text-sm font-medium text-gray-900">{formatPragueDateTime(latestEditionTime)}</p>
               </div>
@@ -414,7 +414,7 @@ export default async function JasneZpravyPage() {
               </p>
             ) : (
               <div className="grid gap-4 lg:grid-cols-3">
-                <article className="rounded-3xl border border-[#FF6A00]/25 bg-white p-5 shadow-sm lg:col-span-2">
+                <article className="rounded-3xl border border-[#FF6A00]/25 bg-white p-5 shadow-sm ring-1 ring-[#FF6A00]/5 lg:col-span-2">
                   <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#B04A00]">
                     {getCategoryLabel(topStories[0].category)}
                   </p>
@@ -428,7 +428,7 @@ export default async function JasneZpravyPage() {
                     </span>
                     <Link
                       href={`/jasne-zpravy/${latestEdition.slug}#zprava-${topStories[0].id}`}
-                      className="text-sm font-bold uppercase tracking-[0.08em] text-[#FF6A00] hover:text-[#cc5500]"
+                      className="inline-flex min-h-9 items-center text-sm font-bold uppercase tracking-[0.08em] text-[#FF6A00] hover:text-[#cc5500]"
                     >
                       Číst zprávu →
                     </Link>
@@ -437,7 +437,10 @@ export default async function JasneZpravyPage() {
 
                 <div className="space-y-4">
                   {topStories.slice(1).map((story) => (
-                    <article key={story.id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <article
+                      key={story.id}
+                      className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:border-[#FF6A00]/35 hover:shadow-md"
+                    >
                       <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">
                         {getCategoryLabel(story.category)}
                       </p>
@@ -449,7 +452,7 @@ export default async function JasneZpravyPage() {
                         <span className="text-xs text-gray-500">{sourceCountLabel(sourceCount(story, sourcesByItem))}</span>
                         <Link
                           href={`/jasne-zpravy/${latestEdition.slug}#zprava-${story.id}`}
-                          className="text-xs font-bold uppercase tracking-[0.08em] text-[#FF6A00] hover:text-[#cc5500]"
+                          className="inline-flex min-h-8 items-center text-xs font-bold uppercase tracking-[0.08em] text-[#FF6A00] hover:text-[#cc5500]"
                         >
                           Číst zprávu
                         </Link>

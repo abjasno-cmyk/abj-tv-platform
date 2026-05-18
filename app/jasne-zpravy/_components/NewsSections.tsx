@@ -226,7 +226,7 @@ export function NewsSections({
                 const bodyParagraphs = toParagraphs(item.body);
                 return (
                   <li id={`zprava-${item.id}`} key={item.id} className="scroll-mt-24">
-                    <article className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm md:p-7">
+                    <article className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm ring-1 ring-black/[0.02] md:p-7">
                       <header className="border-b border-gray-100 pb-4">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex flex-wrap items-center gap-2">
@@ -289,7 +289,7 @@ export function NewsSections({
                       ) : null}
 
                       {bodyParagraphs.length > 0 ? (
-                        <div className="mt-6 space-y-4 text-[17px] leading-8 text-gray-900">
+                        <div className="mt-6 max-w-[74ch] space-y-4 text-[17px] leading-8 text-gray-900">
                           {bodyParagraphs.map((paragraph) => (
                             <p key={`${item.id}-${paragraph.slice(0, 24)}`}>{paragraph}</p>
                           ))}

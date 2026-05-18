@@ -147,7 +147,7 @@ export default async function EditionPage({
     .slice(0, 4);
 
   return (
-    <main className="mx-auto w-full max-w-[1240px] px-4 py-8 md:py-12">
+    <main className="mx-auto w-full max-w-[1240px] px-4 py-8 text-[#111827] md:py-12">
       <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm text-gray-500">
         <Link href="/jasne-zpravy" className="font-semibold hover:text-gray-900">
           ← Zpět na vydání
@@ -164,7 +164,7 @@ export default async function EditionPage({
 
       <header
         id="vydani-top"
-        className="mb-8 rounded-3xl border border-[#FF6A00]/20 bg-gradient-to-b from-[#fffaf3] to-white p-6 shadow-[0_12px_30px_rgba(17,17,17,0.06)] md:p-8"
+        className="mb-8 rounded-3xl border border-[#FF6A00]/20 bg-gradient-to-b from-[#fffaf3] via-[#fffdf9] to-white p-6 shadow-[0_12px_30px_rgba(17,17,17,0.06)] ring-1 ring-[#FF6A00]/5 md:p-8"
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="rounded-full bg-[#FF6A00] px-3 py-1 text-xs font-bold uppercase tracking-wider text-white">
@@ -218,19 +218,19 @@ export default async function EditionPage({
               {adjacentRes.previous ? (
                 <Link
                   href={`/jasne-zpravy/${adjacentRes.previous.slug}`}
-                  className="inline-flex items-center rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-[#FF6A00]/35 hover:text-[#FF6A00]"
+                  className="inline-flex min-h-10 items-center rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-[#FF6A00]/35 hover:text-[#FF6A00]"
                 >
                   ← Předchozí vydání
                 </Link>
               ) : (
-                <span className="inline-flex items-center rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-400">
+                <span className="inline-flex min-h-10 items-center rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-400">
                   ← Předchozí vydání
                 </span>
               )}
 
               <Link
                 href="/jasne-zpravy"
-                className="inline-flex items-center rounded-xl border border-[#FF6A00]/25 bg-[#FF6A00]/10 px-3 py-2 text-sm font-semibold text-[#B04A00] hover:bg-[#FF6A00]/15"
+                className="inline-flex min-h-10 items-center rounded-xl border border-[#FF6A00]/25 bg-[#FF6A00]/10 px-3 py-2 text-sm font-semibold text-[#B04A00] hover:bg-[#FF6A00]/15"
               >
                 Zpět na celé vydání
               </Link>
@@ -238,12 +238,12 @@ export default async function EditionPage({
               {adjacentRes.next ? (
                 <Link
                   href={`/jasne-zpravy/${adjacentRes.next.slug}`}
-                  className="inline-flex items-center rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-[#FF6A00]/35 hover:text-[#FF6A00]"
+                  className="inline-flex min-h-10 items-center rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-[#FF6A00]/35 hover:text-[#FF6A00]"
                 >
                   Další vydání →
                 </Link>
               ) : (
-                <span className="inline-flex items-center rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-400">
+                <span className="inline-flex min-h-10 items-center rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-400">
                   Další vydání →
                 </span>
               )}
