@@ -91,6 +91,10 @@ function itemPreviewLead(item: NewsItem): string | null {
   return null;
 }
 
+function categoryAnchorId(category: NewsItem["category"]): string {
+  return `sekce-${category}`;
+}
+
 export function NewsSections({
   items,
   sourcesByItem,
@@ -127,6 +131,29 @@ export function NewsSections({
 
   return (
     <div className={className}>
+      {mode === "detail" && categories.length > 1 ? (
+        <nav className="sticky top-20 z-20 mb-6 rounded-2xl border border-gray-200/90 bg-white/95 p-3 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/80">
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-500">Výběr kategorií</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <a
+              href="#vydani-top"
+              className="rounded-full border border-[#FF6A00]/25 bg-[#FF6A00]/10 px-3 py-1.5 text-xs font-semibold text-[#B04A00] hover:bg-[#FF6A00]/15"
+            >
+              ↑ Nahoru
+            </a>
+            {categories.map((category) => (
+              <a
+                key={`nav-${category}`}
+                href={`#${categoryAnchorId(category)}`}
+                className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:border-[#FF6A00]/35 hover:text-[#B04A00]"
+              >
+                {getCategoryLabel(category)}
+              </a>
+            ))}
+          </div>
+        </nav>
+      ) : null}
+
       {categories.map((category) => {
         const sectionItems = [...(grouped.get(category) ?? [])].sort(
           (a, b) => rankForSort(a) - rankForSort(b),
@@ -134,7 +161,7 @@ export function NewsSections({
         if (sectionItems.length === 0) return null;
 
         return (
-          <section key={category} className="mb-12">
+          <section id={categoryAnchorId(category)} key={category} className="mb-12 scroll-mt-28">
             <SectionHeading className="mb-5 flex items-center justify-between text-sm font-bold uppercase tracking-[0.18em] text-gray-600">
               <span>{getCategoryLabel(category)}</span>
               <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] tracking-normal text-gray-600">
