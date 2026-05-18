@@ -550,6 +550,18 @@ export function AbjXClient() {
                   >
                     Sdílet ({shownShareCount})
                   </button>
+                  {videoAvailable ? (
+                    <a
+                      href={`/zed?video_id=${encodeURIComponent(item.videoId)}&video_title=${encodeURIComponent(item.headline)}`}
+                      className="rounded-lg border border-[var(--abj-gold-dim)] px-2.5 py-1 text-xs uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1"
+                    >
+                      Na Zeď
+                    </a>
+                  ) : (
+                    <span className="rounded-lg border border-[var(--abj-gold-dim)] px-2.5 py-1 text-xs uppercase tracking-[0.08em] text-abj-text3">
+                      Na Zeď
+                    </span>
+                  )}
                   {shareHint ? <span className="text-xs text-abj-text2">{shareHint}</span> : null}
                 </div>
 

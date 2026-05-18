@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { DayProgram } from "@/lib/epg-types";
 import { LiveAlert } from "@/components/abj/LiveAlert";
 import { HomePage } from "@/components/abj/HomePage";
+import { ChatPanel } from "@/components/ChatPanel";
+import { WallForVideo } from "@/components/wall/WallForVideo";
 
 type LivePageProps = {
   epg: DayProgram[];
@@ -96,6 +98,13 @@ export default function LivePage({
           setIsLive(true);
         }}
       />
+      <div className="mx-auto w-full max-w-[1200px] space-y-6 px-4 pb-8 sm:px-6 lg:px-10">
+        {videoId ? <WallForVideo videoId={videoId} videoTitle={title} /> : null}
+        <div className="space-y-2">
+          <p className="text-[11px] uppercase tracking-[0.12em] text-abj-text2">Komunita</p>
+          <ChatPanel />
+        </div>
+      </div>
     </section>
   );
 }

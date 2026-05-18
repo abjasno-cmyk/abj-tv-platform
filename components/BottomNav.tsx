@@ -8,6 +8,7 @@ const tabs = [
   { href: "/jasne-zpravy", label: "Jasné zprávy", icon: "◉" },
   { href: "/archiv", label: "Přehled dne", icon: "◧" },
   { href: "/abj-x", label: "ABJ X", icon: "✦" },
+  { href: "/zed", label: "Zeď", icon: "▩" },
   { href: "/program", label: "Program", icon: "▦" },
 ];
 
