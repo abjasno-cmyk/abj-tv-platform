@@ -64,7 +64,7 @@ export function HomePage({
       />
 
       <div className="relative z-[2] mx-auto flex w-full max-w-[1200px] flex-col gap-10 px-4 sm:px-6 lg:px-10">
-        <div id="live-player-section" className="order-10">
+        <div id="live-player-section" className="order-1">
           <LivePlayer
             videoId={videoId}
             title={title}
@@ -81,19 +81,19 @@ export function HomePage({
           />
         </div>
 
-        <div id="live-reactions-section" className="order-20">
+        <div id="live-reactions-section" className="order-2">
           {reactionsSlot}
         </div>
 
-        <div id="live-timeline-section" className="order-30">
+        <div id="live-timeline-section" className="order-3">
           <Timeline days={days} onSelect={onSelect} />
         </div>
 
-        <div id="live-engagement-section" className="order-40">
+        <div id="live-engagement-section" className="order-4">
           {engagementSlot}
         </div>
 
-        <div id="live-channels-section" className="order-50">
+        <div id="live-channels-section" className="order-5">
           <ChannelDirectory channels={channels} onSelectVideo={onSelectChannelVideo} />
         </div>
       </div>
