@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
-
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
+import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
@@ -11,20 +10,71 @@ function safeNextPath(value: string | null): string {
   return value;
 }
 
-export async function GET(request: Request) {
+function sanitizeEnvValue(value?: string): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  const equalsIdx = trimmed.indexOf("=");
+  const maybeAssigned =
+    equalsIdx > 0 && /^[A-Z0-9_]+$/.test(trimmed.slice(0, equalsIdx))
+      ? trimmed.slice(equalsIdx + 1).trim()
+      : trimmed;
+  if (
+    (maybeAssigned.startsWith('"') && maybeAssigned.endsWith('"')) ||
+    (maybeAssigned.startsWith("'") && maybeAssigned.endsWith("'"))
+  ) {
+    return maybeAssigned.slice(1, -1).trim();
+  }
+  return maybeAssigned;
+}
+
+export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const next = safeNextPath(url.searchParams.get("next"));
   const origin = `${url.protocol}//${url.host}`;
+  const cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }> = [];
 
   if (code) {
     try {
-      const supabase = await createSupabaseServerClient();
+      const supabaseUrl = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);
+      const supabaseAnonKey = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error("Supabase env vars not set");
+      }
+      const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(nextCookies) {
+            cookiesToSet.push(...nextCookies);
+          },
+        },
+      });
       await supabase.auth.exchangeCodeForSession(code);
-    } catch {
-      // Non-fatal: redirect user and let client-side modal show error on demand.
+    } catch (error) {
+      const target = new URL(`${origin}${next}`);
+      target.searchParams.set("auth_sync_error", "1");
+      target.searchParams.set("auth_sync_message", error instanceof Error ? error.message : "OAuth exchange failed");
+      const response = NextResponse.redirect(target);
+      cookiesToSet.forEach((cookie) => {
+        response.cookies.set({
+          name: cookie.name,
+          value: cookie.value,
+          ...(cookie.options ?? {}),
+        });
+      });
+      return response;
     }
   }
 
-  return NextResponse.redirect(`${origin}${next}`);
+  const response = NextResponse.redirect(`${origin}${next}`);
+  cookiesToSet.forEach((cookie) => {
+    response.cookies.set({
+      name: cookie.name,
+      value: cookie.value,
+      ...(cookie.options ?? {}),
+    });
+  });
+  return response;
 }
