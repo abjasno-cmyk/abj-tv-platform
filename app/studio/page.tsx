@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { hasStudioCapability, resolveStudioAccessContext } from "@/lib/studio/access";
+import { StudioSessionRescue } from "@/components/studio/StudioSessionRescue";
 import { loadStudioSnapshot } from "@/lib/studio/data";
 
 export const dynamic = "force-dynamic";
@@ -58,6 +59,7 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
               </Link>
             </p>
           </div>
+          <StudioSessionRescue targetPath="/studio" />
           <div className="mt-5 flex flex-wrap gap-3">
             <Link
               href="/"
