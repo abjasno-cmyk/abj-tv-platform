@@ -102,11 +102,11 @@ function itemTone(item: ProgramItem, active: boolean, isCurrentTime: boolean): s
 }
 
 export function Timeline({ days, onSelect }: TimelineProps) {
-  const [activeDayIndex, setActiveDayIndex] = useState(() => {
+  const activeDayIndex = useMemo(() => {
     const todayKey = getPragueNowParts(new Date()).dateKey;
     const todayIndex = days.findIndex((day) => day.date === todayKey);
     return todayIndex >= 0 ? todayIndex : 0;
-  });
+  }, [days]);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [scrollState, setScrollState] = useState<ScrollState>({ left: 0, max: 0 });
@@ -118,8 +118,6 @@ export function Timeline({ days, onSelect }: TimelineProps) {
   const items = useMemo(() => activeDay?.items ?? [], [activeDay]);
   const dateLabel = activeDay?.label ?? "Program";
   const currentSlot = useMemo(() => resolveCurrentSlot(items, activeDay?.date, now), [activeDay?.date, items, now]);
-  const canPrevDay = activeDayIndex > 0;
-  const canNextDay = activeDayIndex < days.length - 1;
   const canScrollTimeline = scrollState.max > 6;
   const canScrollLeft = scrollState.left > 6;
   const canScrollRight = scrollState.left < scrollState.max - 6;
@@ -192,25 +190,7 @@ export function Timeline({ days, onSelect }: TimelineProps) {
               Teď běží
             </span>
           ) : null}
-          <button
-            type="button"
-            onClick={() => setActiveDayIndex((prev) => Math.max(0, prev - 1))}
-            disabled={!canPrevDay}
-            className="rounded-full border border-[rgba(17,17,17,0.2)] bg-white px-2 py-1 text-xs text-abj-text2 transition enabled:hover:border-[#FF6A00] enabled:hover:text-[#C14900] disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label="Předchozí den timeline"
-          >
-            ←
-          </button>
           <p className="min-w-[165px] text-center text-sm font-semibold text-abj-text1">{dateLabel}</p>
-          <button
-            type="button"
-            onClick={() => setActiveDayIndex((prev) => Math.min(days.length - 1, prev + 1))}
-            disabled={!canNextDay}
-            className="rounded-full border border-[rgba(17,17,17,0.2)] bg-white px-2 py-1 text-xs text-abj-text2 transition enabled:hover:border-[#FF6A00] enabled:hover:text-[#C14900] disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label="Následující den timeline"
-          >
-            →
-          </button>
         </div>
       </div>
 

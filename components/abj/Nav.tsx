@@ -8,10 +8,9 @@ import { ReplitHealthBadge } from "@/components/abj/ReplitHealthBadge";
 const NAV_LINKS = [
   { href: "/live", label: "Vysílání" },
   { href: "/jasne-zpravy", label: "Jasné zprávy" },
-  { href: "/archiv", label: "Přehled dne" },
-  { href: "/abj-x", label: "ABJ X" },
+  { href: "/archiv", label: "Nejnovější videa" },
+  { href: "/abj-x", label: "VeroX" },
   { href: "/zed", label: "Zeď" },
-  { href: "/program", label: "Program" },
 ];
 
 function getPragueClockValue(date: Date): string {
@@ -40,7 +39,6 @@ export function ABJNav() {
     if (pathname.startsWith("/archiv") || pathname.startsWith("/feed")) return "/archiv";
     if (pathname.startsWith("/abj-x")) return "/abj-x";
     if (pathname.startsWith("/zed")) return "/zed";
-    if (pathname.startsWith("/program")) return "/program";
     if (pathname.startsWith("/live")) return "/live";
     return "";
   }, [pathname]);
@@ -51,16 +49,11 @@ export function ABJNav() {
         <div className="flex items-center">
           <div className="relative">
             <p className="font-[var(--font-serif)] text-[24px] font-extrabold tracking-[0.03em] text-abj-text1">
-              ABJ
+              VEROX
             </p>
             <span className="absolute -right-2 top-0 h-2 w-2 rounded-full bg-abj-red" />
           </div>
-          <span className="mx-[12px] text-[rgba(17,17,17,0.25)]">|</span>
-          <p className="font-[var(--font-sans)] text-[10px] uppercase tracking-[0.2em] text-abj-text2">
-            Geometric Live
-          </p>
-
-          <nav className="ml-[26px] hidden md:block">
+          <nav className="ml-[18px] hidden md:block">
             <ul className="flex items-center gap-[22px]">
               {NAV_LINKS.map((link) => {
                 const isActive = activeHref === link.href;

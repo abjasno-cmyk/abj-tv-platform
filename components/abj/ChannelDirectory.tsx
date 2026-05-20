@@ -12,6 +12,7 @@ export type LiveChannelVideo = {
 
 export type LiveChannelGroup = {
   channelName: string;
+  avatarUrl: string | null;
   videos: LiveChannelVideo[];
 };
 
@@ -41,6 +42,38 @@ function formatPublishedLabel(isoString: string): string {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);
+}
+
+function initialsFromName(channelName: string): string {
+  const parts = channelName
+    .split(/\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length === 0) return "CH";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
+}
+
+function ChannelAvatar({ channelName, avatarUrl }: { channelName: string; avatarUrl: string | null }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = Boolean(avatarUrl) && !imageFailed;
+
+  return (
+    <span className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[rgba(17,17,17,0.16)] bg-[rgba(17,17,17,0.06)]">
+      {showImage ? (
+        <Image
+          src={avatarUrl!}
+          alt={`${channelName} avatar`}
+          fill
+          className="object-cover"
+          onError={() => setImageFailed(true)}
+          unoptimized
+        />
+      ) : (
+        <span className="text-[11px] font-bold uppercase tracking-[0.05em] text-abj-text2">{initialsFromName(channelName)}</span>
+      )}
+    </span>
+  );
 }
 
 export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryProps) {
@@ -87,10 +120,13 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                   }`}
                   aria-expanded={expanded}
                 >
-                  <span className="flex flex-wrap items-center justify-between gap-3">
-                    <span className="line-clamp-1">{channel.channelName}</span>
-                    <span className="text-xs uppercase tracking-[0.08em] text-abj-text2">
-                      {expanded ? "Skrýt videa" : "Poslední 4 videa"}
+                  <span className="flex items-center justify-between gap-3">
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <ChannelAvatar channelName={channel.channelName} avatarUrl={channel.avatarUrl} />
+                      <span className="line-clamp-1">{channel.channelName}</span>
+                    </span>
+                    <span className="shrink-0 text-xs uppercase tracking-[0.08em] text-abj-text2">
+                      {expanded ? "Skrýt videa" : "4 videa"}
                     </span>
                   </span>
                 </button>

@@ -96,6 +96,7 @@ export function LivePlayer({
 
   return (
     <section
+      id="live-player-shell"
       ref={playerShellRef}
       className="relative overflow-hidden rounded-[28px] border border-[rgba(17,17,17,0.1)] bg-white shadow-[0_18px_45px_rgba(17,17,17,0.08)]"
     >

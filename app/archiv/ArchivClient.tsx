@@ -1290,54 +1290,59 @@ export function ArchivClient({ initialData }: ArchivClientProps) {
     }
     return selectedChannelPanelVideos[0];
   }, [selectedChannelPanelVideos, userSelectedVideoKey]);
+  const showExtendedOverview = false;
 
   return (
     <section className="mx-auto w-full max-w-[1280px] space-y-10 px-4 py-6 sm:px-6 lg:space-y-12">
       <header className="space-y-2">
-        <p className="text-[11px] uppercase tracking-[0.16em] text-abj-text2">Nově ve vysílání</p>
+        <p className="text-[11px] uppercase tracking-[0.16em] text-abj-text2">Nejnovější videa</p>
         <h1 className="font-[var(--font-serif)] text-3xl font-semibold leading-tight text-abj-text1 sm:text-4xl">
-          Nově ve vysílání
+          Nejnovější videa
         </h1>
         <p className="max-w-3xl text-sm text-abj-text2 sm:text-base">
-          Nejnovější videa, pořady a výběr z kanálů ABJ sítě.
+          Průběžně aktualizovaný přehled posledních videí napříč sítí.
         </p>
       </header>
 
-      <FeaturedAbjSection
-        primary={featuredSelection.primary}
-        secondary={featuredSelection.secondary}
-        loading={isInitialLoading}
-      />
+      {showExtendedOverview ? (
+        <>
+          <FeaturedAbjSection
+            primary={featuredSelection.primary}
+            secondary={featuredSelection.secondary}
+            loading={isInitialLoading}
+          />
 
-      <ChannelTiles
-        channels={channels}
-        filteredChannels={filteredChannels}
-        selectedChannelKey={selectedChannel?.key ?? null}
-        onSelect={(channelKey) => {
-          setUserSelectedChannelKey(channelKey);
-          setUserSelectedVideoKey(null);
-          setChannelPanelOpen(true);
-        }}
-        query={channelQuery}
-        onQueryChange={setChannelQuery}
-        filter={channelFilter}
-        onFilterChange={setChannelFilter}
-        loading={isInitialLoading}
-        isExpandingChannels={isExpandingChannels}
-      />
+          <ChannelTiles
+            channels={channels}
+            filteredChannels={filteredChannels}
+            selectedChannelKey={selectedChannel?.key ?? null}
+            onSelect={(channelKey) => {
+              setUserSelectedChannelKey(channelKey);
+              setUserSelectedVideoKey(null);
+              setChannelPanelOpen(true);
+            }}
+            query={channelQuery}
+            onQueryChange={setChannelQuery}
+            filter={channelFilter}
+            onFilterChange={setChannelFilter}
+            loading={isInitialLoading}
+            isExpandingChannels={isExpandingChannels}
+          />
 
-      <ChannelDetailPanel
-        channel={selectedChannel}
-        selectedVideo={selectedChannelPanelVideo}
-        open={channelPanelOpen}
-        loading={isInitialLoading}
-        onClose={() => setChannelPanelOpen(false)}
-        onSelectVideo={setUserSelectedVideoKey}
-      />
+          <ChannelDetailPanel
+            channel={selectedChannel}
+            selectedVideo={selectedChannelPanelVideo}
+            open={channelPanelOpen}
+            loading={isInitialLoading}
+            onClose={() => setChannelPanelOpen(false)}
+            onSelectVideo={setUserSelectedVideoKey}
+          />
+        </>
+      ) : null}
 
       <VideoGrid
         title="Nejnovější videa"
-        subtitle="Kompaktní přehled napříč celou ABJ sítí."
+        subtitle="Kompaktní přehled napříč celou sítí VeroX."
         videos={latestVideos}
         loading={isInitialLoading}
         emptyMessage={EMPTY_MESSAGE}

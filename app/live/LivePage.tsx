@@ -9,6 +9,24 @@ import { HomePage } from "@/components/abj/HomePage";
 import { ChatPanel } from "@/components/ChatPanel";
 import { WallForVideo } from "@/components/wall/WallForVideo";
 
+type FullscreenElement = HTMLElement & {
+  webkitRequestFullscreen?: () => Promise<void> | void;
+};
+
+type FullscreenDocument = Document & {
+  webkitFullscreenElement?: Element | null;
+};
+
+async function requestFullscreenFor(element: FullscreenElement): Promise<void> {
+  if (typeof element.requestFullscreen === "function") {
+    await element.requestFullscreen();
+    return;
+  }
+  if (typeof element.webkitRequestFullscreen === "function") {
+    await element.webkitRequestFullscreen();
+  }
+}
+
 type LivePageProps = {
   epg: DayProgram[];
   initialVideoId: string | null;
@@ -41,6 +59,20 @@ export default function LivePage({
   const [startSeconds, setStartSeconds] = useState(() => Math.max(0, Math.floor(initialStartSeconds)));
   const [remainingLabel, setRemainingLabel] = useState("za 12 min");
   const [progressPercent, setProgressPercent] = useState(22);
+
+  const scrollToPlayerAndFullscreen = () => {
+    const playerElement = document.getElementById("live-player-shell") as FullscreenElement | null;
+    if (!playerElement) return;
+    playerElement.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+    const fullscreenDocument = document as FullscreenDocument;
+    if (fullscreenDocument.fullscreenElement || fullscreenDocument.webkitFullscreenElement) return;
+    void requestFullscreenFor(playerElement).catch((error) => {
+      console.warn("live-page-auto-fullscreen-failed", error);
+    });
+  };
 
   const timelineItems = useMemo(
     () => safeEpg.flatMap((day) => day.items),
@@ -112,6 +144,7 @@ export default function LivePage({
           setIsLive(item.type === "live" || item.channelName.toLowerCase().includes("abj"));
         }}
         onSelectChannelVideo={({ channelName: selectedChannelName, video }) => {
+          scrollToPlayerAndFullscreen();
           setTitle(video.title);
           setChannelName(selectedChannelName);
           setVideoId(video.videoId);

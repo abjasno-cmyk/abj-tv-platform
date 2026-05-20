@@ -403,9 +403,9 @@ export function AbjXClient() {
   return (
     <section className="mx-auto w-full max-w-4xl space-y-6 px-3 py-6 sm:px-5">
       <header className="space-y-2">
-        <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">ABJ X</p>
+        <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">VeroX</p>
         <h1 className="font-[var(--font-serif)] text-3xl font-semibold text-abj-text1">Textové zprávy</h1>
-        <p className="text-sm text-abj-text2">Krátké zprávy a souvislosti napříč ABJ sítí</p>
+        <p className="text-sm text-abj-text2">Krátké zprávy a souvislosti napříč sítí VeroX</p>
       </header>
 
       {items.length === 0 && !loading ? (
