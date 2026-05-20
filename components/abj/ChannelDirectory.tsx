@@ -14,6 +14,7 @@ export type LiveChannelGroup = {
   channelName: string;
   avatarUrl: string | null;
   channelId: string | null;
+  channelUrl: string | null;
   videos: LiveChannelVideo[];
 };
 
@@ -107,7 +108,8 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
     if (expandedChannelData.videos.length > 0) return;
     const channelKey = expandedChannelData.channelName;
     const channelId = expandedChannelData.channelId;
-    if (!channelId) return;
+    const channelUrl = expandedChannelData.channelUrl;
+    if (!channelId && !channelUrl) return;
     if (loadingByChannel[channelKey]) return;
     if (Object.prototype.hasOwnProperty.call(fetchedVideosByChannel, channelKey)) return;
 
@@ -117,7 +119,11 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
         if (cancelled) return null;
         setLoadingByChannel((prev) => ({ ...prev, [channelKey]: true }));
         setErrorByChannel((prev) => ({ ...prev, [channelKey]: "" }));
-        return fetch(`/api/channel-latest?channelId=${encodeURIComponent(channelId)}&limit=4`, {
+        const params = new URLSearchParams();
+        if (channelId) params.set("channelId", channelId);
+        if (channelUrl) params.set("channelUrl", channelUrl);
+        params.set("limit", "4");
+        return fetch(`/api/channel-latest?${params.toString()}`, {
           cache: "no-store",
         });
       })
@@ -249,13 +255,13 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                           </div>
                         </button>
                       ))
-                    ) : channel.channelId ? (
+                    ) : channel.channelId || channel.channelUrl ? (
                       <p className="rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white px-4 py-3 text-sm text-abj-text2 sm:col-span-2">
                         {loadingError || "Kanál momentálně neposkytuje dostupná videa."}
                       </p>
                     ) : (
                       <p className="rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white px-4 py-3 text-sm text-abj-text2 sm:col-span-2">
-                        U tohoto kanálu chybí propojení na YouTube, proto nejde načíst nejnovější videa.
+                        U tohoto kanálu chybí interní mapování na YouTube kanál, proto nejde načíst nejnovější videa.
                       </p>
                     )}
                   </div>

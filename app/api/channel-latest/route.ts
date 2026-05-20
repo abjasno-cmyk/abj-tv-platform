@@ -5,6 +5,100 @@ type ChannelLatestVideo = {
   thumbnail: string;
 };
 
+type YouTubeChannelLookupPayload = {
+  items?: Array<{
+    id?: string;
+  }>;
+};
+
+function sanitizeEnvValue(value?: string): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  const equalsIdx = trimmed.indexOf("=");
+  const maybeAssigned =
+    equalsIdx > 0 && /^[A-Z0-9_]+$/.test(trimmed.slice(0, equalsIdx))
+      ? trimmed.slice(equalsIdx + 1).trim()
+      : trimmed;
+  if (
+    (maybeAssigned.startsWith('"') && maybeAssigned.endsWith('"')) ||
+    (maybeAssigned.startsWith("'") && maybeAssigned.endsWith("'"))
+  ) {
+    return maybeAssigned.slice(1, -1).trim();
+  }
+  return maybeAssigned;
+}
+
+function resolveYouTubeApiKey(): string | null {
+  return sanitizeEnvValue(process.env.YOUTUBE_API_KEY) ?? null;
+}
+
+function parseChannelUrl(channelUrl: string): {
+  directChannelId: string | null;
+  handle: string | null;
+  username: string | null;
+} {
+  try {
+    const parsed = new URL(channelUrl);
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    if (parts.length === 0) return { directChannelId: null, handle: null, username: null };
+
+    const first = parts[0];
+    if (first === "channel" && parts[1]) {
+      return { directChannelId: parts[1], handle: null, username: null };
+    }
+    if (first.startsWith("@")) {
+      return { directChannelId: null, handle: first.slice(1), username: null };
+    }
+    if ((first === "user" || first === "c") && parts[1]) {
+      return { directChannelId: null, handle: null, username: parts[1] };
+    }
+  } catch {
+    // Ignore malformed URL.
+  }
+  return { directChannelId: null, handle: null, username: null };
+}
+
+async function resolveChannelIdByHandle(handle: string, apiKey: string): Promise<string | null> {
+  const normalized = handle.trim().replace(/^@+/, "");
+  if (!normalized) return null;
+  const candidates = [normalized, `@${normalized}`];
+  for (const candidate of candidates) {
+    try {
+      const url = new URL("https://www.googleapis.com/youtube/v3/channels");
+      url.searchParams.set("part", "id");
+      url.searchParams.set("forHandle", candidate);
+      url.searchParams.set("maxResults", "1");
+      url.searchParams.set("key", apiKey);
+      const response = await fetch(url.toString(), { cache: "no-store" });
+      if (!response.ok) continue;
+      const payload = (await response.json()) as YouTubeChannelLookupPayload;
+      const resolved = payload.items?.[0]?.id?.trim();
+      if (resolved) return resolved;
+    } catch {
+      // Continue to next attempt.
+    }
+  }
+  return null;
+}
+
+async function resolveChannelIdByUsername(username: string, apiKey: string): Promise<string | null> {
+  const normalized = username.trim();
+  if (!normalized) return null;
+  try {
+    const url = new URL("https://www.googleapis.com/youtube/v3/channels");
+    url.searchParams.set("part", "id");
+    url.searchParams.set("forUsername", normalized);
+    url.searchParams.set("maxResults", "1");
+    url.searchParams.set("key", apiKey);
+    const response = await fetch(url.toString(), { cache: "no-store" });
+    if (!response.ok) return null;
+    const payload = (await response.json()) as YouTubeChannelLookupPayload;
+    return payload.items?.[0]?.id?.trim() ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function decodeXmlEntities(value: string): string {
   return value
     .replace(/&amp;/g, "&")
@@ -46,12 +140,31 @@ function parseLatestVideosFromXml(xml: string, limit: number): ChannelLatestVide
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const channelId = searchParams.get("channelId")?.trim() ?? "";
+  let channelId = searchParams.get("channelId")?.trim() ?? "";
+  const channelUrl = searchParams.get("channelUrl")?.trim() ?? "";
   const requestedLimit = Number.parseInt(searchParams.get("limit") ?? "4", 10);
   const limit = Number.isFinite(requestedLimit) ? Math.min(8, Math.max(1, requestedLimit)) : 4;
 
+  if (!channelId && channelUrl) {
+    const parsed = parseChannelUrl(channelUrl);
+    if (parsed.directChannelId) {
+      channelId = parsed.directChannelId;
+    } else {
+      const apiKey = resolveYouTubeApiKey();
+      if (apiKey && parsed.handle) {
+        channelId = (await resolveChannelIdByHandle(parsed.handle, apiKey)) ?? "";
+      }
+      if (!channelId && apiKey && parsed.username) {
+        channelId = (await resolveChannelIdByUsername(parsed.username, apiKey)) ?? "";
+      }
+    }
+  }
+
   if (!channelId) {
-    return Response.json({ videos: [], error: "Missing channelId." }, { status: 400 });
+    return Response.json(
+      { videos: [], error: "Chybí channelId a nepodařilo se ho odvodit z URL kanálu." },
+      { status: 400 }
+    );
   }
 
   try {
