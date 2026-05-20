@@ -17,7 +17,7 @@ const VIDEO_ID_PATTERN = /^[a-zA-Z0-9_-]{11}$/;
 const YOUTUBE_WATCH_USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36,gzip(gfe)";
 const YOUTUBE_BOT_GUARD_PATTERN =
-  /confirm you(?:\\u2019|')re not a bot|detected unusual traffic|unusual traffic from your computer network|class="g-recaptcha"/i;
+  /confirm you(?:\u2019|\\u2019|')re not a bot|detected unusual traffic|unusual traffic from your computer network|class="g-recaptcha"/i;
 
 type CachedTranscript = {
   expiresAtMs: number;
