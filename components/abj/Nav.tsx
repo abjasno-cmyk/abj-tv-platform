@@ -108,14 +108,14 @@ export function ABJNav() {
         }`}
       >
         <header className="border-b border-[rgba(17,17,17,0.14)] bg-white px-4 md:px-5 shadow-[0_6px_18px_rgba(17,17,17,0.08)]">
-          <div className="flex h-[58px] items-center justify-between">
+          <div className="flex h-[58px] items-center gap-4">
             <div className="flex items-center">
-              <div className="relative">
+              <Link href="/live" className="relative inline-flex items-center" aria-label="Přejít na stránku Vysílání">
                 <p className="font-[var(--font-serif)] text-[24px] font-extrabold tracking-[0.03em] text-abj-text1">
                   VEROX
                 </p>
                 <span className="absolute -right-2 top-0 h-2 w-2 rounded-full bg-abj-red" />
-              </div>
+              </Link>
               <nav className="ml-[18px] hidden md:block">
                 <ul className="flex items-center gap-[22px]">
                   {navLinks.map((link) => {
@@ -138,8 +138,11 @@ export function ABJNav() {
                 </ul>
               </nav>
             </div>
+            <p className="hidden flex-1 px-3 text-center font-[var(--font-sans)] text-[13px] font-semibold tracking-[0.07em] text-abj-text2 xl:block">
+              VEROX - mainstreamový detox
+            </p>
 
-            <div className="flex items-center gap-3 md:gap-4">
+            <div className="ml-auto flex items-center gap-3 md:gap-4">
               <button
                 type="button"
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(17,17,17,0.16)] text-abj-text1 md:hidden"
