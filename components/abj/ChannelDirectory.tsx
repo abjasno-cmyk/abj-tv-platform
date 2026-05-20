@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import { FollowChannelButton } from "@/components/auth/FollowChannelButton";
 
@@ -104,76 +104,63 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
     [expandedChannel, orderedChannels]
   );
 
-  useEffect(() => {
-    if (!expandedChannelData) return;
-    if (expandedChannelData.videos.length > 0) return;
-    const channelKey = expandedChannelData.channelName;
-    const channelId = expandedChannelData.channelId;
-    const channelUrl = expandedChannelData.channelUrl;
+  const loadFallbackVideos = async (channel: LiveChannelGroup) => {
+    const channelKey = channel.channelName;
+    const channelId = channel.channelId;
+    const channelUrl = channel.channelUrl;
+    if (channel.videos.length > 0) return;
     if (!channelId && !channelUrl) return;
     if (loadingByChannel[channelKey]) return;
     if (Object.prototype.hasOwnProperty.call(fetchedVideosByChannel, channelKey)) return;
 
-    let cancelled = false;
-    void Promise.resolve()
-      .then(() => {
-        if (cancelled) return null;
-        setLoadingByChannel((prev) => ({ ...prev, [channelKey]: true }));
-        setErrorByChannel((prev) => ({ ...prev, [channelKey]: "" }));
-        const params = new URLSearchParams();
-        if (channelId) params.set("channelId", channelId);
-        if (channelUrl) params.set("channelUrl", channelUrl);
-        params.set("limit", "4");
-        return fetch(`/api/channel-latest?${params.toString()}`, {
-          cache: "no-store",
-        });
-      })
-      .then(async (response) => {
-        if (!response) return;
-        const payload = (await response.json().catch(() => ({}))) as ChannelLatestApiResponse;
-        if (!response.ok) {
-          throw new Error(payload.error ?? `HTTP ${response.status}`);
-        }
-        const fallbackVideos = (payload.videos ?? [])
-          .map((video): LiveChannelVideo | null => {
-            const videoId = video.videoId?.trim();
-            const title = video.title?.trim();
-            if (!videoId || !title) return null;
-            return {
-              videoId,
-              title,
-              thumbnail: video.thumbnail?.trim() || null,
-              publishedAt: video.publishedAt?.trim() || new Date(0).toISOString(),
-            };
-          })
-          .filter((video): video is LiveChannelVideo => Boolean(video));
+    setLoadingByChannel((prev) => ({ ...prev, [channelKey]: true }));
+    setErrorByChannel((prev) => ({ ...prev, [channelKey]: "" }));
 
-        if (cancelled) return;
-        setFetchedVideosByChannel((prev) => ({ ...prev, [channelKey]: fallbackVideos }));
-        if (fallbackVideos.length === 0) {
-          setErrorByChannel((prev) => ({
-            ...prev,
-            [channelKey]: "Kanál momentálně neposkytuje dostupná videa.",
-          }));
-        }
-      })
-      .catch((error) => {
-        if (cancelled) return;
-        setFetchedVideosByChannel((prev) => ({ ...prev, [channelKey]: [] }));
+    try {
+      const params = new URLSearchParams();
+      if (channelId) params.set("channelId", channelId);
+      if (channelUrl) params.set("channelUrl", channelUrl);
+      params.set("limit", "4");
+
+      const response = await fetch(`/api/channel-latest?${params.toString()}`, {
+        cache: "no-store",
+      });
+      const payload = (await response.json().catch(() => ({}))) as ChannelLatestApiResponse;
+      if (!response.ok) {
+        throw new Error(payload.error ?? `HTTP ${response.status}`);
+      }
+
+      const fallbackVideos = (payload.videos ?? [])
+        .map((video): LiveChannelVideo | null => {
+          const videoId = video.videoId?.trim();
+          const title = video.title?.trim();
+          if (!videoId || !title) return null;
+          return {
+            videoId,
+            title,
+            thumbnail: video.thumbnail?.trim() || null,
+            publishedAt: video.publishedAt?.trim() || new Date(0).toISOString(),
+          };
+        })
+        .filter((video): video is LiveChannelVideo => Boolean(video));
+
+      setFetchedVideosByChannel((prev) => ({ ...prev, [channelKey]: fallbackVideos }));
+      if (fallbackVideos.length === 0) {
         setErrorByChannel((prev) => ({
           ...prev,
-          [channelKey]: error instanceof Error ? error.message : "Nepodařilo se načíst videa.",
+          [channelKey]: "Kanál momentálně neposkytuje dostupná videa.",
         }));
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setLoadingByChannel((prev) => ({ ...prev, [channelKey]: false }));
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [expandedChannelData, fetchedVideosByChannel, loadingByChannel]);
+      }
+    } catch (error) {
+      setFetchedVideosByChannel((prev) => ({ ...prev, [channelKey]: [] }));
+      setErrorByChannel((prev) => ({
+        ...prev,
+        [channelKey]: error instanceof Error ? error.message : "Nepodařilo se načíst videa.",
+      }));
+    } finally {
+      setLoadingByChannel((prev) => ({ ...prev, [channelKey]: false }));
+    }
+  };
 
   return (
     <section className="rounded-[26px] border border-abj-goldDim bg-abj-panel px-5 py-5 shadow-[0_12px_28px_rgba(17,17,17,0.06)]">
@@ -205,7 +192,11 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                 <button
                   type="button"
                   onClick={() => {
+                    const isOpening = expandedChannel !== channel.channelName;
                     setExpandedChannel((current) => (current === channel.channelName ? null : channel.channelName));
+                    if (isOpening) {
+                      void loadFallbackVideos(channel);
+                    }
                   }}
                   className={`w-full rounded-2xl border text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6A00] ${
                     featured
