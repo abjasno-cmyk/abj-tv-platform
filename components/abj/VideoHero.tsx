@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import YouTube, { type YouTubeProps } from "react-youtube";
 
+import { TranscriptPanel } from "@/components/video/TranscriptPanel";
+
 type VideoHeroProps = {
   videoId: string | null;
   title: string;
@@ -132,6 +134,7 @@ export function VideoHero({
             />
           </div>
           <p className="mt-[5px] font-[var(--font-sans)] text-[11px] text-[var(--abj-text2)]">{remainingLabel}</p>
+          {videoId ? <TranscriptPanel videoId={videoId} className="mt-2" /> : null}
         </div>
       </div>
     </section>

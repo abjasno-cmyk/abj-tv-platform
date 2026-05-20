@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 import { useFeed } from "@/hooks/useFeed";
+import { TranscriptPanel } from "@/components/video/TranscriptPanel";
 import type { FeedPost } from "@/lib/api";
 
 const EMPTY_MESSAGE = "Zatím nejsou dostupná žádná nová videa.";
@@ -654,6 +655,7 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: A
           ) : (
             <p className="text-sm text-abj-text2">Video nelze vložit do přehrávače.</p>
           )}
+          <TranscriptPanel videoId={videoId} />
         </div>
       ) : null}
     </article>
@@ -1002,6 +1004,7 @@ function ChannelVideoPlayer({ video }: { video: FeedVideoView }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const embedUrl = getYoutubeEmbedUrl(video);
+  const transcriptVideoId = getEffectiveVideoId(video);
   const aspect = getVideoAspectRatio(video);
   const isPortrait = aspect === "portrait";
   const publishedLabel = formatPublishedLabel(video.published_at);
@@ -1055,6 +1058,7 @@ function ChannelVideoPlayer({ video }: { video: FeedVideoView }) {
           {publishedLabel ? ` · ${publishedLabel}` : ""}
         </p>
       </div>
+      <TranscriptPanel videoId={transcriptVideoId} />
     </div>
   );
 }

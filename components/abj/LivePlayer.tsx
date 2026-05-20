@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import YouTube, { type YouTubeProps } from "react-youtube";
 
+import { TranscriptPanel } from "@/components/video/TranscriptPanel";
+
 type LivePlayerProps = {
   videoId: string | null;
   title: string;
@@ -276,6 +278,12 @@ export function LivePlayer({
           {isFullscreen ? "Ukončit celou obrazovku" : "Zvětšit na celou obrazovku"}
         </button>
       </div>
+
+      {videoId ? (
+        <div className="relative z-10 border-t border-[rgba(17,17,17,0.08)] bg-[rgba(249,246,241,0.65)] px-6 py-3">
+          <TranscriptPanel videoId={videoId} />
+        </div>
+      ) : null}
     </section>
   );
 }

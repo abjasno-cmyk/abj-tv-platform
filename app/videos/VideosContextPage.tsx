@@ -10,6 +10,7 @@ import {
   type ContextStatus,
   type PublishedVideo,
 } from "@/lib/contextLayerApi";
+import { TranscriptPanel } from "@/components/video/TranscriptPanel";
 
 type ClaimStatusStyle = {
   ring: string;
@@ -518,6 +519,7 @@ export function VideosContextPage() {
               <span>{duration > 0 ? formatClock(duration) : "--:--"}</span>
             </div>
             <MarkerBar duration={effectiveDuration} claims={claims} activeClaimId={activeClaimId} onSeek={seekTo} />
+            <TranscriptPanel videoId={selectedVideo.youtubeId ?? null} className="mt-3" />
           </div>
 
           {showContextPanel ? (
