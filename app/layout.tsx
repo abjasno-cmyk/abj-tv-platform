@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Montserrat } from "next/font/google";
 import "./globals.css";
 import { ABJNav } from "@/components/abj/Nav";
+import { LegalFooter } from "@/components/abj/LegalFooter";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { EditorialEventDebugPanel } from "@/components/dev/EditorialEventDebugPanel";
 
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
           {/* Single global nav only — prevents duplicate legacy header stacks. */}
           <ABJNav />
           <main className="min-h-[calc(100vh-46px)] pt-[68px]">{children}</main>
+          <LegalFooter />
           {showEditorialDebug ? <EditorialEventDebugPanel /> : null}
         </AuthProvider>
       </body>
