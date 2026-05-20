@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 
 export type LiveChannelVideo = {
@@ -13,12 +13,23 @@ export type LiveChannelVideo = {
 export type LiveChannelGroup = {
   channelName: string;
   avatarUrl: string | null;
+  channelId: string | null;
   videos: LiveChannelVideo[];
 };
 
 type ChannelDirectoryProps = {
   channels: LiveChannelGroup[];
   onSelectVideo: (payload: { channelName: string; video: LiveChannelVideo }) => void;
+};
+
+type ChannelLatestApiResponse = {
+  videos?: Array<{
+    videoId?: string;
+    title?: string;
+    thumbnail?: string;
+    publishedAt?: string;
+  }>;
+  error?: string;
 };
 
 function normalizeForSearch(value: string): string {
@@ -78,11 +89,79 @@ function ChannelAvatar({ channelName, avatarUrl }: { channelName: string; avatar
 
 export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryProps) {
   const [expandedChannel, setExpandedChannel] = useState<string | null>(null);
+  const [fetchedVideosByChannel, setFetchedVideosByChannel] = useState<Record<string, LiveChannelVideo[]>>({});
+  const [loadingByChannel, setLoadingByChannel] = useState<Record<string, boolean>>({});
+  const [errorByChannel, setErrorByChannel] = useState<Record<string, string>>({});
 
   const orderedChannels = useMemo(
     () => [...channels].sort((a, b) => a.channelName.localeCompare(b.channelName, "cs-CZ")),
     [channels]
   );
+  const expandedChannelData = useMemo(
+    () => orderedChannels.find((channel) => channel.channelName === expandedChannel) ?? null,
+    [expandedChannel, orderedChannels]
+  );
+
+  useEffect(() => {
+    if (!expandedChannelData) return;
+    if (expandedChannelData.videos.length > 0) return;
+    const channelKey = expandedChannelData.channelName;
+    if (!expandedChannelData.channelId) return;
+    if (loadingByChannel[channelKey]) return;
+    if (Object.prototype.hasOwnProperty.call(fetchedVideosByChannel, channelKey)) return;
+
+    let cancelled = false;
+    setLoadingByChannel((prev) => ({ ...prev, [channelKey]: true }));
+    setErrorByChannel((prev) => ({ ...prev, [channelKey]: "" }));
+
+    void fetch(`/api/channel-latest?channelId=${encodeURIComponent(expandedChannelData.channelId)}&limit=4`, {
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => ({}))) as ChannelLatestApiResponse;
+        if (!response.ok) {
+          throw new Error(payload.error ?? `HTTP ${response.status}`);
+        }
+        const fallbackVideos = (payload.videos ?? [])
+          .map((video): LiveChannelVideo | null => {
+            const videoId = video.videoId?.trim();
+            const title = video.title?.trim();
+            if (!videoId || !title) return null;
+            return {
+              videoId,
+              title,
+              thumbnail: video.thumbnail?.trim() || null,
+              publishedAt: video.publishedAt?.trim() || new Date(0).toISOString(),
+            };
+          })
+          .filter((video): video is LiveChannelVideo => Boolean(video));
+
+        if (cancelled) return;
+        setFetchedVideosByChannel((prev) => ({ ...prev, [channelKey]: fallbackVideos }));
+        if (fallbackVideos.length === 0) {
+          setErrorByChannel((prev) => ({
+            ...prev,
+            [channelKey]: "Kanál momentálně neposkytuje dostupná videa.",
+          }));
+        }
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setFetchedVideosByChannel((prev) => ({ ...prev, [channelKey]: [] }));
+        setErrorByChannel((prev) => ({
+          ...prev,
+          [channelKey]: error instanceof Error ? error.message : "Nepodařilo se načíst videa.",
+        }));
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setLoadingByChannel((prev) => ({ ...prev, [channelKey]: false }));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [expandedChannelData, fetchedVideosByChannel, loadingByChannel]);
 
   return (
     <section className="rounded-[26px] border border-abj-goldDim bg-abj-panel px-5 py-5 shadow-[0_12px_28px_rgba(17,17,17,0.06)]">
@@ -105,7 +184,10 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
           orderedChannels.map((channel) => {
             const expanded = expandedChannel === channel.channelName;
             const featured = isAbyByloJasno(channel.channelName);
-            const latestVideos = channel.videos.slice(0, 4);
+            const fallbackVideos = fetchedVideosByChannel[channel.channelName] ?? [];
+            const latestVideos = (channel.videos.length > 0 ? channel.videos : fallbackVideos).slice(0, 4);
+            const loadingFallbackVideos = Boolean(loadingByChannel[channel.channelName]);
+            const loadingError = errorByChannel[channel.channelName] ?? "";
             return (
               <div key={channel.channelName} className="space-y-2">
                 <button
@@ -126,14 +208,18 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                       <span className="line-clamp-1">{channel.channelName}</span>
                     </span>
                     <span className="shrink-0 text-xs uppercase tracking-[0.08em] text-abj-text2">
-                      {expanded ? "Skrýt videa" : "4 videa"}
+                      {expanded ? "Skrýt videa" : "Nejnovější videa"}
                     </span>
                   </span>
                 </button>
 
                 {expanded ? (
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {latestVideos.length > 0 ? (
+                    {loadingFallbackVideos ? (
+                      <p className="rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white px-4 py-3 text-sm text-abj-text2 sm:col-span-2">
+                        Načítám nejnovější videa přímo z kanálu...
+                      </p>
+                    ) : latestVideos.length > 0 ? (
                       latestVideos.map((video) => (
                         <button
                           key={`${channel.channelName}-${video.videoId}`}
@@ -158,9 +244,13 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                           </div>
                         </button>
                       ))
+                    ) : channel.channelId ? (
+                      <p className="rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white px-4 py-3 text-sm text-abj-text2 sm:col-span-2">
+                        {loadingError || "Kanál momentálně neposkytuje dostupná videa."}
+                      </p>
                     ) : (
                       <p className="rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white px-4 py-3 text-sm text-abj-text2 sm:col-span-2">
-                        Tento kanál zatím nemá dostupná videa.
+                        U tohoto kanálu chybí propojení na YouTube, proto nejde načíst nejnovější videa.
                       </p>
                     )}
                   </div>

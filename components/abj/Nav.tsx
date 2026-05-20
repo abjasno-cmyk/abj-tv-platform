@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ReplitHealthBadge } from "@/components/abj/ReplitHealthBadge";
 
@@ -26,6 +26,9 @@ export function ABJNav() {
   const pathname = usePathname();
   const [clock, setClock] = useState(() => getPragueClockValue(new Date()));
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollRef = useRef(0);
+  const revealTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -33,6 +36,48 @@ export function ABJNav() {
     }, 30_000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    setIsVisible(true);
+    if (mobileOpen) return;
+
+    const onScroll = () => {
+      const currentY = window.scrollY;
+      const previousY = lastScrollRef.current;
+      if (currentY <= 12) {
+        setIsVisible(true);
+      } else if (currentY > previousY + 6) {
+        setIsVisible(false);
+      } else if (currentY < previousY - 6) {
+        setIsVisible(true);
+      }
+      lastScrollRef.current = currentY;
+    };
+
+    lastScrollRef.current = window.scrollY;
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (revealTimerRef.current !== null) {
+        window.clearTimeout(revealTimerRef.current);
+      }
+    };
+  }, []);
+
+  const revealHeader = useCallback(() => {
+    setIsVisible(true);
+    if (revealTimerRef.current !== null) {
+      window.clearTimeout(revealTimerRef.current);
+    }
+    revealTimerRef.current = window.setTimeout(() => {
+      if (!mobileOpen && window.scrollY > 72) {
+        setIsVisible(false);
+      }
+    }, 2200);
+  }, [mobileOpen]);
 
   const activeHref = useMemo(() => {
     if (pathname.startsWith("/jasne-zpravy")) return "/jasne-zpravy";
@@ -44,7 +89,15 @@ export function ABJNav() {
   }, [pathname]);
 
   return (
-    <header className="border-b border-[rgba(17,17,17,0.14)] bg-white px-4 md:px-5">
+    <div className="fixed inset-x-0 top-0 z-50">
+      <div
+        onMouseEnter={revealHeader}
+        onTouchStart={revealHeader}
+        className={`transition-transform duration-300 ${
+          isVisible ? "translate-y-0" : "-translate-y-[calc(100%-10px)]"
+        }`}
+      >
+    <header className="border-b border-[rgba(17,17,17,0.14)] bg-white px-4 md:px-5 shadow-[0_6px_18px_rgba(17,17,17,0.08)]">
       <div className="flex h-[58px] items-center justify-between">
         <div className="flex items-center">
           <div className="relative">
@@ -123,5 +176,17 @@ export function ABJNav() {
         </nav>
       ) : null}
     </header>
+        <button
+          type="button"
+          onMouseEnter={revealHeader}
+          onFocus={revealHeader}
+          onTouchStart={revealHeader}
+          aria-label="Zobrazit navigační lištu"
+          className={`mx-auto block w-24 rounded-b-full border border-t-0 border-[rgba(17,17,17,0.14)] bg-white/95 transition-all ${
+            isVisible ? "pointer-events-none h-0 opacity-0" : "h-[10px] opacity-100"
+          }`}
+        />
+      </div>
+    </div>
   );
 }

@@ -25,6 +25,7 @@ type LiveChannelVideo = {
 type LiveChannelGroup = {
   channelName: string;
   avatarUrl: string | null;
+  channelId: string | null;
   videos: LiveChannelVideo[];
 };
 
@@ -578,6 +579,7 @@ function mapLiveChannelsFromFeed(channels: Record<string, FeedVideo[]>): LiveCha
     .map(([channelName, videos]) => ({
       channelName,
       avatarUrl: null,
+      channelId: null,
       videos: [...videos]
         .filter((video) => typeof video.video_id === "string" && video.video_id.trim().length > 0)
         .sort((a, b) => parsePublishedTimestamp(b.published_at) - parsePublishedTimestamp(a.published_at))
@@ -600,6 +602,7 @@ function mergeLiveChannels(feedChannels: LiveChannelGroup[], sourceChannels: Sou
     merged.set(key, {
       channelName: channel.channelName,
       avatarUrl: channel.avatarUrl,
+      channelId: channel.channelId,
       videos: channel.videos,
     });
   }
@@ -615,11 +618,15 @@ function mergeLiveChannels(feedChannels: LiveChannelGroup[], sourceChannels: Sou
       merged.set(key, {
         channelName: source.channelName,
         avatarUrl,
+        channelId: source.channelId,
         videos: [],
       });
       continue;
     }
     existing.channelName = source.channelName;
+    if (!existing.channelId && source.channelId) {
+      existing.channelId = source.channelId;
+    }
     if (!existing.avatarUrl && avatarUrl) {
       existing.avatarUrl = avatarUrl;
     }

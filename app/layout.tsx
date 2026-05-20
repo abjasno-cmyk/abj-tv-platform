@@ -31,7 +31,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
         {/* Single global nav only — prevents duplicate legacy header stacks. */}
         <ABJNav />
-        <main className="min-h-[calc(100vh-46px)] overflow-hidden">{children}</main>
+        <main className="min-h-[calc(100vh-46px)] overflow-hidden pt-[68px]">{children}</main>
         {showEditorialDebug ? <EditorialEventDebugPanel /> : null}
       </body>
     </html>
