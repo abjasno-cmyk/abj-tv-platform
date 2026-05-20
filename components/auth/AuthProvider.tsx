@@ -8,6 +8,7 @@ import { LoginModal } from "@/components/auth/LoginModal";
 
 const PENDING_CONSENTS_KEY = "verox_pending_consents_v1";
 const FALLBACK_ACCESS_TOKEN_COOKIE = "verox_access_token";
+const CANONICAL_VERCEL_HOST = "abj-tv-platform-n7e8.vercel.app";
 
 type ViewerProfile = {
   id: string;
@@ -118,6 +119,16 @@ function readAccessTokenFromStorage(): string | null {
     }
   }
   return null;
+}
+
+function resolvePreferredAuthOrigin(): string | null {
+  if (typeof window === "undefined") return null;
+  const protocol = window.location.protocol || "https:";
+  const host = window.location.host;
+  if (/^abj-tv-platform-n7e8-[a-z0-9-]+\.vercel\.app$/i.test(host)) {
+    return `${protocol}//${CANONICAL_VERCEL_HOST}`;
+  }
+  return `${protocol}//${host}`;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -353,9 +364,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         typeof window !== "undefined"
           ? `${window.location.pathname}${window.location.search}${window.location.hash}`
           : "/live";
+      const preferredOrigin = resolvePreferredAuthOrigin();
       const redirectTo =
-        typeof window !== "undefined"
-          ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`
+        preferredOrigin
+          ? `${preferredOrigin}/auth/callback?next=${encodeURIComponent(nextPath)}`
           : undefined;
 
       const result = await supabase.auth.signInWithOAuth({

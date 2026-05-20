@@ -120,6 +120,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
       const params = new URLSearchParams();
       if (channelId) params.set("channelId", channelId);
       if (channelUrl) params.set("channelUrl", channelUrl);
+      params.set("channelName", channel.channelName);
       params.set("limit", "4");
 
       const response = await fetch(`/api/channel-latest?${params.toString()}`, {

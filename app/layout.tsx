@@ -81,7 +81,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <AuthProvider>
           {/* Single global nav only — prevents duplicate legacy header stacks. */}
           <ABJNav />
-          <main className="min-h-[calc(100vh-46px)] pt-[68px]">{children}</main>
+          <main className="min-h-[calc(100vh-68px-46px)] pt-[68px]">{children}</main>
           <LegalFooter />
           {showEditorialDebug ? <EditorialEventDebugPanel /> : null}
         </AuthProvider>

@@ -11,6 +11,14 @@ type YouTubeChannelLookupPayload = {
   }>;
 };
 
+type YouTubeSearchPayload = {
+  items?: Array<{
+    id?: {
+      channelId?: string;
+    };
+  }>;
+};
+
 const CHANNEL_ID_REGEXES = [
   /"channelId":"(UC[0-9A-Za-z_-]{20,})"/,
   /<meta itemprop="channelId" content="(UC[0-9A-Za-z_-]{20,})"/,
@@ -142,6 +150,41 @@ async function resolveChannelIdByUsername(username: string, apiKey: string): Pro
   }
 }
 
+async function resolveChannelIdBySearchQuery(channelName: string, apiKey: string | null): Promise<string | null> {
+  const normalized = channelName.trim();
+  if (!normalized) return null;
+
+  if (apiKey) {
+    try {
+      const url = new URL("https://www.googleapis.com/youtube/v3/search");
+      url.searchParams.set("part", "snippet");
+      url.searchParams.set("type", "channel");
+      url.searchParams.set("maxResults", "1");
+      url.searchParams.set("q", normalized);
+      url.searchParams.set("key", apiKey);
+      const response = await fetchWithTimeout(url.toString(), 9000);
+      if (response.ok) {
+        const payload = (await response.json()) as YouTubeSearchPayload;
+        const resolved = payload.items?.[0]?.id?.channelId?.trim();
+        if (resolved) return resolved;
+      }
+    } catch {
+      // Continue to HTML fallback.
+    }
+  }
+
+  try {
+    const searchUrl = new URL("https://www.youtube.com/results");
+    searchUrl.searchParams.set("search_query", normalized);
+    const response = await fetchWithTimeout(searchUrl.toString(), 9000);
+    if (!response.ok) return null;
+    const html = await response.text();
+    return parseChannelIdFromHtml(html);
+  } catch {
+    return null;
+  }
+}
+
 function parseChannelIdFromHtml(html: string): string | null {
   for (const regex of CHANNEL_ID_REGEXES) {
     const match = html.match(regex);
@@ -222,15 +265,16 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   let channelId = searchParams.get("channelId")?.trim() ?? "";
   const channelUrl = searchParams.get("channelUrl")?.trim() ?? "";
+  const channelName = searchParams.get("channelName")?.trim() ?? "";
   const requestedLimit = Number.parseInt(searchParams.get("limit") ?? "4", 10);
   const limit = Number.isFinite(requestedLimit) ? Math.min(8, Math.max(1, requestedLimit)) : 4;
+  const apiKey = resolveYouTubeApiKey();
 
   if (!channelId && channelUrl) {
     const parsed = parseChannelUrl(channelUrl);
     if (parsed.directChannelId) {
       channelId = parsed.directChannelId;
     } else {
-      const apiKey = resolveYouTubeApiKey();
       if (apiKey && parsed.handle) {
         channelId = (await resolveChannelIdByHandle(parsed.handle, apiKey)) ?? "";
       }
@@ -243,9 +287,13 @@ export async function GET(request: Request) {
     }
   }
 
+  if (!channelId && channelName) {
+    channelId = (await resolveChannelIdBySearchQuery(channelName, apiKey)) ?? "";
+  }
+
   if (!channelId) {
     return Response.json(
-      { videos: [], error: "Chybí channelId a nepodařilo se ho odvodit z URL kanálu." },
+      { videos: [], error: "Chybí channelId a nepodařilo se ho odvodit z URL ani názvu kanálu." },
       { status: 400 }
     );
   }

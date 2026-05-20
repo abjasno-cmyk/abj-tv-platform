@@ -108,9 +108,13 @@ export function ABJNav() {
         }`}
       >
         <header className="border-b border-[rgba(17,17,17,0.14)] bg-white px-4 md:px-5 shadow-[0_6px_18px_rgba(17,17,17,0.08)]">
-          <div className="relative flex h-[58px] items-center gap-4">
-            <div className="flex items-center">
-              <Link href="/live" className="relative inline-flex items-center" aria-label="Přejít na stránku Vysílání">
+          <div className="flex h-[58px] items-center gap-4">
+            <div className="flex min-w-0 items-center">
+              <Link
+                href="/live"
+                className="relative z-10 inline-flex items-center"
+                aria-label="Přejít na stránku Vysílání"
+              >
                 <p className="font-[var(--font-serif)] text-[24px] font-extrabold tracking-[0.03em] text-abj-text1">
                   VEROX
                 </p>
@@ -138,9 +142,11 @@ export function ABJNav() {
                 </ul>
               </nav>
             </div>
-            <p className="pointer-events-none absolute left-1/2 z-20 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white/90 px-2 font-[var(--font-sans)] text-[13px] font-semibold tracking-[0.07em] text-abj-text2 lg:block">
-              VEROX - mainstreamový detox
-            </p>
+            <div className="pointer-events-none hidden flex-1 justify-center px-3 lg:flex">
+              <p className="truncate whitespace-nowrap rounded bg-white/90 px-2 font-[var(--font-sans)] text-[12px] font-semibold tracking-[0.08em] text-abj-text2">
+                VEROX - MAINSTREAMOVÝ DETOX
+              </p>
+            </div>
 
             <div className="ml-auto flex items-center gap-3 md:gap-4">
               <button
