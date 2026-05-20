@@ -17,7 +17,7 @@ type LiveNowResponse = {
 
 type LiveAlertProps = {
   currentVideoId: string | null;
-  onWatchLive: (videoId: string) => void;
+  onWatchLive: (payload: { videoId: string; title: string; channel: string }) => void;
 };
 
 const DISMISSED_STORAGE_KEY = "abj.live-alert.dismissed-video-ids";
@@ -143,7 +143,11 @@ export function LiveAlert({ currentVideoId, onWatchLive }: LiveAlertProps) {
         type="button"
         className="mt-3 w-full rounded border border-[rgba(198,168,91,0.35)] bg-[rgba(198,168,91,0.12)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-abj-gold transition-colors hover:bg-[rgba(198,168,91,0.2)]"
         onClick={() => {
-          onWatchLive(activeItem.video_id);
+          onWatchLive({
+            videoId: activeItem.video_id,
+            title: activeItem.title,
+            channel: activeItem.channel,
+          });
         }}
       >
         SLEDOVAT ŽIVĚ

@@ -12,24 +12,6 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { ChatPanel } from "@/components/ChatPanel";
 import { trackAnalyticsEvent, trackVideoProgressThrottled } from "@/lib/analytics/client";
 
-type FullscreenElement = HTMLElement & {
-  webkitRequestFullscreen?: () => Promise<void> | void;
-};
-
-type FullscreenDocument = Document & {
-  webkitFullscreenElement?: Element | null;
-};
-
-async function requestFullscreenFor(element: FullscreenElement): Promise<void> {
-  if (typeof element.requestFullscreen === "function") {
-    await element.requestFullscreen();
-    return;
-  }
-  if (typeof element.webkitRequestFullscreen === "function") {
-    await element.webkitRequestFullscreen();
-  }
-}
-
 type LivePageProps = {
   epg: DayProgram[];
   initialVideoId: string | null;
@@ -74,17 +56,12 @@ export default function LivePage({
     positionSeconds: 0,
   });
 
-  const scrollToPlayerAndFullscreen = () => {
-    const playerElement = document.getElementById("live-player-shell") as FullscreenElement | null;
+  const scrollToPlayer = () => {
+    const playerElement = document.getElementById("live-player-shell");
     if (!playerElement) return;
     playerElement.scrollIntoView({
       behavior: "smooth",
       block: "start",
-    });
-    const fullscreenDocument = document as FullscreenDocument;
-    if (fullscreenDocument.fullscreenElement || fullscreenDocument.webkitFullscreenElement) return;
-    void requestFullscreenFor(playerElement).catch((error) => {
-      console.warn("live-page-auto-fullscreen-failed", error);
     });
   };
 
@@ -284,7 +261,7 @@ export default function LivePage({
           });
         }}
         onSelectChannelVideo={({ channelName: selectedChannelName, video }) => {
-          scrollToPlayerAndFullscreen();
+          scrollToPlayer();
           setTitle(video.title);
           setChannelName(selectedChannelName);
           setVideoId(video.videoId);
@@ -315,14 +292,24 @@ export default function LivePage({
       />
       <LiveAlert
         currentVideoId={videoId}
-        onWatchLive={(video) => {
-          setVideoId(video);
+        onWatchLive={({ videoId: liveVideoId, title: liveTitle, channel: liveChannel }) => {
+          setVideoId(liveVideoId);
+          setTitle(liveTitle);
+          setChannelName(liveChannel);
           setStartSeconds(0);
           setIsLive(true);
+          setContinueFromSeconds(null);
+          linearSourceRef.current = {
+            videoId: liveVideoId,
+            title: liveTitle,
+            channelName: liveChannel,
+            startSeconds: 0,
+            capturedAtMs: Date.now(),
+          };
           trackAnalyticsEvent({
             event_name: "live_open",
             entity_type: "live",
-            entity_id: video,
+            entity_id: liveVideoId,
             properties: { source: "live_alert" },
           });
         }}
