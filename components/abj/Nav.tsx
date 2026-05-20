@@ -138,7 +138,7 @@ export function ABJNav() {
                 </ul>
               </nav>
             </div>
-            <p className="pointer-events-none absolute left-1/2 hidden -translate-x-1/2 whitespace-nowrap font-[var(--font-sans)] text-[13px] font-semibold tracking-[0.07em] text-abj-text2 xl:block">
+            <p className="pointer-events-none absolute left-1/2 z-20 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white/90 px-2 font-[var(--font-sans)] text-[13px] font-semibold tracking-[0.07em] text-abj-text2 lg:block">
               VEROX - mainstreamový detox
             </p>
 
