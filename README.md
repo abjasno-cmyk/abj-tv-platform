@@ -18,14 +18,12 @@ If `PROGRAM_FEED_HMAC_SECRET` is missing, importer falls back to `SESSION_SECRET
 - `PROGRAM_CACHE_CRON_SECRET` (or `CRON_SECRET`) - protects both cron endpoints:
   - `/api/program/v3/refresh-cache`
   - `/api/program/v3/import-feed`
-- `FETCHTRANSCRIPT_API_KEY` (or `YOUTUBE_TRANSCRIPT_API_KEY`) - optional fallback provider key for `/api/youtube/transcript` when YouTube blocks transcript scraping from datacenter IPs
 
 ### Endpoints
 
 - `GET /api/program/v3/import-feed` - manually trigger feed import and return import report
 - `GET /api/program/v3/refresh-cache` - refresh YouTube cache and program feed import in one call
 - `GET /api/program/v3/health?includeFeedImport=1` - include program feed import diagnostics
-- `GET /api/youtube/transcript?videoId=<youtube_id>[&lang=cs]` - fetch transcript for a YouTube video
 
 ### Vercel cron schedule
 

@@ -33,18 +33,6 @@ type TranscriptFetchOptions = {
   acceptLanguage?: string | null;
 };
 
-type FetchTranscriptSegment = {
-  text?: unknown;
-  start?: unknown;
-  duration?: unknown;
-};
-
-type FetchTranscriptPayload = {
-  language?: unknown;
-  segments?: unknown;
-  text?: unknown;
-};
-
 function getCache(): Map<string, CachedTranscript> {
   const withCache = globalThis as GlobalTranscriptCache;
   if (!withCache.__veroxTranscriptCache) {
@@ -77,30 +65,6 @@ function normalizeAcceptLanguage(value: string | null | undefined): string {
   if (!value) return fallback;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : fallback;
-}
-
-function sanitizeEnvValue(value?: string): string | undefined {
-  if (!value) return undefined;
-  const trimmed = value.trim();
-  if (!trimmed) return undefined;
-  const eqIdx = trimmed.indexOf("=");
-  const maybeAssigned =
-    eqIdx > 0 && /^[A-Z0-9_]+$/i.test(trimmed.slice(0, eqIdx)) ? trimmed.slice(eqIdx + 1).trim() : trimmed;
-  if (
-    (maybeAssigned.startsWith('"') && maybeAssigned.endsWith('"')) ||
-    (maybeAssigned.startsWith("'") && maybeAssigned.endsWith("'"))
-  ) {
-    return maybeAssigned.slice(1, -1).trim();
-  }
-  return maybeAssigned;
-}
-
-function resolveFetchTranscriptApiKey(): string | null {
-  return (
-    sanitizeEnvValue(process.env.FETCHTRANSCRIPT_API_KEY) ??
-    sanitizeEnvValue(process.env.YOUTUBE_TRANSCRIPT_API_KEY) ??
-    null
-  );
 }
 
 function createYouTubeFetch(acceptLanguage: string): typeof fetch {
@@ -174,34 +138,6 @@ function normalizeSegments(rows: TranscriptResponse[]): VideoTranscriptSegment[]
       } satisfies VideoTranscriptSegment;
     })
     .filter((row): row is VideoTranscriptSegment => Boolean(row))
-    .sort((a, b) => a.offsetSeconds - b.offsetSeconds);
-}
-
-function normalizeFetchTranscriptSegments(rows: FetchTranscriptSegment[]): VideoTranscriptSegment[] {
-  return rows
-    .map((row) => {
-      const text = typeof row.text === "string" ? row.text.trim() : "";
-      if (!text) return null;
-      const offsetSeconds =
-        typeof row.start === "number" && Number.isFinite(row.start)
-          ? Math.max(0, row.start)
-          : typeof row.start === "string" && Number.isFinite(Number(row.start))
-            ? Math.max(0, Number(row.start))
-            : 0;
-      const durationSeconds =
-        typeof row.duration === "number" && Number.isFinite(row.duration)
-          ? Math.max(0, row.duration)
-          : typeof row.duration === "string" && Number.isFinite(Number(row.duration))
-            ? Math.max(0, Number(row.duration))
-            : 0;
-      return {
-        text,
-        offsetSeconds,
-        durationSeconds,
-        offsetLabel: formatOffsetLabel(offsetSeconds),
-      } satisfies VideoTranscriptSegment;
-    })
-    .filter((segment): segment is VideoTranscriptSegment => Boolean(segment))
     .sort((a, b) => a.offsetSeconds - b.offsetSeconds);
 }
 
@@ -333,74 +269,6 @@ async function fetchWithLanguageFallback(
   throw mapTranscriptFetchError(lastError, videoId);
 }
 
-async function fetchFromFetchTranscriptProvider(
-  videoId: string,
-  requestedLanguage: string | null
-): Promise<VideoTranscriptPayload> {
-  const apiKey = resolveFetchTranscriptApiKey();
-  if (!apiKey) {
-    throw createTranscriptError("upstream_error", 502, "Chybí API klíč pro fallback transcript provider.");
-  }
-
-  const url = new URL(`https://api.fetchtranscript.com/v1/transcripts/${videoId}`);
-  url.searchParams.set("format", "json");
-  const normalizedLang = normalizeLanguage(requestedLanguage);
-  if (normalizedLang) {
-    url.searchParams.set("lang", normalizedLang);
-  }
-
-  const response = await fetch(url.toString(), {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      Accept: "application/json",
-    },
-    cache: "no-store",
-  });
-
-  const payload = (await response.json().catch(() => null)) as FetchTranscriptPayload | null;
-  if (!response.ok || !payload) {
-    if (response.status === 404) {
-      throw createTranscriptError("transcript_not_available", 404, `Přepis videa ${videoId} není dostupný.`);
-    }
-    if (response.status === 429) {
-      throw createTranscriptError("too_many_requests", 429, "Fallback transcript provider je dočasně přetížen.");
-    }
-    throw createTranscriptError("upstream_error", 502, "Fallback transcript provider vrátil chybu.");
-  }
-
-  const rows = Array.isArray(payload.segments) ? (payload.segments as FetchTranscriptSegment[]) : [];
-  const segments = normalizeFetchTranscriptSegments(rows);
-  if (segments.length === 0) {
-    const fullText = typeof payload.text === "string" ? payload.text.trim() : "";
-    if (!fullText) {
-      throw createTranscriptError("transcript_not_available", 404, `Přepis videa ${videoId} není dostupný.`);
-    }
-    const syntheticSegment: VideoTranscriptSegment = {
-      text: fullText,
-      offsetSeconds: 0,
-      durationSeconds: 0,
-      offsetLabel: "00:00",
-    };
-    return {
-      videoId,
-      language: normalizeLanguage(typeof payload.language === "string" ? payload.language : null),
-      fetchedAt: new Date().toISOString(),
-      fromCache: false,
-      fullText,
-      segments: [syntheticSegment],
-    };
-  }
-
-  return {
-    videoId,
-    language: normalizeLanguage(typeof payload.language === "string" ? payload.language : null),
-    fetchedAt: new Date().toISOString(),
-    fromCache: false,
-    fullText: segments.map((segment) => segment.text).join("\n"),
-    segments,
-  };
-}
-
 export async function getVideoTranscript(
   videoId: string,
   requestedLanguage: string | null,
@@ -417,22 +285,7 @@ export async function getVideoTranscript(
     };
   }
 
-  let fetched: VideoTranscriptPayload;
-  try {
-    fetched = await fetchWithLanguageFallback(videoId, requestedLanguage, options);
-  } catch (error) {
-    const mappedError = mapTranscriptFetchError(error, videoId);
-    const canUseFallbackProvider =
-      mappedError.code === "too_many_requests" ||
-      mappedError.code === "transcript_disabled" ||
-      mappedError.code === "transcript_not_available" ||
-      mappedError.code === "upstream_error";
-    if (!canUseFallbackProvider || !resolveFetchTranscriptApiKey()) {
-      throw mappedError;
-    }
-    fetched = await fetchFromFetchTranscriptProvider(videoId, requestedLanguage);
-  }
-
+  const fetched = await fetchWithLanguageFallback(videoId, requestedLanguage, options);
   const { fromCache: _fromCache, ...cachePayload } = fetched;
   cache.set(cacheKey, {
     expiresAtMs: now + TRANSCRIPT_CACHE_TTL_MS,
