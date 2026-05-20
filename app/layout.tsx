@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Montserrat } from "next/font/google";
 import "./globals.css";
 import { ABJNav } from "@/components/abj/Nav";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 import { EditorialEventDebugPanel } from "@/components/dev/EditorialEventDebugPanel";
 
 export const metadata: Metadata = {
@@ -29,10 +30,12 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="cs" className={`${montserrat.variable} ${inter.variable}`}>
       <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
-        {/* Single global nav only — prevents duplicate legacy header stacks. */}
-        <ABJNav />
-        <main className="min-h-[calc(100vh-46px)] overflow-hidden pt-[68px]">{children}</main>
-        {showEditorialDebug ? <EditorialEventDebugPanel /> : null}
+        <AuthProvider>
+          {/* Single global nav only — prevents duplicate legacy header stacks. */}
+          <ABJNav />
+          <main className="min-h-[calc(100vh-46px)] pt-[68px]">{children}</main>
+          {showEditorialDebug ? <EditorialEventDebugPanel /> : null}
+        </AuthProvider>
       </body>
     </html>
   );

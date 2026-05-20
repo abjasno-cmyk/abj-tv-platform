@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { FollowChannelButton } from "@/components/auth/FollowChannelButton";
 
 export type LiveChannelVideo = {
   videoId: string;
@@ -223,6 +224,12 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                     </span>
                   </span>
                 </button>
+                <div className="flex justify-end">
+                  <FollowChannelButton
+                    channelId={channel.channelId ?? `source:${normalizeForSearch(channel.channelName)}`}
+                    channelName={channel.channelName}
+                  />
+                </div>
 
                 {expanded ? (
                   <div className="grid gap-3 sm:grid-cols-2">

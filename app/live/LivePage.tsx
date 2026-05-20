@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { LiveChannelGroup } from "@/components/abj/ChannelDirectory";
 import type { DayProgram } from "@/lib/epg-types";
 import { LiveAlert } from "@/components/abj/LiveAlert";
 import { HomePage } from "@/components/abj/HomePage";
+import { CommentsSection } from "@/components/auth/CommentsSection";
+import { LikeButton } from "@/components/auth/LikeButton";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { ChatPanel } from "@/components/ChatPanel";
-import { WallForVideo } from "@/components/wall/WallForVideo";
 
 type FullscreenElement = HTMLElement & {
   webkitRequestFullscreen?: () => Promise<void> | void;
@@ -44,6 +46,7 @@ export default function LivePage({
   initialStartSeconds = 0,
   channels,
 }: LivePageProps) {
+  const { isAuthenticated } = useAuth();
   const safeEpg = epg;
   const linearSourceRef = useRef({
     videoId: initialVideoId,
@@ -59,6 +62,16 @@ export default function LivePage({
   const [startSeconds, setStartSeconds] = useState(() => Math.max(0, Math.floor(initialStartSeconds)));
   const [remainingLabel, setRemainingLabel] = useState("za 12 min");
   const [progressPercent, setProgressPercent] = useState(22);
+  const [continueFromSeconds, setContinueFromSeconds] = useState<number | null>(null);
+  const lastProgressSaveRef = useRef<{
+    videoId: string | null;
+    savedAtMs: number;
+    positionSeconds: number;
+  }>({
+    videoId: null,
+    savedAtMs: 0,
+    positionSeconds: 0,
+  });
 
   const scrollToPlayerAndFullscreen = () => {
     const playerElement = document.getElementById("live-player-shell") as FullscreenElement | null;
@@ -110,6 +123,80 @@ export default function LivePage({
     return () => clearInterval(timer);
   }, [nextItem, progressPercent]);
 
+  useEffect(() => {
+    if (!videoId || !isAuthenticated || isLive) {
+      setContinueFromSeconds(null);
+      return;
+    }
+
+    let cancelled = false;
+    void fetch(`/api/viewer/video-progress?videoId=${encodeURIComponent(videoId)}`, {
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => ({}))) as {
+          progress?: {
+            position_seconds: number;
+            completed: boolean;
+          } | null;
+        };
+        if (!response.ok || cancelled) return;
+        const progress = payload.progress;
+        if (!progress || progress.completed || progress.position_seconds < 20) {
+          setContinueFromSeconds(null);
+          return;
+        }
+        setContinueFromSeconds(progress.position_seconds);
+      })
+      .catch(() => {
+        if (!cancelled) setContinueFromSeconds(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, isLive, videoId]);
+
+  const handlePlaybackSample = useCallback(
+    (sample: { videoId: string; positionSeconds: number; durationSeconds: number }) => {
+      if (!isAuthenticated || !videoId || isLive) return;
+      if (sample.videoId !== videoId) return;
+      if (sample.positionSeconds < 2 || sample.durationSeconds <= 0) return;
+
+      const now = Date.now();
+      const progressPercentValue = Math.min(100, (sample.positionSeconds / sample.durationSeconds) * 100);
+      const last = lastProgressSaveRef.current;
+      const shouldSave =
+        last.videoId !== sample.videoId ||
+        now - last.savedAtMs >= 12_000 ||
+        Math.abs(sample.positionSeconds - last.positionSeconds) >= 20 ||
+        progressPercentValue >= 90;
+      if (!shouldSave) return;
+
+      lastProgressSaveRef.current = {
+        videoId: sample.videoId,
+        savedAtMs: now,
+        positionSeconds: sample.positionSeconds,
+      };
+      if (continueFromSeconds !== null && sample.positionSeconds >= continueFromSeconds - 5) {
+        setContinueFromSeconds(null);
+      }
+
+      void fetch("/api/viewer/video-progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          videoId: sample.videoId,
+          positionSeconds: sample.positionSeconds,
+          durationSeconds: sample.durationSeconds,
+          progressPercent: progressPercentValue,
+          completed: progressPercentValue >= 90,
+        }),
+      });
+    },
+    [continueFromSeconds, isAuthenticated, isLive, videoId]
+  );
+
   return (
     <section
       data-ui-version="abj-geometric-v2"
@@ -126,6 +213,7 @@ export default function LivePage({
         remainingLabel={remainingLabel}
         progressPercent={progressPercent}
         isFiller={isFiller}
+        continueFromSeconds={continueFromSeconds}
         onReturnToLive={() => {
           const source = linearSourceRef.current;
           const elapsedSinceLoad =
@@ -135,13 +223,21 @@ export default function LivePage({
           setChannelName(source.channelName);
           setStartSeconds(source.startSeconds + elapsedSinceLoad);
           setIsLive(true);
+          setContinueFromSeconds(null);
         }}
+        onContinueFromSaved={(seconds) => {
+          setStartSeconds(Math.max(0, Math.floor(seconds)));
+          setIsLive(false);
+          setContinueFromSeconds(null);
+        }}
+        onPlaybackSample={handlePlaybackSample}
         onSelect={(item) => {
           setTitle(item.title);
           setChannelName(item.channelName);
           setVideoId(item.videoId);
           setStartSeconds(0);
           setIsLive(item.type === "live" || item.channelName.toLowerCase().includes("abj"));
+          setContinueFromSeconds(null);
         }}
         onSelectChannelVideo={({ channelName: selectedChannelName, video }) => {
           scrollToPlayerAndFullscreen();
@@ -150,8 +246,22 @@ export default function LivePage({
           setVideoId(video.videoId);
           setStartSeconds(0);
           setIsLive(false);
+          setContinueFromSeconds(null);
         }}
-        reactionsSlot={videoId ? <WallForVideo videoId={videoId} videoTitle={title} /> : null}
+        engagementSlot={
+          videoId ? (
+            <section className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-4 shadow-[0_8px_20px_rgba(17,17,17,0.08)]">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.12em] text-abj-text2">Váš bezplatný divácký účet</p>
+                  <p className="text-sm text-abj-text1">Komentujte, lajkujte a pokračujte tam, kde jste skončili.</p>
+                </div>
+                <LikeButton entityType="video" entityId={videoId} />
+              </div>
+            </section>
+          ) : null
+        }
+        reactionsSlot={videoId ? <CommentsSection entityType="video" entityId={videoId} heading="Reakce diváků na toto video" /> : null}
       />
       <LiveAlert
         currentVideoId={videoId}

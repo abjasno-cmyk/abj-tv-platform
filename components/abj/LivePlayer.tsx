@@ -13,6 +13,9 @@ type LivePlayerProps = {
   progressPercent: number;
   onGoLive: () => void;
   isFiller?: boolean;
+  continueFromSeconds?: number | null;
+  onContinueFromSaved?: (seconds: number) => void;
+  onPlaybackSample?: (sample: { videoId: string; positionSeconds: number; durationSeconds: number }) => void;
 };
 
 type FullscreenElement = HTMLElement & {
@@ -58,8 +61,15 @@ export function LivePlayer({
   progressPercent,
   onGoLive,
   isFiller = false,
+  continueFromSeconds = null,
+  onContinueFromSaved,
+  onPlaybackSample,
 }: LivePlayerProps) {
   const playerShellRef = useRef<HTMLElement | null>(null);
+  const youtubePlayerRef = useRef<{
+    getCurrentTime: () => number;
+    getDuration: () => number;
+  } | null>(null);
   const [manualUnmuteVideoId, setManualUnmuteVideoId] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const isMuted = manualUnmuteVideoId !== videoId;
@@ -78,6 +88,30 @@ export function LivePlayer({
       doc.removeEventListener("webkitfullscreenchange", syncFullscreen);
     };
   }, []);
+
+  useEffect(() => {
+    youtubePlayerRef.current = null;
+  }, [videoId]);
+
+  useEffect(() => {
+    if (!videoId || !onPlaybackSample) return;
+    const timer = window.setInterval(() => {
+      const player = youtubePlayerRef.current;
+      if (!player) return;
+      const positionSeconds = Math.max(0, Math.floor(player.getCurrentTime()));
+      const durationSeconds = Math.max(0, Math.floor(player.getDuration()));
+      if (!Number.isFinite(positionSeconds) || !Number.isFinite(durationSeconds) || durationSeconds <= 0) return;
+      onPlaybackSample({
+        videoId,
+        positionSeconds,
+        durationSeconds,
+      });
+    }, 4000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [onPlaybackSample, videoId]);
 
   const opts = useMemo<YouTubeProps["opts"]>(
     () => ({
@@ -118,6 +152,9 @@ export function LivePlayer({
               title={title}
               iframeClassName="absolute inset-0 h-full w-full"
               opts={opts}
+              onReady={(event) => {
+                youtubePlayerRef.current = event.target;
+              }}
             />
           </div>
         ) : (
@@ -183,19 +220,33 @@ export function LivePlayer({
       </div>
 
       <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(17,17,17,0.1)] bg-[rgba(249,246,241,0.85)] px-6 py-3">
-        <button
-          type="button"
-          onClick={onGoLive}
-          disabled={isLive}
-          className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
-            isLive
-              ? "cursor-default border-[var(--abj-red)] bg-[var(--abj-red)] text-white"
-              : "border-[var(--abj-red)] bg-white text-[var(--abj-red)] hover:bg-[rgba(255,106,0,0.1)]"
-          }`}
-        >
-          <span className="h-2 w-2 rounded-full bg-current" />
-          {isLive ? "Právě živě" : "Zpět na živé vysílání"}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={onGoLive}
+            disabled={isLive}
+            className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+              isLive
+                ? "cursor-default border-[var(--abj-red)] bg-[var(--abj-red)] text-white"
+                : "border-[var(--abj-red)] bg-white text-[var(--abj-red)] hover:bg-[rgba(255,106,0,0.1)]"
+            }`}
+          >
+            <span className="h-2 w-2 rounded-full bg-current" />
+            {isLive ? "Právě živě" : "Zpět na živé vysílání"}
+          </button>
+          {!isLive && continueFromSeconds !== null && continueFromSeconds > 30 ? (
+            <button
+              type="button"
+              onClick={() => onContinueFromSaved?.(continueFromSeconds)}
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#FF6A00]/45 bg-[rgba(255,106,0,0.08)] px-4 py-2 text-sm font-semibold text-[#B04A00] hover:bg-[rgba(255,106,0,0.14)]"
+            >
+              Pokračovat od {Math.floor(continueFromSeconds / 60)
+                .toString()
+                .padStart(2, "0")}
+              :{Math.floor(continueFromSeconds % 60).toString().padStart(2, "0")}
+            </button>
+          ) : null}
+        </div>
 
         <button
           type="button"

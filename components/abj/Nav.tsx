@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ReplitHealthBadge } from "@/components/abj/ReplitHealthBadge";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const NAV_LINKS = [
   { href: "/live", label: "Vysílání" },
@@ -11,6 +12,7 @@ const NAV_LINKS = [
   { href: "/archiv", label: "Nejnovější videa" },
   { href: "/abj-x", label: "VeroX" },
   { href: "/zed", label: "Zeď" },
+  { href: "/muj-verox", label: "Můj Verox" },
 ];
 const NAV_VISIBLE_TOP_THRESHOLD = 8;
 const NAV_SCROLL_DELTA_THRESHOLD = 4;
@@ -28,6 +30,7 @@ function getPragueClockValue(date: Date): string {
 
 export function ABJNav() {
   const pathname = usePathname();
+  const { isAuthenticated, profile, openLoginModal, signOut } = useAuth();
   const [clock, setClock] = useState(() => getPragueClockValue(new Date()));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
@@ -87,6 +90,7 @@ export function ABJNav() {
     if (pathname.startsWith("/archiv") || pathname.startsWith("/feed")) return "/archiv";
     if (pathname.startsWith("/abj-x")) return "/abj-x";
     if (pathname.startsWith("/zed")) return "/zed";
+    if (pathname.startsWith("/muj-verox")) return "/muj-verox";
     if (pathname.startsWith("/live")) return "/live";
     return "";
   }, [pathname]);
@@ -157,6 +161,37 @@ export function ABJNav() {
                   Vysílání
                 </span>
               </div>
+              {isAuthenticated ? (
+                <div className="hidden items-center gap-2 sm:flex">
+                  <Link
+                    href="/muj-verox"
+                    className="inline-flex min-h-9 items-center rounded-full border border-[rgba(17,17,17,0.16)] bg-white px-3 py-1.5 text-xs font-semibold text-abj-text1 hover:border-[#FF6A00] hover:text-[#B04A00]"
+                  >
+                    {profile?.display_name ? `Můj Verox · ${profile.display_name}` : "Můj Verox"}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void signOut();
+                    }}
+                    className="inline-flex min-h-9 items-center rounded-full border border-[rgba(17,17,17,0.16)] px-3 py-1.5 text-xs font-semibold text-abj-text2 hover:border-[#FF6A00] hover:text-abj-text1"
+                  >
+                    Odhlásit
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() =>
+                    openLoginModal({
+                      reason: "Komentujte, lajkujte a pokračujte tam, kde jste skončili.",
+                    })
+                  }
+                  className="hidden min-h-9 items-center rounded-full border border-[#FF6A00] bg-[#FF6A00] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-white hover:bg-[#e35f00] sm:inline-flex"
+                >
+                  Přihlásit zdarma
+                </button>
+              )}
               <p className="font-[var(--font-sans)] text-[13px] tabular-nums text-abj-text2">{clock}</p>
             </div>
           </div>
@@ -182,6 +217,42 @@ export function ABJNav() {
                   );
                 })}
               </ul>
+              <div className="mt-2 border-t border-[rgba(17,17,17,0.1)] pt-2">
+                {isAuthenticated ? (
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href="/muj-verox"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex-1 rounded-lg border border-[rgba(17,17,17,0.16)] px-3 py-2 text-center text-sm font-semibold text-abj-text1"
+                    >
+                      Můj Verox
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void signOut();
+                        setMobileOpen(false);
+                      }}
+                      className="rounded-lg border border-[rgba(17,17,17,0.16)] px-3 py-2 text-sm font-semibold text-abj-text2"
+                    >
+                      Odhlásit
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      openLoginModal({
+                        reason: "Přihlaste se zdarma a získejte svůj divácký účet.",
+                      });
+                      setMobileOpen(false);
+                    }}
+                    className="w-full rounded-lg border border-[#FF6A00] bg-[#FF6A00] px-3 py-2 text-sm font-semibold text-white"
+                  >
+                    Přihlásit zdarma
+                  </button>
+                )}
+              </div>
             </nav>
           ) : null}
         </header>

@@ -15,6 +15,7 @@ import {
   type AbjXSocialStats,
   type FeedPost,
 } from "@/lib/api";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 type FeedItem = {
   id: string;
@@ -164,6 +165,7 @@ function mergeComments(existing: AbjXComment[], incoming: AbjXComment[]): AbjXCo
 }
 
 export function AbjXClient() {
+  const { isAuthenticated, requestAuth } = useAuth();
   const { posts, loading, hasMore, loadMore } = useFeed();
   const items = useMemo(() => toItems(posts), [posts]);
   const [sessionId] = useState(() => {
@@ -250,6 +252,17 @@ export function AbjXClient() {
   };
 
   const handleReact = async (item: FeedItem) => {
+    if (!isAuthenticated) {
+      requestAuth(
+        () => {
+          void handleReact(item);
+        },
+        {
+          reason: "Přihlaste se zdarma a reagujte na příspěvky ve VeroX.",
+        }
+      );
+      return;
+    }
     if (!item.id || !item.videoId || !sessionId || reactingByPost[item.id]) return;
     const current = socialByPost[item.id] ?? EMPTY_STATS;
     if (current.reactedByMe) {
@@ -342,6 +355,17 @@ export function AbjXClient() {
   };
 
   const addWallComment = async (item: FeedItem) => {
+    if (!isAuthenticated) {
+      requestAuth(
+        () => {
+          void addWallComment(item);
+        },
+        {
+          reason: "Zapojte se do diskuse. Přihlášení je zdarma.",
+        }
+      );
+      return;
+    }
     const nextText = wallDraftByPost[item.id]?.trim();
     if (!nextText) return;
     setWallSubmittingByPost((prev) => ({ ...prev, [item.id]: true }));
@@ -532,6 +556,20 @@ export function AbjXClient() {
                     type="button"
                     className="rounded-lg border border-[var(--abj-gold-dim)] px-2.5 py-1 text-xs uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1"
                     onClick={() => {
+                      if (!isAuthenticated) {
+                        requestAuth(
+                          () => {
+                            setWallOpenByPost((prev) => ({ ...prev, [item.id]: true }));
+                            if (wallCommentsByPost[item.id] === undefined) {
+                              void loadWallComments(item.id);
+                            }
+                          },
+                          {
+                            reason: "Zapojte se do diskuse. Přihlášení je zdarma.",
+                          }
+                        );
+                        return;
+                      }
                       const nextOpen = !wallOpen;
                       setWallOpenByPost((prev) => ({ ...prev, [item.id]: nextOpen }));
                       if (nextOpen && wallCommentsByPost[item.id] === undefined) {
@@ -564,6 +602,9 @@ export function AbjXClient() {
                   )}
                   {shareHint ? <span className="text-xs text-abj-text2">{shareHint}</span> : null}
                 </div>
+                {!isAuthenticated ? (
+                  <p className="mt-2 text-xs text-abj-text2">Zapojte se do diskuse. Přihlášení je zdarma.</p>
+                ) : null}
 
                 {wallOpen ? (
                   <div

@@ -18,9 +18,13 @@ type HomePageProps = {
   remainingLabel: string;
   progressPercent: number;
   isFiller: boolean;
+  continueFromSeconds?: number | null;
   onSelect: (item: ProgramItem) => void;
   onReturnToLive: () => void;
+  onContinueFromSaved?: (seconds: number) => void;
+  onPlaybackSample?: (sample: { videoId: string; positionSeconds: number; durationSeconds: number }) => void;
   onSelectChannelVideo: (payload: { channelName: string; video: LiveChannelVideo }) => void;
+  engagementSlot?: ReactNode;
   reactionsSlot?: ReactNode;
 };
 
@@ -35,9 +39,13 @@ export function HomePage({
   remainingLabel,
   progressPercent,
   isFiller,
+  continueFromSeconds = null,
   onSelect,
   onReturnToLive,
+  onContinueFromSaved,
+  onPlaybackSample,
   onSelectChannelVideo,
+  engagementSlot,
   reactionsSlot,
 }: HomePageProps) {
   return (
@@ -66,7 +74,12 @@ export function HomePage({
           progressPercent={progressPercent}
           isFiller={isFiller}
           onGoLive={onReturnToLive}
+          continueFromSeconds={continueFromSeconds}
+          onContinueFromSaved={onContinueFromSaved}
+          onPlaybackSample={onPlaybackSample}
         />
+
+        {engagementSlot}
 
         <Timeline days={days} onSelect={onSelect} />
 

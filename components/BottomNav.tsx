@@ -9,6 +9,7 @@ const tabs = [
   { href: "/archiv", label: "Nejnovější videa", icon: "◧" },
   { href: "/abj-x", label: "VeroX", icon: "✦" },
   { href: "/zed", label: "Zeď", icon: "▩" },
+  { href: "/muj-verox", label: "Můj Verox", icon: "☺" },
 ];
 
 export function BottomNav() {
