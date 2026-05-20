@@ -199,7 +199,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select lower(coalesce(auth.jwt() ->> 'email', '')) in ('jana.bobosikova@verox.cz', 'hana.lipovska@verox.cz');
+  select lower(coalesce(auth.jwt() ->> 'email', '')) in ('jana.bobosikova@bcmgroup.cz', 'abjasno@gmail.com');
 $$;
 
 create or replace function current_profile_role()

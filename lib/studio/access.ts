@@ -5,8 +5,8 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const STUDIO_ALLOWED_EMAILS = new Set([
-  "jana.bobosikova@verox.cz",
-  "hana.lipovska@verox.cz",
+  "jana.bobosikova@bcmgroup.cz",
+  "abjasno@gmail.com",
 ]);
 
 export const STUDIO_ROLES = [
