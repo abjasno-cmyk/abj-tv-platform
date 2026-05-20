@@ -186,14 +186,14 @@ export function LivePlayer({
           type="button"
           onClick={onGoLive}
           disabled={isLive}
-          className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+          className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
             isLive
               ? "cursor-default border-[var(--abj-red)] bg-[var(--abj-red)] text-white"
               : "border-[var(--abj-red)] bg-white text-[var(--abj-red)] hover:bg-[rgba(255,106,0,0.1)]"
           }`}
         >
           <span className="h-2 w-2 rounded-full bg-current" />
-          Živě
+          {isLive ? "Právě živě" : "Zpět na živé vysílání"}
         </button>
 
         <button
@@ -212,7 +212,7 @@ export function LivePlayer({
               console.warn("live-player-fullscreen-toggle-failed", error);
             }
           }}
-          className="inline-flex items-center gap-2 rounded-full border border-[rgba(17,17,17,0.24)] bg-white px-4 py-2 text-sm font-semibold text-abj-text1 transition hover:border-[#FF6A00] hover:text-[#C14900]"
+          className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[rgba(17,17,17,0.24)] bg-white px-4 py-2 text-sm font-semibold text-abj-text1 transition hover:border-[#FF6A00] hover:text-[#C14900]"
           aria-label={isFullscreen ? "Ukončit režim celé obrazovky" : "Zvětšit přehrávač na celou obrazovku"}
         >
           <span
@@ -221,7 +221,7 @@ export function LivePlayer({
               isFullscreen ? "rounded-[1px] border-2" : "rounded-[2px]"
             }`}
           />
-          {isFullscreen ? "Ukončit celou obrazovku" : "Celá obrazovka"}
+          {isFullscreen ? "Ukončit celou obrazovku" : "Zvětšit na celou obrazovku"}
         </button>
       </div>
     </section>

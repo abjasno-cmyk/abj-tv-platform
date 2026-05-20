@@ -288,7 +288,7 @@ export function Timeline({ days, onSelect }: TimelineProps) {
             container.scrollBy({ left: -260, behavior: "smooth" });
           }}
           disabled={!canScrollTimeline || !canScrollLeft}
-          className="rounded-full border border-[rgba(17,17,17,0.24)] bg-white px-3 py-1 text-xs font-semibold text-abj-text2 transition enabled:hover:border-[#FF6A00] enabled:hover:text-[#C14900] disabled:cursor-not-allowed disabled:opacity-40"
+          className="min-h-10 rounded-full border border-[rgba(17,17,17,0.24)] bg-white px-3 py-1 text-xs font-semibold text-abj-text2 transition enabled:hover:border-[#FF6A00] enabled:hover:text-[#C14900] disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="Posunout timeline doleva"
         >
           ←
@@ -306,7 +306,7 @@ export function Timeline({ days, onSelect }: TimelineProps) {
               behavior: "auto",
             });
           }}
-          className="h-1.5 w-full cursor-pointer accent-[#FF6A00] disabled:cursor-not-allowed"
+          className="h-2 w-full cursor-pointer accent-[#FF6A00] disabled:cursor-not-allowed"
           disabled={!canScrollTimeline}
           aria-label="Posuvník timeline"
         />
@@ -318,7 +318,7 @@ export function Timeline({ days, onSelect }: TimelineProps) {
             container.scrollBy({ left: 260, behavior: "smooth" });
           }}
           disabled={!canScrollTimeline || !canScrollRight}
-          className="rounded-full border border-[rgba(17,17,17,0.24)] bg-white px-3 py-1 text-xs font-semibold text-abj-text2 transition enabled:hover:border-[#FF6A00] enabled:hover:text-[#C14900] disabled:cursor-not-allowed disabled:opacity-40"
+          className="min-h-10 rounded-full border border-[rgba(17,17,17,0.24)] bg-white px-3 py-1 text-xs font-semibold text-abj-text2 transition enabled:hover:border-[#FF6A00] enabled:hover:text-[#C14900] disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="Posunout timeline doprava"
         >
           →

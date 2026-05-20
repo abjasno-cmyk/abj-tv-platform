@@ -56,7 +56,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h3 className="text-lg font-extrabold tracking-tight text-abj-text1">Kanály</h3>
-          <p className="text-xs uppercase tracking-[0.16em] text-abj-text2">Statický abecední seznam</p>
+          <p className="text-xs uppercase tracking-[0.16em] text-abj-text2">Vyberte kanál a spusťte poslední videa</p>
         </div>
         <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-abj-text2">
           {orderedChannels.length} kanálů
@@ -90,7 +90,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                   <span className="flex flex-wrap items-center justify-between gap-3">
                     <span className="line-clamp-1">{channel.channelName}</span>
                     <span className="text-xs uppercase tracking-[0.08em] text-abj-text2">
-                      {expanded ? "Skrýt videa" : "Ukázat 4 videa"}
+                      {expanded ? "Skrýt videa" : "Poslední 4 videa"}
                     </span>
                   </span>
                 </button>
@@ -118,6 +118,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                           <div className="space-y-1 px-3 py-3">
                             <p className="line-clamp-2 text-sm font-semibold leading-snug text-abj-text1">{video.title}</p>
                             <p className="text-xs text-abj-text2">Publikováno {formatPublishedLabel(video.publishedAt)}</p>
+                            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#C14900]">Přehrát v hlavním okně</p>
                           </div>
                         </button>
                       ))
