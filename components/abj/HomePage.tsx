@@ -64,28 +64,38 @@ export function HomePage({
       />
 
       <div className="relative z-[2] mx-auto flex w-full max-w-[1200px] flex-col gap-10 px-4 sm:px-6 lg:px-10">
-        <LivePlayer
-          videoId={videoId}
-          title={title}
-          channel={channelName || "ABJ Síť"}
-          isLive={isLive}
-          startSeconds={startSeconds}
-          remainingLabel={remainingLabel}
-          progressPercent={progressPercent}
-          isFiller={isFiller}
-          onGoLive={onReturnToLive}
-          continueFromSeconds={continueFromSeconds}
-          onContinueFromSaved={onContinueFromSaved}
-          onPlaybackSample={onPlaybackSample}
-        />
+        <div id="live-player-section" className="order-10">
+          <LivePlayer
+            videoId={videoId}
+            title={title}
+            channel={channelName || "ABJ Síť"}
+            isLive={isLive}
+            startSeconds={startSeconds}
+            remainingLabel={remainingLabel}
+            progressPercent={progressPercent}
+            isFiller={isFiller}
+            onGoLive={onReturnToLive}
+            continueFromSeconds={continueFromSeconds}
+            onContinueFromSaved={onContinueFromSaved}
+            onPlaybackSample={onPlaybackSample}
+          />
+        </div>
 
-        {reactionsSlot}
+        <div id="live-reactions-section" className="order-20">
+          {reactionsSlot}
+        </div>
 
-        <Timeline days={days} onSelect={onSelect} />
+        <div id="live-timeline-section" className="order-30">
+          <Timeline days={days} onSelect={onSelect} />
+        </div>
 
-        {engagementSlot}
+        <div id="live-engagement-section" className="order-40">
+          {engagementSlot}
+        </div>
 
-        <ChannelDirectory channels={channels} onSelectVideo={onSelectChannelVideo} />
+        <div id="live-channels-section" className="order-50">
+          <ChannelDirectory channels={channels} onSelectVideo={onSelectChannelVideo} />
+        </div>
       </div>
     </section>
   );
