@@ -125,8 +125,10 @@ export default function LivePage({
 
   useEffect(() => {
     if (!videoId || !isAuthenticated || isLive) {
-      setContinueFromSeconds(null);
-      return;
+      const frame = window.requestAnimationFrame(() => {
+        setContinueFromSeconds(null);
+      });
+      return () => window.cancelAnimationFrame(frame);
     }
 
     let cancelled = false;

@@ -29,11 +29,6 @@ export function LoginModal({ open, reason, busyProvider, errorMessage, onClose, 
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
-  useEffect(() => {
-    if (!open) return;
-    setLocalError(null);
-  }, [open]);
-
   const effectiveError = localError ?? errorMessage;
   const helperReason = useMemo(() => {
     const trimmed = reason?.trim();

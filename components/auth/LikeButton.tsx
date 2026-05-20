@@ -20,15 +20,12 @@ export function LikeButton({ entityType, entityId, className }: LikeButtonProps)
   const [liked, setLiked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const effectiveLiked = isAuthenticated && liked;
 
   useEffect(() => {
-    if (!entityType || !entityId || !isAuthenticated) {
-      setLiked(false);
-      return;
-    }
+    if (!entityType || !entityId || !isAuthenticated) return;
 
     let cancelled = false;
-    setError(null);
     void fetch(`/api/viewer/likes?entityType=${encodeURIComponent(entityType)}&entityId=${encodeURIComponent(entityId)}`, {
       cache: "no-store",
     })
@@ -50,7 +47,7 @@ export function LikeButton({ entityType, entityId, className }: LikeButtonProps)
   const toggleLike = async () => {
     setLoading(true);
     setError(null);
-    const method = liked ? "DELETE" : "POST";
+    const method = effectiveLiked ? "DELETE" : "POST";
     const url =
       method === "DELETE"
         ? `/api/viewer/likes?entityType=${encodeURIComponent(entityType)}&entityId=${encodeURIComponent(entityId)}`
@@ -82,7 +79,7 @@ export function LikeButton({ entityType, entityId, className }: LikeButtonProps)
         className={
           className ??
           `inline-flex min-h-10 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
-            liked
+            effectiveLiked
               ? "border-[#FF6A00] bg-[rgba(255,106,0,0.15)] text-[#B04A00]"
               : "border-[rgba(17,17,17,0.2)] bg-white text-abj-text1 hover:border-[#FF6A00]/45 hover:bg-[rgba(255,106,0,0.06)]"
           }`
@@ -99,8 +96,8 @@ export function LikeButton({ entityType, entityId, className }: LikeButtonProps)
           );
         }}
       >
-        <span aria-hidden="true">{liked ? "♥" : "♡"}</span>
-        {loading ? "Ukládám..." : liked ? "Líbí se vám to" : "Líbí se mi"}
+        <span aria-hidden="true">{effectiveLiked ? "♥" : "♡"}</span>
+        {loading ? "Ukládám..." : effectiveLiked ? "Líbí se vám to" : "Líbí se mi"}
       </button>
       {error ? <p className="text-xs text-[#D14A2A]">{error}</p> : null}
     </div>

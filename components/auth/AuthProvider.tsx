@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<ViewerProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => supabase !== null);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [loginReason, setLoginReason] = useState<string | null>(null);
   const [busyProvider, setBusyProvider] = useState<"google" | "facebook" | "email" | null>(null);
@@ -157,7 +157,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!supabase) {
-      setLoading(false);
       return;
     }
 
@@ -188,7 +187,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) return;
     if (lastBootstrappedUserIdRef.current === user.id) return;
-    void bootstrapUser(user);
+    const timer = window.setTimeout(() => {
+      void bootstrapUser(user);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [bootstrapUser, user]);
 
   const openLoginModal = useCallback((intent?: LoginIntent) => {
@@ -320,6 +322,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider value={value}>
       {children}
       <LoginModal
+        key={`${loginModalOpen ? "open" : "closed"}-${user?.id ?? "anon"}`}
         open={loginModalOpen}
         reason={loginReason}
         busyProvider={busyProvider}

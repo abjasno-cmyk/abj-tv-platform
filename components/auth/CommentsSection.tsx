@@ -67,7 +67,10 @@ export function CommentsSection({ entityType, entityId, heading = "Diskuse divá
   }, [entityId, entityType]);
 
   useEffect(() => {
-    void loadComments();
+    const frame = window.requestAnimationFrame(() => {
+      void loadComments();
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [loadComments]);
 
   const canSubmit = useMemo(() => draft.trim().length >= 2 && draft.trim().length <= 2000, [draft]);
@@ -90,12 +93,13 @@ export function CommentsSection({ entityType, entityId, heading = "Diskuse divá
       error?: string;
     };
     setSaving(false);
-    if (!response.ok || !payload.comment) {
+    const createdComment = payload.comment;
+    if (!response.ok || !createdComment) {
       setError(payload.error ?? "Komentář se nepodařilo uložit.");
       return;
     }
 
-    setComments((prev) => [...prev, payload.comment]);
+    setComments((prev) => [...prev, createdComment]);
     setDraft("");
   };
 

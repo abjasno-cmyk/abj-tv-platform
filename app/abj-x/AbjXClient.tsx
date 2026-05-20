@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useFeed } from "@/hooks/useFeed";
 import {
@@ -167,6 +167,7 @@ function mergeComments(existing: AbjXComment[], incoming: AbjXComment[]): AbjXCo
 export function AbjXClient() {
   const { isAuthenticated, requestAuth } = useAuth();
   const { posts, loading, hasMore, loadMore } = useFeed();
+  const localCommentCounterRef = useRef(0);
   const items = useMemo(() => toItems(posts), [posts]);
   const [sessionId] = useState(() => {
     if (typeof window === "undefined") return "";
@@ -395,8 +396,9 @@ export function AbjXClient() {
       setWallErrorByPost((prev) => ({ ...prev, [item.id]: "" }));
     } else {
       // Keep wall usable even when backend is temporarily unavailable.
+      localCommentCounterRef.current += 1;
       const localComment: AbjXComment = {
-        id: `local-${item.id}-${Date.now()}`,
+        id: `local-${item.id}-${sessionId}-${localCommentCounterRef.current}`,
         postId: item.id,
         authorName: "Vy",
         body: nextText,
