@@ -14,7 +14,7 @@ const BASE_NAV_LINKS = [
   { href: "/zed", label: "Zeď" },
   { href: "/muj-verox", label: "Můj Verox" },
 ];
-const STUDIO_ALLOWED_EMAILS = new Set(["jana.bobosikova@bcmgroup.cz", "abjasno@gmail.com"]);
+const STUDIO_ALLOWED_EMAILS = new Set(["abjasno@gmail.com"]);
 const NAV_VISIBLE_TOP_THRESHOLD = 8;
 const NAV_SCROLL_DELTA_THRESHOLD = 4;
 const NAV_REVEAL_STICKY_MS = 1400;

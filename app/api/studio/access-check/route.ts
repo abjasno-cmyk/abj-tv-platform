@@ -39,6 +39,8 @@ export async function GET(request: Request) {
     user: {
       id: access.user.id,
       email: access.email,
+      authProvider: access.authProvider,
+      isGoogleAuth: access.isGoogleAuth,
       displayName: access.displayName,
       profileRole: access.profileRole,
       effectiveRoles: access.effectiveRoles,

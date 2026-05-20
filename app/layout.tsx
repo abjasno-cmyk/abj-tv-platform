@@ -5,6 +5,7 @@ import { ABJNav } from "@/components/abj/Nav";
 import { LegalFooter } from "@/components/abj/LegalFooter";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { EditorialEventDebugPanel } from "@/components/dev/EditorialEventDebugPanel";
+import { StudioFab } from "@/components/studio/StudioFab";
 
 export const metadata: Metadata = {
   title: "ABJ TV Platform",
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
           <ABJNav />
           <main className="min-h-[calc(100vh-46px)] pt-[68px]">{children}</main>
           <LegalFooter />
+          <StudioFab />
           {showEditorialDebug ? <EditorialEventDebugPanel /> : null}
         </AuthProvider>
       </body>

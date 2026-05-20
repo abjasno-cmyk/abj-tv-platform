@@ -5,7 +5,6 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const STUDIO_ALLOWED_EMAILS = new Set([
-  "jana.bobosikova@bcmgroup.cz",
   "abjasno@gmail.com",
 ]);
 
@@ -51,6 +50,8 @@ export type StudioAccessContext = {
   supabase: SupabaseClient;
   user: User | null;
   email: string | null;
+  authProvider: string | null;
+  isGoogleAuth: boolean;
   displayName: string | null;
   profileRole: StudioRole;
   effectiveRoles: StudioRole[];
@@ -106,6 +107,19 @@ function isMissingRelation(message: string | undefined): boolean {
   return /relation .* does not exist|column .* does not exist/i.test(message);
 }
 
+function detectProvider(user: User | null): string | null {
+  if (!user) return null;
+  const appMetadata = user.app_metadata ?? {};
+  if (typeof appMetadata.provider === "string" && appMetadata.provider.trim().length > 0) {
+    return appMetadata.provider.trim().toLowerCase();
+  }
+  if (Array.isArray(appMetadata.providers)) {
+    const firstProvider = appMetadata.providers.find((value): value is string => typeof value === "string" && value.trim().length > 0);
+    if (firstProvider) return firstProvider.trim().toLowerCase();
+  }
+  return null;
+}
+
 function toRoleSet(profileRole: StudioRole, extraRoles: string[]): StudioRole[] {
   const values = new Set<StudioRole>([profileRole]);
   for (const role of extraRoles) {
@@ -131,6 +145,8 @@ export async function resolveStudioAccessContext(): Promise<StudioAccessContext>
       supabase,
       user: null,
       email: null,
+      authProvider: null,
+      isGoogleAuth: false,
       displayName: null,
       profileRole: "viewer",
       effectiveRoles: ["viewer"],
@@ -143,6 +159,8 @@ export async function resolveStudioAccessContext(): Promise<StudioAccessContext>
   const profile = (profileQuery.data ?? null) as ProfileRow | null;
   const profileRole = normalizeRole(profile?.role ?? "viewer");
   const email = normalizeEmail(user.email ?? null, profile?.email ?? null);
+  const authProvider = detectProvider(user);
+  const isGoogleAuth = authProvider === "google";
   const isAllowlisted = email ? STUDIO_ALLOWED_EMAILS.has(email) : false;
 
   const adminRolesQuery = await supabase.from("admin_roles").select("role").eq("user_id", user.id);
@@ -159,7 +177,7 @@ export async function resolveStudioAccessContext(): Promise<StudioAccessContext>
 
   // Self-heal allowlisted users: ensure both approved accounts always get
   // Studio access even if profile bootstrap created them as "viewer".
-  if (isAllowlisted && resolvedProfileRole === "viewer") {
+  if (isAllowlisted && isGoogleAuth && resolvedProfileRole === "viewer") {
     const promoteProfile = await supabase
       .from("profiles")
       .update({
@@ -178,7 +196,7 @@ export async function resolveStudioAccessContext(): Promise<StudioAccessContext>
     }
   }
 
-  if (isAllowlisted && !resolvedExtraRoles.includes("owner")) {
+  if (isAllowlisted && isGoogleAuth && !resolvedExtraRoles.includes("owner")) {
     const grantOwner = await supabase.from("admin_roles").upsert(
       {
         user_id: user.id,
@@ -194,12 +212,14 @@ export async function resolveStudioAccessContext(): Promise<StudioAccessContext>
 
   const effectiveRoles = toRoleSet(resolvedProfileRole, resolvedExtraRoles);
   const hasInternalRole = effectiveRoles.some((role) => role !== "viewer");
-  const canAccessStudio = isAllowlisted && hasInternalRole;
+  const canAccessStudio = isAllowlisted && isGoogleAuth && hasInternalRole;
 
   return {
     supabase,
     user,
     email,
+    authProvider,
+    isGoogleAuth,
     displayName: profile?.display_name ?? null,
     profileRole: resolvedProfileRole,
     effectiveRoles,

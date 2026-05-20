@@ -147,15 +147,15 @@ create table if not exists audit_log (
   created_at timestamptz not null default now()
 );
 
--- Bootstrap access for the two approved Studio accounts (if profiles already exist).
+-- Bootstrap access for the approved Studio account (if profile already exists).
 update profiles
 set role = 'owner'
-where lower(coalesce(email, '')) in ('jana.bobosikova@bcmgroup.cz', 'abjasno@gmail.com');
+where lower(coalesce(email, '')) in ('abjasno@gmail.com');
 
 insert into admin_roles (user_id, role, created_by)
 select p.id, 'owner', null
 from profiles p
-where lower(coalesce(p.email, '')) in ('jana.bobosikova@bcmgroup.cz', 'abjasno@gmail.com')
+where lower(coalesce(p.email, '')) in ('abjasno@gmail.com')
 on conflict (user_id, role) do nothing;
 
 create index if not exists admin_roles_user_idx on admin_roles (user_id);
@@ -210,7 +210,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select lower(coalesce(auth.jwt() ->> 'email', '')) in ('jana.bobosikova@bcmgroup.cz', 'abjasno@gmail.com');
+  select lower(coalesce(auth.jwt() ->> 'email', '')) in ('abjasno@gmail.com');
 $$;
 
 create or replace function current_profile_role()

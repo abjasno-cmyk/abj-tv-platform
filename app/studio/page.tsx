@@ -44,11 +44,13 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
           <p className="text-xs uppercase tracking-[0.16em] text-[#ff6a00]">VEROX Studio</p>
           <h1 className="mt-2 text-2xl font-semibold">Přístup zamítnut</h1>
           <p className="mt-3 text-sm text-[#b8c2d3]">
-            Studio je interní control room přístupný pouze interním rolím a povoleným interním účtům.
+            Studio je interní control room přístupný pouze účtu <strong>abjasno@gmail.com</strong> přihlášenému přes Google OAuth.
           </p>
           <div className="mt-4 rounded-lg border border-[#2f3647] bg-[#0b0f16] p-3 text-xs text-[#b8c2d3]">
             <p>Debug přístupu:</p>
             <p className="mt-1">E-mail: {access.email ?? "nezjištěn"}</p>
+            <p className="mt-1">Provider: {access.authProvider ?? "nezjištěn"}</p>
+            <p className="mt-1">Google OAuth: {access.isGoogleAuth ? "ANO" : "NE"}</p>
             <p className="mt-1">Allowlist: {access.isAllowlisted ? "ANO" : "NE"}</p>
             <p className="mt-1">Profil role: {access.profileRole}</p>
             <p className="mt-1">Efektivní role: {access.effectiveRoles.join(", ")}</p>
