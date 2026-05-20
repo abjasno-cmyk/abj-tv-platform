@@ -92,6 +92,34 @@ function clearFallbackAccessTokenCookie() {
   document.cookie = `${FALLBACK_ACCESS_TOKEN_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax; Secure`;
 }
 
+function readAccessTokenFromStorage(): string | null {
+  if (typeof window === "undefined") return null;
+  const candidates = Object.keys(window.localStorage).filter((key) =>
+    /^sb-[a-z0-9]+-auth-token$/i.test(key)
+  );
+  for (const key of candidates) {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) continue;
+    try {
+      const parsed = JSON.parse(raw) as { access_token?: unknown } | { currentSession?: { access_token?: unknown } };
+      if ("access_token" in parsed && typeof parsed.access_token === "string" && parsed.access_token.length > 20) {
+        return parsed.access_token;
+      }
+      if (
+        "currentSession" in parsed &&
+        parsed.currentSession &&
+        typeof parsed.currentSession.access_token === "string" &&
+        parsed.currentSession.access_token.length > 20
+      ) {
+        return parsed.currentSession.access_token;
+      }
+    } catch {
+      // Ignore malformed localStorage payloads.
+    }
+  }
+  return null;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = useMemo<SupabaseClient | null>(() => {
     try {
@@ -138,6 +166,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     lastSyncedAccessTokenRef.current = null;
     clearFallbackAccessTokenCookie();
   }, []);
+
+  const persistFallbackAccessToken = useCallback(
+    async (preferredToken?: string | null) => {
+      const fromSession = preferredToken && preferredToken.length > 20 ? preferredToken : null;
+      const fromStorage = readAccessTokenFromStorage();
+      const token = fromSession ?? fromStorage;
+      if (!token) return;
+      setFallbackAccessTokenCookie(token);
+      if (lastSyncedAccessTokenRef.current !== token) {
+        const {
+          data: { session },
+        } = await (supabase?.auth.getSession() ?? Promise.resolve({ data: { session: null } }));
+        const refreshToken = session?.refresh_token ?? "";
+        if (refreshToken) {
+          await syncServerSession(token, refreshToken);
+        }
+      }
+    },
+    [supabase, syncServerSession]
+  );
 
   const refreshProfile = useCallback(async () => {
     if (!supabase) return;
@@ -210,6 +258,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.access_token && session.refresh_token) {
         setFallbackAccessTokenCookie(session.access_token);
         void syncServerSession(session.access_token, session.refresh_token);
+      } else {
+        void persistFallbackAccessToken(session?.access_token ?? null);
       }
       setLoading(false);
     });
@@ -225,6 +275,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else if (session.access_token && session.refresh_token) {
         setFallbackAccessTokenCookie(session.access_token);
         void syncServerSession(session.access_token, session.refresh_token);
+      } else {
+        void persistFallbackAccessToken(session?.access_token ?? null);
       }
       setLoading(false);
     });
@@ -233,7 +285,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [clearServerSession, supabase, syncServerSession]);
+  }, [clearServerSession, persistFallbackAccessToken, supabase, syncServerSession]);
+
+  useEffect(() => {
+    if (!user) return;
+    const timer = window.setInterval(() => {
+      void persistFallbackAccessToken();
+    }, 3000);
+    void persistFallbackAccessToken();
+    return () => window.clearInterval(timer);
+  }, [persistFallbackAccessToken, user]);
 
   useEffect(() => {
     if (!user) return;
