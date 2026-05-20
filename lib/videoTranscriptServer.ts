@@ -14,6 +14,10 @@ import type { VideoTranscriptErrorCode, VideoTranscriptPayload, VideoTranscriptS
 
 const TRANSCRIPT_CACHE_TTL_MS = 30 * 60 * 1000;
 const VIDEO_ID_PATTERN = /^[a-zA-Z0-9_-]{11}$/;
+const YOUTUBE_WATCH_USER_AGENT =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36,gzip(gfe)";
+const YOUTUBE_BOT_GUARD_PATTERN =
+  /confirm you(?:\u2019|\\u2019|')re not a bot|detected unusual traffic|unusual traffic from your computer network|class="g-recaptcha"/i;
 
 type CachedTranscript = {
   expiresAtMs: number;
@@ -124,6 +128,21 @@ function mapTranscriptFetchError(error: unknown, videoId: string): NormalizedTra
   return createTranscriptError("upstream_error", 502, "Nepodařilo se načíst přepis z YouTube.");
 }
 
+async function isBlockedByYoutubeBotGuard(videoId: string): Promise<boolean> {
+  try {
+    const response = await fetch(`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`, {
+      cache: "no-store",
+      headers: {
+        "User-Agent": YOUTUBE_WATCH_USER_AGENT,
+      },
+    });
+    const html = await response.text();
+    return YOUTUBE_BOT_GUARD_PATTERN.test(html);
+  } catch {
+    return false;
+  }
+}
+
 function resolveLanguage(rows: TranscriptResponse[], fallback: string | null): string | null {
   const detected = normalizeLanguage(rows[0]?.lang);
   return detected ?? fallback;
@@ -194,6 +213,12 @@ async function fetchWithLanguageFallback(videoId: string, requestedLanguage: str
       if (error instanceof YoutubeTranscriptNotAvailableLanguageError) {
         lastError = error;
         continue;
+      }
+      if (error instanceof YoutubeTranscriptDisabledError) {
+        const blockedByBotGuard = await isBlockedByYoutubeBotGuard(videoId);
+        if (blockedByBotGuard) {
+          throw createTranscriptError("too_many_requests", 429, "YouTube dočasně omezuje načítání přepisu.");
+        }
       }
       throw mapTranscriptFetchError(error, videoId);
     }
