@@ -45,6 +45,19 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
           <p className="mt-3 text-sm text-[#b8c2d3]">
             Studio je interní control room přístupný pouze interním rolím a povoleným interním účtům.
           </p>
+          <div className="mt-4 rounded-lg border border-[#2f3647] bg-[#0b0f16] p-3 text-xs text-[#b8c2d3]">
+            <p>Debug přístupu:</p>
+            <p className="mt-1">E-mail: {access.email ?? "nezjištěn"}</p>
+            <p className="mt-1">Allowlist: {access.isAllowlisted ? "ANO" : "NE"}</p>
+            <p className="mt-1">Profil role: {access.profileRole}</p>
+            <p className="mt-1">Efektivní role: {access.effectiveRoles.join(", ")}</p>
+            <p className="mt-2">
+              Detail JSON:{" "}
+              <Link href="/api/studio/access-check" className="text-[#ff6a00] underline">
+                /api/studio/access-check
+              </Link>
+            </p>
+          </div>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link
               href="/"
