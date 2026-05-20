@@ -13,8 +13,8 @@ const BASE_NAV_LINKS = [
   { href: "/abj-x", label: "VeroX" },
   { href: "/zed", label: "Zeď" },
   { href: "/muj-verox", label: "Můj Verox" },
+  { href: "/studio", label: "Studio" },
 ];
-const STUDIO_ALLOWED_EMAILS = new Set(["abjasno@gmail.com"]);
 const NAV_VISIBLE_TOP_THRESHOLD = 8;
 const NAV_SCROLL_DELTA_THRESHOLD = 4;
 const NAV_REVEAL_STICKY_MS = 1400;
@@ -31,7 +31,7 @@ function getPragueClockValue(date: Date): string {
 
 export function ABJNav() {
   const pathname = usePathname();
-  const { user, isAuthenticated, profile, openLoginModal, signOut } = useAuth();
+  const { isAuthenticated, profile, openLoginModal, signOut } = useAuth();
   const [clock, setClock] = useState(() => getPragueClockValue(new Date()));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
@@ -86,15 +86,7 @@ export function ABJNav() {
     }, NAV_REVEAL_STICKY_MS);
   }, [mobileOpen]);
 
-  const canSeeStudio = useMemo(() => {
-    const email = (profile?.email ?? user?.email ?? "").trim().toLowerCase();
-    return STUDIO_ALLOWED_EMAILS.has(email);
-  }, [profile?.email, user?.email]);
-
-  const navLinks = useMemo(
-    () => (canSeeStudio ? [...BASE_NAV_LINKS, { href: "/studio", label: "Studio" }] : BASE_NAV_LINKS),
-    [canSeeStudio],
-  );
+  const navLinks = BASE_NAV_LINKS;
 
   const activeHref = useMemo(() => {
     if (pathname.startsWith("/studio")) return "/studio";

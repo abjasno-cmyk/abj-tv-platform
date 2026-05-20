@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { resolveStudioAccessContext, STUDIO_ALLOWED_EMAILS } from "@/lib/studio/access";
 
 export const dynamic = "force-dynamic";
+const PUBLIC_STUDIO_PREVIEW_ENABLED = true;
 
 function parseCookieNames(cookieHeader: string | null): string[] {
   if (!cookieHeader) return [];
@@ -17,6 +18,19 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const cookieNames = parseCookieNames(request.headers.get("cookie"));
   if (!access.user) {
+    if (PUBLIC_STUDIO_PREVIEW_ENABLED) {
+      return NextResponse.json({
+        ok: true,
+        reason: "public_preview",
+        message: "Studio je dočasně dostupné v preview režimu bez přihlášení.",
+        debug: {
+          host: request.headers.get("host"),
+          origin: request.headers.get("origin"),
+          urlHost: url.host,
+          cookieNames,
+        },
+      });
+    }
     return NextResponse.json(
       {
         ok: false,
@@ -33,9 +47,10 @@ export async function GET(request: Request) {
     );
   }
 
+  const accessGranted = PUBLIC_STUDIO_PREVIEW_ENABLED ? true : access.canAccessStudio;
   return NextResponse.json({
-    ok: access.canAccessStudio,
-    reason: access.canAccessStudio ? "granted" : "denied",
+    ok: accessGranted,
+    reason: access.canAccessStudio ? "granted" : PUBLIC_STUDIO_PREVIEW_ENABLED ? "public_preview" : "denied",
     user: {
       id: access.user.id,
       email: access.email,

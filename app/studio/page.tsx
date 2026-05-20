@@ -1,8 +1,4 @@
-import Link from "next/link";
-import { redirect } from "next/navigation";
-
 import { hasStudioCapability, resolveStudioAccessContext } from "@/lib/studio/access";
-import { StudioSessionRescue } from "@/components/studio/StudioSessionRescue";
 import { loadStudioSnapshot } from "@/lib/studio/data";
 
 export const dynamic = "force-dynamic";
@@ -33,55 +29,8 @@ type StudioPageProps = {
 
 export default async function StudioPage({ searchParams }: StudioPageProps) {
   const access = await resolveStudioAccessContext();
-  if (!access.user) {
-    redirect("/muj-verox?next=%2Fstudio");
-  }
-
-  if (!access.canAccessStudio) {
-    return (
-      <main className="mx-auto w-full max-w-4xl px-4 py-10">
-        <section className="rounded-2xl border border-[#ff6a00]/40 bg-[#141820] p-6 text-[#e8edf6] shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
-          <p className="text-xs uppercase tracking-[0.16em] text-[#ff6a00]">VEROX Studio</p>
-          <h1 className="mt-2 text-2xl font-semibold">Přístup zamítnut</h1>
-          <p className="mt-3 text-sm text-[#b8c2d3]">
-            Studio je interní control room přístupný pouze účtu <strong>abjasno@gmail.com</strong> přihlášenému přes Google OAuth.
-          </p>
-          <div className="mt-4 rounded-lg border border-[#2f3647] bg-[#0b0f16] p-3 text-xs text-[#b8c2d3]">
-            <p>Debug přístupu:</p>
-            <p className="mt-1">E-mail: {access.email ?? "nezjištěn"}</p>
-            <p className="mt-1">Provider: {access.authProvider ?? "nezjištěn"}</p>
-            <p className="mt-1">Google OAuth: {access.isGoogleAuth ? "ANO" : "NE"}</p>
-            <p className="mt-1">Allowlist: {access.isAllowlisted ? "ANO" : "NE"}</p>
-            <p className="mt-1">Profil role: {access.profileRole}</p>
-            <p className="mt-1">Efektivní role: {access.effectiveRoles.join(", ")}</p>
-            <p className="mt-2">
-              Detail JSON:{" "}
-              <Link href="/api/studio/access-check" className="text-[#ff6a00] underline">
-                /api/studio/access-check
-              </Link>
-            </p>
-          </div>
-          <StudioSessionRescue targetPath="/studio" />
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Link
-              href="/"
-              className="inline-flex min-h-10 items-center rounded-lg border border-[#30384a] px-4 py-2 text-sm text-[#d4dbea] hover:border-[#ff6a00]/60 hover:text-white"
-            >
-              Zpět na veřejný web
-            </Link>
-            <Link
-              href="/muj-verox"
-              className="inline-flex min-h-10 items-center rounded-lg border border-[#ff6a00] bg-[#ff6a00] px-4 py-2 text-sm font-semibold text-white"
-            >
-              Otevřít účet
-            </Link>
-          </div>
-        </section>
-      </main>
-    );
-  }
-
   const snapshot = await loadStudioSnapshot(access);
+  const isPreviewMode = !access.user || !access.canAccessStudio;
   const resolvedSearchParams = await Promise.resolve(searchParams ?? {});
   const statusValue = resolvedSearchParams.studio_status;
   const messageValue = resolvedSearchParams.studio_message;
@@ -108,7 +57,8 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
             </p>
           </div>
           <div className="rounded-xl border border-[#2b3345] bg-[#0b0f16] px-4 py-3 text-xs text-[#c4cede]">
-            <p>Interní uživatel: {access.displayName ?? access.email ?? "—"}</p>
+            <p>Režim: {isPreviewMode ? "Náhled bez přihlášení" : "Interní přístup"}</p>
+            <p className="mt-1">Uživatel: {access.displayName ?? access.email ?? "host"}</p>
             <p className="mt-1">Role: {access.effectiveRoles.join(", ")}</p>
             <p className="mt-1">Aktualizace: {formatDateTime(snapshot.nowIso)}</p>
           </div>
@@ -126,6 +76,13 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
           </span>
         </div>
       </section>
+
+      {isPreviewMode ? (
+        <section className="mt-5 rounded-xl border border-[#35508b] bg-[#111a2e] p-4 text-sm text-[#bfd3ff]">
+          Studio je dočasně otevřeno v režimu náhledu bez přihlášení. Zásahové akce zůstávají zamčené, dokud se znovu
+          neaktivuje interní OAuth přístup.
+        </section>
+      ) : null}
 
       <section className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {snapshot.overviewCards.map((card) => (
