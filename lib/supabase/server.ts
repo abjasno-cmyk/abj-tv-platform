@@ -24,10 +24,20 @@ function sanitizeEnvValue(value?: string): string | undefined {
   return withoutInlineKeyName;
 }
 
+function decodeCookieValue(value?: string): string | undefined {
+  if (!value) return undefined;
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
   const supabaseUrl = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);
   const supabaseAnonKey = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  const fallbackAccessToken = decodeCookieValue(cookieStore.get("verox_access_token")?.value);
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error("Supabase env vars not set");
@@ -37,6 +47,13 @@ export async function createSupabaseServerClient() {
     supabaseUrl,
     supabaseAnonKey,
     {
+      global: fallbackAccessToken
+        ? {
+            headers: {
+              Authorization: `Bearer ${fallbackAccessToken}`,
+            },
+          }
+        : undefined,
       cookies: {
         getAll() {
           return cookieStore.getAll();

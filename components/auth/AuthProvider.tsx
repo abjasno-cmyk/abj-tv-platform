@@ -7,6 +7,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { LoginModal } from "@/components/auth/LoginModal";
 
 const PENDING_CONSENTS_KEY = "verox_pending_consents_v1";
+const FALLBACK_ACCESS_TOKEN_COOKIE = "verox_access_token";
 
 type ViewerProfile = {
   id: string;
@@ -79,6 +80,18 @@ function clearPendingConsentsStorage() {
   }
 }
 
+function setFallbackAccessTokenCookie(accessToken: string) {
+  if (typeof window === "undefined") return;
+  if (!accessToken) return;
+  const encoded = encodeURIComponent(accessToken);
+  document.cookie = `${FALLBACK_ACCESS_TOKEN_COOKIE}=${encoded}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`;
+}
+
+function clearFallbackAccessTokenCookie() {
+  if (typeof window === "undefined") return;
+  document.cookie = `${FALLBACK_ACCESS_TOKEN_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax; Secure`;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = useMemo<SupabaseClient | null>(() => {
     try {
@@ -123,6 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ignore best-effort cleanup errors.
     });
     lastSyncedAccessTokenRef.current = null;
+    clearFallbackAccessTokenCookie();
   }, []);
 
   const refreshProfile = useCallback(async () => {
@@ -194,6 +208,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(userResult.data.user ?? null);
       const session = sessionResult.data.session;
       if (session?.access_token && session.refresh_token) {
+        setFallbackAccessTokenCookie(session.access_token);
         void syncServerSession(session.access_token, session.refresh_token);
       }
       setLoading(false);
@@ -208,6 +223,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         lastBootstrappedUserIdRef.current = null;
         void clearServerSession();
       } else if (session.access_token && session.refresh_token) {
+        setFallbackAccessTokenCookie(session.access_token);
         void syncServerSession(session.access_token, session.refresh_token);
       }
       setLoading(false);
