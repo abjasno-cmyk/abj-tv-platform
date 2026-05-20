@@ -106,18 +106,23 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
     if (!expandedChannelData) return;
     if (expandedChannelData.videos.length > 0) return;
     const channelKey = expandedChannelData.channelName;
-    if (!expandedChannelData.channelId) return;
+    const channelId = expandedChannelData.channelId;
+    if (!channelId) return;
     if (loadingByChannel[channelKey]) return;
     if (Object.prototype.hasOwnProperty.call(fetchedVideosByChannel, channelKey)) return;
 
     let cancelled = false;
-    setLoadingByChannel((prev) => ({ ...prev, [channelKey]: true }));
-    setErrorByChannel((prev) => ({ ...prev, [channelKey]: "" }));
-
-    void fetch(`/api/channel-latest?channelId=${encodeURIComponent(expandedChannelData.channelId)}&limit=4`, {
-      cache: "no-store",
-    })
+    void Promise.resolve()
+      .then(() => {
+        if (cancelled) return null;
+        setLoadingByChannel((prev) => ({ ...prev, [channelKey]: true }));
+        setErrorByChannel((prev) => ({ ...prev, [channelKey]: "" }));
+        return fetch(`/api/channel-latest?channelId=${encodeURIComponent(channelId)}&limit=4`, {
+          cache: "no-store",
+        });
+      })
       .then(async (response) => {
+        if (!response) return;
         const payload = (await response.json().catch(() => ({}))) as ChannelLatestApiResponse;
         if (!response.ok) {
           throw new Error(payload.error ?? `HTTP ${response.status}`);

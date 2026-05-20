@@ -38,7 +38,6 @@ export function ABJNav() {
   }, []);
 
   useEffect(() => {
-    setIsVisible(true);
     if (mobileOpen) return;
 
     const onScroll = () => {
@@ -135,7 +134,13 @@ export function ABJNav() {
             className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(17,17,17,0.16)] text-abj-text1 md:hidden"
             aria-label={mobileOpen ? "Zavřít menu" : "Otevřít menu"}
             aria-expanded={mobileOpen}
-            onClick={() => setMobileOpen((prev) => !prev)}
+            onClick={() =>
+              setMobileOpen((prev) => {
+                const next = !prev;
+                if (next) setIsVisible(true);
+                return next;
+              })
+            }
           >
             <span className="text-lg leading-none">{mobileOpen ? "×" : "☰"}</span>
           </button>
