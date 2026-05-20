@@ -32,7 +32,7 @@ export default function LivePage({
     title: initialTitle,
     channelName: initialChannelName,
     startSeconds: Math.max(0, Math.floor(initialStartSeconds)),
-    capturedAtMs: Date.now(),
+    capturedAtMs: 0,
   });
   const [videoId, setVideoId] = useState<string | null>(initialVideoId);
   const [title, setTitle] = useState(initialTitle);
@@ -60,6 +60,10 @@ export default function LivePage({
     const current = timelineItems[selectedIndex] ?? null;
     return current?.type === "vod" && Boolean(current.isABJ) && !videoId;
   }, [timelineItems, selectedIndex, videoId]);
+
+  useEffect(() => {
+    linearSourceRef.current.capturedAtMs = Date.now();
+  }, []);
 
   useEffect(() => {
     const tick = () => {
@@ -92,7 +96,8 @@ export default function LivePage({
         isFiller={isFiller}
         onReturnToLive={() => {
           const source = linearSourceRef.current;
-          const elapsedSinceLoad = Math.max(0, Math.floor((Date.now() - source.capturedAtMs) / 1000));
+          const elapsedSinceLoad =
+            source.capturedAtMs > 0 ? Math.max(0, Math.floor((Date.now() - source.capturedAtMs) / 1000)) : 0;
           setVideoId(source.videoId);
           setTitle(source.title);
           setChannelName(source.channelName);

@@ -148,10 +148,13 @@ export function Timeline({ days, onSelect }: TimelineProps) {
   }, [activeDay?.date]);
 
   useEffect(() => {
-    updateScrollState();
+    const frame = window.requestAnimationFrame(() => updateScrollState());
     const onResize = () => updateScrollState();
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", onResize);
+    };
   }, [items.length, updateScrollState]);
 
   useEffect(() => {
