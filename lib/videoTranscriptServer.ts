@@ -29,6 +29,10 @@ type NormalizedTranscriptError = Error & {
   status: number;
 };
 
+type TranscriptFetchOptions = {
+  acceptLanguage?: string | null;
+};
+
 function getCache(): Map<string, CachedTranscript> {
   const withCache = globalThis as GlobalTranscriptCache;
   if (!withCache.__veroxTranscriptCache) {
@@ -54,6 +58,58 @@ function normalizeRequestedLanguages(value: string | null): string[] {
     ordered.push(candidate);
   }
   return ordered;
+}
+
+function normalizeAcceptLanguage(value: string | null | undefined): string {
+  const fallback = "cs-CZ,cs;q=0.9,en;q=0.8";
+  if (!value) return fallback;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : fallback;
+}
+
+function createYouTubeFetch(acceptLanguage: string): typeof fetch {
+  return (input, init) => {
+    const headers = new Headers(init?.headers ?? {});
+    if (!headers.has("Accept-Language")) {
+      headers.set("Accept-Language", acceptLanguage);
+    }
+    return fetch(input, {
+      ...init,
+      headers,
+      redirect: "follow",
+    });
+  };
+}
+
+async function detectRobotChallenge(
+  videoId: string,
+  fetchFn: typeof fetch,
+  acceptLanguage: string
+): Promise<void> {
+  try {
+    const response = await fetchFn(`https://www.youtube.com/watch?v=${videoId}`, {
+      headers: {
+        "Accept-Language": acceptLanguage,
+      },
+      cache: "no-store",
+    });
+    if (!response.ok) return;
+    const html = await response.text();
+    if (html.includes('class="g-recaptcha"')) {
+      throw createTranscriptError("too_many_requests", 429, "YouTube vyžaduje ověření, že nejste robot.");
+    }
+    const hasBotChallengeText =
+      /potvrd[ui]te,\s*ze nejste robot/i.test(html) ||
+      /confirm you.?re not a bot/i.test(html) ||
+      /Sign in to confirm you.?re not a bot/i.test(html);
+    if (hasBotChallengeText) {
+      throw createTranscriptError("too_many_requests", 429, "YouTube vyžaduje ověření, že nejste robot.");
+    }
+  } catch (error) {
+    if (isTranscriptError(error)) {
+      throw error;
+    }
+  }
 }
 
 function formatOffsetLabel(totalSeconds: number): string {
@@ -169,13 +225,24 @@ export function parseVideoIdOrThrow(candidate: string | null): string {
   return resolved;
 }
 
-async function fetchWithLanguageFallback(videoId: string, requestedLanguage: string | null): Promise<VideoTranscriptPayload> {
+async function fetchWithLanguageFallback(
+  videoId: string,
+  requestedLanguage: string | null,
+  options: TranscriptFetchOptions
+): Promise<VideoTranscriptPayload> {
+  const acceptLanguage = normalizeAcceptLanguage(options.acceptLanguage);
+  const fetchFn = createYouTubeFetch(acceptLanguage);
+  await detectRobotChallenge(videoId, fetchFn, acceptLanguage);
+
   const languageCandidates = normalizeRequestedLanguages(requestedLanguage);
   let lastError: unknown = null;
 
   for (const language of [...languageCandidates, null]) {
     try {
-      const rows = await YoutubeTranscript.fetchTranscript(videoId, language ? { lang: language } : undefined);
+      const rows = await YoutubeTranscript.fetchTranscript(
+        videoId,
+        language ? { lang: language, fetch: fetchFn } : { fetch: fetchFn }
+      );
       const segments = normalizeSegments(rows);
       if (segments.length === 0) {
         lastError = createTranscriptError("transcript_not_available", 404, "Video obsahuje prázdný přepis.");
@@ -202,7 +269,11 @@ async function fetchWithLanguageFallback(videoId: string, requestedLanguage: str
   throw mapTranscriptFetchError(lastError, videoId);
 }
 
-export async function getVideoTranscript(videoId: string, requestedLanguage: string | null): Promise<VideoTranscriptPayload> {
+export async function getVideoTranscript(
+  videoId: string,
+  requestedLanguage: string | null,
+  options: TranscriptFetchOptions = {}
+): Promise<VideoTranscriptPayload> {
   const cacheKey = `${videoId}::${normalizeLanguage(requestedLanguage) ?? "auto"}`;
   const cache = getCache();
   const now = Date.now();
@@ -214,7 +285,7 @@ export async function getVideoTranscript(videoId: string, requestedLanguage: str
     };
   }
 
-  const fetched = await fetchWithLanguageFallback(videoId, requestedLanguage);
+  const fetched = await fetchWithLanguageFallback(videoId, requestedLanguage, options);
   const { fromCache: _fromCache, ...cachePayload } = fetched;
   cache.set(cacheKey, {
     expiresAtMs: now + TRANSCRIPT_CACHE_TTL_MS,
