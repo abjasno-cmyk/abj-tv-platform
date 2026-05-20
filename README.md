@@ -18,6 +18,8 @@ If `PROGRAM_FEED_HMAC_SECRET` is missing, importer falls back to `SESSION_SECRET
 - `PROGRAM_CACHE_CRON_SECRET` (or `CRON_SECRET`) - protects both cron endpoints:
   - `/api/program/v3/refresh-cache`
   - `/api/program/v3/import-feed`
+- `YOUTUBE_TRANSCRIPT_API_KEY` - optional fallback API key for hosted transcript provider (used when YouTube blocks transcript fetches from cloud IPs)
+- `YOUTUBE_TRANSCRIPT_API_URL` - optional fallback endpoint URL (defaults to `https://www.youtubetranscript.dev/api/v2/transcribe`)
 
 ### Endpoints
 

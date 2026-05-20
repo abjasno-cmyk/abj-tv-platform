@@ -18,6 +18,9 @@ const YOUTUBE_WATCH_USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36,gzip(gfe)";
 const YOUTUBE_BOT_GUARD_PATTERN =
   /confirm you(?:\u2019|\\u2019|')re not a bot|detected unusual traffic|unusual traffic from your computer network|class="g-recaptcha"/i;
+const EXTERNAL_TRANSCRIPT_API_URL = process.env.YOUTUBE_TRANSCRIPT_API_URL ?? "https://www.youtubetranscript.dev/api/v2/transcribe";
+const EXTERNAL_TRANSCRIPT_API_KEY = process.env.YOUTUBE_TRANSCRIPT_API_KEY?.trim() || "";
+const EXTERNAL_TRANSCRIPT_TIMEOUT_MS = 12_000;
 
 type CachedTranscript = {
   expiresAtMs: number;
@@ -33,12 +36,33 @@ type NormalizedTranscriptError = Error & {
   status: number;
 };
 
+type JsonRecord = Record<string, unknown>;
+
 function getCache(): Map<string, CachedTranscript> {
   const withCache = globalThis as GlobalTranscriptCache;
   if (!withCache.__veroxTranscriptCache) {
     withCache.__veroxTranscriptCache = new Map<string, CachedTranscript>();
   }
   return withCache.__veroxTranscriptCache;
+}
+
+function isObjectLike(value: unknown): value is JsonRecord {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function readString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function readNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
 }
 
 function normalizeLanguage(value: string | null | undefined): string | null {
@@ -94,6 +118,129 @@ function createTranscriptError(code: VideoTranscriptErrorCode, status: number, m
   error.code = code;
   error.status = status;
   return error;
+}
+
+function normalizeExternalTimeToSeconds(value: number | null): number | null {
+  if (value === null) return null;
+  // Most hosted APIs return milliseconds; small values are usually already seconds.
+  if (Math.abs(value) > 10_000) {
+    return value / 1000;
+  }
+  return value;
+}
+
+function normalizeExternalTranscriptSegments(rawSegments: unknown): VideoTranscriptSegment[] {
+  if (!Array.isArray(rawSegments)) return [];
+  const segments: VideoTranscriptSegment[] = [];
+
+  for (const rawSegment of rawSegments) {
+    if (!isObjectLike(rawSegment)) continue;
+    const text = readString(rawSegment.text) ?? readString(rawSegment.utf8) ?? readString(rawSegment.caption);
+    if (!text) continue;
+
+    const startRaw =
+      readNumber(rawSegment.start) ??
+      readNumber(rawSegment.start_ms) ??
+      readNumber(rawSegment.startMs) ??
+      readNumber(rawSegment.offset) ??
+      readNumber(rawSegment.tStartMs);
+    const durationRaw =
+      readNumber(rawSegment.duration) ??
+      readNumber(rawSegment.duration_ms) ??
+      readNumber(rawSegment.durationMs) ??
+      readNumber(rawSegment.dDurationMs);
+    const endRaw = readNumber(rawSegment.end) ?? readNumber(rawSegment.end_ms) ?? readNumber(rawSegment.endMs);
+
+    const startSeconds = Math.max(0, normalizeExternalTimeToSeconds(startRaw) ?? 0);
+    const durationFromDuration = normalizeExternalTimeToSeconds(durationRaw);
+    const durationFromEnd =
+      endRaw !== null && startRaw !== null
+        ? Math.max(0, (normalizeExternalTimeToSeconds(endRaw) ?? 0) - (normalizeExternalTimeToSeconds(startRaw) ?? 0))
+        : null;
+    const durationSeconds = Math.max(0, durationFromDuration ?? durationFromEnd ?? 0);
+
+    segments.push({
+      text,
+      offsetSeconds: startSeconds,
+      durationSeconds,
+      offsetLabel: formatOffsetLabel(startSeconds),
+    });
+  }
+
+  return segments.sort((a, b) => a.offsetSeconds - b.offsetSeconds);
+}
+
+function buildTranscriptFromExternalPayload(videoId: string, payload: unknown): VideoTranscriptPayload | null {
+  if (!isObjectLike(payload)) return null;
+  const data = isObjectLike(payload.data) ? payload.data : payload;
+  const transcript = isObjectLike(data.transcript) ? data.transcript : data;
+
+  const segments = normalizeExternalTranscriptSegments(transcript.segments ?? data.segments ?? payload.segments);
+  const language = normalizeLanguage(readString(transcript.language) ?? readString(data.language) ?? readString(payload.language));
+  const text = readString(transcript.text) ?? readString(data.text) ?? readString(payload.text);
+
+  if (segments.length === 0 && !text) {
+    return null;
+  }
+
+  const resolvedSegments =
+    segments.length > 0
+      ? segments
+      : [
+          {
+            text: text!,
+            offsetSeconds: 0,
+            durationSeconds: 0,
+            offsetLabel: formatOffsetLabel(0),
+          },
+        ];
+
+  return {
+    videoId,
+    language,
+    fetchedAt: new Date().toISOString(),
+    fromCache: false,
+    fullText: text ?? resolvedSegments.map((segment) => segment.text).join("\n"),
+    segments: resolvedSegments,
+  };
+}
+
+async function fetchTranscriptFromExternalProvider(
+  videoId: string,
+  requestedLanguage: string | null
+): Promise<VideoTranscriptPayload | null> {
+  if (!EXTERNAL_TRANSCRIPT_API_KEY) return null;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), EXTERNAL_TRANSCRIPT_TIMEOUT_MS);
+  try {
+    const response = await fetch(EXTERNAL_TRANSCRIPT_API_URL, {
+      method: "POST",
+      cache: "no-store",
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${EXTERNAL_TRANSCRIPT_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        video: videoId,
+        source: "auto",
+        allow_asr: false,
+        ...(requestedLanguage ? { language: requestedLanguage } : {}),
+        format: { timestamp: true },
+      }),
+    });
+
+    const responseBody = (await response.json().catch(() => null)) as unknown;
+    if (!response.ok) {
+      return null;
+    }
+    return buildTranscriptFromExternalPayload(videoId, responseBody);
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function mapTranscriptFetchError(error: unknown, videoId: string): NormalizedTranscriptError {
@@ -214,9 +361,19 @@ async function fetchWithLanguageFallback(videoId: string, requestedLanguage: str
         lastError = error;
         continue;
       }
+      if (error instanceof YoutubeTranscriptTooManyRequestError) {
+        const fallbackTranscript = await fetchTranscriptFromExternalProvider(videoId, language);
+        if (fallbackTranscript) {
+          return fallbackTranscript;
+        }
+      }
       if (error instanceof YoutubeTranscriptDisabledError) {
         const blockedByBotGuard = await isBlockedByYoutubeBotGuard(videoId);
         if (blockedByBotGuard) {
+          const fallbackTranscript = await fetchTranscriptFromExternalProvider(videoId, language);
+          if (fallbackTranscript) {
+            return fallbackTranscript;
+          }
           throw createTranscriptError("too_many_requests", 429, "YouTube dočasně omezuje načítání přepisu.");
         }
       }
