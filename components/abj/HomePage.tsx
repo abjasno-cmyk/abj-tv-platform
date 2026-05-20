@@ -79,11 +79,11 @@ export function HomePage({
           onPlaybackSample={onPlaybackSample}
         />
 
-        {engagementSlot}
+        {reactionsSlot}
 
         <Timeline days={days} onSelect={onSelect} />
 
-        {reactionsSlot}
+        {engagementSlot}
 
         <ChannelDirectory channels={channels} onSelectVideo={onSelectChannelVideo} />
       </div>
