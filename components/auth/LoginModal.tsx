@@ -7,12 +7,24 @@ type LoginModalProps = {
   reason?: string | null;
   busyProvider: "google" | "facebook" | "email" | null;
   errorMessage: string | null;
+  enableFacebook?: boolean;
+  enableEmail?: boolean;
   onClose: () => void;
   onOAuth: (provider: "google" | "facebook", options: { termsAccepted: boolean; newsletterOptIn: boolean }) => Promise<void>;
   onEmail: (email: string, options: { termsAccepted: boolean; newsletterOptIn: boolean }) => Promise<void>;
 };
 
-export function LoginModal({ open, reason, busyProvider, errorMessage, onClose, onOAuth, onEmail }: LoginModalProps) {
+export function LoginModal({
+  open,
+  reason,
+  busyProvider,
+  errorMessage,
+  enableFacebook = false,
+  enableEmail = false,
+  onClose,
+  onOAuth,
+  onEmail,
+}: LoginModalProps) {
   const [email, setEmail] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(true);
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
@@ -76,57 +88,63 @@ export function LoginModal({ open, reason, busyProvider, errorMessage, onClose, 
           >
             {busyProvider === "google" ? "Přesměrovávám..." : "Pokračovat přes Google"}
           </button>
-          <button
-            type="button"
-            disabled={busyProvider !== null}
-            onClick={() => {
-              setLocalError(null);
-              if (!termsAccepted) {
-                setLocalError("Pro vytvoření účtu je potřeba souhlasit s podmínkami.");
-                return;
-              }
-              void onOAuth("facebook", { termsAccepted, newsletterOptIn });
-            }}
-            className="flex min-h-11 w-full items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold transition hover:border-[#FF6A00] hover:bg-[#FF6A00]/15 disabled:opacity-70"
-          >
-            {busyProvider === "facebook" ? "Přesměrovávám..." : "Pokračovat přes Facebook"}
-          </button>
+          {enableFacebook ? (
+            <button
+              type="button"
+              disabled={busyProvider !== null}
+              onClick={() => {
+                setLocalError(null);
+                if (!termsAccepted) {
+                  setLocalError("Pro vytvoření účtu je potřeba souhlasit s podmínkami.");
+                  return;
+                }
+                void onOAuth("facebook", { termsAccepted, newsletterOptIn });
+              }}
+              className="flex min-h-11 w-full items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold transition hover:border-[#FF6A00] hover:bg-[#FF6A00]/15 disabled:opacity-70"
+            >
+              {busyProvider === "facebook" ? "Přesměrovávám..." : "Pokračovat přes Facebook"}
+            </button>
+          ) : null}
         </div>
 
-        <div className="my-4 h-px w-full bg-white/10" />
+        {enableEmail ? <div className="my-4 h-px w-full bg-white/10" /> : null}
 
-        <div className="space-y-2">
-          <label className="block space-y-1">
-            <span className="text-xs uppercase tracking-[0.1em] text-[#B9BEC9]">E-mail</span>
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="vas@email.cz"
-              className="min-h-11 w-full rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-[#9BA2B2] focus:border-[#FF6A00]"
-            />
-          </label>
-          <button
-            type="button"
-            disabled={busyProvider !== null}
-            onClick={() => {
-              setLocalError(null);
-              if (!termsAccepted) {
-                setLocalError("Pro vytvoření účtu je potřeba souhlasit s podmínkami.");
-                return;
-              }
-              const normalizedEmail = email.trim();
-              if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-                setLocalError("Zadejte prosím platný e-mail.");
-                return;
-              }
-              void onEmail(normalizedEmail, { termsAccepted, newsletterOptIn });
-            }}
-            className="flex min-h-11 w-full items-center justify-center rounded-xl border border-[#FF6A00]/50 bg-[#FF6A00] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#e35f00] disabled:opacity-70"
-          >
-            {busyProvider === "email" ? "Odesílám odkaz..." : "Pokračovat e-mailem"}
-          </button>
-        </div>
+        {enableEmail ? (
+          <div className="space-y-2">
+            <label className="block space-y-1">
+              <span className="text-xs uppercase tracking-[0.1em] text-[#B9BEC9]">E-mail</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="vas@email.cz"
+                className="min-h-11 w-full rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-[#9BA2B2] focus:border-[#FF6A00]"
+              />
+            </label>
+            <button
+              type="button"
+              disabled={busyProvider !== null}
+              onClick={() => {
+                setLocalError(null);
+                if (!termsAccepted) {
+                  setLocalError("Pro vytvoření účtu je potřeba souhlasit s podmínkami.");
+                  return;
+                }
+                const normalizedEmail = email.trim();
+                if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+                  setLocalError("Zadejte prosím platný e-mail.");
+                  return;
+                }
+                void onEmail(normalizedEmail, { termsAccepted, newsletterOptIn });
+              }}
+              className="flex min-h-11 w-full items-center justify-center rounded-xl border border-[#FF6A00]/50 bg-[#FF6A00] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#e35f00] disabled:opacity-70"
+            >
+              {busyProvider === "email" ? "Odesílám odkaz..." : "Pokračovat e-mailem"}
+            </button>
+          </div>
+        ) : (
+          <p className="mt-4 text-xs text-[#B9BEC9]">Další způsoby přihlášení přidáme brzy.</p>
+        )}
 
         <div className="mt-4 space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
           <label className="flex items-start gap-2 text-xs text-[#D4D7DE]">
