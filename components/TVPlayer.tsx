@@ -3,8 +3,6 @@
 import { useMemo, useState } from "react";
 import YouTube, { type YouTubeProps } from "react-youtube";
 
-import { TranscriptPanel } from "@/components/video/TranscriptPanel";
-
 type TVPlayerProps = {
   videoId: string | null;
   title: string;
@@ -84,7 +82,6 @@ export default function TVPlayer({ videoId, title, channelName }: TVPlayerProps)
       <div className="p-4">
         <p className="text-xs uppercase tracking-wider text-[var(--text-soft)]">{channelName}</p>
         <h2 className="mt-1 text-base font-medium text-[var(--text-main)]">{title}</h2>
-        <TranscriptPanel videoId={videoId} className="mt-3" />
       </div>
     </section>
   );

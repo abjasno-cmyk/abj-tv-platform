@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useProgram } from "@/hooks/useProgram";
-import { TranscriptPanel } from "@/components/video/TranscriptPanel";
 
 type Freshness = "breaking" | "today" | "week" | "evergreen";
 
@@ -482,35 +481,32 @@ export default function ProgramPage() {
                 {expanded ? (
                   <div className="abj-expand-panel space-y-3 border-t border-[rgba(198,168,91,0.18)] bg-[rgba(7,17,30,0.8)] px-3 py-3 sm:px-4">
                     {block.videoId ? (
-                      <div className="space-y-2">
-                        <div className="overflow-hidden rounded-xl border border-[rgba(198,168,91,0.2)] bg-black">
-                          {!startedPlayback[block.id] ? (
-                            <button
-                              type="button"
-                              className="abj-play-button group flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(198,168,91,0.28),rgba(0,0,0,0.8))] text-sm font-semibold text-abj-text1"
-                              onClick={() => {
-                                setStartedPlayback((prev) => ({ ...prev, [block.id]: true }));
-                                void trackEditorialEvent(block.videoId!, "play");
-                              }}
-                            >
-                              <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(198,168,91,0.38)] bg-[rgba(6,12,23,0.68)] px-4 py-2 transition-all duration-200 group-hover:border-[rgba(198,168,91,0.62)] group-hover:bg-[rgba(10,20,36,0.92)] group-active:scale-[0.98]">
-                                <span className="inline-block h-2 w-2 rounded-full bg-[#C6A85B]" />
-                                Přehrát video
-                              </span>
-                            </button>
-                          ) : (
-                            <iframe
-                              title={block.title}
-                              className="aspect-video w-full"
-                              src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(block.videoId)}?rel=0&modestbranding=1&playsinline=1&autoplay=1&iv_load_policy=3&disablekb=1&fs=0&loop=1&playlist=${encodeURIComponent(block.videoId)}`}
-                              allow="autoplay; encrypted-media; picture-in-picture"
-                              sandbox="allow-scripts allow-same-origin allow-presentation"
-                              referrerPolicy="origin"
-                              allowFullScreen
-                            />
-                          )}
-                        </div>
-                        <TranscriptPanel videoId={block.videoId} />
+                      <div className="overflow-hidden rounded-xl border border-[rgba(198,168,91,0.2)] bg-black">
+                        {!startedPlayback[block.id] ? (
+                          <button
+                            type="button"
+                            className="abj-play-button group flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(198,168,91,0.28),rgba(0,0,0,0.8))] text-sm font-semibold text-abj-text1"
+                            onClick={() => {
+                              setStartedPlayback((prev) => ({ ...prev, [block.id]: true }));
+                              void trackEditorialEvent(block.videoId!, "play");
+                            }}
+                          >
+                            <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(198,168,91,0.38)] bg-[rgba(6,12,23,0.68)] px-4 py-2 transition-all duration-200 group-hover:border-[rgba(198,168,91,0.62)] group-hover:bg-[rgba(10,20,36,0.92)] group-active:scale-[0.98]">
+                              <span className="inline-block h-2 w-2 rounded-full bg-[#C6A85B]" />
+                              Přehrát video
+                            </span>
+                          </button>
+                        ) : (
+                          <iframe
+                            title={block.title}
+                            className="aspect-video w-full"
+                            src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(block.videoId)}?rel=0&modestbranding=1&playsinline=1&autoplay=1&iv_load_policy=3&disablekb=1&fs=0&loop=1&playlist=${encodeURIComponent(block.videoId)}`}
+                            allow="autoplay; encrypted-media; picture-in-picture"
+                            sandbox="allow-scripts allow-same-origin allow-presentation"
+                            referrerPolicy="origin"
+                            allowFullScreen
+                          />
+                        )}
                       </div>
                     ) : null}
 

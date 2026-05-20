@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { TranscriptPanel } from "@/components/video/TranscriptPanel";
 import { useFeed } from "@/hooks/useFeed";
 import {
   createAbjXComment,
@@ -516,33 +515,30 @@ export function AbjXClient() {
                     onKeyDown={(event) => event.stopPropagation()}
                   >
                     {item.videoId ? (
-                      <div className="space-y-2">
-                        <div className="overflow-hidden rounded-lg border border-[var(--abj-gold-dim)] bg-black">
-                          {!playbackStarted ? (
-                            <button
-                              type="button"
-                              className="flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(198,168,91,0.24),rgba(0,0,0,0.85))]"
-                              onClick={() => {
-                                setStartedPlaybackByPost((prev) => ({ ...prev, [item.id]: true }));
-                              }}
-                            >
-                              <span className="rounded-full border border-[var(--abj-gold-dim)] bg-[rgba(6,12,23,0.72)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-abj-text1">
-                                Přehrát video
-                              </span>
-                            </button>
-                          ) : (
-                            <iframe
-                              title={item.headline}
-                              className="aspect-video w-full"
-                              src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(item.videoId)}?rel=0&modestbranding=1&playsinline=1&autoplay=1&iv_load_policy=3`}
-                              allow="autoplay; encrypted-media; picture-in-picture"
-                              sandbox="allow-scripts allow-same-origin allow-presentation"
-                              referrerPolicy="origin"
-                              allowFullScreen
-                            />
-                          )}
-                        </div>
-                        <TranscriptPanel videoId={item.videoId} />
+                      <div className="overflow-hidden rounded-lg border border-[var(--abj-gold-dim)] bg-black">
+                        {!playbackStarted ? (
+                          <button
+                            type="button"
+                            className="flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(198,168,91,0.24),rgba(0,0,0,0.85))]"
+                            onClick={() => {
+                              setStartedPlaybackByPost((prev) => ({ ...prev, [item.id]: true }));
+                            }}
+                          >
+                            <span className="rounded-full border border-[var(--abj-gold-dim)] bg-[rgba(6,12,23,0.72)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-abj-text1">
+                              Přehrát video
+                            </span>
+                          </button>
+                        ) : (
+                          <iframe
+                            title={item.headline}
+                            className="aspect-video w-full"
+                            src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(item.videoId)}?rel=0&modestbranding=1&playsinline=1&autoplay=1&iv_load_policy=3`}
+                            allow="autoplay; encrypted-media; picture-in-picture"
+                            sandbox="allow-scripts allow-same-origin allow-presentation"
+                            referrerPolicy="origin"
+                            allowFullScreen
+                          />
+                        )}
                       </div>
                     ) : (
                       <p className="text-sm text-abj-text2">Video k této zprávě není dostupné.</p>
