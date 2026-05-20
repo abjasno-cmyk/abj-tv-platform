@@ -125,7 +125,7 @@ function resolvePreferredAuthOrigin(): string | null {
   if (typeof window === "undefined") return null;
   const protocol = window.location.protocol || "https:";
   const host = window.location.host;
-  if (/^abj-tv-platform-n7e8-[a-z0-9-]+\.vercel\.app$/i.test(host)) {
+  if (/^abj-tv-platform-n7e8(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(host) && host !== CANONICAL_VERCEL_HOST) {
     return `${protocol}//${CANONICAL_VERCEL_HOST}`;
   }
   return `${protocol}//${host}`;
@@ -403,9 +403,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         typeof window !== "undefined"
           ? `${window.location.pathname}${window.location.search}${window.location.hash}`
           : "/live";
+      const preferredOrigin = resolvePreferredAuthOrigin();
       const redirectTo =
-        typeof window !== "undefined"
-          ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`
+        preferredOrigin
+          ? `${preferredOrigin}/auth/callback?next=${encodeURIComponent(nextPath)}`
           : undefined;
 
       const result = await supabase.auth.signInWithOtp({

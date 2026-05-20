@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+const CANONICAL_VERCEL_HOST = "abj-tv-platform-n7e8.vercel.app";
 
 function sanitizeEnvValue(value?: string): string | undefined {
   if (!value) return undefined;
@@ -19,6 +20,19 @@ function sanitizeEnvValue(value?: string): string | undefined {
 }
 
 export async function middleware(request: NextRequest) {
+  const requestHost = request.nextUrl.host.toLowerCase();
+  const shouldCanonicalizeHost =
+    process.env.NODE_ENV === "production" &&
+    /^abj-tv-platform-n7e8(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(requestHost) &&
+    requestHost !== CANONICAL_VERCEL_HOST;
+
+  if (shouldCanonicalizeHost) {
+    const canonicalUrl = request.nextUrl.clone();
+    canonicalUrl.protocol = "https";
+    canonicalUrl.host = CANONICAL_VERCEL_HOST;
+    return NextResponse.redirect(canonicalUrl, 307);
+  }
+
   const supabaseUrl = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);
   const supabaseAnonKey = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   if (!supabaseUrl || !supabaseAnonKey) {
