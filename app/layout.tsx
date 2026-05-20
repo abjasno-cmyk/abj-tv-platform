@@ -32,6 +32,29 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="cs" className={`${montserrat.variable} ${inter.variable}`}>
       <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
+        <Script id="verox-canonical-host-guard" strategy="beforeInteractive">
+          {`
+            (function () {
+              try {
+                var canonicalHost = "abj-tv-platform-n7e8.vercel.app";
+                var host = window.location.host.toLowerCase();
+                var hostPattern = /^abj-tv-platform-n7e8(?:-[a-z0-9-]+)?\\.vercel\\.app$/i;
+                if (hostPattern.test(host) && host !== canonicalHost) {
+                  var target =
+                    window.location.protocol +
+                    "//" +
+                    canonicalHost +
+                    window.location.pathname +
+                    window.location.search +
+                    window.location.hash;
+                  window.location.replace(target);
+                }
+              } catch (_err) {
+                // Ignore host guard failures.
+              }
+            })();
+          `}
+        </Script>
         <Script id="verox-access-token-cookie-sync" strategy="beforeInteractive">
           {`
             (function () {

@@ -131,6 +131,16 @@ function resolvePreferredAuthOrigin(): string | null {
   return `${protocol}//${host}`;
 }
 
+function redirectToPreferredAuthOriginIfNeeded(): boolean {
+  if (typeof window === "undefined") return false;
+  const preferredOrigin = resolvePreferredAuthOrigin();
+  if (!preferredOrigin) return false;
+  const currentOrigin = `${window.location.protocol}//${window.location.host}`;
+  if (preferredOrigin === currentOrigin) return false;
+  window.location.replace(`${preferredOrigin}${window.location.pathname}${window.location.search}${window.location.hash}`);
+  return true;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = useMemo<SupabaseClient | null>(() => {
     try {
@@ -149,6 +159,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pendingActionRef = useRef<(() => void) | null>(null);
   const lastBootstrappedUserIdRef = useRef<string | null>(null);
   const lastSyncedAccessTokenRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    redirectToPreferredAuthOriginIfNeeded();
+  }, []);
 
   const syncServerSession = useCallback(async (accessToken: string, refreshToken?: string | null) => {
     if (!accessToken) return;
@@ -353,6 +367,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setModalError("Přihlášení není dostupné: chybí konfigurace Supabase.");
         return;
       }
+      if (redirectToPreferredAuthOriginIfNeeded()) {
+        return;
+      }
       setBusyProvider(provider);
       setModalError(null);
       storePendingConsentsInStorage({
@@ -389,6 +406,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (email: string, options: { termsAccepted: boolean; newsletterOptIn: boolean }) => {
       if (!supabase) {
         setModalError("Přihlášení není dostupné: chybí konfigurace Supabase.");
+        return;
+      }
+      if (redirectToPreferredAuthOriginIfNeeded()) {
         return;
       }
       setBusyProvider("email");
