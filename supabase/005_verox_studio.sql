@@ -147,6 +147,17 @@ create table if not exists audit_log (
   created_at timestamptz not null default now()
 );
 
+-- Bootstrap access for the two approved Studio accounts (if profiles already exist).
+update profiles
+set role = 'owner'
+where lower(coalesce(email, '')) in ('jana.bobosikova@bcmgroup.cz', 'abjasno@gmail.com');
+
+insert into admin_roles (user_id, role, created_by)
+select p.id, 'owner', null
+from profiles p
+where lower(coalesce(p.email, '')) in ('jana.bobosikova@bcmgroup.cz', 'abjasno@gmail.com')
+on conflict (user_id, role) do nothing;
+
 create index if not exists admin_roles_user_idx on admin_roles (user_id);
 create index if not exists admin_roles_role_idx on admin_roles (role);
 
