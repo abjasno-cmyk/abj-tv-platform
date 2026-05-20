@@ -108,7 +108,7 @@ export function ABJNav() {
         }`}
       >
         <header className="border-b border-[rgba(17,17,17,0.14)] bg-white px-4 md:px-5 shadow-[0_6px_18px_rgba(17,17,17,0.08)]">
-          <div className="flex h-[58px] items-center gap-4">
+          <div className="relative flex h-[58px] items-center gap-4">
             <div className="flex items-center">
               <Link href="/live" className="relative inline-flex items-center" aria-label="Přejít na stránku Vysílání">
                 <p className="font-[var(--font-serif)] text-[24px] font-extrabold tracking-[0.03em] text-abj-text1">
@@ -138,7 +138,7 @@ export function ABJNav() {
                 </ul>
               </nav>
             </div>
-            <p className="hidden flex-1 px-3 text-center font-[var(--font-sans)] text-[13px] font-semibold tracking-[0.07em] text-abj-text2 xl:block">
+            <p className="pointer-events-none absolute left-1/2 hidden -translate-x-1/2 whitespace-nowrap font-[var(--font-sans)] text-[13px] font-semibold tracking-[0.07em] text-abj-text2 xl:block">
               VEROX - mainstreamový detox
             </p>
 
