@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { ReplitHealthBadge } from "@/components/abj/ReplitHealthBadge";
 import { useAuth } from "@/components/auth/AuthProvider";
 
-const NAV_LINKS = [
+const BASE_NAV_LINKS = [
   { href: "/live", label: "Vysílání" },
   { href: "/jasne-zpravy", label: "Jasné zprávy" },
   { href: "/archiv", label: "Nejnovější videa" },
@@ -14,6 +14,7 @@ const NAV_LINKS = [
   { href: "/zed", label: "Zeď" },
   { href: "/muj-verox", label: "Můj Verox" },
 ];
+const STUDIO_ALLOWED_EMAILS = new Set(["jana.bobosikova@bcmgroup.cz", "abjasno@gmail.com"]);
 const NAV_VISIBLE_TOP_THRESHOLD = 8;
 const NAV_SCROLL_DELTA_THRESHOLD = 4;
 const NAV_REVEAL_STICKY_MS = 1400;
@@ -30,7 +31,7 @@ function getPragueClockValue(date: Date): string {
 
 export function ABJNav() {
   const pathname = usePathname();
-  const { isAuthenticated, profile, openLoginModal, signOut } = useAuth();
+  const { user, isAuthenticated, profile, openLoginModal, signOut } = useAuth();
   const [clock, setClock] = useState(() => getPragueClockValue(new Date()));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
@@ -85,7 +86,18 @@ export function ABJNav() {
     }, NAV_REVEAL_STICKY_MS);
   }, [mobileOpen]);
 
+  const canSeeStudio = useMemo(() => {
+    const email = (profile?.email ?? user?.email ?? "").trim().toLowerCase();
+    return STUDIO_ALLOWED_EMAILS.has(email);
+  }, [profile?.email, user?.email]);
+
+  const navLinks = useMemo(
+    () => (canSeeStudio ? [...BASE_NAV_LINKS, { href: "/studio", label: "Studio" }] : BASE_NAV_LINKS),
+    [canSeeStudio],
+  );
+
   const activeHref = useMemo(() => {
+    if (pathname.startsWith("/studio")) return "/studio";
     if (pathname.startsWith("/jasne-zpravy")) return "/jasne-zpravy";
     if (pathname.startsWith("/archiv") || pathname.startsWith("/feed")) return "/archiv";
     if (pathname.startsWith("/abj-x")) return "/abj-x";
@@ -115,7 +127,7 @@ export function ABJNav() {
               </div>
               <nav className="ml-[18px] hidden md:block">
                 <ul className="flex items-center gap-[22px]">
-                  {NAV_LINKS.map((link) => {
+                  {navLinks.map((link) => {
                     const isActive = activeHref === link.href;
                     return (
                       <li key={`${link.href}-${link.label}`}>
@@ -198,7 +210,7 @@ export function ABJNav() {
           {mobileOpen ? (
             <nav className="border-t border-[rgba(17,17,17,0.12)] py-2 md:hidden">
               <ul className="grid grid-cols-2 gap-1">
-                {NAV_LINKS.map((link) => {
+                {navLinks.map((link) => {
                   const isActive = activeHref === link.href;
                   return (
                     <li key={`mobile-${link.href}`}>

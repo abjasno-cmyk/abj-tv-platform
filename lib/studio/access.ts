@@ -143,6 +143,7 @@ export async function resolveStudioAccessContext(): Promise<StudioAccessContext>
   const profile = (profileQuery.data ?? null) as ProfileRow | null;
   const profileRole = normalizeRole(profile?.role ?? "viewer");
   const email = normalizeEmail(user.email ?? null, profile?.email ?? null);
+  const isAllowlisted = email ? STUDIO_ALLOWED_EMAILS.has(email) : false;
 
   const adminRolesQuery = await supabase.from("admin_roles").select("role").eq("user_id", user.id);
   const extraRoles =
@@ -153,8 +154,45 @@ export async function resolveStudioAccessContext(): Promise<StudioAccessContext>
           return [];
         });
 
-  const effectiveRoles = toRoleSet(profileRole, extraRoles);
-  const isAllowlisted = email ? STUDIO_ALLOWED_EMAILS.has(email) : false;
+  let resolvedProfileRole = profileRole;
+  let resolvedExtraRoles = extraRoles;
+
+  // Self-heal allowlisted users: ensure both approved accounts always get
+  // Studio access even if profile bootstrap created them as "viewer".
+  if (isAllowlisted && resolvedProfileRole === "viewer") {
+    const promoteProfile = await supabase
+      .from("profiles")
+      .update({
+        role: "owner",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id)
+      .eq("role", "viewer")
+      .select("role")
+      .maybeSingle();
+    if (!promoteProfile.error && promoteProfile.data?.role) {
+      resolvedProfileRole = normalizeRole(promoteProfile.data.role);
+    } else {
+      // Fallback for first request even when DB update is delayed.
+      resolvedProfileRole = "owner";
+    }
+  }
+
+  if (isAllowlisted && !resolvedExtraRoles.includes("owner")) {
+    const grantOwner = await supabase.from("admin_roles").upsert(
+      {
+        user_id: user.id,
+        role: "owner",
+        created_by: user.id,
+      },
+      { onConflict: "user_id,role" },
+    );
+    if (!grantOwner.error) {
+      resolvedExtraRoles = [...resolvedExtraRoles, "owner"];
+    }
+  }
+
+  const effectiveRoles = toRoleSet(resolvedProfileRole, resolvedExtraRoles);
   const hasInternalRole = effectiveRoles.some((role) => role !== "viewer");
   const canAccessStudio = isAllowlisted && hasInternalRole;
 
@@ -163,7 +201,7 @@ export async function resolveStudioAccessContext(): Promise<StudioAccessContext>
     user,
     email,
     displayName: profile?.display_name ?? null,
-    profileRole,
+    profileRole: resolvedProfileRole,
     effectiveRoles,
     isAllowlisted,
     canAccessStudio,
