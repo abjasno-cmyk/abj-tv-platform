@@ -10,6 +10,7 @@ import { CommentsSection } from "@/components/auth/CommentsSection";
 import { LikeButton } from "@/components/auth/LikeButton";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ChatPanel } from "@/components/ChatPanel";
+import { trackAnalyticsEvent, trackVideoProgressThrottled } from "@/lib/analytics/client";
 
 type FullscreenElement = HTMLElement & {
   webkitRequestFullscreen?: () => Promise<void> | void;
@@ -108,7 +109,26 @@ export default function LivePage({
 
   useEffect(() => {
     linearSourceRef.current.capturedAtMs = Date.now();
-  }, []);
+    trackAnalyticsEvent({
+      event_name: "page_view",
+      entity_type: "page",
+      entity_id: "live",
+      properties: { page: "/live" },
+    });
+    trackAnalyticsEvent({
+      event_name: "live_open",
+      entity_type: "live",
+      entity_id: initialVideoId ?? "linear",
+    });
+    if (initialVideoId) {
+      trackAnalyticsEvent({
+        event_name: "video_start",
+        entity_type: "video",
+        entity_id: initialVideoId,
+        properties: { source: "live_initial" },
+      });
+    }
+  }, [initialVideoId]);
 
   useEffect(() => {
     const tick = () => {
@@ -195,6 +215,11 @@ export default function LivePage({
           completed: progressPercentValue >= 90,
         }),
       });
+      trackVideoProgressThrottled({
+        videoId: sample.videoId,
+        positionSeconds: sample.positionSeconds,
+        durationSeconds: sample.durationSeconds,
+      });
     },
     [continueFromSeconds, isAuthenticated, isLive, videoId]
   );
@@ -226,11 +251,25 @@ export default function LivePage({
           setStartSeconds(source.startSeconds + elapsedSinceLoad);
           setIsLive(true);
           setContinueFromSeconds(null);
+          trackAnalyticsEvent({
+            event_name: "live_open",
+            entity_type: "live",
+            entity_id: source.videoId ?? "linear",
+            properties: { source: "return_to_live" },
+          });
         }}
         onContinueFromSaved={(seconds) => {
           setStartSeconds(Math.max(0, Math.floor(seconds)));
           setIsLive(false);
           setContinueFromSeconds(null);
+          if (videoId) {
+            trackAnalyticsEvent({
+              event_name: "resume_video",
+              entity_type: "video",
+              entity_id: videoId,
+              properties: { continue_from_seconds: Math.floor(seconds) },
+            });
+          }
         }}
         onPlaybackSample={handlePlaybackSample}
         onSelect={(item) => {
@@ -240,6 +279,12 @@ export default function LivePage({
           setStartSeconds(0);
           setIsLive(item.type === "live" || item.channelName.toLowerCase().includes("abj"));
           setContinueFromSeconds(null);
+          trackAnalyticsEvent({
+            event_name: item.type === "live" ? "live_open" : "video_start",
+            entity_type: item.type === "live" ? "live" : "video",
+            entity_id: item.videoId ?? undefined,
+            properties: { source: "timeline_select" },
+          });
         }}
         onSelectChannelVideo={({ channelName: selectedChannelName, video }) => {
           scrollToPlayerAndFullscreen();
@@ -249,6 +294,12 @@ export default function LivePage({
           setStartSeconds(0);
           setIsLive(false);
           setContinueFromSeconds(null);
+          trackAnalyticsEvent({
+            event_name: "video_start",
+            entity_type: "video",
+            entity_id: video.videoId,
+            properties: { source: "channel_select", channel_name: selectedChannelName },
+          });
         }}
         engagementSlot={
           videoId ? (
@@ -271,6 +322,12 @@ export default function LivePage({
           setVideoId(video);
           setStartSeconds(0);
           setIsLive(true);
+          trackAnalyticsEvent({
+            event_name: "live_open",
+            entity_type: "live",
+            entity_id: video,
+            properties: { source: "live_alert" },
+          });
         }}
       />
       <div className="mx-auto w-full max-w-[1200px] space-y-6 px-4 pb-8 sm:px-6 lg:px-10">
