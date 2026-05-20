@@ -19,7 +19,7 @@ function sanitizeEnvValue(value?: string): string | undefined {
   return maybeAssigned;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const requestHost = request.nextUrl.host.toLowerCase();
   const shouldCanonicalizeHost =
     process.env.NODE_ENV === "production" &&
