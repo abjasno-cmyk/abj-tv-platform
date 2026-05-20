@@ -20,6 +20,7 @@ export function FollowChannelButton({ channelId, channelName, className }: Follo
   const [followed, setFollowed] = useState(false);
   const [loading, setLoading] = useState(false);
   const effectiveFollowed = isAuthenticated && followed;
+  const canToggleFollow = isAuthenticated && Boolean(channelId);
 
   useEffect(() => {
     if (!isAuthenticated || !channelId) return;
@@ -65,25 +66,32 @@ export function FollowChannelButton({ channelId, channelName, className }: Follo
       className={
         className ??
         `inline-flex min-h-9 items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] transition ${
-          effectiveFollowed
+          !isAuthenticated
+            ? "border-[rgba(17,17,17,0.16)] bg-[rgba(17,17,17,0.04)] text-abj-text2"
+            : effectiveFollowed
             ? "border-[#FF6A00] bg-[rgba(255,106,0,0.15)] text-[#B04A00]"
             : "border-[rgba(17,17,17,0.2)] bg-white text-abj-text2 hover:border-[#FF6A00]/45 hover:text-abj-text1"
         }`
       }
       disabled={loading || !channelId}
-      onClick={() =>
-        requestAuth(
-          () => {
-            void toggleFollow();
-          },
-          {
-            reason: `Přihlaste se zdarma a uložte si kanál ${channelName} mezi oblíbené.`,
-          }
-        )
-      }
+      onClick={() => {
+        if (!isAuthenticated) {
+          requestAuth(
+            () => {
+              // Po přihlášení si uživatel tlačítko aktivně potvrdí.
+            },
+            {
+              reason: `Přihlaste se zdarma a uložte si kanál ${channelName} mezi oblíbené.`,
+            }
+          );
+          return;
+        }
+        if (!canToggleFollow) return;
+        void toggleFollow();
+      }}
       title={channelId ? undefined : "Kanál zatím nemá interní identifikátor"}
     >
-      {loading ? "..." : effectiveFollowed ? "★ Oblíbený" : "☆ Uložit"}
+      {loading ? "..." : !isAuthenticated ? "Přihlásit pro uložení" : effectiveFollowed ? "★ Oblíbený" : "☆ Uložit"}
     </button>
   );
 }

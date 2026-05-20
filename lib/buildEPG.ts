@@ -5,7 +5,7 @@ import path from "node:path";
 import { unstable_cache } from "next/cache";
 
 import { buildPlaylist } from "@/lib/buildPlaylist";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAnonServerClient } from "@/lib/supabase/server";
 import type { CachedVideo, DayProgram, ProgramItem, ProgramOverrideItem } from "@/lib/epg-types";
 
 const PRAGUE_TIMEZONE = "Europe/Prague";
@@ -153,7 +153,9 @@ function buildPlaylistFallback(playlist: Awaited<ReturnType<typeof buildPlaylist
   });
 }
 
-async function loadCachedVideos(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>): Promise<VideoCacheRow[]> {
+async function loadCachedVideos(
+  supabase: ReturnType<typeof createSupabaseAnonServerClient>
+): Promise<VideoCacheRow[]> {
   const canonicalColumns =
     "id, source_id, channel_id, video_id, title, thumbnail, published_at, scheduled_start_at, video_type, channel_name, is_abj, created_at";
   const canonical = await supabase
@@ -218,7 +220,7 @@ async function buildEPGInternal(days: number): Promise<DayProgram[]> {
   const empty = makeProgram(safeDays);
 
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseAnonServerClient();
     let cachedVideos: VideoCacheRow[] = [];
     try {
       cachedVideos = await loadCachedVideos(supabase);

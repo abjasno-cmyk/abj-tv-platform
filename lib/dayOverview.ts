@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAnonServerClient } from "@/lib/supabase/server";
 import type { CachedVideo } from "@/lib/epg-types";
 
 export type FeedVideo = {
@@ -224,7 +224,7 @@ export function groupChannelsForDisplay(
 }
 
 async function loadVideosFromSupabase(): Promise<RawVideo[]> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseAnonServerClient();
 
   const canonical = await supabase
     .from("videos")

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { useAuth } from "@/components/auth/AuthProvider";
 import type { WallPost, WallSort, WallStatus } from "@/lib/wallTypes";
 
 type WallBoardProps = {
@@ -107,6 +108,7 @@ export function WallBoard({
   compact = false,
   showHero = true,
 }: WallBoardProps) {
+  const { isAuthenticated, requestAuth } = useAuth();
   const [posts, setPosts] = useState<WallPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -148,6 +150,15 @@ export function WallBoard({
   const { roots, repliesByParent } = useMemo(() => groupReplies(posts), [posts]);
 
   const handleCreatePost = async () => {
+    if (!isAuthenticated) {
+      requestAuth(
+        () => {
+          // Po přihlášení uživatel znovu odešle vzkaz.
+        },
+        { reason: "Přihlaste se zdarma a připněte vzkaz na Zeď." }
+      );
+      return;
+    }
     setSubmitting(true);
     setSubmitInfo(null);
     setError(null);
@@ -184,6 +195,15 @@ export function WallBoard({
   };
 
   const handleReact = async (postId: string) => {
+    if (!isAuthenticated) {
+      requestAuth(
+        () => {
+          // Po přihlášení uživatel může reagovat.
+        },
+        { reason: "Přihlaste se zdarma a reagujte na příspěvky na Zdi." }
+      );
+      return;
+    }
     try {
       const response = await fetch(`/api/wall/posts/${encodeURIComponent(postId)}/react`, {
         method: "POST",
@@ -211,6 +231,15 @@ export function WallBoard({
   };
 
   const handleReport = async (postId: string) => {
+    if (!isAuthenticated) {
+      requestAuth(
+        () => {
+          // Po přihlášení uživatel může nahlásit příspěvek.
+        },
+        { reason: "Přihlaste se zdarma pro nahlášení příspěvků." }
+      );
+      return;
+    }
     try {
       const reason = window.prompt("Volitelně napište důvod nahlášení:", "");
       const response = await fetch(`/api/wall/posts/${encodeURIComponent(postId)}/report`, {
@@ -262,12 +291,33 @@ export function WallBoard({
           </header>
         ) : null}
 
+        {!isAuthenticated ? (
+          <div className="mb-3 rounded-lg border border-[rgba(255,106,0,0.25)] bg-[rgba(255,106,0,0.08)] px-3 py-3 text-sm text-abj-text1">
+            Interakce na Zdi (přidání, reakce, nahlášení) jsou dostupné pouze po přihlášení.
+            <button
+              type="button"
+              className="ml-3 inline-flex rounded-md border border-[#FF6A00] bg-[#FF6A00] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-white hover:bg-[#e35f00]"
+              onClick={() =>
+                requestAuth(
+                  () => {
+                    // Po přihlášení může uživatel pokračovat.
+                  },
+                  { reason: "Přihlaste se zdarma a zapojte se do diskuse na Zdi." }
+                )
+              }
+            >
+              Přihlásit zdarma
+            </button>
+          </div>
+        ) : null}
+
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <label className="space-y-1">
             <span className="text-sm font-medium text-abj-text1">Přezdívka</span>
             <input
               value={authorName}
               onChange={(event) => setAuthorName(event.target.value)}
+              disabled={!isAuthenticated}
               className="w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2 text-base text-abj-text1 outline-none focus:border-[#FF6A00]"
               maxLength={60}
               placeholder="Vaše přezdívka"
@@ -279,6 +329,7 @@ export function WallBoard({
             <input
               value={authorEmail}
               onChange={(event) => setAuthorEmail(event.target.value)}
+              disabled={!isAuthenticated}
               className="w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2 text-base text-abj-text1 outline-none focus:border-[#FF6A00]"
               maxLength={120}
               placeholder="vas@email.cz"
@@ -304,6 +355,7 @@ export function WallBoard({
           <textarea
             value={body}
             onChange={(event) => setBody(event.target.value)}
+            disabled={!isAuthenticated}
             className="min-h-[120px] w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2 text-base leading-relaxed text-abj-text1 outline-none focus:border-[#FF6A00]"
             maxLength={1500}
             placeholder="Co chcete vzkázat redakci nebo ostatním divákům?"
@@ -317,9 +369,10 @@ export function WallBoard({
               void handleCreatePost();
             }}
             disabled={submitting}
+            aria-disabled={!isAuthenticated}
             className="rounded-lg border border-[#FF6A00] bg-[#FF6A00] px-4 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-white disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {submitting ? "Odesílám..." : "Připnout na Zeď"}
+            {submitting ? "Odesílám..." : !isAuthenticated ? "Přihlásit pro přidání" : "Připnout na Zeď"}
           </button>
           <span className="text-xs text-abj-text2">{body.trim().length}/1500</span>
         </div>
@@ -393,7 +446,18 @@ export function WallBoard({
                   <button
                     type="button"
                     className="rounded-lg border border-[var(--abj-gold-dim)] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1"
-                    onClick={() => setReplyTarget({ id: post.id, author: post.author_name })}
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        requestAuth(
+                          () => {
+                            // Po přihlášení může uživatel odpovědět.
+                          },
+                          { reason: "Přihlaste se zdarma a odpovězte na příspěvek." }
+                        );
+                        return;
+                      }
+                      setReplyTarget({ id: post.id, author: post.author_name });
+                    }}
                   >
                     Odpovědět
                   </button>

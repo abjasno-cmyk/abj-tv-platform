@@ -311,6 +311,17 @@ export function AbjXClient() {
   };
 
   const handleShare = async (item: FeedItem) => {
+    if (!isAuthenticated) {
+      requestAuth(
+        () => {
+          // Po přihlášení může uživatel sdílení opakovat.
+        },
+        {
+          reason: "Přihlaste se zdarma a sdílejte příspěvky ve VeroX.",
+        }
+      );
+      return;
+    }
     if (!item.videoId || typeof window === "undefined") return;
     const url = `${window.location.origin}/live?videoId=${encodeURIComponent(item.videoId)}`;
     const text = `${item.headline}\n${url}`;
@@ -588,7 +599,7 @@ export function AbjXClient() {
                       void handleShare(item);
                     }}
                   >
-                    Sdílet ({shownShareCount})
+                    {!isAuthenticated ? `Přihlásit pro sdílení (${shownShareCount})` : `Sdílet (${shownShareCount})`}
                   </button>
                   {videoAvailable ? (
                     <a

@@ -12,7 +12,7 @@ import type {
   ProgramOverrideRules,
 } from "@/lib/epg-types";
 import { getProgramFeedImport } from "@/lib/programFeedImport";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAnonServerClient } from "@/lib/supabase/server";
 
 const PRAGUE_TIMEZONE = "Europe/Prague";
 const CACHE_REVALIDATE_SECONDS = 900;
@@ -385,7 +385,7 @@ function candidateFromCanonicalRow(row: VideoRowCanonical): ProgramCandidateVide
 }
 
 async function loadCachedCandidates(): Promise<ProgramCandidateVideo[]> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseAnonServerClient();
 
   const canonical = await supabase
     .from("videos")

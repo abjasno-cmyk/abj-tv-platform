@@ -79,25 +79,37 @@ export function LikeButton({ entityType, entityId, className }: LikeButtonProps)
         className={
           className ??
           `inline-flex min-h-10 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
-            effectiveLiked
+            !isAuthenticated
+              ? "border-[rgba(17,17,17,0.16)] bg-[rgba(17,17,17,0.04)] text-abj-text2"
+              : effectiveLiked
               ? "border-[#FF6A00] bg-[rgba(255,106,0,0.15)] text-[#B04A00]"
               : "border-[rgba(17,17,17,0.2)] bg-white text-abj-text1 hover:border-[#FF6A00]/45 hover:bg-[rgba(255,106,0,0.06)]"
           }`
         }
         disabled={loading}
         onClick={() => {
-          requestAuth(
-            () => {
-              void toggleLike();
-            },
-            {
-              reason: "Komentujte, lajkujte a pokračujte tam, kde jste skončili.",
-            }
-          );
+          if (!isAuthenticated) {
+            requestAuth(
+              () => {
+                // Po přihlášení uživatel kliknutí potvrdí.
+              },
+              {
+                reason: "Komentujte, lajkujte a pokračujte tam, kde jste skončili.",
+              }
+            );
+            return;
+          }
+          void toggleLike();
         }}
       >
-        <span aria-hidden="true">{effectiveLiked ? "♥" : "♡"}</span>
-        {loading ? "Ukládám..." : effectiveLiked ? "Líbí se vám to" : "Líbí se mi"}
+        <span aria-hidden="true">{!isAuthenticated ? "🔒" : effectiveLiked ? "♥" : "♡"}</span>
+        {loading
+          ? "Ukládám..."
+          : !isAuthenticated
+            ? "Přihlásit pro lajk"
+            : effectiveLiked
+              ? "Líbí se vám to"
+              : "Líbí se mi"}
       </button>
       {error ? <p className="text-xs text-[#D14A2A]">{error}</p> : null}
     </div>

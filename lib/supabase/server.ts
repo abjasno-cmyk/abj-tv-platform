@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 function sanitizeEnvValue(value?: string): string | undefined {
@@ -66,4 +67,20 @@ export async function createSupabaseServerClient() {
       },
     },
   );
+}
+
+export function createSupabaseAnonServerClient() {
+  const supabaseUrl = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const supabaseAnonKey = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error("Supabase env vars not set");
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
 }

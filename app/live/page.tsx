@@ -1,6 +1,6 @@
 import { buildEPG } from "@/lib/buildEPG";
 import { loadStructuredFeedPayload, parsePublishedTimestamp, type FeedVideo } from "@/lib/dayOverview";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAnonServerClient } from "@/lib/supabase/server";
 import { getNowPlaying, getProgram } from "@/lib/programEngine";
 import LivePage from "@/app/live/LivePage";
 import type { DayProgram, ProgramBlock, ProgramItem } from "@/lib/epg-types";
@@ -533,7 +533,7 @@ async function loadYouTubeChannelAvatars(channelIds: string[]): Promise<Map<stri
 
 async function loadSourceChannels(): Promise<SourceChannel[]> {
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseAnonServerClient();
     const { data, error } = await supabase
       .from("sources")
       .select("source_name, channel_id, channel_url")
