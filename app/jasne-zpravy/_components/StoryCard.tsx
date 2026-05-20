@@ -57,10 +57,10 @@ export function StoryCard({ item, editionSlug, sourcesByItem, emphasize = false 
         ) : null}
       </div>
 
-      <h3 className={`mt-3 font-black leading-tight text-gray-950 ${emphasize ? "text-[1.9rem]" : "text-xl"}`}>
+      <h3 className={`jz-headline mt-3 font-black text-gray-950 ${emphasize ? "text-[1.9rem]" : "text-xl"}`}>
         {item.short_headline ?? item.headline}
       </h3>
-      <p className={`mt-2 text-gray-700 ${emphasize ? "text-base leading-7" : "text-sm leading-6"}`}>{lead}</p>
+      <p className={`jz-deck mt-2 ${emphasize ? "text-base" : "text-sm"}`}>{lead}</p>
 
       {item.why_it_matters ? (
         <div className="mt-3 border-l-2 border-[#FF6A00] bg-[#fff7f1] px-3 py-2">

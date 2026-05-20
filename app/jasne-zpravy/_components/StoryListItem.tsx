@@ -25,8 +25,8 @@ export function StoryListItem({ item, editionSlug, order, sourcesByItem }: Story
       <div className="grid gap-2 sm:grid-cols-[32px_minmax(0,1fr)_auto] sm:items-start sm:gap-3">
         <span className="text-sm font-bold text-gray-400">{item.rank ?? order}</span>
         <div className="min-w-0">
-          <h4 className="text-base font-semibold leading-6 text-gray-900">{item.short_headline ?? item.headline}</h4>
-          <p className="mt-1 line-clamp-1 text-sm text-gray-600">{oneLineLead(item)}</p>
+          <h4 className="jz-headline text-base font-semibold text-gray-900">{item.short_headline ?? item.headline}</h4>
+          <p className="jz-deck mt-1 line-clamp-1 text-sm">{oneLineLead(item)}</p>
           <p className="mt-1 text-xs text-gray-500">
             {sourceCountLabel(sourceCount)} • {itemReadMinutes(item)} min
           </p>

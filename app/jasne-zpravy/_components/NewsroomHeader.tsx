@@ -17,9 +17,9 @@ export function NewsroomHeader({ currentEdition, itemCount, timeToNextEditionLab
     <header className="rounded-3xl border border-[#FF6A00]/20 bg-gradient-to-b from-[#fffaf3] via-[#fffdfa] to-white p-6 shadow-[0_12px_30px_rgba(17,17,17,0.06)] md:p-8">
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#B04A00]">ABJ NEWSROOM</p>
-          <h1 className="mt-2 text-3xl font-black leading-tight text-gray-950 md:text-5xl">Jasné zprávy</h1>
-          <p className="mt-3 max-w-2xl text-base leading-7 text-gray-700">
+          <p className="jz-kicker text-xs font-bold text-[#B04A00]">ABJ NEWSROOM</p>
+          <h1 className="jz-headline-display mt-2 text-3xl font-black text-gray-950 md:text-5xl">Jasné zprávy</h1>
+          <p className="jz-deck mt-3 max-w-2xl text-base">
             Ráno. Poledne. Večer. Bez zbytečné mlhy.
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-2">

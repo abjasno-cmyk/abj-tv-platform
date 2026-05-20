@@ -61,8 +61,8 @@ export function TodayTopStories({ items, editionSlug, sourcesByItem }: TodayTopS
   return (
     <section>
       <header className="mb-4 border-b border-gray-200 pb-3">
-        <h2 className="text-2xl font-black text-gray-950">Hlavní zprávy dne</h2>
-        <p className="mt-2 text-sm text-gray-600">Co je hlavní, co sledovat a kde je největší relevance.</p>
+        <h2 className="jz-headline text-2xl font-black text-gray-950">Hlavní zprávy dne</h2>
+        <p className="jz-deck mt-2 text-sm">Co je hlavní, co sledovat a kde je největší relevance.</p>
       </header>
 
       {!topStory ? (
@@ -72,13 +72,13 @@ export function TodayTopStories({ items, editionSlug, sourcesByItem }: TodayTopS
       ) : (
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
           <article className="rounded-3xl border border-[#FF6A00]/25 bg-white p-6 shadow-[0_10px_26px_rgba(17,17,17,0.08)]">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#B04A00]">
+            <p className="jz-meta font-bold text-[#B04A00]">
               {getCategoryLabel(topStory.category)}
             </p>
-            <h3 className="mt-2 text-3xl font-black leading-tight text-gray-950">
+            <h3 className="jz-headline mt-2 text-3xl font-black text-gray-950">
               {topStory.short_headline ?? topStory.headline}
             </h3>
-            <p className="mt-3 text-base leading-7 text-gray-700">{oneLineLead(topStory)}</p>
+            <p className="jz-deck mt-3 text-base">{oneLineLead(topStory)}</p>
             {topStory.why_it_matters ? (
               <div className="mt-4 border-l-2 border-[#FF6A00] bg-[#fff7f1] px-3 py-2">
                 <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#B04A00]">Proč je to důležité</p>
@@ -108,13 +108,13 @@ export function TodayTopStories({ items, editionSlug, sourcesByItem }: TodayTopS
           <div className="space-y-3">
             <article className="rounded-2xl border border-gray-200 bg-white p-4">
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">Co sledovat</p>
-              <p className="mt-2 text-sm leading-6 text-gray-800">
+              <p className="jz-deck mt-2 text-sm text-gray-800">
                 {watchItem?.what_to_watch ?? "Redakce zatím neoznačila konkrétní bod ke sledování."}
               </p>
             </article>
             <article className="rounded-2xl border border-gray-200 bg-white p-4">
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">Číslo dne</p>
-              <p className="mt-2 text-sm font-semibold leading-6 text-gray-900">
+              <p className="jz-headline mt-2 text-sm font-semibold text-gray-900">
                 {numberOfDay?.short_headline ?? numberOfDay?.headline ?? "Dnes není dostupná položka s rámcem čísla."}
               </p>
               {numberOfDay ? (
@@ -125,7 +125,7 @@ export function TodayTopStories({ items, editionSlug, sourcesByItem }: TodayTopS
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">Kuriozita dne</p>
               {curiosity ? (
                 <>
-                  <p className="mt-2 text-sm font-semibold leading-6 text-gray-900">
+                  <p className="jz-headline mt-2 text-sm font-semibold text-gray-900">
                     {curiosity.short_headline ?? curiosity.headline}
                   </p>
                   <Link
@@ -136,7 +136,7 @@ export function TodayTopStories({ items, editionSlug, sourcesByItem }: TodayTopS
                   </Link>
                 </>
               ) : (
-                <p className="mt-2 text-sm leading-6 text-gray-700">Kuriozita zatím není publikována.</p>
+                <p className="jz-deck mt-2 text-sm">Kuriozita zatím není publikována.</p>
               )}
             </article>
           </div>

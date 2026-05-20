@@ -146,9 +146,9 @@ export default async function EditionPage({
           </span>
           <time className="text-sm text-gray-500">{formatPragueDateTime(getEditionTimestamp(edition))}</time>
         </div>
-        <h1 className="mt-3 text-3xl font-black leading-tight text-gray-950 md:text-5xl">{edition.title}</h1>
-        {edition.subtitle ? <p className="mt-3 text-lg leading-7 text-gray-700">{edition.subtitle}</p> : null}
-        {edition.summary ? <p className="mt-3 max-w-3xl text-base leading-7 text-gray-700">{edition.summary}</p> : null}
+        <h1 className="jz-headline-display mt-3 text-3xl font-black text-gray-950 md:text-5xl">{edition.title}</h1>
+        {edition.subtitle ? <p className="jz-deck mt-3 text-lg">{edition.subtitle}</p> : null}
+        {edition.summary ? <p className="jz-deck mt-3 max-w-3xl text-base">{edition.summary}</p> : null}
         <p className="mt-3 text-sm text-gray-600">{sortedItems.length} publikovaných zpráv</p>
       </header>
 
@@ -221,7 +221,7 @@ export default async function EditionPage({
                   <li key={item.id}>
                     <a href={`#${getItemSlug(item)}`} className="block rounded-lg border border-gray-200 px-3 py-2 hover:border-[#FF6A00]/35">
                       <p className="text-[11px] uppercase tracking-[0.12em] text-gray-500">#{item.rank ?? index + 1}</p>
-                      <p className="mt-1 line-clamp-2 text-sm font-medium text-gray-900">{item.short_headline ?? item.headline}</p>
+                      <p className="jz-headline mt-1 line-clamp-2 text-sm font-medium text-gray-900">{item.short_headline ?? item.headline}</p>
                     </a>
                   </li>
                 ))}
@@ -241,7 +241,7 @@ export default async function EditionPage({
                       href={`#${getItemSlug(item)}`}
                       className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-[#FF6A00]/35"
                     >
-                      <span className="line-clamp-2 text-sm font-medium text-gray-900">{item.short_headline ?? item.headline}</span>
+                      <span className="jz-headline line-clamp-2 text-sm font-medium text-gray-900">{item.short_headline ?? item.headline}</span>
                       <span className="text-xs text-gray-500">{getItemSourceCount(item, sourcesByItem)}</span>
                     </a>
                   </li>

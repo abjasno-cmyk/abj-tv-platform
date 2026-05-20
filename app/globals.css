@@ -119,3 +119,37 @@ a {
 .abj-circular-return {
   animation: abjCircularReturn 900ms ease-out forwards;
 }
+
+.jz-headline-display {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  letter-spacing: -0.02em;
+  line-height: 1.06;
+}
+
+.jz-headline {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  letter-spacing: -0.015em;
+  line-height: 1.14;
+}
+
+.jz-deck {
+  line-height: 1.7;
+  color: #374151;
+}
+
+.jz-kicker {
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.jz-meta {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.jz-prose {
+  max-width: 75ch;
+  line-height: 1.85;
+}

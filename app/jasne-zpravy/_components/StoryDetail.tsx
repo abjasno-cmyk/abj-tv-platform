@@ -94,8 +94,8 @@ export function StoryDetail({ item, edition, sources, sourcesByItem, showBackToE
             {itemReadMinutes(item)} min čtení
           </span>
         </div>
-        <h1 className="mt-3 text-3xl font-black leading-tight text-gray-950">{item.short_headline ?? item.headline}</h1>
-        <p className="mt-2 text-lg leading-7 text-gray-700">{oneLineLead(item)}</p>
+        <h1 className="jz-headline-display mt-3 text-3xl font-black text-gray-950">{item.short_headline ?? item.headline}</h1>
+        <p className="jz-deck mt-2 text-lg">{oneLineLead(item)}</p>
         <p className="mt-2 text-sm text-gray-500">
           Publikováno: {formatPragueDateTime(getEditionTimestamp(edition))} • Důvěra {confidence}%
         </p>
@@ -120,7 +120,7 @@ export function StoryDetail({ item, edition, sources, sourcesByItem, showBackToE
               }`}
             >
               <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-gray-600">{SECTION_LABEL[section.key]}</h2>
-              <div className="mt-2 space-y-3 text-base leading-7 text-gray-800">
+              <div className="jz-prose mt-2 space-y-3 text-base text-gray-800">
                 {section.content.map((paragraph) => (
                   <p key={`${section.key}-${paragraph.slice(0, 24)}`}>{paragraph}</p>
                 ))}
@@ -129,7 +129,7 @@ export function StoryDetail({ item, edition, sources, sourcesByItem, showBackToE
           ))}
         </div>
       ) : item.body ? (
-        <div className="mt-5 space-y-4 text-base leading-7 text-gray-800">
+        <div className="jz-prose mt-5 space-y-4 text-base text-gray-800">
           {item.body
             .split(/\n{2,}/)
             .map((part) => part.trim())
