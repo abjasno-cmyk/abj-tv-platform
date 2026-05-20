@@ -96,6 +96,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [modalError, setModalError] = useState<string | null>(null);
   const pendingActionRef = useRef<(() => void) | null>(null);
   const lastBootstrappedUserIdRef = useRef<string | null>(null);
+  const lastSyncedAccessTokenRef = useRef<string | null>(null);
+
+  const syncServerSession = useCallback(async (accessToken: string, refreshToken: string) => {
+    if (!accessToken || !refreshToken) return;
+    if (lastSyncedAccessTokenRef.current === accessToken) return;
+    try {
+      const response = await fetch("/api/auth/session-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accessToken,
+          refreshToken,
+        }),
+      });
+      if (response.ok) {
+        lastSyncedAccessTokenRef.current = accessToken;
+      }
+    } catch {
+      // Sync is best-effort. Client session still works.
+    }
+  }, []);
+
+  const clearServerSession = useCallback(async () => {
+    await fetch("/api/auth/session-sync", { method: "DELETE" }).catch(() => {
+      // Ignore best-effort cleanup errors.
+    });
+    lastSyncedAccessTokenRef.current = null;
+  }, []);
 
   const refreshProfile = useCallback(async () => {
     if (!supabase) return;
@@ -161,9 +189,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     let mounted = true;
-    void supabase.auth.getUser().then(({ data }) => {
+    void Promise.all([supabase.auth.getUser(), supabase.auth.getSession()]).then(([userResult, sessionResult]) => {
       if (!mounted) return;
-      setUser(data.user ?? null);
+      setUser(userResult.data.user ?? null);
+      const session = sessionResult.data.session;
+      if (session?.access_token && session.refresh_token) {
+        void syncServerSession(session.access_token, session.refresh_token);
+      }
       setLoading(false);
     });
 
@@ -174,6 +206,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!session?.user) {
         setProfile(null);
         lastBootstrappedUserIdRef.current = null;
+        void clearServerSession();
+      } else if (session.access_token && session.refresh_token) {
+        void syncServerSession(session.access_token, session.refresh_token);
       }
       setLoading(false);
     });
@@ -182,7 +217,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [clearServerSession, supabase, syncServerSession]);
 
   useEffect(() => {
     if (!user) return;
@@ -220,11 +255,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     if (!supabase) return;
     await supabase.auth.signOut();
+    await clearServerSession();
     setUser(null);
     setProfile(null);
     setLoginModalOpen(false);
     setModalError(null);
-  }, [supabase]);
+  }, [clearServerSession, supabase]);
 
   const handleOAuth = useCallback(
     async (provider: "google" | "facebook", options: { termsAccepted: boolean; newsletterOptIn: boolean }) => {
