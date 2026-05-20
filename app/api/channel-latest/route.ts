@@ -11,6 +11,12 @@ type YouTubeChannelLookupPayload = {
   }>;
 };
 
+const CHANNEL_ID_REGEXES = [
+  /"channelId":"(UC[0-9A-Za-z_-]{20,})"/,
+  /<meta itemprop="channelId" content="(UC[0-9A-Za-z_-]{20,})"/,
+  /https:\/\/www\.youtube\.com\/channel\/(UC[0-9A-Za-z_-]{20,})/,
+];
+
 function sanitizeEnvValue(value?: string): string | undefined {
   if (!value) return undefined;
   const trimmed = value.trim();
@@ -32,30 +38,67 @@ function resolveYouTubeApiKey(): string | null {
   return sanitizeEnvValue(process.env.YOUTUBE_API_KEY) ?? null;
 }
 
+async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, {
+      cache: "no-store",
+      signal: controller.signal,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome Safari",
+      },
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function normalizeChannelUrlInput(channelUrl: string): string {
+  const trimmed = channelUrl.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("@")) {
+    return `https://www.youtube.com/${trimmed}`;
+  }
+  if (trimmed.startsWith("//")) {
+    return `https:${trimmed}`;
+  }
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  if (/^(www\.)?(m\.)?youtube\.com\//i.test(trimmed)) {
+    return `https://${trimmed}`;
+  }
+  return trimmed;
+}
+
 function parseChannelUrl(channelUrl: string): {
   directChannelId: string | null;
   handle: string | null;
   username: string | null;
+  normalizedUrl: string | null;
 } {
+  const normalizedInput = normalizeChannelUrlInput(channelUrl);
   try {
-    const parsed = new URL(channelUrl);
+    const parsed = new URL(normalizedInput);
     const parts = parsed.pathname.split("/").filter(Boolean);
-    if (parts.length === 0) return { directChannelId: null, handle: null, username: null };
+    if (parts.length === 0) return { directChannelId: null, handle: null, username: null, normalizedUrl: parsed.toString() };
 
     const first = parts[0];
     if (first === "channel" && parts[1]) {
-      return { directChannelId: parts[1], handle: null, username: null };
+      return { directChannelId: parts[1], handle: null, username: null, normalizedUrl: parsed.toString() };
     }
     if (first.startsWith("@")) {
-      return { directChannelId: null, handle: first.slice(1), username: null };
+      return { directChannelId: null, handle: first.slice(1), username: null, normalizedUrl: parsed.toString() };
     }
     if ((first === "user" || first === "c") && parts[1]) {
-      return { directChannelId: null, handle: null, username: parts[1] };
+      return { directChannelId: null, handle: null, username: parts[1], normalizedUrl: parsed.toString() };
     }
   } catch {
     // Ignore malformed URL.
   }
-  return { directChannelId: null, handle: null, username: null };
+  return { directChannelId: null, handle: null, username: null, normalizedUrl: null };
 }
 
 async function resolveChannelIdByHandle(handle: string, apiKey: string): Promise<string | null> {
@@ -69,7 +112,7 @@ async function resolveChannelIdByHandle(handle: string, apiKey: string): Promise
       url.searchParams.set("forHandle", candidate);
       url.searchParams.set("maxResults", "1");
       url.searchParams.set("key", apiKey);
-      const response = await fetch(url.toString(), { cache: "no-store" });
+      const response = await fetchWithTimeout(url.toString(), 9000);
       if (!response.ok) continue;
       const payload = (await response.json()) as YouTubeChannelLookupPayload;
       const resolved = payload.items?.[0]?.id?.trim();
@@ -90,13 +133,50 @@ async function resolveChannelIdByUsername(username: string, apiKey: string): Pro
     url.searchParams.set("forUsername", normalized);
     url.searchParams.set("maxResults", "1");
     url.searchParams.set("key", apiKey);
-    const response = await fetch(url.toString(), { cache: "no-store" });
+    const response = await fetchWithTimeout(url.toString(), 9000);
     if (!response.ok) return null;
     const payload = (await response.json()) as YouTubeChannelLookupPayload;
     return payload.items?.[0]?.id?.trim() ?? null;
   } catch {
     return null;
   }
+}
+
+function parseChannelIdFromHtml(html: string): string | null {
+  for (const regex of CHANNEL_ID_REGEXES) {
+    const match = html.match(regex);
+    const channelId = match?.[1]?.trim();
+    if (channelId) return channelId;
+  }
+  return null;
+}
+
+async function resolveChannelIdFromPage(parsed: {
+  handle: string | null;
+  username: string | null;
+  normalizedUrl: string | null;
+}): Promise<string | null> {
+  const candidates: string[] = [];
+  if (parsed.normalizedUrl) candidates.push(parsed.normalizedUrl);
+  if (parsed.handle) candidates.push(`https://www.youtube.com/@${parsed.handle}`);
+  if (parsed.username) {
+    candidates.push(`https://www.youtube.com/user/${parsed.username}`);
+    candidates.push(`https://www.youtube.com/c/${parsed.username}`);
+  }
+
+  const uniqueCandidates = [...new Set(candidates)];
+  for (const candidate of uniqueCandidates) {
+    try {
+      const response = await fetchWithTimeout(candidate, 9000);
+      if (!response.ok) continue;
+      const html = await response.text();
+      const channelId = parseChannelIdFromHtml(html);
+      if (channelId) return channelId;
+    } catch {
+      // Try next candidate.
+    }
+  }
+  return null;
 }
 
 function decodeXmlEntities(value: string): string {
@@ -157,6 +237,9 @@ export async function GET(request: Request) {
       if (!channelId && apiKey && parsed.username) {
         channelId = (await resolveChannelIdByUsername(parsed.username, apiKey)) ?? "";
       }
+      if (!channelId) {
+        channelId = (await resolveChannelIdFromPage(parsed)) ?? "";
+      }
     }
   }
 
@@ -170,7 +253,7 @@ export async function GET(request: Request) {
   try {
     const feedUrl = new URL("https://www.youtube.com/feeds/videos.xml");
     feedUrl.searchParams.set("channel_id", channelId);
-    const response = await fetch(feedUrl.toString(), { cache: "no-store" });
+    const response = await fetchWithTimeout(feedUrl.toString(), 10000);
     if (!response.ok) {
       return Response.json(
         {
