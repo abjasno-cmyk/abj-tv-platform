@@ -1,5 +1,9 @@
+import Link from "next/link";
+import { cookies } from "next/headers";
+
 import { hasStudioCapability, resolveStudioAccessContext } from "@/lib/studio/access";
 import { loadStudioSnapshot } from "@/lib/studio/data";
+import { getStudioGateCookieName, isStudioGateTokenValid } from "@/lib/studio/gate";
 
 export const dynamic = "force-dynamic";
 
@@ -28,14 +32,74 @@ type StudioPageProps = {
 };
 
 export default async function StudioPage({ searchParams }: StudioPageProps) {
+  const resolvedSearchParams = await Promise.resolve(searchParams ?? {});
+  const loginErrorValue = resolvedSearchParams.studio_login_error;
+  const statusValue = resolvedSearchParams.studio_status;
+  const messageValue = resolvedSearchParams.studio_message;
+  const hasLoginError = (Array.isArray(loginErrorValue) ? loginErrorValue[0] : loginErrorValue) === "1";
+  const studioStatus = Array.isArray(statusValue) ? statusValue[0] : statusValue;
+  const studioMessage = Array.isArray(messageValue) ? messageValue[0] : messageValue;
+  const cookieStore = await cookies();
+  const gateCookieValue = cookieStore.get(getStudioGateCookieName())?.value ?? null;
+  const gateUnlocked = isStudioGateTokenValid(gateCookieValue);
+
+  if (!gateUnlocked) {
+    return (
+      <main className="mx-auto w-full max-w-md px-4 py-10">
+        <section className="rounded-2xl border border-[#2f3647] bg-[#0f131b] p-6 text-[#edf2fb] shadow-[0_20px_45px_rgba(0,0,0,0.35)]">
+          <p className="text-xs uppercase tracking-[0.18em] text-[#ff6a00]">VEROX Studio</p>
+          <h1 className="mt-2 text-2xl font-semibold text-white">Vstup do Studia</h1>
+          <p className="mt-3 text-sm text-[#b7c1d3]">
+            Studio je dostupné pouze přes přihlašovací údaj a heslo. Odkaz je pouze v zápatí webu.
+          </p>
+          {hasLoginError ? (
+            <p className="mt-3 rounded-md border border-[#7a3d2b] bg-[#2a1814] px-3 py-2 text-xs text-[#ffcebd]">
+              Neplatný přihlašovací údaj nebo heslo.
+            </p>
+          ) : null}
+          <form action="/api/studio/gate" method="post" className="mt-4 space-y-3">
+            <input type="hidden" name="redirect_to" value="/studio" />
+            <div>
+              <label htmlFor="studio-credential" className="block text-xs text-[#b7c1d3]">
+                Přihlašovací údaj
+              </label>
+              <input
+                id="studio-credential"
+                name="credential"
+                required
+                className="mt-1 w-full rounded-md border border-[#30384a] bg-[#101625] px-3 py-2 text-sm text-[#edf2fb] outline-none focus:border-[#ff6a00]"
+              />
+            </div>
+            <div>
+              <label htmlFor="studio-password" className="block text-xs text-[#b7c1d3]">
+                Heslo
+              </label>
+              <input
+                id="studio-password"
+                name="password"
+                type="password"
+                required
+                className="mt-1 w-full rounded-md border border-[#30384a] bg-[#101625] px-3 py-2 text-sm text-[#edf2fb] outline-none focus:border-[#ff6a00]"
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full rounded-md border border-[#ff6a00] bg-[#ff6a00] px-3 py-2 text-sm font-semibold text-white hover:bg-[#e95f00]"
+            >
+              Odemknout Studio
+            </button>
+          </form>
+          <Link href="/" className="mt-4 inline-flex text-xs text-[#9fb0cc] underline hover:text-[#c8d5ea]">
+            Zpět na hlavní web
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
   const access = await resolveStudioAccessContext();
   const snapshot = await loadStudioSnapshot(access);
   const isPreviewMode = !access.user || !access.canAccessStudio;
-  const resolvedSearchParams = await Promise.resolve(searchParams ?? {});
-  const statusValue = resolvedSearchParams.studio_status;
-  const messageValue = resolvedSearchParams.studio_message;
-  const studioStatus = Array.isArray(statusValue) ? statusValue[0] : statusValue;
-  const studioMessage = Array.isArray(messageValue) ? messageValue[0] : messageValue;
   const canEditEditorial = hasStudioCapability(access, "editorial_edit");
   const canPublishEditorial = hasStudioCapability(access, "editorial_publish");
   const canPublishBreaking = hasStudioCapability(access, "breaking_publish");
@@ -57,10 +121,17 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
             </p>
           </div>
           <div className="rounded-xl border border-[#2b3345] bg-[#0b0f16] px-4 py-3 text-xs text-[#c4cede]">
-            <p>Režim: {isPreviewMode ? "Náhled bez přihlášení" : "Interní přístup"}</p>
-            <p className="mt-1">Uživatel: {access.displayName ?? access.email ?? "host"}</p>
+            <p>Režim: {isPreviewMode ? "Přístup přes údaj + heslo" : "Interní OAuth přístup"}</p>
+            <p className="mt-1">Uživatel: {access.displayName ?? access.email ?? "studio-operátor"}</p>
             <p className="mt-1">Role: {access.effectiveRoles.join(", ")}</p>
             <p className="mt-1">Aktualizace: {formatDateTime(snapshot.nowIso)}</p>
+            <form action="/api/studio/gate" method="post" className="mt-2">
+              <input type="hidden" name="mode" value="logout" />
+              <input type="hidden" name="redirect_to" value="/studio" />
+              <button className="rounded-md border border-[#30384a] bg-[#101625] px-2 py-1 text-[11px] text-[#d8e2f3] hover:border-[#ff6a00]/70">
+                Uzamknout Studio
+              </button>
+            </form>
           </div>
         </div>
 
@@ -79,8 +150,7 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
 
       {isPreviewMode ? (
         <section className="mt-5 rounded-xl border border-[#35508b] bg-[#111a2e] p-4 text-sm text-[#bfd3ff]">
-          Studio je dočasně otevřeno v režimu náhledu bez přihlášení. Zásahové akce zůstávají zamčené, dokud se znovu
-          neaktivuje interní OAuth přístup.
+          Studio je otevřené přes údaj/heslo. Pro plné zásahové akce je stále potřeba interní OAuth přístup.
         </section>
       ) : null}
 

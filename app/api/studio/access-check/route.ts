@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 
 import { resolveStudioAccessContext, STUDIO_ALLOWED_EMAILS } from "@/lib/studio/access";
+import { getStudioGateCookieName, isStudioGateTokenValid, readCookieValueFromHeader } from "@/lib/studio/gate";
 
 export const dynamic = "force-dynamic";
-const PUBLIC_STUDIO_PREVIEW_ENABLED = true;
 
 function parseCookieNames(cookieHeader: string | null): string[] {
   if (!cookieHeader) return [];
@@ -16,26 +16,17 @@ function parseCookieNames(cookieHeader: string | null): string[] {
 export async function GET(request: Request) {
   const access = await resolveStudioAccessContext();
   const url = new URL(request.url);
-  const cookieNames = parseCookieNames(request.headers.get("cookie"));
-  if (!access.user) {
-    if (PUBLIC_STUDIO_PREVIEW_ENABLED) {
-      return NextResponse.json({
-        ok: true,
-        reason: "public_preview",
-        message: "Studio je dočasně dostupné v preview režimu bez přihlášení.",
-        debug: {
-          host: request.headers.get("host"),
-          origin: request.headers.get("origin"),
-          urlHost: url.host,
-          cookieNames,
-        },
-      });
-    }
+  const cookieHeader = request.headers.get("cookie");
+  const cookieNames = parseCookieNames(cookieHeader);
+  const gateCookieValue = readCookieValueFromHeader(cookieHeader, getStudioGateCookieName());
+  const gateUnlocked = isStudioGateTokenValid(gateCookieValue);
+
+  if (!gateUnlocked) {
     return NextResponse.json(
       {
         ok: false,
-        reason: "not_authenticated",
-        message: "Uživatel není přihlášen.",
+        reason: "studio_gate_required",
+        message: "Studio vyžaduje přihlašovací údaj a heslo.",
         debug: {
           host: request.headers.get("host"),
           origin: request.headers.get("origin"),
@@ -47,10 +38,24 @@ export async function GET(request: Request) {
     );
   }
 
-  const accessGranted = PUBLIC_STUDIO_PREVIEW_ENABLED ? true : access.canAccessStudio;
+  if (!access.user) {
+    return NextResponse.json({
+      ok: true,
+      reason: "gate_only",
+      message: "Studio je odemčeno přes údaj/heslo.",
+      debug: {
+        host: request.headers.get("host"),
+        origin: request.headers.get("origin"),
+        urlHost: url.host,
+        cookieNames,
+      },
+    });
+  }
+
+  const accessGranted = access.canAccessStudio;
   return NextResponse.json({
     ok: accessGranted,
-    reason: access.canAccessStudio ? "granted" : PUBLIC_STUDIO_PREVIEW_ENABLED ? "public_preview" : "denied",
+    reason: access.canAccessStudio ? "granted" : "denied",
     user: {
       id: access.user.id,
       email: access.email,

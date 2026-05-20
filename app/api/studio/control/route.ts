@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { hasStudioCapability, resolveStudioAccessContext } from "@/lib/studio/access";
+import { getStudioGateCookieName, isStudioGateTokenValid, readCookieValueFromHeader } from "@/lib/studio/gate";
 
 export const dynamic = "force-dynamic";
 
@@ -99,6 +100,10 @@ export async function POST(request: Request) {
   const payload = await readPayload(request);
   const action = asString(payload.action) as StudioAction;
   const redirectTo = pickRedirectTarget(payload);
+  const gateCookieValue = readCookieValueFromHeader(request.headers.get("cookie"), getStudioGateCookieName());
+  if (!isStudioGateTokenValid(gateCookieValue)) {
+    return NextResponse.json({ error: "Studio je uzamčeno. Nejprve zadejte přihlašovací údaj a heslo." }, { status: 401 });
+  }
 
   const access = await resolveStudioAccessContext();
   if (!access.user) {

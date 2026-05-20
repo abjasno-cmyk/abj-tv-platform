@@ -13,7 +13,6 @@ const BASE_NAV_LINKS = [
   { href: "/abj-x", label: "VeroX" },
   { href: "/zed", label: "Zeď" },
   { href: "/muj-verox", label: "Můj Verox" },
-  { href: "/studio", label: "Studio" },
 ];
 const NAV_VISIBLE_TOP_THRESHOLD = 8;
 const NAV_SCROLL_DELTA_THRESHOLD = 4;
