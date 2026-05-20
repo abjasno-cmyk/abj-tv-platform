@@ -1,4 +1,5 @@
 import { buildEPG } from "@/lib/buildEPG";
+import { loadStructuredFeedPayload, parsePublishedTimestamp, type FeedVideo } from "@/lib/dayOverview";
 import { getNowPlaying, getProgram } from "@/lib/programEngine";
 import LivePage from "@/app/live/LivePage";
 import type { DayProgram, ProgramBlock, ProgramItem } from "@/lib/epg-types";
@@ -11,6 +12,18 @@ type ExternalNowPlaying = {
   title: string;
   channelName: string;
   startIso: string;
+};
+
+type LiveChannelVideo = {
+  videoId: string;
+  title: string;
+  thumbnail: string | null;
+  publishedAt: string;
+};
+
+type LiveChannelGroup = {
+  channelName: string;
+  videos: LiveChannelVideo[];
 };
 
 function resolveProgramFeedApiKey(): string | null {
@@ -417,6 +430,23 @@ function mapOffsetFromStartIso(startIso: string | null): number {
   return Math.max(0, Math.floor((nowTs - startTs) / 1000));
 }
 
+function mapLiveChannelsFromFeed(channels: Record<string, FeedVideo[]>): LiveChannelGroup[] {
+  return Object.entries(channels)
+    .map(([channelName, videos]) => ({
+      channelName,
+      videos: [...videos]
+        .filter((video) => typeof video.video_id === "string" && video.video_id.trim().length > 0)
+        .sort((a, b) => parsePublishedTimestamp(b.published_at) - parsePublishedTimestamp(a.published_at))
+        .map((video) => ({
+          videoId: video.video_id,
+          title: video.title,
+          thumbnail: video.thumbnail ?? null,
+          publishedAt: video.published_at,
+        })),
+    }))
+    .sort((a, b) => a.channelName.localeCompare(b.channelName, "cs-CZ"));
+}
+
 export default async function LivePageServer(
   {
     searchParams,
@@ -428,6 +458,7 @@ export default async function LivePageServer(
   let timeline: ProgramBlock[] = [];
   let v3NowPlaying: ProgramBlock | null = null;
   let externalNowPlaying: ExternalNowPlaying | null = null;
+  let liveChannels: LiveChannelGroup[] = [];
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const rawVideoId = resolvedSearchParams?.videoId;
@@ -457,6 +488,13 @@ export default async function LivePageServer(
     externalNowPlaying = await loadExternalNowPlaying();
   } catch (error) {
     console.error("live-page-external-now-playing-failed", error);
+  }
+
+  try {
+    const feedPayload = await loadStructuredFeedPayload();
+    liveChannels = mapLiveChannelsFromFeed(feedPayload.channels);
+  } catch (error) {
+    console.error("live-page-channels-load-failed", error);
   }
 
   if (epg.length === 0 || epg.every((day) => day.items.length === 0)) {
@@ -519,6 +557,7 @@ export default async function LivePageServer(
       initialTitle={initialTitle}
       initialChannelName={initialChannelName}
       initialStartSeconds={initialStartOffsetSeconds}
+      channels={liveChannels}
     />
   );
 }

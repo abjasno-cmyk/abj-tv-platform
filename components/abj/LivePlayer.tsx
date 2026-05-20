@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import YouTube, { type YouTubeProps } from "react-youtube";
 
 type LivePlayerProps = {
@@ -11,9 +11,42 @@ type LivePlayerProps = {
   startSeconds?: number;
   remainingLabel: string;
   progressPercent: number;
-  onPlayToggle?: () => void;
+  onGoLive: () => void;
   isFiller?: boolean;
 };
+
+type FullscreenElement = HTMLElement & {
+  webkitRequestFullscreen?: () => Promise<void> | void;
+};
+
+type FullscreenDocument = Document & {
+  webkitFullscreenElement?: Element | null;
+  webkitExitFullscreen?: () => Promise<void> | void;
+};
+
+function readFullscreenElement(doc: FullscreenDocument): Element | null {
+  return doc.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
+}
+
+async function requestFullscreenFor(element: FullscreenElement): Promise<void> {
+  if (typeof element.requestFullscreen === "function") {
+    await element.requestFullscreen();
+    return;
+  }
+  if (typeof element.webkitRequestFullscreen === "function") {
+    await element.webkitRequestFullscreen();
+  }
+}
+
+async function exitFullscreenFor(doc: FullscreenDocument): Promise<void> {
+  if (typeof doc.exitFullscreen === "function") {
+    await doc.exitFullscreen();
+    return;
+  }
+  if (typeof doc.webkitExitFullscreen === "function") {
+    await doc.webkitExitFullscreen();
+  }
+}
 
 export function LivePlayer({
   videoId,
@@ -23,14 +56,28 @@ export function LivePlayer({
   startSeconds = 0,
   remainingLabel,
   progressPercent,
-  onPlayToggle,
+  onGoLive,
   isFiller = false,
 }: LivePlayerProps) {
+  const playerShellRef = useRef<HTMLElement | null>(null);
   const [manualUnmuteVideoId, setManualUnmuteVideoId] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const isMuted = manualUnmuteVideoId !== videoId;
   const showUnmuteButton = Boolean(videoId) && isMuted;
   const offsetSeconds = Math.max(0, Math.floor(startSeconds));
   const clampedProgress = Math.max(0, Math.min(100, progressPercent));
+
+  useEffect(() => {
+    const doc = document as FullscreenDocument;
+    const syncFullscreen = () => setIsFullscreen(Boolean(readFullscreenElement(doc)));
+    syncFullscreen();
+    doc.addEventListener("fullscreenchange", syncFullscreen);
+    doc.addEventListener("webkitfullscreenchange", syncFullscreen);
+    return () => {
+      doc.removeEventListener("fullscreenchange", syncFullscreen);
+      doc.removeEventListener("webkitfullscreenchange", syncFullscreen);
+    };
+  }, []);
 
   const opts = useMemo<YouTubeProps["opts"]>(
     () => ({
@@ -48,7 +95,10 @@ export function LivePlayer({
   );
 
   return (
-    <section className="relative overflow-hidden rounded-[28px] border border-[rgba(17,17,17,0.1)] bg-white shadow-[0_18px_45px_rgba(17,17,17,0.08)]">
+    <section
+      ref={playerShellRef}
+      className="relative overflow-hidden rounded-[28px] border border-[rgba(17,17,17,0.1)] bg-white shadow-[0_18px_45px_rgba(17,17,17,0.08)]"
+    >
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[rgba(255,106,0,0.14)]"
@@ -85,7 +135,6 @@ export function LivePlayer({
             type="button"
             onClick={() => {
               setManualUnmuteVideoId(videoId);
-              onPlayToggle?.();
             }}
             className="absolute right-4 top-4 rounded-full border border-white/45 bg-black/52 px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-black/62"
           >
@@ -130,6 +179,50 @@ export function LivePlayer({
           </div>
           <p className="text-sm font-medium text-[var(--abj-text1)]">{remainingLabel}</p>
         </div>
+      </div>
+
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(17,17,17,0.1)] bg-[rgba(249,246,241,0.85)] px-6 py-3">
+        <button
+          type="button"
+          onClick={onGoLive}
+          disabled={isLive}
+          className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+            isLive
+              ? "cursor-default border-[var(--abj-red)] bg-[var(--abj-red)] text-white"
+              : "border-[var(--abj-red)] bg-white text-[var(--abj-red)] hover:bg-[rgba(255,106,0,0.1)]"
+          }`}
+        >
+          <span className="h-2 w-2 rounded-full bg-current" />
+          Živě
+        </button>
+
+        <button
+          type="button"
+          onClick={async () => {
+            const doc = document as FullscreenDocument;
+            try {
+              if (readFullscreenElement(doc)) {
+                await exitFullscreenFor(doc);
+                return;
+              }
+              const element = playerShellRef.current as FullscreenElement | null;
+              if (!element) return;
+              await requestFullscreenFor(element);
+            } catch (error) {
+              console.warn("live-player-fullscreen-toggle-failed", error);
+            }
+          }}
+          className="inline-flex items-center gap-2 rounded-full border border-[rgba(17,17,17,0.24)] bg-white px-4 py-2 text-sm font-semibold text-abj-text1 transition hover:border-[#FF6A00] hover:text-[#C14900]"
+          aria-label={isFullscreen ? "Ukončit režim celé obrazovky" : "Zvětšit přehrávač na celou obrazovku"}
+        >
+          <span
+            aria-hidden="true"
+            className={`inline-block h-3.5 w-3.5 border border-current ${
+              isFullscreen ? "rounded-[1px] border-2" : "rounded-[2px]"
+            }`}
+          />
+          {isFullscreen ? "Ukončit celou obrazovku" : "Celá obrazovka"}
+        </button>
       </div>
     </section>
   );

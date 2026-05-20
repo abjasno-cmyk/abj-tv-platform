@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { DayProgram, ProgramItem } from "@/lib/epg-types";
 
@@ -57,6 +57,11 @@ type CurrentSlot = {
   progressPct: number;
 };
 
+type ScrollState = {
+  left: number;
+  max: number;
+};
+
 function resolveCurrentSlot(items: ProgramItem[], activeDate: string | undefined, now: Date): CurrentSlot | null {
   if (!activeDate || items.length === 0) return null;
   const pragueNow = getPragueNowParts(now);
@@ -104,6 +109,7 @@ export function Timeline({ days, onSelect }: TimelineProps) {
   });
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
+  const [scrollState, setScrollState] = useState<ScrollState>({ left: 0, max: 0 });
   const timelineScrollRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const autoScrolledDayRef = useRef<string | null>(null);
@@ -112,6 +118,23 @@ export function Timeline({ days, onSelect }: TimelineProps) {
   const items = useMemo(() => activeDay?.items ?? [], [activeDay]);
   const dateLabel = activeDay?.label ?? "Program";
   const currentSlot = useMemo(() => resolveCurrentSlot(items, activeDay?.date, now), [activeDay?.date, items, now]);
+  const canPrevDay = activeDayIndex > 0;
+  const canNextDay = activeDayIndex < days.length - 1;
+  const canScrollTimeline = scrollState.max > 6;
+  const canScrollLeft = scrollState.left > 6;
+  const canScrollRight = scrollState.left < scrollState.max - 6;
+
+  const updateScrollState = useCallback(() => {
+    const container = timelineScrollRef.current;
+    if (!container) {
+      setScrollState({ left: 0, max: 0 });
+      return;
+    }
+    setScrollState({
+      left: Math.max(0, container.scrollLeft),
+      max: Math.max(0, container.scrollWidth - container.clientWidth),
+    });
+  }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -123,6 +146,21 @@ export function Timeline({ days, onSelect }: TimelineProps) {
   useEffect(() => {
     autoScrolledDayRef.current = null;
   }, [activeDay?.date]);
+
+  useEffect(() => {
+    updateScrollState();
+    const onResize = () => updateScrollState();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [items.length, updateScrollState]);
+
+  useEffect(() => {
+    const container = timelineScrollRef.current;
+    if (!container) return;
+    const onScroll = () => updateScrollState();
+    container.addEventListener("scroll", onScroll, { passive: true });
+    return () => container.removeEventListener("scroll", onScroll);
+  }, [activeDay?.date, updateScrollState]);
 
   useEffect(() => {
     if (!activeDay?.date || !currentSlot) return;
@@ -137,7 +175,8 @@ export function Timeline({ days, onSelect }: TimelineProps) {
       behavior: "smooth",
     });
     autoScrolledDayRef.current = activeDay.date;
-  }, [activeDay?.date, currentSlot]);
+    window.setTimeout(() => updateScrollState(), 360);
+  }, [activeDay?.date, currentSlot, updateScrollState]);
 
   return (
     <section className="rounded-[26px] border border-abj-goldDim bg-abj-panel px-5 py-4 shadow-[0_12px_28px_rgba(17,17,17,0.06)]">
@@ -150,33 +189,31 @@ export function Timeline({ days, onSelect }: TimelineProps) {
               Teď běží
             </span>
           ) : null}
-          <p className="text-sm font-semibold text-abj-text1">{dateLabel}</p>
+          <button
+            type="button"
+            onClick={() => setActiveDayIndex((prev) => Math.max(0, prev - 1))}
+            disabled={!canPrevDay}
+            className="rounded-full border border-[rgba(17,17,17,0.2)] bg-white px-2 py-1 text-xs text-abj-text2 transition enabled:hover:border-[#FF6A00] enabled:hover:text-[#C14900] disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label="Předchozí den timeline"
+          >
+            ←
+          </button>
+          <p className="min-w-[165px] text-center text-sm font-semibold text-abj-text1">{dateLabel}</p>
+          <button
+            type="button"
+            onClick={() => setActiveDayIndex((prev) => Math.min(days.length - 1, prev + 1))}
+            disabled={!canNextDay}
+            className="rounded-full border border-[rgba(17,17,17,0.2)] bg-white px-2 py-1 text-xs text-abj-text2 transition enabled:hover:border-[#FF6A00] enabled:hover:text-[#C14900] disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label="Následující den timeline"
+          >
+            →
+          </button>
         </div>
-      </div>
-
-      <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
-        {days.map((day, idx) => {
-          const active = idx === activeDayIndex;
-          return (
-            <button
-              key={day.date}
-              type="button"
-              onClick={() => setActiveDayIndex(idx)}
-              className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] transition ${
-                active
-                  ? "border-abj-red bg-abj-red text-white"
-                  : "border-[rgba(17,17,17,0.2)] bg-white text-abj-text2 hover:bg-[rgba(255,106,0,0.1)] hover:text-abj-text1"
-              }`}
-            >
-              {day.label}
-            </button>
-          );
-        })}
       </div>
 
       <div
         ref={timelineScrollRef}
-        className="abj-dot-grid -mx-1 overflow-x-auto rounded-2xl border border-[rgba(17,17,17,0.11)] bg-white p-3"
+        className="abj-dot-grid -mx-1 overflow-x-scroll rounded-2xl border border-[rgba(17,17,17,0.11)] bg-white p-3"
       >
         <div className="flex min-w-max gap-3">
           {items.length === 0 ? (
@@ -237,6 +274,52 @@ export function Timeline({ days, onSelect }: TimelineProps) {
             })
           )}
         </div>
+      </div>
+
+      <div className="mt-3 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => {
+            const container = timelineScrollRef.current;
+            if (!container) return;
+            container.scrollBy({ left: -260, behavior: "smooth" });
+          }}
+          disabled={!canScrollTimeline || !canScrollLeft}
+          className="rounded-full border border-[rgba(17,17,17,0.24)] bg-white px-3 py-1 text-xs font-semibold text-abj-text2 transition enabled:hover:border-[#FF6A00] enabled:hover:text-[#C14900] disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Posunout timeline doleva"
+        >
+          ←
+        </button>
+        <input
+          type="range"
+          min={0}
+          max={Math.max(1, Math.round(scrollState.max))}
+          value={Math.min(Math.round(scrollState.left), Math.max(1, Math.round(scrollState.max)))}
+          onChange={(event) => {
+            const container = timelineScrollRef.current;
+            if (!container) return;
+            container.scrollTo({
+              left: Number(event.currentTarget.value),
+              behavior: "auto",
+            });
+          }}
+          className="h-1.5 w-full cursor-pointer accent-[#FF6A00] disabled:cursor-not-allowed"
+          disabled={!canScrollTimeline}
+          aria-label="Posuvník timeline"
+        />
+        <button
+          type="button"
+          onClick={() => {
+            const container = timelineScrollRef.current;
+            if (!container) return;
+            container.scrollBy({ left: 260, behavior: "smooth" });
+          }}
+          disabled={!canScrollTimeline || !canScrollRight}
+          className="rounded-full border border-[rgba(17,17,17,0.24)] bg-white px-3 py-1 text-xs font-semibold text-abj-text2 transition enabled:hover:border-[#FF6A00] enabled:hover:text-[#C14900] disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Posunout timeline doprava"
+        >
+          →
+        </button>
       </div>
     </section>
   );

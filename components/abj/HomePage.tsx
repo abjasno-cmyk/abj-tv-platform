@@ -1,14 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import type { ReactNode } from "react";
 
+import { ChannelDirectory, type LiveChannelGroup, type LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import { LivePlayer } from "@/components/abj/LivePlayer";
-import { RecommendedStrip } from "@/components/abj/RecommendedStrip";
 import { Timeline } from "@/components/abj/Timeline";
 import type { DayProgram, ProgramItem } from "@/lib/epg-types";
 
 type HomePageProps = {
   days: DayProgram[];
+  channels: LiveChannelGroup[];
   videoId: string | null;
   title: string;
   channelName: string;
@@ -18,16 +19,14 @@ type HomePageProps = {
   progressPercent: number;
   isFiller: boolean;
   onSelect: (item: ProgramItem) => void;
-  onPlayToggle?: () => void;
+  onReturnToLive: () => void;
+  onSelectChannelVideo: (payload: { channelName: string; video: LiveChannelVideo }) => void;
+  reactionsSlot?: ReactNode;
 };
-
-function fallbackThumb(videoId: string | null): string | null {
-  if (!videoId) return null;
-  return `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`;
-}
 
 export function HomePage({
   days,
+  channels,
   videoId,
   title,
   channelName,
@@ -37,27 +36,10 @@ export function HomePage({
   progressPercent,
   isFiller,
   onSelect,
-  onPlayToggle,
+  onReturnToLive,
+  onSelectChannelVideo,
+  reactionsSlot,
 }: HomePageProps) {
-  const recommendedItems = useMemo(() => {
-    const pool = days.flatMap((day) => day.items);
-    return pool
-      .filter((item) => item.videoId && item.videoId !== videoId)
-      .slice(0, 3)
-      .map((item, idx) => ({
-        id: item.videoId ?? `recommended-${idx}`,
-        title: item.title,
-        reason:
-          item.type === "live"
-            ? "Právě živé vysílání"
-            : item.type === "upcoming"
-              ? "Navazuje v programu"
-              : "Vybráno z aktuálního výběru",
-        image: item.thumbnail ?? fallbackThumb(item.videoId),
-        fallbackImage: "/placeholder-thumb.jpg",
-      }));
-  }, [days, videoId]);
-
   return (
     <section className="relative min-h-[calc(100vh-46px)] overflow-hidden bg-abj-main pb-10 pt-5 text-abj-text1">
       <div
@@ -83,20 +65,14 @@ export function HomePage({
           remainingLabel={remainingLabel}
           progressPercent={progressPercent}
           isFiller={isFiller}
-          onPlayToggle={onPlayToggle}
+          onGoLive={onReturnToLive}
         />
 
         <Timeline days={days} onSelect={onSelect} />
 
-        <RecommendedStrip
-          items={recommendedItems}
-          onSelect={(id) => {
-            const selected = days
-              .flatMap((day) => day.items)
-              .find((item) => item.videoId && item.videoId === id);
-            if (selected) onSelect(selected);
-          }}
-        />
+        {reactionsSlot}
+
+        <ChannelDirectory channels={channels} onSelectVideo={onSelectChannelVideo} />
       </div>
     </section>
   );

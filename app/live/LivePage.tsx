@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+import type { LiveChannelGroup } from "@/components/abj/ChannelDirectory";
 import type { DayProgram } from "@/lib/epg-types";
 import { LiveAlert } from "@/components/abj/LiveAlert";
 import { HomePage } from "@/components/abj/HomePage";
@@ -14,6 +15,7 @@ type LivePageProps = {
   initialTitle: string;
   initialChannelName: string;
   initialStartSeconds?: number;
+  channels: LiveChannelGroup[];
 };
 
 export default function LivePage({
@@ -22,8 +24,16 @@ export default function LivePage({
   initialTitle,
   initialChannelName,
   initialStartSeconds = 0,
+  channels,
 }: LivePageProps) {
   const safeEpg = epg;
+  const linearSourceRef = useRef({
+    videoId: initialVideoId,
+    title: initialTitle,
+    channelName: initialChannelName,
+    startSeconds: Math.max(0, Math.floor(initialStartSeconds)),
+    capturedAtMs: Date.now(),
+  });
   const [videoId, setVideoId] = useState<string | null>(initialVideoId);
   const [title, setTitle] = useState(initialTitle);
   const [channelName, setChannelName] = useState(initialChannelName);
@@ -71,6 +81,7 @@ export default function LivePage({
     >
       <HomePage
         days={safeEpg}
+        channels={channels}
         videoId={videoId}
         title={title}
         channelName={channelName}
@@ -79,8 +90,14 @@ export default function LivePage({
         remainingLabel={remainingLabel}
         progressPercent={progressPercent}
         isFiller={isFiller}
-        onPlayToggle={() => {
-          setIsLive((prev) => !prev);
+        onReturnToLive={() => {
+          const source = linearSourceRef.current;
+          const elapsedSinceLoad = Math.max(0, Math.floor((Date.now() - source.capturedAtMs) / 1000));
+          setVideoId(source.videoId);
+          setTitle(source.title);
+          setChannelName(source.channelName);
+          setStartSeconds(source.startSeconds + elapsedSinceLoad);
+          setIsLive(true);
         }}
         onSelect={(item) => {
           setTitle(item.title);
@@ -89,6 +106,14 @@ export default function LivePage({
           setStartSeconds(0);
           setIsLive(item.type === "live" || item.channelName.toLowerCase().includes("abj"));
         }}
+        onSelectChannelVideo={({ channelName: selectedChannelName, video }) => {
+          setTitle(video.title);
+          setChannelName(selectedChannelName);
+          setVideoId(video.videoId);
+          setStartSeconds(0);
+          setIsLive(false);
+        }}
+        reactionsSlot={videoId ? <WallForVideo videoId={videoId} videoTitle={title} /> : null}
       />
       <LiveAlert
         currentVideoId={videoId}
@@ -99,7 +124,6 @@ export default function LivePage({
         }}
       />
       <div className="mx-auto w-full max-w-[1200px] space-y-6 px-4 pb-8 sm:px-6 lg:px-10">
-        {videoId ? <WallForVideo videoId={videoId} videoTitle={title} /> : null}
         <div className="space-y-2">
           <p className="text-[11px] uppercase tracking-[0.12em] text-abj-text2">Komunita</p>
           <ChatPanel />
