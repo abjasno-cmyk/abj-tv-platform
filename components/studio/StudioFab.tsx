@@ -17,6 +17,27 @@ export function StudioFab() {
   }, [profile?.email, user?.email]);
   const isAllowed = currentEmail === STUDIO_ALLOWED_EMAIL;
 
+  const syncSessionForStudio = async () => {
+    const supabase = createSupabaseBrowserClient();
+    const sessionResult = await supabase.auth.getSession();
+    const session = sessionResult.data.session;
+    if (!session?.access_token) {
+      return false;
+    }
+    document.cookie = `verox_access_token=${encodeURIComponent(session.access_token)}; Path=/; Max-Age=${60 * 60 * 24 * 30}; SameSite=Lax; Secure`;
+    await fetch("/api/auth/session-sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        accessToken: session.access_token,
+        refreshToken: session.refresh_token ?? undefined,
+      }),
+    }).catch(() => {
+      // Best-effort sync; fallback cookie was already written.
+    });
+    return true;
+  };
+
   const startStudioGoogleLogin = async () => {
     setBusy(true);
     setError(null);
@@ -51,7 +72,10 @@ export function StudioFab() {
         type="button"
         onClick={() => {
           if (isAllowed) {
-            window.location.href = "/studio";
+            void (async () => {
+              await syncSessionForStudio();
+              window.location.href = "/studio";
+            })();
             return;
           }
           void startStudioGoogleLogin();

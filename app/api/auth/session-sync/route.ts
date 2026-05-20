@@ -66,19 +66,36 @@ export async function POST(request: NextRequest) {
   const payload = (await request.json().catch(() => ({}))) as SessionSyncPayload;
   const accessToken = asString(payload.accessToken);
   const refreshToken = asString(payload.refreshToken);
-  if (!accessToken || !refreshToken) {
-    return NextResponse.json({ ok: false, error: "Missing access/refresh token." }, { status: 400 });
+  if (!accessToken) {
+    return NextResponse.json({ ok: false, error: "Missing access token." }, { status: 400 });
   }
 
-  const setResult = await supabase.auth.setSession({
-    access_token: accessToken,
-    refresh_token: refreshToken,
+  let syncMode: "full_session" | "access_only" = "access_only";
+  let syncWarning: string | null = null;
+
+  if (refreshToken) {
+    const setResult = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+    if (setResult.error) {
+      syncWarning = setResult.error.message;
+    } else {
+      syncMode = "full_session";
+    }
+  }
+
+  const response = NextResponse.json({
+    ok: true,
+    mode: syncMode,
+    warning: syncWarning,
   });
-  if (setResult.error) {
-    return NextResponse.json({ ok: false, error: setResult.error.message }, { status: 400 });
-  }
-
-  const response = NextResponse.json({ ok: true });
+  response.cookies.set("verox_access_token", encodeURIComponent(accessToken), {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+    secure: true,
+    sameSite: "lax",
+  });
   applyCookies(response);
   return response;
 }
@@ -87,6 +104,12 @@ export async function DELETE(request: NextRequest) {
   const { supabase, applyCookies } = createRouteSupabaseClient(request);
   await supabase.auth.signOut();
   const response = NextResponse.json({ ok: true });
+  response.cookies.set("verox_access_token", "", {
+    path: "/",
+    maxAge: 0,
+    secure: true,
+    sameSite: "lax",
+  });
   applyCookies(response);
   return response;
 }

@@ -139,8 +139,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const lastBootstrappedUserIdRef = useRef<string | null>(null);
   const lastSyncedAccessTokenRef = useRef<string | null>(null);
 
-  const syncServerSession = useCallback(async (accessToken: string, refreshToken: string) => {
-    if (!accessToken || !refreshToken) return;
+  const syncServerSession = useCallback(async (accessToken: string, refreshToken?: string | null) => {
+    if (!accessToken) return;
     if (lastSyncedAccessTokenRef.current === accessToken) return;
     try {
       const response = await fetch("/api/auth/session-sync", {
@@ -148,7 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           accessToken,
-          refreshToken,
+          refreshToken: refreshToken ?? undefined,
         }),
       });
       if (response.ok) {
@@ -178,10 +178,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const {
           data: { session },
         } = await (supabase?.auth.getSession() ?? Promise.resolve({ data: { session: null } }));
-        const refreshToken = session?.refresh_token ?? "";
-        if (refreshToken) {
-          await syncServerSession(token, refreshToken);
-        }
+        await syncServerSession(token, session?.refresh_token ?? null);
       }
     },
     [supabase, syncServerSession]
@@ -255,9 +252,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!mounted) return;
       setUser(userResult.data.user ?? null);
       const session = sessionResult.data.session;
-      if (session?.access_token && session.refresh_token) {
+      if (session?.access_token) {
         setFallbackAccessTokenCookie(session.access_token);
-        void syncServerSession(session.access_token, session.refresh_token);
+        void syncServerSession(session.access_token, session.refresh_token ?? null);
       } else {
         void persistFallbackAccessToken(session?.access_token ?? null);
       }
@@ -272,9 +269,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(null);
         lastBootstrappedUserIdRef.current = null;
         void clearServerSession();
-      } else if (session.access_token && session.refresh_token) {
+      } else if (session.access_token) {
         setFallbackAccessTokenCookie(session.access_token);
-        void syncServerSession(session.access_token, session.refresh_token);
+        void syncServerSession(session.access_token, session.refresh_token ?? null);
       } else {
         void persistFallbackAccessToken(session?.access_token ?? null);
       }

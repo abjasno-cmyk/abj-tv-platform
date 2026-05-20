@@ -37,7 +37,7 @@ export function StudioSessionRescue({ targetPath = "/studio" }: StudioSessionRes
       const sessionResult = await supabase.auth.getSession();
       if (cancelled) return;
       const session = sessionResult.data.session;
-      if (!session?.access_token || !session.refresh_token) {
+      if (!session?.access_token) {
         setState("no-session");
         setAttempted(true);
         return;
@@ -48,7 +48,7 @@ export function StudioSessionRescue({ targetPath = "/studio" }: StudioSessionRes
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           accessToken: session.access_token,
-          refreshToken: session.refresh_token,
+          refreshToken: session.refresh_token ?? undefined,
         }),
       }).catch(() => null);
 
