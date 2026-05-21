@@ -29,3 +29,8 @@ If `PROGRAM_FEED_HMAC_SECRET` is missing, importer falls back to `SESSION_SECRET
 
 - `/api/program/v3/refresh-cache` every 15 minutes
 - `/api/program/v3/import-feed` every 5 minutes
+
+## Release safety checks
+
+- Run `npm run ci:verify` before merging.
+- Canonical-domain and login parity checklist: `docs/release-parity-checklist.md`.
