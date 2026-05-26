@@ -21,6 +21,24 @@ type ConsentRow = {
   created_at: string;
 };
 
+type VideoMeta = {
+  title: string | null;
+  channel_id: string | null;
+  channel_name: string | null;
+  thumbnail: string | null;
+};
+
+function readNonEmptyString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function buildYoutubeThumbnail(videoId: string): string | null {
+  if (!/^[a-zA-Z0-9_-]{11}$/.test(videoId)) return null;
+  return `https://img.youtube.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`;
+}
+
 export default async function MujVeroxPage() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -90,23 +108,31 @@ export default async function MujVeroxPage() {
   const newsletterGranted = latestNewsletterConsent?.granted === true;
 
   const videoIds = Array.from(new Set(allProgress.map((row) => row.video_id)));
-  const titlesByVideoId = new Map<string, string>();
+  const videoMetaByVideoId = new Map<string, VideoMeta>();
+  const videoChannelIds = new Set<string>();
   if (videoIds.length > 0) {
-    const videoLookup = await supabase.from("videos").select("video_id, title").in("video_id", videoIds);
+    const videoLookup = await supabase
+      .from("videos")
+      .select("video_id, title, channel_id, channel_name, thumbnail")
+      .in("video_id", videoIds);
     for (const row of videoLookup.data ?? []) {
-      if (row.video_id && row.title) {
-        titlesByVideoId.set(row.video_id, row.title);
-      }
+      const videoId = readNonEmptyString(row.video_id);
+      if (!videoId) continue;
+      const channelId = readNonEmptyString(row.channel_id);
+      const channelName = readNonEmptyString(row.channel_name);
+      const thumbnail = readNonEmptyString(row.thumbnail);
+      const title = readNonEmptyString(row.title);
+      if (channelId) videoChannelIds.add(channelId);
+      videoMetaByVideoId.set(videoId, {
+        title,
+        channel_id: channelId,
+        channel_name: channelName,
+        thumbnail,
+      });
     }
   }
 
-  const getVideoTitle = (videoId: string) => {
-    const resolved = titlesByVideoId.get(videoId)?.trim();
-    if (resolved) return resolved;
-    return "Video bez názvu";
-  };
-
-  const channelIds = followedChannels.map((row) => row.channel_id);
+  const channelIds = Array.from(new Set([...followedChannels.map((row) => row.channel_id), ...videoChannelIds]));
   const sourceNameByChannelId = new Map<string, string>();
   if (channelIds.length > 0) {
     const sourceLookup = await supabase
@@ -120,6 +146,16 @@ export default async function MujVeroxPage() {
       }
     }
   }
+
+  const getVideoMeta = (videoId: string) => {
+    const meta = videoMetaByVideoId.get(videoId);
+    const sourceName = meta?.channel_id ? sourceNameByChannelId.get(meta.channel_id) : null;
+    return {
+      channelName: meta?.channel_name ?? sourceName ?? "Neznámý kanál",
+      title: meta?.title ?? null,
+      thumbnail: meta?.thumbnail ?? buildYoutubeThumbnail(videoId) ?? "/placeholder-thumb.jpg",
+    };
+  };
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
@@ -140,16 +176,38 @@ export default async function MujVeroxPage() {
             <ul className="mt-2 space-y-2">
               {inProgress.map((row) => (
                 <li key={`in-progress-${row.video_id}`} className="rounded-lg border border-[var(--abj-gold-dim)] bg-abj-panel p-3">
-                  <p className="text-sm font-semibold text-abj-text1">{getVideoTitle(row.video_id)}</p>
-                  <p className="mt-1 text-xs text-abj-text2">
-                    Pokračovat od {formatDurationLabel(row.position_seconds)} · {Math.round(row.progress_percent ?? 0)} %
-                  </p>
-                  <Link
-                    href={`/live?videoId=${encodeURIComponent(row.video_id)}`}
-                    className="mt-2 inline-flex text-xs font-semibold uppercase tracking-[0.08em] text-[#B04A00]"
-                  >
-                    Otevřít video →
-                  </Link>
+                  {(() => {
+                    const videoMeta = getVideoMeta(row.video_id);
+                    return (
+                      <div className="flex items-start gap-3">
+                        <div className="h-14 w-24 shrink-0 overflow-hidden rounded-md border border-[var(--abj-gold-dim)] bg-[rgba(17,17,17,0.08)]">
+                          <div
+                            role="img"
+                            aria-label={
+                              videoMeta.title
+                                ? `Náhled videa ${videoMeta.title}`
+                                : `Náhled videa kanálu ${videoMeta.channelName}`
+                            }
+                            className="h-full w-full bg-cover bg-center"
+                            style={{ backgroundImage: `url(${videoMeta.thumbnail})` }}
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] uppercase tracking-[0.08em] text-abj-text2">{videoMeta.channelName}</p>
+                          {videoMeta.title ? <p className="mt-0.5 text-sm font-semibold text-abj-text1">{videoMeta.title}</p> : null}
+                          <p className="mt-1 text-xs text-abj-text2">
+                            Pokračovat od {formatDurationLabel(row.position_seconds)} · {Math.round(row.progress_percent ?? 0)} %
+                          </p>
+                          <Link
+                            href={`/live?videoId=${encodeURIComponent(row.video_id)}`}
+                            className="mt-2 inline-flex text-xs font-semibold uppercase tracking-[0.08em] text-[#B04A00]"
+                          >
+                            Otevřít video →
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </li>
               ))}
             </ul>
@@ -164,8 +222,30 @@ export default async function MujVeroxPage() {
             <ul className="mt-2 space-y-2">
               {completed.map((row) => (
                 <li key={`completed-${row.video_id}`} className="rounded-lg border border-[var(--abj-gold-dim)] bg-abj-panel p-3">
-                  <p className="text-sm font-semibold text-abj-text1">{getVideoTitle(row.video_id)}</p>
-                  <p className="mt-1 text-xs text-abj-text2">Dokončeno · {Math.round(row.progress_percent ?? 100)} %</p>
+                  {(() => {
+                    const videoMeta = getVideoMeta(row.video_id);
+                    return (
+                      <div className="flex items-start gap-3">
+                        <div className="h-14 w-24 shrink-0 overflow-hidden rounded-md border border-[var(--abj-gold-dim)] bg-[rgba(17,17,17,0.08)]">
+                          <div
+                            role="img"
+                            aria-label={
+                              videoMeta.title
+                                ? `Náhled videa ${videoMeta.title}`
+                                : `Náhled videa kanálu ${videoMeta.channelName}`
+                            }
+                            className="h-full w-full bg-cover bg-center"
+                            style={{ backgroundImage: `url(${videoMeta.thumbnail})` }}
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] uppercase tracking-[0.08em] text-abj-text2">{videoMeta.channelName}</p>
+                          {videoMeta.title ? <p className="mt-0.5 text-sm font-semibold text-abj-text1">{videoMeta.title}</p> : null}
+                          <p className="mt-1 text-xs text-abj-text2">Dokončeno · {Math.round(row.progress_percent ?? 100)} %</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </li>
               ))}
             </ul>
