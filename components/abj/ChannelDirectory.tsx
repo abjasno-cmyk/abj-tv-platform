@@ -212,7 +212,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                       <span className="line-clamp-1">{channel.channelName}</span>
                     </span>
                     <span className="shrink-0 text-xs uppercase tracking-[0.08em] text-abj-text2">
-                      {expanded ? "Skrýt videa" : "Nejnovější videa"}
+                      {expanded ? "Skrýt videa" : "Videa"}
                     </span>
                   </span>
                 </button>

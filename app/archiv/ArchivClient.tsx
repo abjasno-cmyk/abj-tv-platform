@@ -1295,9 +1295,9 @@ export function ArchivClient({ initialData }: ArchivClientProps) {
   return (
     <section className="mx-auto w-full max-w-[1280px] space-y-10 px-4 py-6 sm:px-6 lg:space-y-12">
       <header className="space-y-2">
-        <p className="text-[11px] uppercase tracking-[0.16em] text-abj-text2">Nejnovější videa</p>
+        <p className="text-[11px] uppercase tracking-[0.16em] text-abj-text2">Videa</p>
         <h1 className="font-[var(--font-serif)] text-3xl font-semibold leading-tight text-abj-text1 sm:text-4xl">
-          Nejnovější videa
+          Videa
         </h1>
         <p className="max-w-3xl text-sm text-abj-text2 sm:text-base">
           Průběžně aktualizovaný přehled posledních videí napříč sítí.
@@ -1341,8 +1341,8 @@ export function ArchivClient({ initialData }: ArchivClientProps) {
       ) : null}
 
       <VideoGrid
-        title="Nejnovější videa"
-        subtitle="Kompaktní přehled napříč celou sítí VeroX."
+        title="Videa"
+        subtitle="Průběžně aktualizovaný přehled posledních videí napříč sítí."
         videos={latestVideos}
         loading={isInitialLoading}
         emptyMessage={EMPTY_MESSAGE}

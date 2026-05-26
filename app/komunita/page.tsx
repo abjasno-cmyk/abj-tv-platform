@@ -2,7 +2,7 @@ import { WallBoard } from "@/components/wall/WallBoard";
 
 export const dynamic = "force-dynamic";
 
-export default async function ZedPage({
+export default async function KomunitaPage({
   searchParams,
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -12,6 +12,7 @@ export default async function ZedPage({
   const rawVideoTitle = resolvedSearchParams?.video_title;
   const videoId = Array.isArray(rawVideoId) ? rawVideoId[0] : rawVideoId;
   const videoTitle = Array.isArray(rawVideoTitle) ? rawVideoTitle[0] : rawVideoTitle;
+
   return (
     <WallBoard
       heading="Komunita"
@@ -22,4 +23,3 @@ export default async function ZedPage({
     />
   );
 }
-

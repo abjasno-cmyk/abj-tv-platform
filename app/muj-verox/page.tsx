@@ -100,6 +100,12 @@ export default async function MujVeroxPage() {
     }
   }
 
+  const getVideoTitle = (videoId: string) => {
+    const resolved = titlesByVideoId.get(videoId)?.trim();
+    if (resolved) return resolved;
+    return "Video bez názvu";
+  };
+
   const channelIds = followedChannels.map((row) => row.channel_id);
   const sourceNameByChannelId = new Map<string, string>();
   if (channelIds.length > 0) {
@@ -134,7 +140,7 @@ export default async function MujVeroxPage() {
             <ul className="mt-2 space-y-2">
               {inProgress.map((row) => (
                 <li key={`in-progress-${row.video_id}`} className="rounded-lg border border-[var(--abj-gold-dim)] bg-abj-panel p-3">
-                  <p className="text-sm font-semibold text-abj-text1">{titlesByVideoId.get(row.video_id) ?? row.video_id}</p>
+                  <p className="text-sm font-semibold text-abj-text1">{getVideoTitle(row.video_id)}</p>
                   <p className="mt-1 text-xs text-abj-text2">
                     Pokračovat od {formatDurationLabel(row.position_seconds)} · {Math.round(row.progress_percent ?? 0)} %
                   </p>
@@ -158,7 +164,7 @@ export default async function MujVeroxPage() {
             <ul className="mt-2 space-y-2">
               {completed.map((row) => (
                 <li key={`completed-${row.video_id}`} className="rounded-lg border border-[var(--abj-gold-dim)] bg-abj-panel p-3">
-                  <p className="text-sm font-semibold text-abj-text1">{titlesByVideoId.get(row.video_id) ?? row.video_id}</p>
+                  <p className="text-sm font-semibold text-abj-text1">{getVideoTitle(row.video_id)}</p>
                   <p className="mt-1 text-xs text-abj-text2">Dokončeno · {Math.round(row.progress_percent ?? 100)} %</p>
                 </li>
               ))}

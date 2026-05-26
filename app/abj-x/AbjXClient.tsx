@@ -259,7 +259,7 @@ export function AbjXClient() {
           void handleReact(item);
         },
         {
-          reason: "Přihlaste se zdarma a reagujte na příspěvky ve VeroX.",
+          reason: "Přihlaste se zdarma a reagujte na příspěvky v sekci V kostce.",
         }
       );
       return;
@@ -317,7 +317,7 @@ export function AbjXClient() {
           // Po přihlášení může uživatel sdílení opakovat.
         },
         {
-          reason: "Přihlaste se zdarma a sdílejte příspěvky ve VeroX.",
+          reason: "Přihlaste se zdarma a sdílejte příspěvky ze sekce V kostce.",
         }
       );
       return;
@@ -440,14 +440,14 @@ export function AbjXClient() {
   return (
     <section className="mx-auto w-full max-w-4xl space-y-6 px-3 py-6 sm:px-5">
       <header className="space-y-2">
-        <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">VeroX</p>
-        <h1 className="font-[var(--font-serif)] text-3xl font-semibold text-abj-text1">Textové zprávy</h1>
-        <p className="text-sm text-abj-text2">Krátké zprávy a souvislosti napříč sítí VeroX</p>
+        <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">V kostce</p>
+        <h1 className="font-[var(--font-serif)] text-3xl font-semibold text-abj-text1">V kostce</h1>
+        <p className="text-sm text-abj-text2">Krátce: co zaznělo v nejnovějších videích.</p>
       </header>
 
       {items.length === 0 && !loading ? (
         <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel p-6 text-sm text-abj-text2">
-          Zatím žádné textové zprávy.
+          Zatím tu nejsou žádné příspěvky.
         </div>
       ) : (
         <div className="space-y-3">
@@ -603,14 +603,14 @@ export function AbjXClient() {
                   </button>
                   {videoAvailable ? (
                     <a
-                      href={`/zed?video_id=${encodeURIComponent(item.videoId)}&video_title=${encodeURIComponent(item.headline)}`}
+                      href={`/komunita?video_id=${encodeURIComponent(item.videoId)}&video_title=${encodeURIComponent(item.headline)}`}
                       className="rounded-lg border border-[var(--abj-gold-dim)] px-2.5 py-1 text-xs uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1"
                     >
-                      Na Zeď
+                      Do komunity
                     </a>
                   ) : (
                     <span className="rounded-lg border border-[var(--abj-gold-dim)] px-2.5 py-1 text-xs uppercase tracking-[0.08em] text-abj-text3">
-                      Na Zeď
+                      Do komunity
                     </span>
                   )}
                   {shareHint ? <span className="text-xs text-abj-text2">{shareHint}</span> : null}
@@ -625,7 +625,7 @@ export function AbjXClient() {
                     onClick={(event) => event.stopPropagation()}
                     onKeyDown={(event) => event.stopPropagation()}
                   >
-                    <h3 className="text-xs uppercase tracking-[0.1em] text-abj-text2">Zeď komentářů</h3>
+                    <h3 className="text-xs uppercase tracking-[0.1em] text-abj-text2">Komentáře komunity</h3>
                     <div className="mt-2 max-h-52 space-y-2 overflow-y-auto pr-1">
                       {commentsLoading ? <p className="text-sm text-abj-text2">Načítám komentáře…</p> : null}
                       {!commentsLoading && wallComments.length === 0 ? (

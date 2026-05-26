@@ -8,10 +8,9 @@ import { useAuth } from "@/components/auth/AuthProvider";
 
 const BASE_NAV_LINKS = [
   { href: "/live", label: "Živě" },
-  { href: "/jasne-zpravy", label: "Jasné zprávy" },
-  { href: "/archiv", label: "Nejnovější videa" },
-  { href: "/abj-x", label: "VeroX" },
-  { href: "/zed", label: "Zeď" },
+  { href: "/videa", label: "Videa" },
+  { href: "/v-kostce", label: "V kostce" },
+  { href: "/komunita", label: "Komunita" },
   { href: "/muj-verox", label: "Můj Verox" },
 ];
 const NAV_VISIBLE_TOP_THRESHOLD = 8;
@@ -89,10 +88,9 @@ export function ABJNav() {
 
   const activeHref = useMemo(() => {
     if (pathname.startsWith("/studio")) return "/studio";
-    if (pathname.startsWith("/jasne-zpravy")) return "/jasne-zpravy";
-    if (pathname.startsWith("/archiv") || pathname.startsWith("/feed")) return "/archiv";
-    if (pathname.startsWith("/abj-x")) return "/abj-x";
-    if (pathname.startsWith("/zed")) return "/zed";
+    if (pathname.startsWith("/archiv") || pathname.startsWith("/feed") || pathname.startsWith("/videa")) return "/videa";
+    if (pathname.startsWith("/abj-x") || pathname.startsWith("/v-kostce")) return "/v-kostce";
+    if (pathname.startsWith("/zed") || pathname.startsWith("/komunita")) return "/komunita";
     if (pathname.startsWith("/muj-verox")) return "/muj-verox";
     if (pathname.startsWith("/live")) return "/live";
     return "";
@@ -113,7 +111,7 @@ export function ABJNav() {
               <Link
                 href="/live"
                 className="relative z-10 inline-flex items-center"
-                aria-label="Přejít na stránku Vysílání"
+                aria-label="Přejít na stránku Živě"
               >
                 <p className="font-[var(--font-serif)] text-[24px] font-extrabold tracking-[0.03em] text-abj-text1">
                   VEROX
@@ -170,7 +168,7 @@ export function ABJNav() {
               <div className="hidden items-center gap-2 sm:flex">
                 <span className="h-1.5 w-1.5 animate-[blink_2s_ease-in-out_infinite] rounded-full bg-abj-red" />
                 <span className="font-[var(--font-sans)] text-[10px] uppercase tracking-[0.12em] text-abj-red">
-                  Vysílání
+                  Živě
                 </span>
               </div>
               {isAuthenticated ? (

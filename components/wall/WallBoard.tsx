@@ -44,9 +44,8 @@ type ReplyTarget = {
   author: string;
 };
 
-const EMPTY_STATE_TEXT = "Zatím tu žádné vzkazy nejsou. Buďte první, kdo něco připne na Zeď.";
-const INTRO_DEFAULT =
-  "Tohle je místo pro vaše vzkazy, postřehy a reakce na pořady ABJ. Pište slušně, věcně a pod svou přezdívkou.";
+const EMPTY_STATE_TEXT = "Zatím tu žádné příspěvky nejsou. Buďte první, kdo něco přidá do Komunity.";
+const INTRO_DEFAULT = "Diskuze diváků, reakce a doporučení.";
 const RULES_TEXT = "Kritika je vítaná. Výhrůžky, vulgarity, osobní údaje a spam mažeme.";
 
 function formatPostTime(value: string): string {
@@ -103,7 +102,7 @@ function mergePostList(current: WallPost[], incoming: WallPost[]): WallPost[] {
 export function WallBoard({
   videoId = null,
   videoTitle = null,
-  heading = "Zeď diváků",
+  heading = "Komunita",
   intro = INTRO_DEFAULT,
   compact = false,
   showHero = true,
@@ -155,7 +154,7 @@ export function WallBoard({
         () => {
           // Po přihlášení uživatel znovu odešle vzkaz.
         },
-        { reason: "Přihlaste se zdarma a připněte vzkaz na Zeď." }
+        { reason: "Přihlaste se zdarma a přidejte příspěvek do Komunity." }
       );
       return;
     }
@@ -180,7 +179,7 @@ export function WallBoard({
       }
 
       if (payload.status === "approved") {
-        setSubmitInfo("Děkujeme. Váš vzkaz je na Zdi.");
+        setSubmitInfo("Děkujeme. Váš příspěvek je v Komunitě.");
         setPosts((prev) => mergePostList(prev, [payload.post]));
       } else {
         setSubmitInfo("Děkujeme. Váš vzkaz čeká na schválení.");
@@ -200,7 +199,7 @@ export function WallBoard({
         () => {
           // Po přihlášení uživatel může reagovat.
         },
-        { reason: "Přihlaste se zdarma a reagujte na příspěvky na Zdi." }
+        { reason: "Přihlaste se zdarma a reagujte na příspěvky v Komunitě." }
       );
       return;
     }
@@ -293,7 +292,7 @@ export function WallBoard({
 
         {!isAuthenticated ? (
           <div className="mb-3 rounded-lg border border-[rgba(255,106,0,0.25)] bg-[rgba(255,106,0,0.08)] px-3 py-3 text-sm text-abj-text1">
-            Interakce na Zdi (přidání, reakce, nahlášení) jsou dostupné pouze po přihlášení.
+            Interakce v Komunitě (přidání, reakce, nahlášení) jsou dostupné pouze po přihlášení.
             <button
               type="button"
               className="ml-3 inline-flex rounded-md border border-[#FF6A00] bg-[#FF6A00] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-white hover:bg-[#e35f00]"
@@ -302,7 +301,7 @@ export function WallBoard({
                   () => {
                     // Po přihlášení může uživatel pokračovat.
                   },
-                  { reason: "Přihlaste se zdarma a zapojte se do diskuse na Zdi." }
+                  { reason: "Přihlaste se zdarma a zapojte se do diskuse v Komunitě." }
                 )
               }
             >
@@ -372,7 +371,7 @@ export function WallBoard({
             aria-disabled={!isAuthenticated}
             className="rounded-lg border border-[#FF6A00] bg-[#FF6A00] px-4 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-white disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {submitting ? "Odesílám..." : !isAuthenticated ? "Přihlásit pro přidání" : "Připnout na Zeď"}
+            {submitting ? "Odesílám..." : !isAuthenticated ? "Přihlásit pro přidání" : "Přidat do Komunity"}
           </button>
           <span className="text-xs text-abj-text2">{body.trim().length}/1500</span>
         </div>
@@ -429,7 +428,7 @@ export function WallBoard({
                 {post.video_id ? (
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <span className="inline-flex rounded-full border border-[rgba(255,106,0,0.3)] bg-[rgba(255,106,0,0.08)] px-2 py-0.5 text-[11px] font-medium text-[#FF6A00]">
-                      Reakce na video: {post.video_title ?? post.video_id}
+                      Reakce na video: {post.video_title ?? "Video bez názvu"}
                     </span>
                     <Link
                       href={`/live?videoId=${encodeURIComponent(post.video_id)}`}
