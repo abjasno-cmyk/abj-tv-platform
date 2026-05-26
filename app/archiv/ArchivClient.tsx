@@ -623,9 +623,10 @@ type ArchiveVideoCardProps = {
   variant?: "hero" | "featured" | "compact";
   tag?: string;
   accent?: boolean;
+  editorial?: boolean;
 };
 
-function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: ArchiveVideoCardProps) {
+function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, editorial = false }: ArchiveVideoCardProps) {
   const videoId = getEffectiveVideoId(video);
   const [expanded, setExpanded] = useState(false);
   const [startedPlayback, setStartedPlayback] = useState(false);
@@ -637,6 +638,7 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: A
   const isHero = variant === "hero";
   const isFeatured = variant === "featured";
   const isCompact = variant === "compact";
+  const compactEditorial = isCompact && editorial;
   const durationLabel = formatDurationLabel(video.duration_seconds);
   const aspect = getVideoAspectRatio(video);
   const isPortrait = aspect === "portrait";
@@ -648,8 +650,10 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: A
 
   return (
     <article
-      className={`group block overflow-hidden border bg-white transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ED742F]/45 ${
-        isCompact
+      className={`group block overflow-hidden border bg-white transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 ${
+        compactEditorial ? "focus-visible:ring-[#ED742F]/45" : "focus-visible:ring-[#FF6A00]/60"
+      } ${
+        compactEditorial
           ? "rounded-[20px] border-[rgba(17,17,17,0.14)]"
           : `rounded-2xl ${
               accent
@@ -659,7 +663,7 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: A
       } ${
         isDisabled
           ? "cursor-default opacity-70"
-          : isCompact
+          : compactEditorial
             ? "hover:border-[#ED742F]/45"
             : "hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(17,17,17,0.12)]"
       }`}
@@ -676,7 +680,7 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: A
           }
         }}
       >
-        <div className={`relative overflow-hidden bg-[#F2F2F2] ${mediaRatioClass} ${isCompact ? "rounded-none" : ""}`}>
+        <div className={`relative overflow-hidden bg-[#F2F2F2] ${mediaRatioClass} ${compactEditorial ? "rounded-none" : ""}`}>
           <Image
             src={thumbnailSrc}
             alt={video.title}
@@ -688,16 +692,18 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: A
                 ? "(max-width: 1024px) 100vw, 66vw"
                 : isFeatured
                   ? "(max-width: 1024px) 100vw, 33vw"
-                  : "(max-width: 768px) 100vw, (max-width: 1280px) 68vw, 48vw"
+                  : compactEditorial
+                    ? "(max-width: 768px) 100vw, (max-width: 1280px) 68vw, 48vw"
+                    : "(max-width: 768px) 100vw, (max-width: 1400px) 33vw, 25vw"
             }
             unoptimized={thumbnailSrc.startsWith("http")}
           />
-          {tag && !isCompact ? (
+          {tag && !compactEditorial ? (
             <span className="absolute left-2 top-2 rounded-full border border-[#FF6A00]/35 bg-white/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#C14900]">
               {tag}
             </span>
           ) : null}
-          {durationLabel && !isCompact ? (
+          {durationLabel && !compactEditorial ? (
             <span className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-[10px] font-medium text-white">
               {durationLabel}
             </span>
@@ -714,15 +720,15 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: A
         </div>
 
         {!isHero ? (
-          <div className={isCompact ? "space-y-2 px-4 py-4 sm:px-5" : isFeatured ? "space-y-1.5 p-3.5" : "space-y-1 p-3"}>
+          <div className={compactEditorial ? "space-y-2 px-4 py-4 sm:px-5" : isFeatured ? "space-y-1.5 p-3.5" : "space-y-1 p-3"}>
             <p
               className={`line-clamp-2 text-abj-text1 ${
-                isCompact ? "text-[clamp(1.02rem,1.6vw,1.18rem)] font-semibold leading-snug" : isFeatured ? "text-[15px] font-semibold leading-snug" : "text-sm font-medium"
+                compactEditorial ? "text-[clamp(1.02rem,1.6vw,1.18rem)] font-semibold leading-snug" : isFeatured ? "text-[15px] font-semibold leading-snug" : "text-sm font-medium"
               }`}
             >
               {video.title}
             </p>
-            {isCompact ? (
+            {compactEditorial ? (
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-abj-text2">
                 <span className="truncate font-medium">{video.channel}</span>
                 {publishedLabel ? <span className="text-abj-text3">{publishedLabel}</span> : null}
@@ -733,8 +739,8 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: A
                 {publishedLabel ? <p className="text-[11px] text-abj-text3">{publishedLabel}</p> : null}
               </>
             )}
-            <p className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${isCompact ? "text-[#ED742F]" : "text-[#C14900]"}`}>
-              {expanded ? "Skrýt video" : "Zobrazit detail"}
+            <p className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${compactEditorial ? "text-[#ED742F]" : "text-[#C14900]"}`}>
+              {expanded ? "Skrýt video" : compactEditorial ? "Zobrazit detail" : "Rozkliknout video"}
             </p>
           </div>
         ) : null}
@@ -743,18 +749,22 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: A
       {expanded ? (
         <div
           className={`space-y-2 border-t p-3 ${
-            isCompact
+            compactEditorial
               ? "border-[rgba(17,17,17,0.12)] bg-[rgba(237,116,47,0.05)] sm:p-4"
               : "border-[var(--abj-gold-dim)] bg-[rgba(255,106,0,0.03)]"
           }`}
         >
           {embedUrl ? (
-            <div className={`overflow-hidden rounded-lg bg-black ${isCompact ? "border border-[#ED742F]/30" : "border border-[rgba(255,106,0,0.25)]"}`}>
+            <div
+              className={`overflow-hidden rounded-lg bg-black ${
+                compactEditorial ? "border border-[#ED742F]/30" : "border border-[rgba(255,106,0,0.25)]"
+              }`}
+            >
               {!startedPlayback ? (
                 <button
                   type="button"
                   className={`flex aspect-video w-full items-center justify-center ${
-                    isCompact
+                    compactEditorial
                       ? "bg-[radial-gradient(circle_at_center,rgba(237,116,47,0.22),rgba(0,0,0,0.84))]"
                       : "bg-[radial-gradient(circle_at_center,rgba(255,106,0,0.22),rgba(0,0,0,0.8))]"
                   }`}
@@ -762,7 +772,7 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: A
                 >
                   <span
                     className={`rounded-full bg-[rgba(255,255,255,0.1)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white ${
-                      isCompact ? "border border-[#ED742F]/60" : "border border-[rgba(255,106,0,0.4)]"
+                      compactEditorial ? "border border-[#ED742F]/60" : "border border-[rgba(255,106,0,0.4)]"
                     }`}
                   >
                     Přehrát video
@@ -1135,7 +1145,7 @@ function VideoGrid({ title, subtitle, videos, loading, emptyMessage, editorialMo
               <div>
                 <a
                   href="#videa-editorial-feed"
-                  className="inline-flex min-h-11 items-center rounded-full border border-[#ED742F] bg-[#ED742F] px-5 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-[#d86625]"
+                  className="inline-flex min-h-11 items-center rounded-full border border-[#ED742F] bg-[#ED742F] px-5 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-white transition hover:opacity-90"
                 >
                   Zjistit více
                 </a>
@@ -1166,7 +1176,13 @@ function VideoGrid({ title, subtitle, videos, loading, emptyMessage, editorialMo
                   </div>
                   <div className="grid gap-7 xl:grid-cols-2">
                     {group.videos.map((video) => (
-                      <ArchiveVideoCard key={`grid-${group.key}-${videoUniqKey(video)}`} video={video} variant="compact" accent={isAbjChannel(video.channel)} />
+                      <ArchiveVideoCard
+                        key={`grid-${group.key}-${videoUniqKey(video)}`}
+                        video={video}
+                        variant="compact"
+                        accent={isAbjChannel(video.channel)}
+                        editorial
+                      />
                     ))}
                   </div>
                 </section>
