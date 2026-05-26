@@ -650,7 +650,7 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, edi
 
   return (
     <article
-      className={`group block overflow-hidden border bg-white transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 ${
+      className={`group block overflow-hidden border bg-white transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 ${
         compactEditorial ? "focus-visible:ring-[#ED742F]/45" : "focus-visible:ring-[#FF6A00]/60"
       } ${
         compactEditorial
