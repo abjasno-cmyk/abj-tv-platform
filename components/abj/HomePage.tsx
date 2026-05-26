@@ -49,26 +49,7 @@ export function HomePage({
   reactionsSlot,
 }: HomePageProps) {
   return (
-    <section className="relative min-h-[calc(100vh-46px)] overflow-hidden bg-[#F6F3EE] pb-10 pt-5 text-abj-text1">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-[250px] bg-[radial-gradient(circle_at_top,rgba(237,116,47,0.13)_0%,rgba(246,243,238,0)_72%)]"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -left-20 top-[16vh] h-64 w-64 rounded-full bg-[rgba(237,116,47,0.08)]"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute right-[-120px] top-[54vh] h-80 w-80 rounded-full border border-[rgba(237,116,47,0.18)]"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-6 hidden -translate-x-1/2 select-none font-[var(--font-serif)] text-[clamp(70px,17vw,210px)] font-black uppercase leading-none text-black/[0.035] md:block"
-      >
-        VEROX
-      </div>
-
+    <section className="relative min-h-[calc(100vh-46px)] bg-white pb-10 pt-5 text-abj-text1">
       <div className="relative z-[2] mx-auto flex w-full max-w-[1320px] flex-col gap-6 px-4 sm:px-6 lg:px-10">
         <div id="live-player-section" className="order-1">
           <LivePlayer
