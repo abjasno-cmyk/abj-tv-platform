@@ -180,29 +180,31 @@ export function Timeline({ days, onSelect }: TimelineProps) {
   }, [activeDay?.date, currentSlot, updateScrollState]);
 
   return (
-    <section className="rounded-[30px] border border-[rgba(17,17,17,0.1)] bg-white px-5 py-4 shadow-[0_16px_35px_rgba(17,17,17,0.08)]">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-abj-text2">Timeline</p>
-        <div className="flex items-center gap-3">
+    <section className="rounded-[32px] border border-[#1E222B] bg-[linear-gradient(180deg,#191D25_0%,#101218_100%)] px-5 py-5 shadow-[0_20px_40px_rgba(17,17,17,0.25)]">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/60">Timeline</p>
+          <p className="mt-1 text-sm font-semibold text-white">{dateLabel}</p>
+        </div>
+        <div className="flex items-center gap-2">
           {currentSlot ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(237,116,47,0.12)] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#A5491D]">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(237,116,47,0.18)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#FFDCC7]">
               <span className="h-2 w-2 rounded-full bg-[#ED742F]" />
               Teď běží
             </span>
           ) : null}
-          <p className="min-w-[165px] text-center text-sm font-semibold text-abj-text1">{dateLabel}</p>
         </div>
       </div>
 
       <div
         ref={timelineScrollRef}
-        className="-mx-1 overflow-x-auto rounded-[22px] border border-[rgba(17,17,17,0.1)] bg-[#FCFAF7] p-3"
+        className="-mx-1 overflow-x-auto rounded-[24px] border border-white/10 bg-[rgba(255,255,255,0.03)] p-3"
       >
         <div className="relative">
-          <div className="pointer-events-none absolute left-2 right-2 top-[34px] h-px bg-[rgba(237,116,47,0.25)]" />
-          <div className="relative flex min-w-max gap-3 pt-2">
+          <div className="pointer-events-none absolute left-3 right-3 top-[40px] h-[2px] bg-[rgba(237,116,47,0.28)]" />
+          <div className="relative flex min-w-max gap-3 pt-3">
             {items.length === 0 ? (
-              <p className="px-2 py-4 text-sm text-abj-text2">Program se připravuje.</p>
+              <p className="px-2 py-4 text-sm text-white/70">Program se připravuje.</p>
             ) : (
               items.map((item, idx) => {
                 const key = itemKey(item, idx);
@@ -219,22 +221,27 @@ export function Timeline({ days, onSelect }: TimelineProps) {
                       setSelectedKey(key);
                       onSelect(item);
                     }}
-                    className={`group flex min-h-[138px] w-[168px] flex-col justify-between rounded-[20px] border p-4 text-left transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ED742F]/45 ${itemTone(
+                    className={`group flex min-h-[152px] w-[184px] flex-col justify-between rounded-[20px] border p-4 text-left transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ED742F]/50 ${itemTone(
                       item,
                       active,
                       isCurrentTime
                     )}`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-extrabold tracking-[0.08em]">{item.time}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${active ? "bg-white/20 text-white" : "bg-[rgba(17,17,17,0.06)] text-current"}`}>
+                      <span className="text-[12px] font-black tracking-[0.08em]">{item.time}</span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${
+                          active ? "bg-white/20 text-white" : "bg-black/10 text-current"
+                        }`}
+                      >
                         {typeLabel(item)}
                       </span>
                     </div>
+
                     <div>
-                      <p className="line-clamp-2 text-sm font-semibold leading-tight text-current">{item.title}</p>
+                      <p className="line-clamp-3 text-[14px] font-semibold leading-tight text-current">{item.title}</p>
                       {isCurrentTime ? (
-                        <div className="mt-2 h-1.5 w-full rounded-full bg-[rgba(237,116,47,0.2)]">
+                        <div className="mt-2 h-1.5 w-full rounded-full bg-[rgba(237,116,47,0.25)]">
                           <div
                             className="h-full rounded-full bg-[#ED742F] transition-[width] duration-500"
                             style={{ width: `${currentSlot?.progressPct ?? 0}%` }}
@@ -242,6 +249,7 @@ export function Timeline({ days, onSelect }: TimelineProps) {
                         </div>
                       ) : null}
                     </div>
+
                     <div className="flex items-center justify-between">
                       <span
                         className={`h-4 w-4 rounded-full border transition ${
@@ -253,7 +261,7 @@ export function Timeline({ days, onSelect }: TimelineProps) {
                         }`}
                         aria-hidden="true"
                       />
-                      <span className={`text-[10px] font-semibold uppercase tracking-[0.08em] ${active ? "text-white/85" : "text-abj-text3"}`}>
+                      <span className={`text-[10px] font-semibold uppercase tracking-[0.08em] ${active ? "text-white/85" : "text-current/70"}`}>
                         detail
                       </span>
                     </div>
@@ -265,7 +273,7 @@ export function Timeline({ days, onSelect }: TimelineProps) {
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-3">
+      <div className="mt-4 flex items-center gap-3">
         <button
           type="button"
           onClick={() => {
@@ -274,7 +282,7 @@ export function Timeline({ days, onSelect }: TimelineProps) {
             container.scrollBy({ left: -260, behavior: "smooth" });
           }}
           disabled={!canScrollTimeline || !canScrollLeft}
-          className="min-h-10 rounded-full border border-[rgba(17,17,17,0.22)] bg-white px-3 py-1 text-xs font-semibold text-abj-text2 transition enabled:hover:border-[#ED742F] enabled:hover:text-[#A5491D] disabled:cursor-not-allowed disabled:opacity-40"
+          className="min-h-10 rounded-full border border-white/20 bg-black/20 px-3 py-1 text-xs font-semibold text-white/80 transition enabled:hover:border-[#ED742F] enabled:hover:text-[#FFDCC7] disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="Posunout timeline doleva"
         >
           ←
@@ -304,7 +312,7 @@ export function Timeline({ days, onSelect }: TimelineProps) {
             container.scrollBy({ left: 260, behavior: "smooth" });
           }}
           disabled={!canScrollTimeline || !canScrollRight}
-          className="min-h-10 rounded-full border border-[rgba(17,17,17,0.22)] bg-white px-3 py-1 text-xs font-semibold text-abj-text2 transition enabled:hover:border-[#ED742F] enabled:hover:text-[#A5491D] disabled:cursor-not-allowed disabled:opacity-40"
+          className="min-h-10 rounded-full border border-white/20 bg-black/20 px-3 py-1 text-xs font-semibold text-white/80 transition enabled:hover:border-[#ED742F] enabled:hover:text-[#FFDCC7] disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="Posunout timeline doprava"
         >
           →

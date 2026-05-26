@@ -116,16 +116,19 @@ export function CommentsSection({ entityType, entityId, heading = "Diskuse divá
   };
 
   return (
-    <section className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-4 shadow-[0_8px_22px_rgba(17,17,17,0.08)] sm:p-5">
+    <section className="rounded-[30px] border border-[rgba(17,17,17,0.12)] bg-white p-4 shadow-[0_16px_35px_rgba(17,17,17,0.08)] sm:p-5">
       <header className="mb-3 flex items-center justify-between gap-3">
-        <h3 className="text-lg font-extrabold tracking-tight text-abj-text1">{heading}</h3>
-        <span className="rounded-full bg-[rgba(255,106,0,0.1)] px-3 py-1 text-xs font-semibold text-[#B04A00]">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-abj-text2">Reakce diváků</p>
+          <h3 className="mt-1 text-lg font-black tracking-tight text-abj-text1">{heading}</h3>
+        </div>
+        <span className="rounded-full border border-[#ED742F]/35 bg-[rgba(237,116,47,0.1)] px-3 py-1 text-xs font-semibold text-[#A5491D]">
           {comments.length} komentářů
         </span>
       </header>
 
       {!isAuthenticated ? (
-        <div className="mb-4 rounded-xl border border-[rgba(255,106,0,0.25)] bg-[rgba(255,106,0,0.08)] px-3 py-3 text-sm text-abj-text1">
+        <div className="mb-4 rounded-2xl border border-[rgba(237,116,47,0.3)] bg-[rgba(237,116,47,0.1)] px-4 py-3 text-sm text-abj-text1">
           <p>Zapojte se do diskuse. Přihlášení je zdarma.</p>
           <button
             type="button"
@@ -139,7 +142,7 @@ export function CommentsSection({ entityType, entityId, heading = "Diskuse divá
                 }
               )
             }
-            className="mt-2 inline-flex min-h-10 items-center rounded-full border border-[#FF6A00] bg-[#FF6A00] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white hover:bg-[#e35f00]"
+            className="mt-2 inline-flex min-h-10 items-center rounded-full border border-[#ED742F] bg-[#ED742F] px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white hover:bg-[#d86625]"
           >
             Přihlásit zdarma
           </button>
@@ -147,14 +150,14 @@ export function CommentsSection({ entityType, entityId, heading = "Diskuse divá
       ) : null}
 
       {isAuthenticated ? (
-        <div className="mb-4 rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel p-3">
+        <div className="mb-4 rounded-2xl border border-[rgba(17,17,17,0.12)] bg-[#FCFAF7] p-3">
           <textarea
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             rows={3}
             maxLength={2000}
             placeholder="Napište komentář..."
-            className="w-full resize-y rounded-lg border border-[var(--abj-gold-dim)] bg-white px-3 py-2 text-sm text-abj-text1 outline-none focus:border-[#FF6A00]"
+            className="w-full resize-y rounded-xl border border-[rgba(17,17,17,0.14)] bg-white px-3 py-2 text-sm text-abj-text1 outline-none focus:border-[#ED742F]"
           />
           <div className="mt-2 flex items-center justify-between gap-3">
             <span className="text-xs text-abj-text2">{draft.trim().length}/2000</span>
@@ -164,7 +167,7 @@ export function CommentsSection({ entityType, entityId, heading = "Diskuse divá
               onClick={() => {
                 void addComment();
               }}
-              className="inline-flex min-h-10 items-center rounded-full border border-[#FF6A00] bg-[#FF6A00] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white disabled:opacity-60"
+              className="inline-flex min-h-10 items-center rounded-full border border-[#ED742F] bg-[#ED742F] px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white disabled:opacity-60"
             >
               {saving ? "Ukládám..." : "Přidat komentář"}
             </button>
@@ -181,7 +184,7 @@ export function CommentsSection({ entityType, entityId, heading = "Diskuse divá
       ) : (
         <div className="space-y-3">
           {comments.map((comment) => (
-            <article key={comment.id} className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel p-3">
+            <article key={comment.id} className="rounded-2xl border border-[rgba(17,17,17,0.12)] bg-[#FCFAF7] p-3">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-semibold text-abj-text1">{comment.authorName}</p>
                 <p className="text-xs text-abj-text2">{formatCommentDate(comment.createdAt)}</p>
