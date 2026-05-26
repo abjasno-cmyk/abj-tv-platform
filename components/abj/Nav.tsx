@@ -111,21 +111,21 @@ export function ABJNav() {
           isVisible ? "translate-y-0" : "-translate-y-[calc(100%-10px)]"
         }`}
       >
-        <header className="border-b border-[rgba(17,17,17,0.14)] bg-white px-4 md:px-5 shadow-[0_6px_18px_rgba(17,17,17,0.08)]">
-          <div className="flex h-[58px] items-center gap-4">
+        <header className="border-b border-[rgba(17,17,17,0.12)] bg-white/95 px-4 backdrop-blur-md md:px-6 shadow-[0_10px_24px_rgba(17,17,17,0.06)]">
+          <div className="flex h-[62px] items-center gap-4">
             <div className="flex min-w-0 items-center">
               <Link
                 href="/live"
                 className="relative z-10 inline-flex items-center"
                 aria-label="Přejít na stránku Živě"
               >
-                <p className="font-[var(--font-serif)] text-[24px] font-extrabold tracking-[0.03em] text-abj-text1">
+                <p className="font-[var(--font-serif)] text-[30px] font-black tracking-[0.02em] text-abj-text1 leading-none">
                   VEROX
                 </p>
-                <span className="absolute -right-2 top-0 h-2 w-2 rounded-full bg-abj-red" />
+                <span className="absolute -right-2 top-0 h-3 w-3 rounded-full bg-[#ED742F]" />
               </Link>
-              <nav className="ml-[18px] hidden md:block">
-                <ul className="flex items-center gap-[22px]">
+              <nav className="ml-[20px] hidden md:block">
+                <ul className="flex items-center gap-[18px]">
                   {navLinks.map((link) => {
                     const isActive = activeHref === link.href;
                     return (
@@ -138,9 +138,9 @@ export function ABJNav() {
                               openMyVeroxLoginModal();
                             }
                           }}
-                          className={`border-b-[2px] pb-1 font-[var(--font-sans)] text-[12px] tracking-[0.06em] transition-colors ${
+                          className={`border-b-[2px] pb-1.5 font-[var(--font-sans)] text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${
                             isActive
-                              ? "border-abj-red text-abj-text1"
+                              ? "border-[#ED742F] text-[#C8521A]"
                               : "border-transparent text-abj-text2 hover:text-abj-text1"
                           }`}
                         >
@@ -153,8 +153,8 @@ export function ABJNav() {
               </nav>
             </div>
             <div className="pointer-events-none hidden flex-1 justify-center px-3 lg:flex">
-              <p className="truncate whitespace-nowrap rounded bg-white/90 px-2 font-[var(--font-sans)] text-[12px] font-semibold tracking-[0.08em] text-abj-text2">
-                VEROX - MAINSTREAMOVÝ DETOX
+              <p className="truncate whitespace-nowrap rounded-full border border-[rgba(17,17,17,0.08)] bg-[rgba(249,246,241,0.9)] px-3 py-1 font-[var(--font-sans)] text-[10px] font-semibold uppercase tracking-[0.14em] text-abj-text2">
+                VEROX · MAINSTREAMOVÝ DETOX
               </p>
             </div>
 
@@ -178,8 +178,8 @@ export function ABJNav() {
                 <ReplitHealthBadge />
               </div>
               <div className="hidden items-center gap-2 sm:flex">
-                <span className="h-1.5 w-1.5 animate-[blink_2s_ease-in-out_infinite] rounded-full bg-abj-red" />
-                <span className="font-[var(--font-sans)] text-[10px] uppercase tracking-[0.12em] text-abj-red">
+                <span className="h-1.5 w-1.5 animate-[blink_2s_ease-in-out_infinite] rounded-full bg-[#ED742F]" />
+                <span className="font-[var(--font-sans)] text-[10px] font-semibold uppercase tracking-[0.14em] text-[#ED742F]">
                   Živě
                 </span>
               </div>
@@ -187,7 +187,7 @@ export function ABJNav() {
                 <div className="hidden items-center gap-2 sm:flex">
                   <Link
                     href="/muj-verox"
-                    className="inline-flex min-h-9 items-center rounded-full border border-[rgba(17,17,17,0.16)] bg-white px-3 py-1.5 text-xs font-semibold text-abj-text1 hover:border-[#FF6A00] hover:text-[#B04A00]"
+                    className="inline-flex min-h-9 items-center rounded-full border border-[rgba(17,17,17,0.16)] bg-white px-3 py-1.5 text-xs font-semibold text-abj-text1 hover:border-[#ED742F] hover:text-[#A5491D]"
                   >
                     {profile?.display_name ? `Můj Verox · ${profile.display_name}` : "Můj Verox"}
                   </Link>
@@ -196,7 +196,7 @@ export function ABJNav() {
                     onClick={() => {
                       void signOut();
                     }}
-                    className="inline-flex min-h-9 items-center rounded-full border border-[rgba(17,17,17,0.16)] px-3 py-1.5 text-xs font-semibold text-abj-text2 hover:border-[#FF6A00] hover:text-abj-text1"
+                    className="inline-flex min-h-9 items-center rounded-full border border-[rgba(17,17,17,0.16)] px-3 py-1.5 text-xs font-semibold text-abj-text2 hover:border-[#ED742F] hover:text-abj-text1"
                   >
                     Odhlásit
                   </button>
@@ -209,7 +209,7 @@ export function ABJNav() {
                       reason: "Komentujte, lajkujte a pokračujte tam, kde jste skončili.",
                     })
                   }
-                  className="hidden min-h-9 items-center rounded-full border border-[#FF6A00] bg-[#FF6A00] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-white hover:bg-[#e35f00] sm:inline-flex"
+                  className="hidden min-h-9 items-center rounded-full border border-[#ED742F] bg-[#ED742F] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-white hover:bg-[#d86625] sm:inline-flex"
                 >
                   Přihlásit zdarma
                 </button>
@@ -237,8 +237,8 @@ export function ABJNav() {
                         }}
                         className={`block rounded-lg px-3 py-2 text-sm font-semibold transition ${
                           isActive
-                            ? "bg-[rgba(255,106,0,0.1)] text-[#FF6A00]"
-                            : "text-abj-text2 hover:bg-[rgba(255,106,0,0.1)] hover:text-abj-text1"
+                            ? "bg-[rgba(237,116,47,0.12)] text-[#C8521A]"
+                            : "text-abj-text2 hover:bg-[rgba(237,116,47,0.1)] hover:text-abj-text1"
                         }`}
                       >
                         {link.label}
@@ -277,7 +277,7 @@ export function ABJNav() {
                       });
                       setMobileOpen(false);
                     }}
-                    className="w-full rounded-lg border border-[#FF6A00] bg-[#FF6A00] px-3 py-2 text-sm font-semibold text-white"
+                    className="w-full rounded-lg border border-[#ED742F] bg-[#ED742F] px-3 py-2 text-sm font-semibold text-white"
                   >
                     Přihlásit zdarma
                   </button>

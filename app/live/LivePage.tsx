@@ -202,7 +202,7 @@ export default function LivePage({
   );
 
   return (
-    <section data-ui-version="abj-geometric-v3" className="min-h-screen bg-abj-main text-abj-text1">
+    <section data-ui-version="abj-geometric-v3" className="min-h-screen bg-[#F6F3EE] text-abj-text1">
       <HomePage
         days={safeEpg}
         channels={channels}
@@ -277,10 +277,10 @@ export default function LivePage({
         }}
         engagementSlot={
           videoId ? (
-            <section className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-4 shadow-[0_8px_20px_rgba(17,17,17,0.08)]">
+            <section className="rounded-[24px] border border-[rgba(17,17,17,0.12)] bg-white p-4 shadow-[0_10px_24px_rgba(17,17,17,0.08)]">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.12em] text-abj-text2">Váš bezplatný divácký účet</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-abj-text2">Váš bezplatný divácký účet</p>
                   <p className="text-sm text-abj-text1">Komentujte, lajkujte a pokračujte tam, kde jste skončili.</p>
                 </div>
                 <LikeButton entityType="video" entityId={videoId} />
@@ -314,9 +314,9 @@ export default function LivePage({
           });
         }}
       />
-      <div className="mx-auto w-full max-w-[1200px] space-y-6 px-4 pb-8 sm:px-6 lg:px-10">
+      <div className="mx-auto w-full max-w-[1320px] space-y-6 px-4 pb-10 sm:px-6 lg:px-10">
         <div className="space-y-2">
-          <p className="text-[11px] uppercase tracking-[0.12em] text-abj-text2">Komunita</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-abj-text2">Komunita</p>
           <ChatPanel />
         </div>
       </div>

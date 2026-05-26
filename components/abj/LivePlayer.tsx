@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import YouTube, { type YouTubeProps } from "react-youtube";
 
 type LivePlayerProps = {
@@ -25,6 +25,15 @@ type FullscreenElement = HTMLElement & {
 type FullscreenDocument = Document & {
   webkitFullscreenElement?: Element | null;
   webkitExitFullscreen?: () => Promise<void> | void;
+};
+
+type YouTubePlayerHandle = {
+  getCurrentTime: () => number;
+  getDuration: () => number;
+  playVideo?: () => void;
+  pauseVideo?: () => void;
+  mute?: () => void;
+  unMute?: () => void;
 };
 
 function readFullscreenElement(doc: FullscreenDocument): Element | null {
@@ -66,14 +75,12 @@ export function LivePlayer({
   onPlaybackSample,
 }: LivePlayerProps) {
   const playerShellRef = useRef<HTMLElement | null>(null);
-  const youtubePlayerRef = useRef<{
-    getCurrentTime: () => number;
-    getDuration: () => number;
-  } | null>(null);
-  const [manualUnmuteVideoId, setManualUnmuteVideoId] = useState<string | null>(null);
+  const youtubePlayerRef = useRef<YouTubePlayerHandle | null>(null);
+  const [mutedByVideoId, setMutedByVideoId] = useState<Record<string, boolean>>({});
+  const [pausedByVideoId, setPausedByVideoId] = useState<Record<string, boolean>>({});
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const isMuted = manualUnmuteVideoId !== videoId;
-  const showUnmuteButton = Boolean(videoId) && isMuted;
+  const isMuted = videoId ? (mutedByVideoId[videoId] ?? true) : true;
+  const isPaused = videoId ? (pausedByVideoId[videoId] ?? false) : false;
   const offsetSeconds = Math.max(0, Math.floor(startSeconds));
   const clampedProgress = Math.max(0, Math.min(100, progressPercent));
 
@@ -123,27 +130,69 @@ export function LivePlayer({
         start: offsetSeconds,
         rel: 0,
         modestbranding: 1,
+        controls: 1,
       },
     }),
     [isMuted, offsetSeconds]
   );
 
+  const toggleFullscreen = useCallback(async () => {
+    const doc = document as FullscreenDocument;
+    try {
+      if (readFullscreenElement(doc)) {
+        await exitFullscreenFor(doc);
+        return;
+      }
+      const element = playerShellRef.current as FullscreenElement | null;
+      if (!element) return;
+      await requestFullscreenFor(element);
+    } catch (error) {
+      console.warn("live-player-fullscreen-toggle-failed", error);
+    }
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    if (!videoId) return;
+    const nextMuted = !isMuted;
+    setMutedByVideoId((prev) => ({ ...prev, [videoId]: nextMuted }));
+    const player = youtubePlayerRef.current;
+    if (!player) return;
+    if (nextMuted) {
+      player.mute?.();
+    } else {
+      player.unMute?.();
+    }
+  }, [isMuted, videoId]);
+
+  const togglePause = useCallback(() => {
+    if (!videoId) return;
+    const player = youtubePlayerRef.current;
+    if (!player) return;
+    if (isPaused) {
+      player.playVideo?.();
+      setPausedByVideoId((prev) => ({ ...prev, [videoId]: false }));
+      return;
+    }
+    player.pauseVideo?.();
+    setPausedByVideoId((prev) => ({ ...prev, [videoId]: true }));
+  }, [isPaused, videoId]);
+
   return (
     <section
       id="live-player-shell"
       ref={playerShellRef}
-      className="relative overflow-hidden rounded-[28px] border border-[rgba(17,17,17,0.1)] bg-white shadow-[0_18px_45px_rgba(17,17,17,0.08)]"
+      className="relative overflow-hidden rounded-[32px] border border-[rgba(17,17,17,0.14)] bg-white shadow-[0_26px_55px_rgba(17,17,17,0.11)]"
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[rgba(255,106,0,0.14)]"
+        className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[rgba(237,116,47,0.2)]"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -bottom-28 left-1/3 h-56 w-56 rounded-full border border-[rgba(255,106,0,0.22)]"
+        className="pointer-events-none absolute -bottom-28 left-1/3 h-56 w-56 rounded-full border border-[rgba(237,116,47,0.22)]"
       />
 
-      <div className="relative aspect-video w-full overflow-hidden bg-[var(--abj-light)]">
+      <div className="relative aspect-video w-full overflow-hidden bg-[#0B0D10]">
         {videoId ? (
           <div className="abj-slow-zoom absolute inset-0">
             <YouTube
@@ -153,73 +202,107 @@ export function LivePlayer({
               iframeClassName="absolute inset-0 h-full w-full"
               opts={opts}
               onReady={(event) => {
-                youtubePlayerRef.current = event.target;
+                youtubePlayerRef.current = event.target as unknown as YouTubePlayerHandle;
+                if (isMuted) {
+                  youtubePlayerRef.current.mute?.();
+                } else {
+                  youtubePlayerRef.current.unMute?.();
+                }
               }}
             />
           </div>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="abj-dot-grid absolute inset-0 opacity-35" />
-            <div className="relative flex h-40 w-40 items-center justify-center rounded-full border border-[rgba(255,106,0,0.3)] bg-white">
-              <span className="h-5 w-5 rounded-full bg-[var(--abj-red)]" />
+            <div className="abj-dot-grid absolute inset-0 opacity-30" />
+            <div className="relative flex h-40 w-40 items-center justify-center rounded-full border border-[rgba(237,116,47,0.4)] bg-[rgba(255,255,255,0.9)]">
+              <span className="h-5 w-5 rounded-full bg-[#ED742F]" />
             </div>
           </div>
         )}
 
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,106,0,0.14)_0%,rgba(255,255,255,0)_45%,rgba(17,17,17,0.62)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.2)_0%,rgba(0,0,0,0.02)_42%,rgba(0,0,0,0.65)_100%)]" />
 
-        {showUnmuteButton ? (
-          <button
-            type="button"
-            onClick={() => {
-              setManualUnmuteVideoId(videoId);
-            }}
-            className="absolute right-4 top-4 rounded-full border border-white/45 bg-black/52 px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-black/62"
-          >
-            Zapnout zvuk
-          </button>
+        <div className="absolute left-4 top-4 z-10 space-y-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ED742F] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white">
+            <span className="abj-live-dot h-1.5 w-1.5 rounded-full bg-white" />
+            {isLive ? "Živě" : "Záznam"}
+          </span>
+          <p className="rounded-full bg-black/50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/90">
+            {channel}
+          </p>
+        </div>
+
+        <div className="absolute right-3 top-1/2 z-10 -translate-y-1/2">
+          <div className="flex flex-col items-center gap-2 rounded-[18px] border border-white/20 bg-black/45 p-2 backdrop-blur-sm">
+            <button
+              type="button"
+              onClick={() => {
+                void toggleFullscreen();
+              }}
+              aria-label={isFullscreen ? "Ukončit režim celé obrazovky" : "Přepnout celou obrazovku"}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/40 text-lg text-white transition hover:border-[#ED742F] hover:text-[#ED742F]"
+            >
+              {isFullscreen ? "⤡" : "⛶"}
+            </button>
+            <button
+              type="button"
+              onClick={toggleMute}
+              aria-label={isMuted ? "Zapnout zvuk" : "Vypnout zvuk"}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/40 text-lg text-white transition hover:border-[#ED742F] hover:text-[#ED742F]"
+            >
+              {isMuted ? "🔇" : "🔊"}
+            </button>
+            <button
+              type="button"
+              onClick={togglePause}
+              aria-label={isPaused ? "Spustit přehrávání" : "Pozastavit přehrávání"}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/40 text-lg text-white transition hover:border-[#ED742F] hover:text-[#ED742F]"
+            >
+              {isPaused ? "▶" : "⏸"}
+            </button>
+          </div>
+        </div>
+
+        {offsetSeconds > 0 ? (
+          <span className="absolute bottom-4 left-4 z-10 rounded-full bg-black/50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/90">
+            +{String(Math.floor(offsetSeconds / 60)).padStart(2, "0")}:{String(offsetSeconds % 60).padStart(2, "0")}
+          </span>
         ) : null}
 
         {isFiller ? (
           <div className="pointer-events-none absolute inset-0">
             <div className="abj-dot-grid absolute inset-0 opacity-20" />
-            <span className="abj-soft-pulse absolute right-6 top-6 h-4 w-4 rounded-full bg-[var(--abj-red)]" />
-            <span className="abj-soft-pulse absolute bottom-6 left-6 h-3 w-3 rounded-full bg-[var(--abj-red)]" />
+            <span className="abj-soft-pulse absolute right-6 top-6 h-4 w-4 rounded-full bg-[#ED742F]" />
+            <span className="abj-soft-pulse absolute bottom-6 left-6 h-3 w-3 rounded-full bg-[#ED742F]" />
             <span className="absolute bottom-5 left-12 text-[11px] uppercase tracking-[0.16em] text-white/78">
-              ABJ mezi pořady
+              VEROX mezi pořady
             </span>
-            <span className="abj-circular-return absolute inset-0 bg-[rgba(255,106,0,0.12)]" />
+            <span className="abj-circular-return absolute inset-0 bg-[rgba(237,116,47,0.12)]" />
           </div>
         ) : null}
       </div>
 
-      <div className="relative z-10 flex flex-wrap items-end justify-between gap-6 px-6 py-6">
-        <div className="max-w-[78%]">
-          {isLive ? (
-            <span className="mb-3 inline-flex items-center gap-2 rounded-full bg-[var(--abj-red)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
-              <span className="abj-live-dot h-2 w-2 rounded-full bg-white" />
-              Live
-            </span>
-          ) : null}
-          <h1 className="text-[clamp(1.5rem,3vw,2.5rem)] font-[800] leading-[1.05] text-[var(--abj-text1)]">
+      <div className="relative z-10 grid gap-4 border-t border-[rgba(17,17,17,0.1)] bg-white px-5 py-5 md:grid-cols-[minmax(0,1fr)_240px] md:gap-6 md:px-6 md:py-6">
+        <div>
+          <h1 className="text-[clamp(1.35rem,2.7vw,2.45rem)] font-black leading-[1.06] text-[var(--abj-text1)]">
             {title}
           </h1>
-          <p className="mt-2 text-sm uppercase tracking-[0.1em] text-[var(--abj-text2)]">{channel}</p>
+          <p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--abj-text2)]">{channel}</p>
         </div>
 
-        <div className="min-w-[145px] space-y-2 rounded-2xl bg-[var(--abj-light)] p-3">
-          <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--abj-text2)]">zbývá</p>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-[rgba(17,17,17,0.12)]">
+        <div className="space-y-2 rounded-2xl border border-[#ED742F]/30 bg-[#FFF2EA] p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#A5491D]">zbývá</p>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-[rgba(237,116,47,0.2)]">
             <div
-              className="h-full rounded-full bg-[var(--abj-red)] transition-[width] duration-700 ease-out"
+              className="h-full rounded-full bg-[#ED742F] transition-[width] duration-700 ease-out"
               style={{ width: `${clampedProgress}%` }}
             />
           </div>
-          <p className="text-sm font-medium text-[var(--abj-text1)]">{remainingLabel}</p>
+          <p className="text-sm font-semibold text-[#111111]">{remainingLabel}</p>
         </div>
       </div>
 
-      <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(17,17,17,0.1)] bg-[rgba(249,246,241,0.85)] px-6 py-3">
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(17,17,17,0.1)] bg-[#F8F5F0] px-5 py-4 md:px-6">
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -227,18 +310,20 @@ export function LivePlayer({
             disabled={isLive}
             className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
               isLive
-                ? "cursor-default border-[var(--abj-red)] bg-[var(--abj-red)] text-white"
-                : "border-[var(--abj-red)] bg-white text-[var(--abj-red)] hover:bg-[rgba(255,106,0,0.1)]"
+                ? "cursor-default border-[#ED742F] bg-[#ED742F] text-white"
+                : "border-[#ED742F] bg-white text-[#A5491D] hover:bg-[rgba(237,116,47,0.1)]"
             }`}
           >
-            <span className="h-2 w-2 rounded-full bg-current" />
+            <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full ${isLive ? "bg-white/20" : "bg-[#ED742F] text-white"}`}>
+              ↺
+            </span>
             {isLive ? "Právě živě" : "Zpět na živé vysílání"}
           </button>
           {!isLive && continueFromSeconds !== null && continueFromSeconds > 30 ? (
             <button
               type="button"
               onClick={() => onContinueFromSaved?.(continueFromSeconds)}
-              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#FF6A00]/45 bg-[rgba(255,106,0,0.08)] px-4 py-2 text-sm font-semibold text-[#B04A00] hover:bg-[rgba(255,106,0,0.14)]"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#ED742F]/45 bg-[rgba(237,116,47,0.1)] px-4 py-2 text-sm font-semibold text-[#A5491D] hover:bg-[rgba(237,116,47,0.16)]"
             >
               Pokračovat od {Math.floor(continueFromSeconds / 60)
                 .toString()
@@ -247,34 +332,6 @@ export function LivePlayer({
             </button>
           ) : null}
         </div>
-
-        <button
-          type="button"
-          onClick={async () => {
-            const doc = document as FullscreenDocument;
-            try {
-              if (readFullscreenElement(doc)) {
-                await exitFullscreenFor(doc);
-                return;
-              }
-              const element = playerShellRef.current as FullscreenElement | null;
-              if (!element) return;
-              await requestFullscreenFor(element);
-            } catch (error) {
-              console.warn("live-player-fullscreen-toggle-failed", error);
-            }
-          }}
-          className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[rgba(17,17,17,0.24)] bg-white px-4 py-2 text-sm font-semibold text-abj-text1 transition hover:border-[#FF6A00] hover:text-[#C14900]"
-          aria-label={isFullscreen ? "Ukončit režim celé obrazovky" : "Zvětšit přehrávač na celou obrazovku"}
-        >
-          <span
-            aria-hidden="true"
-            className={`inline-block h-3.5 w-3.5 border border-current ${
-              isFullscreen ? "rounded-[1px] border-2" : "rounded-[2px]"
-            }`}
-          />
-          {isFullscreen ? "Ukončit celou obrazovku" : "Zvětšit na celou obrazovku"}
-        </button>
       </div>
     </section>
   );

@@ -49,21 +49,27 @@ export function HomePage({
   reactionsSlot,
 }: HomePageProps) {
   return (
-    <section className="relative min-h-[calc(100vh-46px)] overflow-hidden bg-abj-main pb-10 pt-5 text-abj-text1">
+    <section className="relative min-h-[calc(100vh-46px)] overflow-hidden bg-[#F6F3EE] pb-10 pt-5 text-abj-text1">
       <div
         aria-hidden="true"
-        className="abj-dot-grid pointer-events-none absolute inset-x-0 top-0 h-[45vh] opacity-[0.2]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[250px] bg-[radial-gradient(circle_at_top,rgba(237,116,47,0.13)_0%,rgba(246,243,238,0)_72%)]"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -left-20 top-[20vh] h-56 w-56 rounded-full bg-[var(--abj-red-dim)]"
+        className="pointer-events-none absolute -left-20 top-[16vh] h-64 w-64 rounded-full bg-[rgba(237,116,47,0.08)]"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute right-[-110px] top-[62vh] h-72 w-72 rounded-full border border-[var(--abj-gold-dim)]"
+        className="pointer-events-none absolute right-[-120px] top-[54vh] h-80 w-80 rounded-full border border-[rgba(237,116,47,0.18)]"
       />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-6 hidden -translate-x-1/2 select-none font-[var(--font-serif)] text-[clamp(70px,17vw,210px)] font-black uppercase leading-none text-black/[0.035] md:block"
+      >
+        VEROX
+      </div>
 
-      <div className="relative z-[2] mx-auto flex w-full max-w-[1200px] flex-col gap-10 px-4 sm:px-6 lg:px-10">
+      <div className="relative z-[2] mx-auto flex w-full max-w-[1320px] flex-col gap-6 px-4 sm:px-6 lg:px-10">
         <div id="live-player-section" className="order-1">
           <LivePlayer
             videoId={videoId}
@@ -81,20 +87,17 @@ export function HomePage({
           />
         </div>
 
-        <div id="live-reactions-section" className="order-2">
-          {reactionsSlot}
-        </div>
-
-        <div id="live-timeline-section" className="order-3">
+        <div id="live-timeline-section" className="order-2">
           <Timeline days={days} onSelect={onSelect} />
         </div>
 
-        <div id="live-engagement-section" className="order-4">
-          {engagementSlot}
+        <div id="live-channels-section" className="order-3">
+          <ChannelDirectory channels={channels} onSelectVideo={onSelectChannelVideo} />
         </div>
 
-        <div id="live-channels-section" className="order-5">
-          <ChannelDirectory channels={channels} onSelectVideo={onSelectChannelVideo} />
+        <div className="order-4 grid gap-6 xl:grid-cols-2">
+          <div id="live-reactions-section">{reactionsSlot}</div>
+          <div id="live-engagement-section">{engagementSlot}</div>
         </div>
       </div>
     </section>

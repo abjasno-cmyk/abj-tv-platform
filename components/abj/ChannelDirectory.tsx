@@ -72,7 +72,7 @@ function ChannelAvatar({ channelName, avatarUrl }: { channelName: string; avatar
   const showImage = Boolean(avatarUrl) && !imageFailed;
 
   return (
-    <span className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[rgba(17,17,17,0.16)] bg-[rgba(17,17,17,0.06)]">
+    <span className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[rgba(17,17,17,0.14)] bg-[rgba(255,255,255,0.9)] shadow-[0_4px_10px_rgba(17,17,17,0.08)]">
       {showImage ? (
         <Image
           src={avatarUrl!}
@@ -164,13 +164,13 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
   };
 
   return (
-    <section className="rounded-[26px] border border-abj-goldDim bg-abj-panel px-5 py-5 shadow-[0_12px_28px_rgba(17,17,17,0.06)]">
+    <section className="rounded-[30px] border border-[rgba(17,17,17,0.1)] bg-white px-5 py-5 shadow-[0_16px_35px_rgba(17,17,17,0.08)]">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h3 className="text-lg font-extrabold tracking-tight text-abj-text1">Kanály</h3>
-          <p className="text-xs uppercase tracking-[0.16em] text-abj-text2">Vyberte kanál a spusťte poslední videa</p>
+          <h3 className="text-xl font-black tracking-tight text-abj-text1">Kanály</h3>
+          <p className="text-[11px] uppercase tracking-[0.16em] text-abj-text2">Vyberte kanál a spusťte videa</p>
         </div>
-        <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-abj-text2">
+        <span className="rounded-full border border-[#ED742F]/35 bg-[rgba(237,116,47,0.1)] px-3 py-1 text-xs font-semibold text-[#A5491D]">
           {orderedChannels.length} kanálů
         </span>
       </div>
@@ -199,10 +199,10 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                       void loadFallbackVideos(channel);
                     }
                   }}
-                  className={`w-full rounded-2xl border text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6A00] ${
+                  className={`w-full rounded-2xl border text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ED742F]/45 ${
                     featured
-                      ? "border-[#FF6A00]/55 bg-[rgba(255,106,0,0.12)] px-5 py-4 text-base font-extrabold text-[#9F3D00] shadow-[0_10px_24px_rgba(255,106,0,0.15)]"
-                      : "border-[rgba(17,17,17,0.16)] bg-white px-4 py-3 text-sm font-semibold text-abj-text1 hover:border-[#FF6A00]/45 hover:bg-[rgba(255,106,0,0.06)]"
+                      ? "border-[#ED742F]/55 bg-[rgba(237,116,47,0.14)] px-5 py-4 text-base font-extrabold text-[#8E3D17] shadow-[0_10px_24px_rgba(237,116,47,0.16)]"
+                      : "border-[rgba(17,17,17,0.14)] bg-[#FCFAF7] px-4 py-3 text-sm font-semibold text-abj-text1 hover:border-[#ED742F]/45 hover:bg-[rgba(237,116,47,0.08)]"
                   }`}
                   aria-expanded={expanded}
                 >
@@ -211,12 +211,12 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                       <ChannelAvatar channelName={channel.channelName} avatarUrl={channel.avatarUrl} />
                       <span className="line-clamp-1">{channel.channelName}</span>
                     </span>
-                    <span className="shrink-0 text-xs uppercase tracking-[0.08em] text-abj-text2">
+                    <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] uppercase tracking-[0.08em] text-abj-text2">
                       {expanded ? "Skrýt videa" : "Videa"}
                     </span>
                   </span>
                 </button>
-                <div className="flex justify-end">
+                <div className="flex justify-end pr-1">
                   <FollowChannelButton
                     channelId={channel.channelId ?? `source:${normalizeForSearch(channel.channelName)}`}
                     channelName={channel.channelName}
@@ -224,9 +224,9 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                 </div>
 
                 {expanded ? (
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-3 md:grid-cols-2">
                     {loadingFallbackVideos ? (
-                      <p className="rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white px-4 py-3 text-sm text-abj-text2 sm:col-span-2">
+                      <p className="rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white px-4 py-3 text-sm text-abj-text2 md:col-span-2">
                         Načítám nejnovější videa přímo z kanálu...
                       </p>
                     ) : latestVideos.length > 0 ? (
@@ -235,7 +235,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                           key={`${channel.channelName}-${video.videoId}`}
                           type="button"
                           onClick={() => onSelectVideo({ channelName: channel.channelName, video })}
-                          className="group overflow-hidden rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white text-left shadow-[0_8px_18px_rgba(17,17,17,0.08)] transition hover:-translate-y-[1px] hover:shadow-[0_14px_28px_rgba(17,17,17,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6A00]"
+                          className="group overflow-hidden rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white text-left shadow-[0_10px_20px_rgba(17,17,17,0.08)] transition hover:-translate-y-[1px] hover:border-[#ED742F]/35 hover:shadow-[0_16px_28px_rgba(17,17,17,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ED742F]/45"
                         >
                           <div className="relative aspect-[16/9] w-full overflow-hidden bg-abj-main">
                             <Image
@@ -250,16 +250,16 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                           <div className="space-y-1 px-3 py-3">
                             <p className="line-clamp-2 text-sm font-semibold leading-snug text-abj-text1">{video.title}</p>
                             <p className="text-xs text-abj-text2">Publikováno {formatPublishedLabel(video.publishedAt)}</p>
-                            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#C14900]">Přehrát v hlavním okně</p>
+                            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#A5491D]">Přehrát v hlavním okně</p>
                           </div>
                         </button>
                       ))
                     ) : channel.channelId || channel.channelUrl ? (
-                      <p className="rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white px-4 py-3 text-sm text-abj-text2 sm:col-span-2">
+                      <p className="rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white px-4 py-3 text-sm text-abj-text2 md:col-span-2">
                         {loadingError || "Kanál momentálně neposkytuje dostupná videa."}
                       </p>
                     ) : (
-                      <p className="rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white px-4 py-3 text-sm text-abj-text2 sm:col-span-2">
+                      <p className="rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white px-4 py-3 text-sm text-abj-text2 md:col-span-2">
                         U tohoto kanálu chybí interní mapování na YouTube kanál, proto nejde načíst nejnovější videa.
                       </p>
                     )}
