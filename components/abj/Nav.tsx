@@ -84,6 +84,12 @@ export function ABJNav() {
     }, NAV_REVEAL_STICKY_MS);
   }, [mobileOpen]);
 
+  const openMyVeroxLoginModal = useCallback(() => {
+    openLoginModal({
+      reason: "Přihlaste se zdarma a otevřete svůj divácký účet Můj Verox.",
+    });
+  }, [openLoginModal]);
+
   const navLinks = BASE_NAV_LINKS;
 
   const activeHref = useMemo(() => {
@@ -126,6 +132,12 @@ export function ABJNav() {
                       <li key={`${link.href}-${link.label}`}>
                         <Link
                           href={link.href}
+                          onClick={(event) => {
+                            if (link.href === "/muj-verox" && !isAuthenticated) {
+                              event.preventDefault();
+                              openMyVeroxLoginModal();
+                            }
+                          }}
                           className={`border-b-[2px] pb-1 font-[var(--font-sans)] text-[12px] tracking-[0.06em] transition-colors ${
                             isActive
                               ? "border-abj-red text-abj-text1"
@@ -214,7 +226,15 @@ export function ABJNav() {
                     <li key={`mobile-${link.href}`}>
                       <Link
                         href={link.href}
-                        onClick={() => setMobileOpen(false)}
+                        onClick={(event) => {
+                          if (link.href === "/muj-verox" && !isAuthenticated) {
+                            event.preventDefault();
+                            setMobileOpen(false);
+                            openMyVeroxLoginModal();
+                            return;
+                          }
+                          setMobileOpen(false);
+                        }}
                         className={`block rounded-lg px-3 py-2 text-sm font-semibold transition ${
                           isActive
                             ? "bg-[rgba(255,106,0,0.1)] text-[#FF6A00]"

@@ -495,6 +495,18 @@ function mapOffsetFromStartIso(startIso: string | null): number {
   return Math.max(0, Math.floor((nowTs - startTs) / 1000));
 }
 
+async function withTimeoutFallback<T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const timeoutPromise = new Promise<T>((resolve) => {
+    timer = setTimeout(() => resolve(fallback), timeoutMs);
+  });
+  const resolved = await Promise.race([promise, timeoutPromise]);
+  if (timer) {
+    clearTimeout(timer);
+  }
+  return resolved;
+}
+
 async function loadYouTubeChannelAvatars(channelIds: string[]): Promise<Map<string, string>> {
   const apiKey = resolveYouTubeApiKey();
   if (!apiKey || channelIds.length === 0) return new Map();
@@ -510,7 +522,9 @@ async function loadYouTubeChannelAvatars(channelIds: string[]): Promise<Map<stri
       url.searchParams.set("maxResults", String(batch.length));
       url.searchParams.set("key", apiKey);
 
-      const response = await fetch(url.toString(), { cache: "no-store" });
+      const response = await fetch(url.toString(), {
+        next: { revalidate: 3600 },
+      });
       if (!response.ok) continue;
 
       const payload = (await response.json()) as YouTubeChannelApiPayload;
@@ -642,6 +656,27 @@ function mergeLiveChannels(feedChannels: LiveChannelGroup[], sourceChannels: Sou
   return [...merged.values()].sort((a, b) => a.channelName.localeCompare(b.channelName, "cs-CZ"));
 }
 
+async function loadLiveChannels(): Promise<LiveChannelGroup[]> {
+  try {
+    const [feedPayload, sourceChannels] = await Promise.all([
+      loadStructuredFeedPayload().catch((error) => {
+        console.error("live-page-feed-channels-load-failed", error);
+        return { channels: {} as Record<string, FeedVideo[]> };
+      }),
+      loadSourceChannels(),
+    ]);
+    const feedChannels = mapLiveChannelsFromFeed(feedPayload.channels);
+    const channelIds = sourceChannels
+      .map((channel) => channel.channelId)
+      .filter((channelId): channelId is string => Boolean(channelId));
+    const avatarByChannelId = await withTimeoutFallback(loadYouTubeChannelAvatars(channelIds), 1200, new Map<string, string>());
+    return mergeLiveChannels(feedChannels, sourceChannels, avatarByChannelId);
+  } catch (error) {
+    console.error("live-page-channels-load-failed", error);
+    return [];
+  }
+}
+
 export default async function LivePageServer(
   {
     searchParams,
@@ -658,6 +693,7 @@ export default async function LivePageServer(
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const rawVideoId = resolvedSearchParams?.videoId;
   const requestedVideoId = Array.isArray(rawVideoId) ? rawVideoId[0] : rawVideoId;
+  const liveChannelsPromise = loadLiveChannels();
 
   try {
     timeline = await loadExternalProgramTimeline();
@@ -679,30 +715,15 @@ export default async function LivePageServer(
     }
   }
 
-  try {
-    externalNowPlaying = await loadExternalNowPlaying();
-  } catch (error) {
-    console.error("live-page-external-now-playing-failed", error);
+  if (!v3NowPlaying) {
+    try {
+      externalNowPlaying = await loadExternalNowPlaying();
+    } catch (error) {
+      console.error("live-page-external-now-playing-failed", error);
+    }
   }
 
-  try {
-    const [feedPayload, sourceChannels] = await Promise.all([
-      loadStructuredFeedPayload().catch((error) => {
-        console.error("live-page-feed-channels-load-failed", error);
-        return { channels: {} as Record<string, FeedVideo[]> };
-      }),
-      loadSourceChannels(),
-    ]);
-    const feedChannels = mapLiveChannelsFromFeed(feedPayload.channels);
-    const avatarByChannelId = await loadYouTubeChannelAvatars(
-      sourceChannels
-        .map((channel) => channel.channelId)
-        .filter((channelId): channelId is string => Boolean(channelId))
-    );
-    liveChannels = mergeLiveChannels(feedChannels, sourceChannels, avatarByChannelId);
-  } catch (error) {
-    console.error("live-page-channels-load-failed", error);
-  }
+  liveChannels = await liveChannelsPromise;
 
   if (epg.length === 0 || epg.every((day) => day.items.length === 0)) {
     try {

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const tabs = [
   { href: "/live", label: "Živě", icon: "▶" },
@@ -13,6 +14,7 @@ const tabs = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { isAuthenticated, openLoginModal } = useAuth();
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 bg-[var(--bg)]/70 px-4 pb-4 pt-2 backdrop-blur-md">
@@ -31,6 +33,14 @@ export function BottomNav() {
             <li key={tab.href} className="flex-1 py-2">
               <Link
                 href={tab.href}
+                onClick={(event) => {
+                  if (tab.href === "/muj-verox" && !isAuthenticated) {
+                    event.preventDefault();
+                    openLoginModal({
+                      reason: "Přihlaste se zdarma a otevřete svůj divácký účet Můj Verox.",
+                    });
+                  }
+                }}
                 className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-2 text-[11px] font-medium uppercase tracking-[0.14em] transition-all duration-200 ease-out ${
                   isActive
                     ? "bg-[var(--abj-glow)] text-[var(--text-main)] shadow-[0_0_0_1px_rgba(59,130,246,0.35),0_4px_20px_rgba(59,130,246,0.12)]"
