@@ -7,5 +7,5 @@ export default async function VideaPage() {
     topForDisplay: [],
     channels: [],
   };
-  return <ArchivClient initialData={initialData} />;
+  return <ArchivClient initialData={initialData} mode="videa" />;
 }

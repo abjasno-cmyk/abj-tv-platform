@@ -160,6 +160,98 @@ function formatPublishedLabel(value: string | null | undefined): string | null {
   }).format(date);
 }
 
+type EditorialDateGroup = {
+  key: string;
+  dayLabel: string;
+  monthLabel: string;
+  yearLabel: string;
+  videos: FeedVideoView[];
+  sortTimestamp: number;
+};
+
+function resolveEditorialDateParts(value: string | null | undefined): {
+  key: string;
+  dayLabel: string;
+  monthLabel: string;
+  yearLabel: string;
+  sortTimestamp: number;
+} {
+  if (!value) {
+    return {
+      key: "nezname-datum",
+      dayLabel: "--",
+      monthLabel: "DATUM",
+      yearLabel: "",
+      sortTimestamp: 0,
+    };
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return {
+      key: "nezname-datum",
+      dayLabel: "--",
+      monthLabel: "DATUM",
+      yearLabel: "",
+      sortTimestamp: 0,
+    };
+  }
+
+  const formatDateKey = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Prague",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+  const dayLabel = new Intl.DateTimeFormat("cs-CZ", {
+    timeZone: "Europe/Prague",
+    day: "2-digit",
+  }).format(date);
+  const monthLabel = new Intl.DateTimeFormat("cs-CZ", {
+    timeZone: "Europe/Prague",
+    month: "short",
+  })
+    .format(date)
+    .replace(".", "")
+    .toUpperCase();
+  const yearLabel = new Intl.DateTimeFormat("cs-CZ", {
+    timeZone: "Europe/Prague",
+    year: "numeric",
+  }).format(date);
+
+  return {
+    key: formatDateKey,
+    dayLabel,
+    monthLabel,
+    yearLabel,
+    sortTimestamp: date.getTime(),
+  };
+}
+
+function groupVideosByEditorialDate(videos: FeedVideoView[]): EditorialDateGroup[] {
+  const groups = new Map<string, EditorialDateGroup>();
+  for (const video of videos) {
+    const parts = resolveEditorialDateParts(video.published_at);
+    const existing = groups.get(parts.key);
+    if (existing) {
+      existing.videos.push(video);
+      if (parts.sortTimestamp > existing.sortTimestamp) {
+        existing.sortTimestamp = parts.sortTimestamp;
+      }
+      continue;
+    }
+    groups.set(parts.key, {
+      key: parts.key,
+      dayLabel: parts.dayLabel,
+      monthLabel: parts.monthLabel,
+      yearLabel: parts.yearLabel,
+      videos: [video],
+      sortTimestamp: parts.sortTimestamp,
+    });
+  }
+
+  return [...groups.values()].sort((a, b) => b.sortTimestamp - a.sortTimestamp);
+}
+
 function sortNewest(videos: FeedVideoView[]): FeedVideoView[] {
   return [...videos].sort((a, b) => parseTimestamp(b.published_at) - parseTimestamp(a.published_at));
 }
@@ -508,6 +600,7 @@ function mapStructuredFeedPayload(payload: StructuredFeedPayloadView | null): Fe
 
 type ArchivClientProps = {
   initialData: ArchivViewData;
+  mode?: "default" | "videa";
 };
 
 function mergePayload(current: FeedResponseView, incoming: FeedResponseView): FeedResponseView {
@@ -543,6 +636,7 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: A
   const thumbnailSrc = readString(video.thumbnail) ?? "/placeholder-thumb.jpg";
   const isHero = variant === "hero";
   const isFeatured = variant === "featured";
+  const isCompact = variant === "compact";
   const durationLabel = formatDurationLabel(video.duration_seconds);
   const aspect = getVideoAspectRatio(video);
   const isPortrait = aspect === "portrait";
@@ -554,11 +648,21 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: A
 
   return (
     <article
-      className={`group block overflow-hidden rounded-2xl border bg-white transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6A00]/60 ${
-        accent
-          ? "border-[#FF6A00]/35 shadow-[0_8px_24px_rgba(255,106,0,0.12)] hover:border-[#FF6A00]/55"
-          : "border-[var(--abj-gold-dim)] shadow-[0_8px_22px_rgba(17,17,17,0.08)] hover:border-[rgba(17,17,17,0.28)]"
-      } ${isDisabled ? "cursor-default opacity-70" : "hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(17,17,17,0.12)]"}`}
+      className={`group block overflow-hidden border bg-white transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ED742F]/45 ${
+        isCompact
+          ? "rounded-[20px] border-[rgba(17,17,17,0.14)]"
+          : `rounded-2xl ${
+              accent
+                ? "border-[#FF6A00]/35 shadow-[0_8px_24px_rgba(255,106,0,0.12)] hover:border-[#FF6A00]/55"
+                : "border-[var(--abj-gold-dim)] shadow-[0_8px_22px_rgba(17,17,17,0.08)] hover:border-[rgba(17,17,17,0.28)]"
+            }`
+      } ${
+        isDisabled
+          ? "cursor-default opacity-70"
+          : isCompact
+            ? "hover:border-[#ED742F]/45"
+            : "hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(17,17,17,0.12)]"
+      }`}
     >
       <button
         type="button"
@@ -572,7 +676,7 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: A
           }
         }}
       >
-        <div className={`relative overflow-hidden bg-[#F2F2F2] ${mediaRatioClass}`}>
+        <div className={`relative overflow-hidden bg-[#F2F2F2] ${mediaRatioClass} ${isCompact ? "rounded-none" : ""}`}>
           <Image
             src={thumbnailSrc}
             alt={video.title}
@@ -584,16 +688,16 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: A
                 ? "(max-width: 1024px) 100vw, 66vw"
                 : isFeatured
                   ? "(max-width: 1024px) 100vw, 33vw"
-                  : "(max-width: 768px) 100vw, (max-width: 1400px) 33vw, 25vw"
+                  : "(max-width: 768px) 100vw, (max-width: 1280px) 68vw, 48vw"
             }
             unoptimized={thumbnailSrc.startsWith("http")}
           />
-          {tag ? (
+          {tag && !isCompact ? (
             <span className="absolute left-2 top-2 rounded-full border border-[#FF6A00]/35 bg-white/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#C14900]">
               {tag}
             </span>
           ) : null}
-          {durationLabel ? (
+          {durationLabel && !isCompact ? (
             <span className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-[10px] font-medium text-white">
               {durationLabel}
             </span>
@@ -610,32 +714,57 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false }: A
         </div>
 
         {!isHero ? (
-          <div className={`${isFeatured ? "space-y-1.5 p-3.5" : "space-y-1 p-3"}`}>
+          <div className={isCompact ? "space-y-2 px-4 py-4 sm:px-5" : isFeatured ? "space-y-1.5 p-3.5" : "space-y-1 p-3"}>
             <p
-              className={`line-clamp-2 text-abj-text1 ${isFeatured ? "text-[15px] font-semibold leading-snug" : "text-sm font-medium"}`}
+              className={`line-clamp-2 text-abj-text1 ${
+                isCompact ? "text-[clamp(1.02rem,1.6vw,1.18rem)] font-semibold leading-snug" : isFeatured ? "text-[15px] font-semibold leading-snug" : "text-sm font-medium"
+              }`}
             >
               {video.title}
             </p>
-            <p className="truncate text-xs font-medium text-abj-text2">{video.channel}</p>
-            {publishedLabel ? <p className="text-[11px] text-abj-text3">{publishedLabel}</p> : null}
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#C14900]">
-              {expanded ? "Skrýt video" : "Rozkliknout video"}
+            {isCompact ? (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-abj-text2">
+                <span className="truncate font-medium">{video.channel}</span>
+                {publishedLabel ? <span className="text-abj-text3">{publishedLabel}</span> : null}
+              </div>
+            ) : (
+              <>
+                <p className="truncate text-xs font-medium text-abj-text2">{video.channel}</p>
+                {publishedLabel ? <p className="text-[11px] text-abj-text3">{publishedLabel}</p> : null}
+              </>
+            )}
+            <p className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${isCompact ? "text-[#ED742F]" : "text-[#C14900]"}`}>
+              {expanded ? "Skrýt video" : "Zobrazit detail"}
             </p>
           </div>
         ) : null}
       </button>
 
       {expanded ? (
-        <div className="space-y-2 border-t border-[var(--abj-gold-dim)] bg-[rgba(255,106,0,0.03)] p-3">
+        <div
+          className={`space-y-2 border-t p-3 ${
+            isCompact
+              ? "border-[rgba(17,17,17,0.12)] bg-[rgba(237,116,47,0.05)] sm:p-4"
+              : "border-[var(--abj-gold-dim)] bg-[rgba(255,106,0,0.03)]"
+          }`}
+        >
           {embedUrl ? (
-            <div className="overflow-hidden rounded-lg border border-[rgba(255,106,0,0.25)] bg-black">
+            <div className={`overflow-hidden rounded-lg bg-black ${isCompact ? "border border-[#ED742F]/30" : "border border-[rgba(255,106,0,0.25)]"}`}>
               {!startedPlayback ? (
                 <button
                   type="button"
-                  className="flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(255,106,0,0.22),rgba(0,0,0,0.8))]"
+                  className={`flex aspect-video w-full items-center justify-center ${
+                    isCompact
+                      ? "bg-[radial-gradient(circle_at_center,rgba(237,116,47,0.22),rgba(0,0,0,0.84))]"
+                      : "bg-[radial-gradient(circle_at_center,rgba(255,106,0,0.22),rgba(0,0,0,0.8))]"
+                  }`}
                   onClick={() => setStartedPlayback(true)}
                 >
-                  <span className="rounded-full border border-[rgba(255,106,0,0.4)] bg-[rgba(255,255,255,0.1)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white">
+                  <span
+                    className={`rounded-full bg-[rgba(255,255,255,0.1)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white ${
+                      isCompact ? "border border-[#ED742F]/60" : "border border-[rgba(255,106,0,0.4)]"
+                    }`}
+                  >
                     Přehrát video
                   </span>
                 </button>
@@ -973,18 +1102,91 @@ type VideoGridProps = {
   videos: FeedVideoView[];
   loading: boolean;
   emptyMessage: string;
+  editorialMode?: boolean;
 };
 
-function VideoGrid({ title, subtitle, videos, loading, emptyMessage }: VideoGridProps) {
+function VideoGrid({ title, subtitle, videos, loading, emptyMessage, editorialMode = false }: VideoGridProps) {
+  const heroVideo = videos[0] ?? null;
+  const heroThumbnail = readString(heroVideo?.thumbnail) ?? "/placeholder-thumb.jpg";
+  const heroDescription = readString(heroVideo?.tldr) ?? subtitle;
+  const groupedByDate = useMemo(() => groupVideosByEditorialDate(videos), [videos]);
+
   return (
-    <section className="space-y-4">
-      <div className="space-y-1">
-        <h2 className="text-xl font-semibold text-abj-text1">{title}</h2>
-        <p className="text-sm text-abj-text2">{subtitle}</p>
-      </div>
+    <section className={editorialMode ? "space-y-10" : "space-y-4"}>
+      {editorialMode ? (
+        <section className="relative overflow-hidden rounded-[34px] border border-[rgba(17,17,17,0.12)] bg-white">
+          <div className="relative min-h-[320px] sm:min-h-[380px]">
+            <Image
+              src={heroThumbnail}
+              alt={heroVideo?.title ?? title}
+              fill
+              priority
+              className="object-cover"
+              sizes="(max-width: 1024px) 100vw, 1200px"
+              unoptimized={heroThumbnail.startsWith("http")}
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.12)_0%,rgba(0,0,0,0.65)_70%,rgba(0,0,0,0.88)_100%)]" />
+            <div className="relative z-10 flex min-h-[320px] flex-col justify-end gap-4 px-5 pb-8 pt-8 text-white sm:min-h-[380px] sm:px-8 sm:pb-10">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/80">Nejnovější videa</p>
+              <h2 className="max-w-4xl font-[var(--font-serif)] text-[clamp(1.8rem,4.4vw,3.3rem)] font-black leading-[1.02]">
+                {heroVideo?.title ?? title}
+              </h2>
+              <p className="max-w-3xl text-sm text-white/88 sm:text-base">{heroDescription}</p>
+              <div>
+                <a
+                  href="#videa-editorial-feed"
+                  className="inline-flex min-h-11 items-center rounded-full border border-[#ED742F] bg-[#ED742F] px-5 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-[#d86625]"
+                >
+                  Zjistit více
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <div className="space-y-1">
+          <h2 className="text-xl font-semibold text-abj-text1">{title}</h2>
+          <p className="text-sm text-abj-text2">{subtitle}</p>
+        </div>
+      )}
 
       {videos.length === 0 && !loading ? (
         <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-white p-5 text-sm text-abj-text2">{emptyMessage}</div>
+      ) : editorialMode ? (
+        <div id="videa-editorial-feed" className="space-y-10">
+          {groupedByDate.length > 0
+            ? groupedByDate.map((group) => (
+                <section key={`group-${group.key}`} className="grid gap-4 md:grid-cols-[92px_minmax(0,1fr)] md:gap-8">
+                  <div>
+                    <div className="inline-flex min-w-[82px] flex-col items-start border-l border-[rgba(17,17,17,0.16)] pl-3 md:border-l-0 md:pl-0">
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-abj-text3">{group.monthLabel}</span>
+                      <span className="text-[2.1rem] font-black leading-none text-[#ED742F]">{group.dayLabel}</span>
+                      {group.yearLabel ? <span className="text-[11px] text-abj-text3">{group.yearLabel}</span> : null}
+                    </div>
+                  </div>
+                  <div className="grid gap-7 xl:grid-cols-2">
+                    {group.videos.map((video) => (
+                      <ArchiveVideoCard key={`grid-${group.key}-${videoUniqKey(video)}`} video={video} variant="compact" accent={isAbjChannel(video.channel)} />
+                    ))}
+                  </div>
+                </section>
+              ))
+            : [0, 1, 2].map((slot) => (
+                <section key={`editorial-skeleton-${slot}`} className="grid gap-4 md:grid-cols-[92px_minmax(0,1fr)] md:gap-8">
+                  <div>
+                    <div className="inline-flex min-w-[82px] flex-col items-start border-l border-[rgba(17,17,17,0.16)] pl-3 md:border-l-0 md:pl-0">
+                      <span className="h-3 w-14 animate-pulse rounded bg-[rgba(17,17,17,0.08)]" />
+                      <span className="mt-2 h-8 w-10 animate-pulse rounded bg-[rgba(237,116,47,0.28)]" />
+                      <span className="mt-2 h-3 w-12 animate-pulse rounded bg-[rgba(17,17,17,0.08)]" />
+                    </div>
+                  </div>
+                  <div className="grid gap-7 xl:grid-cols-2">
+                    <VideoCardSkeleton />
+                    <VideoCardSkeleton />
+                  </div>
+                </section>
+              ))}
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {videos.length > 0
@@ -1159,7 +1361,7 @@ function ChannelDetailPanel({ channel, selectedVideo, open, loading, onClose, on
   );
 }
 
-export function ArchivClient({ initialData }: ArchivClientProps) {
+export function ArchivClient({ initialData, mode = "default" }: ArchivClientProps) {
   const { posts, loading, hasMore, loadMore } = useFeed();
   const [userSelectedChannelKey, setUserSelectedChannelKey] = useState<string | null>(null);
   const [userSelectedVideoKey, setUserSelectedVideoKey] = useState<string | null>(null);
@@ -1290,16 +1492,35 @@ export function ArchivClient({ initialData }: ArchivClientProps) {
     }
     return selectedChannelPanelVideos[0];
   }, [selectedChannelPanelVideos, userSelectedVideoKey]);
+  const isVideaMode = mode === "videa";
   const showExtendedOverview = false;
 
   return (
-    <section className="mx-auto w-full max-w-[1280px] space-y-10 px-4 py-6 sm:px-6 lg:space-y-12">
-      <header className="space-y-2">
-        <p className="text-[11px] uppercase tracking-[0.16em] text-abj-text2">Videa</p>
-        <h1 className="font-[var(--font-serif)] text-3xl font-semibold leading-tight text-abj-text1 sm:text-4xl">
+    <section
+      className={`mx-auto w-full px-4 py-6 sm:px-6 ${
+        isVideaMode ? "max-w-[1320px] space-y-12 bg-white lg:space-y-14 lg:px-10" : "max-w-[1280px] space-y-10 lg:space-y-12"
+      }`}
+    >
+      <header className={isVideaMode ? "space-y-3" : "space-y-2"}>
+        <p
+          className={
+            isVideaMode
+              ? "text-[11px] font-semibold uppercase tracking-[0.18em] text-abj-text3"
+              : "text-[11px] uppercase tracking-[0.16em] text-abj-text2"
+          }
+        >
+          Videa
+        </p>
+        <h1
+          className={
+            isVideaMode
+              ? "font-[var(--font-serif)] text-[clamp(2rem,4.5vw,4rem)] font-black leading-[1.03] text-abj-text1"
+              : "font-[var(--font-serif)] text-3xl font-semibold leading-tight text-abj-text1 sm:text-4xl"
+          }
+        >
           Videa
         </h1>
-        <p className="max-w-3xl text-sm text-abj-text2 sm:text-base">
+        <p className={isVideaMode ? "max-w-3xl text-base text-abj-text2 sm:text-lg" : "max-w-3xl text-sm text-abj-text2 sm:text-base"}>
           Průběžně aktualizovaný přehled posledních videí napříč sítí.
         </p>
       </header>
@@ -1341,18 +1562,23 @@ export function ArchivClient({ initialData }: ArchivClientProps) {
       ) : null}
 
       <VideoGrid
-        title="Videa"
+        title="Nejnovější videa"
         subtitle="Průběžně aktualizovaný přehled posledních videí napříč sítí."
         videos={latestVideos}
         loading={isInitialLoading}
         emptyMessage={EMPTY_MESSAGE}
+        editorialMode={isVideaMode}
       />
 
       {hasMore ? (
         <div className="flex justify-center">
           <button
             type="button"
-            className="rounded-lg border border-[var(--abj-gold-dim)] bg-white px-4 py-2 text-xs uppercase tracking-[0.08em] text-abj-text2 transition hover:border-[#FF6A00]/45 hover:text-abj-text1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6A00]/60"
+            className={`rounded-full border bg-white px-5 py-2 text-xs font-semibold uppercase tracking-[0.1em] transition focus-visible:outline-none focus-visible:ring-2 ${
+              isVideaMode
+                ? "border-[#ED742F]/40 text-[#ED742F] hover:border-[#ED742F] hover:bg-[rgba(237,116,47,0.07)] focus-visible:ring-[#ED742F]/45"
+                : "border-[var(--abj-gold-dim)] text-abj-text2 hover:border-[#FF6A00]/45 hover:text-abj-text1 focus-visible:ring-[#FF6A00]/60"
+            }`}
             onClick={() => {
               void loadMore();
             }}
