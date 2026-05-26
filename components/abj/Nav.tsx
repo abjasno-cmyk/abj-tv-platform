@@ -7,7 +7,7 @@ import { ReplitHealthBadge } from "@/components/abj/ReplitHealthBadge";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 const BASE_NAV_LINKS = [
-  { href: "/live", label: "Vysílání" },
+  { href: "/live", label: "Živě" },
   { href: "/jasne-zpravy", label: "Jasné zprávy" },
   { href: "/archiv", label: "Nejnovější videa" },
   { href: "/abj-x", label: "VeroX" },
