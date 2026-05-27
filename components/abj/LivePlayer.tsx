@@ -241,8 +241,8 @@ export function LivePlayer({
   }, [isPaused, videoId]);
 
   return (
-    <div className="relative mb-12 font-[Helvetica,Arial,sans-serif] text-[#111111]">
-      <p className="pointer-events-none absolute -top-1 right-2 z-20 -translate-y-full text-[clamp(2.9rem,10.5vw,5.8rem)] font-black leading-[0.9] tracking-tight text-[#ED742F] sm:right-3">
+    <div className="relative mb-12 pt-12 font-[Helvetica,Arial,sans-serif] text-[#111111] sm:pt-14">
+      <p className="pointer-events-none absolute right-2 top-0 z-20 text-[clamp(2.9rem,10.5vw,5.8rem)] font-black leading-[0.86] tracking-tight text-[#ED742F] sm:right-3">
         {clockLabel}
       </p>
       <section id="live-player-shell" ref={playerShellRef} className="relative overflow-visible rounded-[32px] bg-[#ED742F] text-[#111111]">
