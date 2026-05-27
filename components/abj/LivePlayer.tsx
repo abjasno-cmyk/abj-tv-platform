@@ -36,6 +36,11 @@ type YouTubePlayerHandle = {
   unMute?: () => void;
 };
 
+type ScreenOrientationHandle = {
+  lock?: (orientation: "portrait" | "landscape" | "any") => Promise<void>;
+  unlock?: () => void;
+};
+
 function getPragueTimeLabel(date: Date): string {
   return new Intl.DateTimeFormat("cs-CZ", {
     timeZone: "Europe/Prague",
@@ -130,6 +135,7 @@ export function LivePlayer({
   onPlaybackSample,
 }: LivePlayerProps) {
   const playerShellRef = useRef<HTMLElement | null>(null);
+  const videoViewportRef = useRef<HTMLDivElement | null>(null);
   const youtubePlayerRef = useRef<YouTubePlayerHandle | null>(null);
   const [mutedByVideoId, setMutedByVideoId] = useState<Record<string, boolean>>({});
   const [pausedByVideoId, setPausedByVideoId] = useState<Record<string, boolean>>({});
@@ -201,14 +207,21 @@ export function LivePlayer({
 
   const toggleFullscreen = useCallback(async () => {
     const doc = document as FullscreenDocument;
+    const orientation = (screen as Screen & { orientation?: ScreenOrientationHandle }).orientation;
     try {
       if (readFullscreenElement(doc)) {
         await exitFullscreenFor(doc);
+        orientation?.unlock?.();
         return;
       }
-      const element = playerShellRef.current as FullscreenElement | null;
+      const element = (videoViewportRef.current ?? playerShellRef.current) as FullscreenElement | null;
       if (!element) return;
       await requestFullscreenFor(element);
+      if (orientation?.lock) {
+        void orientation.lock("landscape").catch(() => {
+          // Some mobile browsers do not support programmatic orientation lock.
+        });
+      }
     } catch (error) {
       console.warn("live-player-fullscreen-toggle-failed", error);
     }
@@ -246,7 +259,7 @@ export function LivePlayer({
         <p className="pointer-events-none absolute bottom-full right-2 z-20 mb-0 text-[clamp(2.9rem,10.5vw,5.8rem)] font-black leading-[0.86] tracking-tight text-[#ED742F] sm:right-3">
           {clockLabel}
         </p>
-        <div className="relative aspect-video w-full overflow-hidden rounded-t-[30px] bg-[#0B0D10]">
+        <div ref={videoViewportRef} className="relative aspect-video w-full overflow-hidden rounded-t-[30px] bg-[#0B0D10]">
         {videoId ? (
           <div className="abj-slow-zoom absolute inset-0">
             <YouTube

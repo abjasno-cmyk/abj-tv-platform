@@ -201,7 +201,7 @@ export default function LivePage({
   const communityBlock = (
     <section className="relative rounded-[20px] bg-[#ED742F] px-5 pb-8 pt-8 font-[Helvetica,Arial,sans-serif] sm:px-8 sm:pb-10 sm:pt-9">
       <span className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 bg-white px-6 py-1 text-[clamp(1rem,2.5vw,2rem)] font-black uppercase tracking-[0.06em] text-[#111111]">
-        COMMUNITY
+        KOMUNITA
       </span>
       <p className="mt-6 text-center text-[clamp(1rem,2.2vw,1.6rem)] font-semibold uppercase tracking-[0.06em] text-white">
         ZDE NAPIŠTE ZPRÁVU

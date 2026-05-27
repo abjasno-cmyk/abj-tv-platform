@@ -71,20 +71,20 @@ export function HomePage({
           />
         </div>
 
-        <div id="live-timeline-section" className="order-2">
-          <Timeline days={days} onSelect={onSelect} />
-        </div>
-
-        <div id="live-channels-section" className="order-3">
-          <ChannelDirectory channels={channels} onSelectVideo={onSelectChannelVideo} />
-        </div>
-
         {hasReactions || hasEngagement ? (
-          <div className={`order-4 grid gap-6 ${hasReactions && hasEngagement ? "xl:grid-cols-2" : ""}`}>
+          <div className={`order-2 grid gap-6 ${hasReactions && hasEngagement ? "xl:grid-cols-2" : ""}`}>
             {hasReactions ? <div id="live-reactions-section">{reactionsSlot}</div> : null}
             {hasEngagement ? <div id="live-engagement-section">{engagementSlot}</div> : null}
           </div>
         ) : null}
+
+        <div id="live-timeline-section" className="order-3">
+          <Timeline days={days} onSelect={onSelect} />
+        </div>
+
+        <div id="live-channels-section" className="order-4">
+          <ChannelDirectory channels={channels} onSelectVideo={onSelectChannelVideo} />
+        </div>
       </div>
     </section>
   );
