@@ -203,9 +203,6 @@ export default function LivePage({
       <span className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 bg-white px-6 py-1 text-[clamp(1rem,2.5vw,2rem)] font-black uppercase tracking-[0.06em] text-[#111111]">
         COMMUNITY
       </span>
-      <div className="mx-auto max-w-[760px] text-center">
-        <p className="line-clamp-2 text-[clamp(2rem,4.5vw,3.6rem)] font-black leading-[0.92] text-[#111111]">{title}</p>
-      </div>
       <p className="mt-6 text-center text-[clamp(1rem,2.2vw,1.6rem)] font-semibold uppercase tracking-[0.06em] text-white">
         ZDE NAPIŠTE ZPRÁVU
       </p>
