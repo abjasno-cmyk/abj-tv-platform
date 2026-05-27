@@ -53,14 +53,29 @@ export default function LivePage({
     positionSeconds: 0,
   });
 
-  const scrollToPlayer = () => {
+  const scrollToPlayer = useCallback(() => {
     const playerElement = document.getElementById("live-player-shell");
     if (!playerElement) return;
-    playerElement.scrollIntoView({
+
+    const navHeader = document.querySelector("header");
+    const headerOffset = navHeader instanceof HTMLElement ? Math.ceil(navHeader.getBoundingClientRect().height) + 10 : 78;
+    const targetTop = Math.max(0, window.scrollY + playerElement.getBoundingClientRect().top - headerOffset);
+
+    window.scrollTo({
+      top: targetTop,
       behavior: "smooth",
-      block: "start",
     });
-  };
+
+    // Mobile browsers occasionally ignore the first smooth scroll call after a tap.
+    window.setTimeout(() => {
+      const remaining = Math.abs(window.scrollY - targetTop);
+      if (remaining < 6) return;
+      window.scrollTo({
+        top: targetTop,
+        behavior: "auto",
+      });
+    }, 240);
+  }, []);
 
   const timelineItems = useMemo(
     () => safeEpg.flatMap((day) => day.items),
@@ -274,7 +289,6 @@ export default function LivePage({
           });
         }}
         onSelectChannelVideo={({ channelName: selectedChannelName, video }) => {
-          scrollToPlayer();
           setTitle(video.title);
           setChannelName(selectedChannelName);
           setVideoId(video.videoId);
@@ -286,6 +300,10 @@ export default function LivePage({
             entity_type: "video",
             entity_id: video.videoId,
             properties: { source: "channel_select", channel_name: selectedChannelName },
+          });
+
+          window.requestAnimationFrame(() => {
+            scrollToPlayer();
           });
         }}
         engagementSlot={null}
