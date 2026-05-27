@@ -242,7 +242,7 @@ export function LivePlayer({
 
   return (
     <div className="relative mb-12 font-[Helvetica,Arial,sans-serif] text-[#111111]">
-      <p className="pointer-events-none absolute right-1 top-0 z-20 -translate-y-[56%] text-[clamp(4.2rem,8.7vw,7rem)] font-black leading-[0.9] tracking-tight text-[#ED742F] sm:right-2">
+      <p className="pointer-events-none absolute right-2 top-0 z-20 -translate-y-[36%] text-[clamp(2.9rem,10.5vw,5.8rem)] font-black leading-[0.9] tracking-tight text-[#ED742F] sm:right-3">
         {clockLabel}
       </p>
       <section id="live-player-shell" ref={playerShellRef} className="relative overflow-visible rounded-[32px] bg-[#ED742F] text-[#111111]">
@@ -276,15 +276,15 @@ export function LivePlayer({
 
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.2)_0%,rgba(0,0,0,0.02)_42%,rgba(0,0,0,0.65)_100%)]" />
 
-          <div className="absolute right-3 top-1/2 z-10 -translate-y-1/2">
-            <div className="flex flex-col items-center gap-2.5">
+          <div className="absolute right-2 top-2 z-10 sm:right-3 sm:top-3">
+            <div className="flex flex-col items-center gap-1.5 opacity-85 sm:gap-2">
               <button
                 type="button"
                 onClick={() => {
                   void toggleFullscreen();
                 }}
                 aria-label={isFullscreen ? "Ukončit režim celé obrazovky" : "Přepnout celou obrazovku"}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full transition hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-12 sm:w-12"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full transition hover:scale-[1.04] hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-10 sm:w-10"
               >
                 <HeroFullscreenIcon className="h-full w-full drop-shadow-[0_8px_14px_rgba(17,17,17,0.32)]" />
               </button>
@@ -292,24 +292,24 @@ export function LivePlayer({
                 type="button"
                 onClick={toggleMute}
                 aria-label={isMuted ? "Zapnout zvuk" : "Vypnout zvuk"}
-                className="relative inline-flex h-11 w-11 items-center justify-center rounded-full transition hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-12 sm:w-12"
+                className="relative inline-flex h-8 w-8 items-center justify-center rounded-full transition hover:scale-[1.04] hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-10 sm:w-10"
               >
                 <HeroVolumeIcon className="h-full w-full drop-shadow-[0_8px_14px_rgba(17,17,17,0.32)]" />
                 {isMuted ? (
-                  <span className="pointer-events-none absolute h-[2px] w-7 rotate-[-35deg] rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.35)]" />
+                  <span className="pointer-events-none absolute h-[2px] w-5 rotate-[-35deg] rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.35)] sm:w-6" />
                 ) : null}
               </button>
               <button
                 type="button"
                 onClick={togglePause}
                 aria-label={isPaused ? "Spustit přehrávání" : "Pozastavit přehrávání"}
-                className="relative inline-flex h-11 w-11 items-center justify-center rounded-full transition hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-12 sm:w-12"
+                className="relative inline-flex h-8 w-8 items-center justify-center rounded-full transition hover:scale-[1.04] hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-10 sm:w-10"
               >
                 <HeroBroadcastIcon className="h-full w-full drop-shadow-[0_8px_14px_rgba(17,17,17,0.32)]" />
                 {!isPaused ? (
                   <span className="pointer-events-none absolute inline-flex gap-[3px]">
-                    <span className="h-3.5 w-1 rounded-full bg-[#ED742F]" />
-                    <span className="h-3.5 w-1 rounded-full bg-[#ED742F]" />
+                    <span className="h-2.5 w-[2px] rounded-full bg-[#ED742F] sm:h-3 sm:w-[3px]" />
+                    <span className="h-2.5 w-[2px] rounded-full bg-[#ED742F] sm:h-3 sm:w-[3px]" />
                   </span>
                 ) : null}
               </button>

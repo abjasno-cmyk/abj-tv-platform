@@ -18,30 +18,13 @@ const NAV_SCROLL_DELTA_THRESHOLD = 4;
 const NAV_REVEAL_STICKY_MS = 1400;
 const NAV_AUTOHIDE_AFTER_Y = 56;
 
-function getPragueClockValue(date: Date): string {
-  return new Intl.DateTimeFormat("cs-CZ", {
-    timeZone: "Europe/Prague",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
-}
-
 export function ABJNav() {
   const pathname = usePathname();
   const { isAuthenticated, profile, openLoginModal, signOut } = useAuth();
-  const [clock, setClock] = useState(() => getPragueClockValue(new Date()));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollRef = useRef(0);
   const revealTimerRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setClock(getPragueClockValue(new Date()));
-    }, 30_000);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     if (mobileOpen) return;
@@ -214,7 +197,6 @@ export function ABJNav() {
                   Přihlásit zdarma
                 </button>
               )}
-              <p className="font-[var(--font-sans)] text-[13px] tabular-nums text-abj-text2">{clock}</p>
             </div>
           </div>
           {mobileOpen ? (
