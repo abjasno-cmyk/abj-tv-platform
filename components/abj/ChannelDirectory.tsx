@@ -247,41 +247,37 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
               </div>
             </div>
 
-            <div className="mt-1 space-y-2">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-black uppercase leading-none tracking-[0.08em] text-[#111111] sm:text-[33px] sm:tracking-[0.06em]">
-                  Channels
-                </p>
-                <div className="ml-auto flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const container = channelScrollRef.current;
-                      if (!container) return;
-                      container.scrollBy({ left: -260, behavior: "smooth" });
-                    }}
-                    disabled={!canScrollChannels || !canScrollChannelsLeft}
-                    aria-label="Posunout kanály doleva"
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#111111] bg-white text-xs font-bold text-[#111111] transition disabled:opacity-35 sm:h-8 sm:w-8 sm:text-sm"
-                  >
-                    ←
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const container = channelScrollRef.current;
-                      if (!container) return;
-                      container.scrollBy({ left: 260, behavior: "smooth" });
-                    }}
-                    disabled={!canScrollChannels || !canScrollChannelsRight}
-                    aria-label="Posunout kanály doprava"
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#ED742F] bg-[#ED742F] text-xs font-bold text-white transition disabled:opacity-35 sm:h-8 sm:w-8 sm:text-sm"
-                  >
-                    →
-                  </button>
-                </div>
-              </div>
-              <div className="relative h-4 w-full overflow-hidden rounded-[2px] bg-[#ED742F] sm:h-5">
+            <div className="mt-1 flex items-center gap-2 sm:gap-3">
+              <p className="text-lg font-black uppercase leading-none tracking-[0.08em] text-[#111111] sm:text-[33px] sm:tracking-[0.06em]">
+                CHANNELS
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  const container = channelScrollRef.current;
+                  if (!container) return;
+                  container.scrollBy({ left: -260, behavior: "smooth" });
+                }}
+                disabled={!canScrollChannels || !canScrollChannelsLeft}
+                aria-label="Posunout kanály doleva"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#111111] bg-white text-xs font-bold text-[#111111] transition disabled:opacity-35 sm:h-8 sm:w-8 sm:text-sm"
+              >
+                ←
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const container = channelScrollRef.current;
+                  if (!container) return;
+                  container.scrollBy({ left: 260, behavior: "smooth" });
+                }}
+                disabled={!canScrollChannels || !canScrollChannelsRight}
+                aria-label="Posunout kanály doprava"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#ED742F] bg-[#ED742F] text-xs font-bold text-white transition disabled:opacity-35 sm:h-8 sm:w-8 sm:text-sm"
+              >
+                →
+              </button>
+              <div className="relative h-4 min-w-[110px] flex-1 overflow-hidden rounded-[2px] bg-[#ED742F] sm:h-5">
                 <input
                   type="range"
                   min={0}

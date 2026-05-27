@@ -242,10 +242,10 @@ export function LivePlayer({
 
   return (
     <div className="relative mb-12 pt-12 font-[Helvetica,Arial,sans-serif] text-[#111111] sm:pt-14">
-      <p className="pointer-events-none absolute right-2 top-0 z-20 text-[clamp(2.9rem,10.5vw,5.8rem)] font-black leading-[0.86] tracking-tight text-[#ED742F] sm:right-3">
-        {clockLabel}
-      </p>
       <section id="live-player-shell" ref={playerShellRef} className="relative overflow-visible rounded-[32px] bg-[#ED742F] text-[#111111]">
+        <p className="pointer-events-none absolute bottom-full right-2 z-20 mb-0 text-[clamp(2.9rem,10.5vw,5.8rem)] font-black leading-[0.86] tracking-tight text-[#ED742F] sm:right-3">
+          {clockLabel}
+        </p>
         <div className="relative aspect-video w-full overflow-hidden rounded-t-[30px] bg-[#0B0D10]">
         {videoId ? (
           <div className="abj-slow-zoom absolute inset-0">
