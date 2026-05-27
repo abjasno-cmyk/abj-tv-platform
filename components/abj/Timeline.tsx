@@ -105,8 +105,6 @@ export function Timeline({ days, onSelect }: TimelineProps) {
   const items = useMemo(() => activeDay?.items ?? [], [activeDay]);
   const currentSlot = useMemo(() => resolveCurrentSlot(items, activeDay?.date, now), [activeDay?.date, items, now]);
   const canScrollTimeline = scrollState.max > 6;
-  const canScrollLeft = scrollState.left > 6;
-  const canScrollRight = scrollState.left < scrollState.max - 6;
 
   const updateScrollState = useCallback(() => {
     const container = timelineScrollRef.current;
@@ -165,6 +163,30 @@ export function Timeline({ days, onSelect }: TimelineProps) {
     window.setTimeout(() => updateScrollState(), 360);
   }, [activeDay?.date, currentSlot, updateScrollState]);
 
+  const scrollTimelineBy = useCallback((direction: "left" | "right") => {
+    const container = timelineScrollRef.current;
+    if (!container) return;
+    const maxLeft = Math.max(0, container.scrollWidth - container.clientWidth);
+    if (maxLeft <= 6) return;
+    const currentLeft = Math.max(0, container.scrollLeft);
+    const step = 260;
+
+    if (direction === "right") {
+      const nextLeft = currentLeft + step;
+      container.scrollTo({
+        left: nextLeft >= maxLeft - 2 ? 0 : Math.min(maxLeft, nextLeft),
+        behavior: "smooth",
+      });
+      return;
+    }
+
+    const nextLeft = currentLeft - step;
+    container.scrollTo({
+      left: currentLeft <= 2 ? maxLeft : Math.max(0, nextLeft),
+      behavior: "smooth",
+    });
+  }, []);
+
   return (
     <section className="bg-white px-5 py-5 font-[Helvetica,Arial,sans-serif] text-[#111111]">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -182,7 +204,10 @@ export function Timeline({ days, onSelect }: TimelineProps) {
         ) : null}
       </div>
 
-      <div ref={timelineScrollRef} className="-mx-1 overflow-x-auto p-3">
+      <div
+        ref={timelineScrollRef}
+        className="-mx-1 overflow-x-auto p-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+      >
         <div className="flex min-w-max gap-3">
           {items.length === 0 ? (
             <p className="px-2 py-4 text-sm text-abj-text2">Program se připravuje.</p>
@@ -235,12 +260,8 @@ export function Timeline({ days, onSelect }: TimelineProps) {
         </p>
         <button
           type="button"
-          onClick={() => {
-            const container = timelineScrollRef.current;
-            if (!container) return;
-            container.scrollBy({ left: -260, behavior: "smooth" });
-          }}
-          disabled={!canScrollTimeline || !canScrollLeft}
+          onClick={() => scrollTimelineBy("left")}
+          disabled={!canScrollTimeline}
           className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#111111] bg-white text-xs font-bold text-[#111111] transition disabled:opacity-35 sm:h-8 sm:w-8 sm:text-sm"
           aria-label="Posunout timeline doleva"
         >
@@ -248,12 +269,8 @@ export function Timeline({ days, onSelect }: TimelineProps) {
         </button>
         <button
           type="button"
-          onClick={() => {
-            const container = timelineScrollRef.current;
-            if (!container) return;
-            container.scrollBy({ left: 260, behavior: "smooth" });
-          }}
-          disabled={!canScrollTimeline || !canScrollRight}
+          onClick={() => scrollTimelineBy("right")}
+          disabled={!canScrollTimeline}
           className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#ED742F] bg-[#ED742F] text-xs font-bold text-white transition disabled:opacity-35 sm:h-8 sm:w-8 sm:text-sm"
           aria-label="Posunout timeline doprava"
         >

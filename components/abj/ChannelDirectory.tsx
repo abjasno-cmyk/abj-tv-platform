@@ -106,8 +106,6 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
     [orderedChannels, activeChannelName]
   );
   const canScrollChannels = channelScrollState.max > 6;
-  const canScrollChannelsLeft = channelScrollState.left > 6;
-  const canScrollChannelsRight = channelScrollState.left < channelScrollState.max - 6;
 
   const updateChannelScrollState = useCallback(() => {
     const container = channelScrollRef.current;
@@ -138,6 +136,30 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
     container.addEventListener("scroll", onScroll, { passive: true });
     return () => container.removeEventListener("scroll", onScroll);
   }, [updateChannelScrollState]);
+
+  const scrollChannelsBy = useCallback((direction: "left" | "right") => {
+    const container = channelScrollRef.current;
+    if (!container) return;
+    const maxLeft = Math.max(0, container.scrollWidth - container.clientWidth);
+    if (maxLeft <= 6) return;
+    const currentLeft = Math.max(0, container.scrollLeft);
+    const step = 260;
+
+    if (direction === "right") {
+      const nextLeft = currentLeft + step;
+      container.scrollTo({
+        left: nextLeft >= maxLeft - 2 ? 0 : Math.min(maxLeft, nextLeft),
+        behavior: "smooth",
+      });
+      return;
+    }
+
+    const nextLeft = currentLeft - step;
+    container.scrollTo({
+      left: currentLeft <= 2 ? maxLeft : Math.max(0, nextLeft),
+      behavior: "smooth",
+    });
+  }, []);
 
   const loadFallbackVideos = async (channel: LiveChannelGroup) => {
     const channelKey = channel.channelName;
@@ -217,7 +239,10 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
           </p>
         ) : (
           <>
-            <div ref={channelScrollRef} className="-mx-1 overflow-x-auto rounded-2xl bg-white p-2">
+            <div
+              ref={channelScrollRef}
+              className="-mx-1 overflow-x-auto rounded-2xl bg-white p-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            >
               <div className="flex min-w-max gap-2">
                 {orderedChannels.map((channel) => {
                   const selected = activeChannelName === channel.channelName;
@@ -253,12 +278,8 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
               </p>
               <button
                 type="button"
-                onClick={() => {
-                  const container = channelScrollRef.current;
-                  if (!container) return;
-                  container.scrollBy({ left: -260, behavior: "smooth" });
-                }}
-                disabled={!canScrollChannels || !canScrollChannelsLeft}
+                onClick={() => scrollChannelsBy("left")}
+                disabled={!canScrollChannels}
                 aria-label="Posunout kanály doleva"
                 className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#111111] bg-white text-xs font-bold text-[#111111] transition disabled:opacity-35 sm:h-8 sm:w-8 sm:text-sm"
               >
@@ -266,12 +287,8 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  const container = channelScrollRef.current;
-                  if (!container) return;
-                  container.scrollBy({ left: 260, behavior: "smooth" });
-                }}
-                disabled={!canScrollChannels || !canScrollChannelsRight}
+                onClick={() => scrollChannelsBy("right")}
+                disabled={!canScrollChannels}
                 aria-label="Posunout kanály doprava"
                 className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#ED742F] bg-[#ED742F] text-xs font-bold text-white transition disabled:opacity-35 sm:h-8 sm:w-8 sm:text-sm"
               >
