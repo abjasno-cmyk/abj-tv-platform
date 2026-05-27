@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import YouTube, { type YouTubeProps } from "react-youtube";
 
 import { useFeed } from "@/hooks/useFeed";
 import type { FeedPost } from "@/lib/api";
@@ -1133,12 +1134,26 @@ type EditorialVideoListItemProps = {
 
 function EditorialVideoListItem({ video, expanded, onToggleExpanded }: EditorialVideoListItemProps) {
   const [startedPlayback, setStartedPlayback] = useState(false);
+  const [embedBlocked, setEmbedBlocked] = useState(false);
   const thumbnailSrc = readString(video.thumbnail) ?? "/placeholder-thumb.jpg";
   const description = readString(video.tldr) ?? readString(video.context) ?? readString(video.impact);
   const dateParts = resolveEditorialDateParts(video.published_at);
-  const embedUrl = getYoutubeAutoplayEmbedUrl(video);
+  const videoId = getEffectiveVideoId(video);
   const externalHref = getVideoExternalUrl(video);
-  const isDisabled = !embedUrl && !externalHref;
+  const isDisabled = !videoId && !externalHref;
+  const youtubeOpts = useMemo<YouTubeProps["opts"]>(
+    () => ({
+      width: "100%",
+      height: "100%",
+      playerVars: {
+        autoplay: 1,
+        rel: 0,
+        modestbranding: 1,
+        playsinline: 1,
+      },
+    }),
+    []
+  );
 
   return (
     <article className="border-b border-[#111111] py-8 font-[Helvetica,Arial,sans-serif] text-[#111111]">
@@ -1188,27 +1203,45 @@ function EditorialVideoListItem({ video, expanded, onToggleExpanded }: Editorial
 
       {expanded ? (
         <div className="mt-6 md:pl-[calc(72px+2rem)]">
-          {embedUrl ? (
+          {videoId ? (
             <div className="overflow-hidden bg-black">
               {!startedPlayback ? (
                 <button
                   type="button"
                   className="flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(237,116,47,0.24),rgba(0,0,0,0.84))]"
-                  onClick={() => setStartedPlayback(true)}
+                  onClick={() => {
+                    setEmbedBlocked(false);
+                    setStartedPlayback(true);
+                  }}
                 >
                   <span className="rounded-full border border-[#ED742F] bg-[rgba(255,255,255,0.12)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white">
                     Přehrát video
                   </span>
                 </button>
+              ) : embedBlocked ? (
+                <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 bg-[radial-gradient(circle_at_center,rgba(237,116,47,0.16),rgba(0,0,0,0.9))] px-4 text-center">
+                  <p className="text-sm text-white/90">Vlastník videa zakázal přehrávání na externích stránkách.</p>
+                  {externalHref ? (
+                    <a
+                      href={externalHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex min-h-10 items-center rounded-full border border-[#ED742F] bg-[#ED742F] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#111111] hover:opacity-90"
+                    >
+                      Přehrát na YouTube
+                    </a>
+                  ) : null}
+                </div>
               ) : (
-                <iframe
+                <YouTube
+                  videoId={videoId}
+                  opts={youtubeOpts}
                   title={video.title}
                   className="aspect-video w-full"
-                  src={embedUrl}
-                  allow="autoplay; encrypted-media; picture-in-picture"
-                  sandbox="allow-scripts allow-same-origin allow-presentation"
-                  referrerPolicy="origin"
-                  allowFullScreen
+                  iframeClassName="h-full w-full"
+                  onError={() => {
+                    setEmbedBlocked(true);
+                  }}
                 />
               )}
             </div>
