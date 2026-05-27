@@ -8,6 +8,7 @@ import type { FeedPost } from "@/lib/api";
 
 const EMPTY_MESSAGE = "Zatím nejsou dostupná žádná nová videa.";
 const LATEST_VIDEO_LIMIT = 16;
+const VIDEO_WINDOW_HOURS = 24;
 const CHANNEL_PANEL_VIDEO_LIMIT = 4;
 const CHANNEL_TARGET_COUNT = 50;
 const CHANNEL_AUTO_LOAD_MAX_PAGES = 18;
@@ -1124,8 +1125,13 @@ type VideoGridProps = {
   editorialMode?: boolean;
 };
 
-function EditorialVideoListItem({ video }: { video: FeedVideoView }) {
-  const [expanded, setExpanded] = useState(false);
+type EditorialVideoListItemProps = {
+  video: FeedVideoView;
+  expanded: boolean;
+  onToggleExpanded: () => void;
+};
+
+function EditorialVideoListItem({ video, expanded, onToggleExpanded }: EditorialVideoListItemProps) {
   const [startedPlayback, setStartedPlayback] = useState(false);
   const thumbnailSrc = readString(video.thumbnail) ?? "/placeholder-thumb.jpg";
   const description = readString(video.tldr) ?? readString(video.context) ?? readString(video.impact);
@@ -1166,18 +1172,12 @@ function EditorialVideoListItem({ video }: { video: FeedVideoView }) {
             <button
               type="button"
               disabled={isDisabled}
-              onClick={() => {
-                const nextExpanded = !expanded;
-                setExpanded(nextExpanded);
-                if (!nextExpanded) {
-                  setStartedPlayback(false);
-                }
-              }}
+              onClick={onToggleExpanded}
               className={`inline-flex items-center gap-4 text-left text-[clamp(1.15rem,1.9vw,2rem)] ${
                 isDisabled ? "cursor-default text-[#7A7A7A]" : "transition-opacity hover:opacity-80"
               }`}
             >
-              <span>Zobrazit více</span>
+              <span>{expanded ? "Skrýt" : "Zjistit více"}</span>
               <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#ED742F] text-base leading-none text-white">
                 →
               </span>
@@ -1231,8 +1231,8 @@ function EditorialVideoListItem({ video }: { video: FeedVideoView }) {
 function VideoGrid({ title, subtitle, videos, loading, emptyMessage, editorialMode = false }: VideoGridProps) {
   const heroVideo = videos[0] ?? null;
   const heroThumbnail = readString(heroVideo?.thumbnail) ?? "/placeholder-thumb.jpg";
-  const heroDescription = readString(heroVideo?.tldr) ?? readString(heroVideo?.context) ?? subtitle;
   const [clockLabel, setClockLabel] = useState(() => getPragueTimeLabel(new Date()));
+  const [expandedVideoKey, setExpandedVideoKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (!editorialMode) return;
@@ -1241,6 +1241,11 @@ function VideoGrid({ title, subtitle, videos, loading, emptyMessage, editorialMo
     }, 30_000);
     return () => window.clearInterval(timer);
   }, [editorialMode]);
+
+  const effectiveExpandedVideoKey = useMemo(() => {
+    if (!expandedVideoKey) return null;
+    return videos.some((video) => videoUniqKey(video) === expandedVideoKey) ? expandedVideoKey : null;
+  }, [expandedVideoKey, videos]);
 
   return (
     <section className={editorialMode ? "space-y-8 font-[Helvetica,Arial,sans-serif] text-[#111111]" : "space-y-4"}>
@@ -1266,7 +1271,6 @@ function VideoGrid({ title, subtitle, videos, loading, emptyMessage, editorialMo
               <div className="absolute inset-0 bg-[rgba(17,17,17,0.46)]" />
               <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white">
                 <h2 className="text-[clamp(2rem,5vw,4.5rem)] font-black uppercase tracking-[0.02em]">NEJNOVĚJŠÍ VIDEA</h2>
-                <p className="mt-3 max-w-[780px] text-[clamp(1rem,1.9vw,1.8rem)] leading-tight text-white/92">{heroDescription}</p>
                 <a
                   href="#videa-editorial-feed"
                   className="mt-8 inline-flex h-24 w-24 items-center justify-center rounded-full bg-[#ED742F] text-center text-[0.9rem] font-bold uppercase tracking-[0.03em] text-[#111111] transition hover:opacity-90 sm:h-28 sm:w-28"
@@ -1303,7 +1307,20 @@ function VideoGrid({ title, subtitle, videos, loading, emptyMessage, editorialMo
       ) : editorialMode ? (
         <div id="videa-editorial-feed" className="border-t border-[#111111]">
           {videos.length > 0
-            ? videos.map((video) => <EditorialVideoListItem key={`editorial-row-${videoUniqKey(video)}`} video={video} />)
+            ? videos.map((video) => {
+                const key = videoUniqKey(video);
+                const expanded = effectiveExpandedVideoKey === key;
+                return (
+                  <EditorialVideoListItem
+                    key={`editorial-row-${key}-${expanded ? "open" : "closed"}`}
+                    video={video}
+                    expanded={expanded}
+                    onToggleExpanded={() => {
+                      setExpandedVideoKey((prev) => (prev === key ? null : key));
+                    }}
+                  />
+                );
+              })
             : [0, 1, 2].map((slot) => (
                 <div key={`editorial-skeleton-${slot}`} className="border-b border-[#111111] py-8">
                   <div className="grid gap-5 md:grid-cols-[72px_minmax(270px,420px)_minmax(0,1fr)] md:gap-8">
@@ -1506,6 +1523,7 @@ export function ArchivClient({ initialData, mode = "default" }: ArchivClientProp
   const [channelFilter, setChannelFilter] = useState<ChannelFilter>("ALL");
   const [structuredFeedPayload, setStructuredFeedPayload] = useState<StructuredFeedPayloadView | null>(null);
   const [autoLoadPages, setAutoLoadPages] = useState(0);
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   const currentPayload = useMemo<FeedResponseView>(
     () => ({
@@ -1606,7 +1624,6 @@ export function ArchivClient({ initialData, mode = "default" }: ArchivClientProp
     return channels[0];
   }, [channels, userSelectedChannelKey]);
 
-  const latestVideos = useMemo(() => allVideos.slice(0, LATEST_VIDEO_LIMIT), [allVideos]);
   const filteredChannels = useMemo(() => {
     const query = normalizeText(channelQuery);
     return channels.filter((entry) => {
@@ -1630,6 +1647,38 @@ export function ArchivClient({ initialData, mode = "default" }: ArchivClientProp
   }, [selectedChannelPanelVideos, userSelectedVideoKey]);
   const isVideaMode = mode === "videa";
   const showExtendedOverview = false;
+  const videoWindowCutoffMs = nowMs - VIDEO_WINDOW_HOURS * 60 * 60 * 1000;
+
+  useEffect(() => {
+    if (!isVideaMode) return;
+    const timer = window.setInterval(() => {
+      setNowMs(Date.now());
+    }, 60_000);
+    return () => window.clearInterval(timer);
+  }, [isVideaMode]);
+
+  const videosInTimeWindow = useMemo(() => {
+    if (!isVideaMode) return [];
+    return allVideos.filter((video) => {
+      const publishedAtMs = parseTimestamp(video.published_at);
+      return publishedAtMs >= videoWindowCutoffMs;
+    });
+  }, [allVideos, isVideaMode, videoWindowCutoffMs]);
+
+  const hasLoadedOlderVideosOutsideWindow = useMemo(() => {
+    if (!isVideaMode) return false;
+    return allVideos.some((video) => {
+      const publishedAtMs = parseTimestamp(video.published_at);
+      return publishedAtMs > 0 && publishedAtMs < videoWindowCutoffMs;
+    });
+  }, [allVideos, isVideaMode, videoWindowCutoffMs]);
+
+  const latestVideos = useMemo(
+    () => (isVideaMode ? videosInTimeWindow : allVideos.slice(0, LATEST_VIDEO_LIMIT)),
+    [allVideos, isVideaMode, videosInTimeWindow]
+  );
+
+  const showLoadMoreButton = isVideaMode ? hasMore && !hasLoadedOlderVideosOutsideWindow : hasMore;
 
   return (
     <section
@@ -1686,11 +1735,11 @@ export function ArchivClient({ initialData, mode = "default" }: ArchivClientProp
         subtitle="Průběžně aktualizovaný přehled posledních videí napříč sítí."
         videos={latestVideos}
         loading={isInitialLoading}
-        emptyMessage={EMPTY_MESSAGE}
+        emptyMessage={isVideaMode ? "Za posledních 24 hodin zatím nejsou dostupná žádná videa." : EMPTY_MESSAGE}
         editorialMode={isVideaMode}
       />
 
-      {hasMore ? (
+      {showLoadMoreButton ? (
         <div className="flex justify-center">
           <button
             type="button"
