@@ -52,7 +52,7 @@ export function HomePage({
   const hasEngagement = Boolean(engagementSlot);
 
   return (
-    <section className="relative min-h-[calc(100vh-46px)] bg-white pb-10 pt-5 font-[Helvetica,Arial,sans-serif] text-[#111111]">
+    <section className="relative min-h-[calc(100vh-46px)] bg-[#FFFFFF] pb-10 pt-5 font-[Helvetica,Arial,sans-serif] text-[#111111]">
       <div className="relative z-[2] mx-auto flex w-full max-w-[1320px] flex-col gap-6 px-4 sm:px-6 lg:px-10">
         <div id="live-player-section" className="order-1">
           <LivePlayer

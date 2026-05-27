@@ -215,7 +215,7 @@ export default function LivePage({
   );
 
   return (
-    <section data-ui-version="abj-geometric-v3" className="min-h-screen bg-white text-[#111111]">
+    <section data-ui-version="abj-geometric-v3" className="min-h-screen bg-[#FFFFFF] text-[#111111]">
       <HomePage
         days={safeEpg}
         channels={channels}

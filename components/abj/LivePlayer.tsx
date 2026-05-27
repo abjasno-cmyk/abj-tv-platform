@@ -195,14 +195,13 @@ export function LivePlayer({
   }, [isPaused, videoId]);
 
   return (
-    <section
-      id="live-player-shell"
-      ref={playerShellRef}
-      className="relative mb-12 overflow-visible rounded-[32px] bg-[#ED742F] font-[Helvetica,Arial,sans-serif] text-[#111111] shadow-[0_22px_45px_rgba(17,17,17,0.12)]"
-    >
-      <p className="pointer-events-none absolute right-0 top-[-64px] text-[clamp(3rem,8vw,6.2rem)] font-black leading-none tracking-tight text-[#ED742F]">
-        {clockLabel}
-      </p>
+    <div className="mb-12 font-[Helvetica,Arial,sans-serif] text-[#111111]">
+      <div className="mb-1 flex justify-end pr-1 sm:pr-2">
+        <p className="pointer-events-none text-[clamp(3rem,8vw,6.2rem)] font-black leading-none tracking-tight text-[#ED742F]">
+          {clockLabel}
+        </p>
+      </div>
+      <section id="live-player-shell" ref={playerShellRef} className="relative overflow-visible rounded-[32px] bg-[#ED742F] text-[#111111]">
       <div className="relative aspect-video w-full overflow-hidden rounded-t-[30px] bg-[#0B0D10]">
         {videoId ? (
           <div className="abj-slow-zoom absolute inset-0">
@@ -310,13 +309,14 @@ export function LivePlayer({
           type="button"
           onClick={onGoLive}
           aria-label="Přepnout na živé vysílání"
-          className={`absolute bottom-0 right-4 z-20 inline-flex h-20 w-20 translate-y-1/2 items-center justify-center rounded-full border-4 border-white text-center text-[10px] font-black uppercase leading-[1.05] tracking-[0.08em] shadow-[0_10px_20px_rgba(17,17,17,0.22)] ring-[6px] ring-white transition sm:right-6 sm:h-24 sm:w-24 sm:text-[11px] ${
+          className={`absolute bottom-0 right-4 z-20 inline-flex h-20 w-20 translate-y-1/2 items-center justify-center rounded-full border-[4px] border-[#FFFFFF] text-center text-[10px] font-black uppercase leading-[1.05] tracking-[0.08em] ring-[7px] ring-[#FFFFFF] transition sm:right-6 sm:h-24 sm:w-24 sm:text-[11px] ${
             isLive ? "bg-[#ED742F] text-white/90" : "bg-[#ED742F] text-white hover:scale-[1.02]"
           }`}
         >
           Živé<br />vysílání
         </button>
       </div>
-    </section>
+      </section>
+    </div>
   );
 }
