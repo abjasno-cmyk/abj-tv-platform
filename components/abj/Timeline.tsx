@@ -166,7 +166,7 @@ export function Timeline({ days, onSelect }: TimelineProps) {
   }, [activeDay?.date, currentSlot, updateScrollState]);
 
   return (
-    <section className="rounded-[32px] border border-[rgba(17,17,17,0.12)] bg-white px-5 py-5 font-[Helvetica,Arial,sans-serif] text-[#111111] shadow-[0_16px_35px_rgba(17,17,17,0.08)]">
+    <section className="bg-white px-5 py-5 font-[Helvetica,Arial,sans-serif] text-[#111111]">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h3 className="text-[clamp(1.35rem,2.3vw,2rem)] font-black leading-tight text-[#111111]">
@@ -175,17 +175,14 @@ export function Timeline({ days, onSelect }: TimelineProps) {
           <p className="text-xs text-[#111111]/60">Kliknutím na náhled spustíte video v hlavním přehrávači.</p>
         </div>
         {currentSlot ? (
-          <span className="inline-flex items-center gap-1 rounded-full border border-[#ED742F]/35 bg-[rgba(237,116,47,0.1)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#111111]">
+          <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(237,116,47,0.14)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#111111]">
             <span className="h-2 w-2 rounded-full bg-[#ED742F]" />
             Teď běží
           </span>
         ) : null}
       </div>
 
-      <div
-        ref={timelineScrollRef}
-        className="-mx-1 overflow-x-auto rounded-[24px] border border-[rgba(17,17,17,0.1)] bg-[#FCFAF7] p-3"
-      >
+      <div ref={timelineScrollRef} className="-mx-1 overflow-x-auto p-3">
         <div className="flex min-w-max gap-3">
           {items.length === 0 ? (
             <p className="px-2 py-4 text-sm text-abj-text2">Program se připravuje.</p>
@@ -209,11 +206,7 @@ export function Timeline({ days, onSelect }: TimelineProps) {
                     active ? "scale-[1.01]" : ""
                   }`}
                 >
-                  <div
-                    className={`relative overflow-hidden rounded-[14px] border ${
-                      active ? "border-[#ED742F]" : "border-[rgba(17,17,17,0.16)]"
-                    }`}
-                  >
+                  <div className="relative overflow-hidden rounded-[14px] shadow-[0_8px_18px_rgba(17,17,17,0.16)]">
                     <div className="relative aspect-[16/9] w-full bg-black">
                       <img
                         src={resolveThumbnail(item)}

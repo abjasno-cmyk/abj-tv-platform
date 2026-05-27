@@ -36,6 +36,15 @@ type YouTubePlayerHandle = {
   unMute?: () => void;
 };
 
+function getPragueTimeLabel(date: Date): string {
+  return new Intl.DateTimeFormat("cs-CZ", {
+    timeZone: "Europe/Prague",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+}
+
 function readFullscreenElement(doc: FullscreenDocument): Element | null {
   return doc.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
 }
@@ -79,6 +88,7 @@ export function LivePlayer({
   const [mutedByVideoId, setMutedByVideoId] = useState<Record<string, boolean>>({});
   const [pausedByVideoId, setPausedByVideoId] = useState<Record<string, boolean>>({});
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [clockLabel, setClockLabel] = useState(() => getPragueTimeLabel(new Date()));
   const isMuted = videoId ? (mutedByVideoId[videoId] ?? true) : true;
   const isPaused = videoId ? (pausedByVideoId[videoId] ?? false) : false;
   const offsetSeconds = Math.max(0, Math.floor(startSeconds));
@@ -94,6 +104,13 @@ export function LivePlayer({
       doc.removeEventListener("fullscreenchange", syncFullscreen);
       doc.removeEventListener("webkitfullscreenchange", syncFullscreen);
     };
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setClockLabel(getPragueTimeLabel(new Date()));
+    }, 30_000);
+    return () => window.clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -181,8 +198,11 @@ export function LivePlayer({
     <section
       id="live-player-shell"
       ref={playerShellRef}
-      className="relative mb-12 overflow-visible rounded-[32px] border border-[#ED742F] bg-[#ED742F] font-[Helvetica,Arial,sans-serif] text-[#111111] shadow-[0_22px_45px_rgba(17,17,17,0.12)]"
+      className="relative mb-12 overflow-visible rounded-[32px] bg-[#ED742F] font-[Helvetica,Arial,sans-serif] text-[#111111] shadow-[0_22px_45px_rgba(17,17,17,0.12)]"
     >
+      <p className="pointer-events-none absolute right-0 top-[-64px] text-[clamp(3rem,8vw,6.2rem)] font-black leading-none tracking-tight text-[#ED742F]">
+        {clockLabel}
+      </p>
       <div className="relative aspect-video w-full overflow-hidden rounded-t-[30px] bg-[#0B0D10]">
         {videoId ? (
           <div className="abj-slow-zoom absolute inset-0">
@@ -263,7 +283,7 @@ export function LivePlayer({
         ) : null}
       </div>
 
-      <div className="relative z-10 border-t border-black/10 bg-[#ED742F] px-5 pb-7 pt-5 md:px-6 md:pb-8 md:pt-6">
+      <div className="relative z-10 bg-[#ED742F] px-5 pb-7 pt-5 md:px-6 md:pb-8 md:pt-6">
         <div className="pr-24 sm:pr-28 md:pr-32">
           <h1 className="text-[clamp(1.35rem,2.7vw,2.45rem)] font-black leading-[1.06] text-white">
             {title}
@@ -273,7 +293,7 @@ export function LivePlayer({
             <button
               type="button"
               onClick={() => onContinueFromSaved?.(continueFromSeconds)}
-              className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-full border border-black/20 bg-white/20 px-4 py-2 text-sm font-semibold text-black transition hover:bg-white/30"
+              className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-semibold text-[#111111] transition hover:bg-white/30"
             >
               Pokračovat od {Math.floor(continueFromSeconds / 60)
                 .toString()

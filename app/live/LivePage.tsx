@@ -199,17 +199,17 @@ export default function LivePage({
   );
 
   const communityBlock = (
-    <section className="relative overflow-hidden rounded-[28px] bg-[#ED742F] px-5 pb-7 pt-6 font-[Helvetica,Arial,sans-serif] shadow-[0_16px_30px_rgba(17,17,17,0.14)] sm:px-7 sm:pb-8 sm:pt-7">
-      <span className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-white px-4 py-1 text-lg font-black uppercase tracking-[0.08em] text-[#111111]">
+    <section className="relative rounded-[28px] bg-[#ED742F] px-5 pb-7 pt-6 font-[Helvetica,Arial,sans-serif] shadow-[0_16px_30px_rgba(17,17,17,0.14)] sm:px-7 sm:pb-8 sm:pt-7">
+      <span className="mx-auto mb-4 block w-fit rounded-sm bg-white px-4 py-1 text-lg font-black uppercase tracking-[0.08em] text-[#111111]">
         Komunita
       </span>
-      <p className="mt-4 text-center text-[clamp(1rem,2.2vw,1.35rem)] font-semibold uppercase tracking-[0.06em] text-white">
+      <p className="text-center text-[clamp(1rem,2.2vw,1.35rem)] font-semibold uppercase tracking-[0.06em] text-white">
         ZDE NAPIŠTE ZPRÁVU
       </p>
       <input
         type="text"
         aria-label="Napsat zprávu do komunity"
-        className="mt-4 min-h-14 w-full rounded-md border border-white bg-white px-4 py-3 text-base text-[#111111] outline-none"
+        className="mt-4 min-h-14 w-full rounded-md bg-white px-4 py-3 text-base text-[#111111] outline-none"
       />
     </section>
   );

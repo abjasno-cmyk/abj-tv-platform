@@ -72,7 +72,7 @@ function ChannelAvatar({ channelName, avatarUrl }: { channelName: string; avatar
   const showImage = Boolean(avatarUrl) && !imageFailed;
 
   return (
-    <span className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[rgba(17,17,17,0.14)] bg-[rgba(255,255,255,0.9)] shadow-[0_4px_10px_rgba(17,17,17,0.08)]">
+    <span className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[rgba(255,255,255,0.9)] shadow-[0_4px_10px_rgba(17,17,17,0.08)]">
       {showImage ? (
         <Image
           src={avatarUrl!}
@@ -144,7 +144,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
     const channelId = channel.channelId;
     const channelUrl = channel.channelUrl;
     if (channel.videos.length > 0) return;
-    if (!channelId && !channelUrl) return;
+    if (!channelId && !channelUrl && !channel.channelName.trim()) return;
     if (loadingByChannel[channelKey]) return;
     if (Object.prototype.hasOwnProperty.call(fetchedVideosByChannel, channelKey)) return;
 
@@ -199,25 +199,25 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
   };
 
   return (
-    <section className="rounded-[32px] border border-[rgba(17,17,17,0.1)] bg-white px-5 py-5 font-[Helvetica,Arial,sans-serif] text-[#111111] shadow-[0_16px_35px_rgba(17,17,17,0.08)]">
+    <section className="bg-white px-5 py-5 font-[Helvetica,Arial,sans-serif] text-[#111111]">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h3 className="text-xl font-black tracking-tight text-[#111111]">Kanály</h3>
           <p className="text-[11px] uppercase tracking-[0.16em] text-[#111111]/55">Vyberte kanál a spusťte videa</p>
         </div>
-        <span className="rounded-full border border-[#ED742F]/35 bg-[rgba(237,116,47,0.1)] px-3 py-1 text-xs font-semibold text-[#111111]">
+        <span className="rounded-full bg-[rgba(237,116,47,0.14)] px-3 py-1 text-xs font-semibold text-[#111111]">
           {orderedChannels.length} kanálů
         </span>
       </div>
 
       <div className="space-y-4">
         {orderedChannels.length === 0 ? (
-          <p className="rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white px-4 py-3 text-sm text-abj-text2">
+          <p className="rounded-2xl bg-white px-4 py-3 text-sm text-abj-text2">
             Seznam kanálů se připravuje.
           </p>
         ) : (
           <>
-            <div ref={channelScrollRef} className="-mx-1 overflow-x-auto rounded-2xl border border-[rgba(17,17,17,0.1)] bg-[#FCFAF7] p-2">
+            <div ref={channelScrollRef} className="-mx-1 overflow-x-auto rounded-2xl bg-white p-2">
               <div className="flex min-w-max gap-2">
                 {orderedChannels.map((channel) => {
                   const selected = activeChannelName === channel.channelName;
@@ -232,10 +232,10 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                           void loadFallbackVideos(channel);
                         }
                       }}
-                      className={`inline-flex min-h-12 items-center gap-2 rounded-full border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ED742F]/45 ${
+                      className={`inline-flex min-h-12 items-center gap-2 rounded-full px-3 py-2 text-left shadow-[0_3px_10px_rgba(17,17,17,0.1)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ED742F]/45 ${
                         selected
-                          ? "border-[#ED742F]/55 bg-[rgba(237,116,47,0.14)] text-[#8E3D17]"
-                          : "border-[rgba(17,17,17,0.14)] bg-white text-abj-text1 hover:border-[#ED742F]/45 hover:bg-[rgba(237,116,47,0.08)]"
+                          ? "bg-[rgba(237,116,47,0.14)] text-[#111111]"
+                          : "bg-white text-abj-text1 hover:bg-[rgba(237,116,47,0.08)]"
                       }`}
                     >
                       <ChannelAvatar channelName={channel.channelName} avatarUrl={channel.avatarUrl} />
@@ -297,7 +297,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
             </div>
 
             {activeChannel ? (
-              <div className="rounded-[24px] border border-[rgba(17,17,17,0.12)] bg-[#FCFAF7] p-4">
+              <div className="rounded-[24px] bg-white p-4">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">
                     <ChannelAvatar channelName={activeChannel.channelName} avatarUrl={activeChannel.avatarUrl} />
@@ -319,7 +319,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                   const loadingError = errorByChannel[activeChannel.channelName] ?? "";
                   if (loadingFallbackVideos) {
                     return (
-                      <p className="rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white px-4 py-3 text-sm text-abj-text2">
+                      <p className="rounded-2xl bg-white px-4 py-3 text-sm text-abj-text2">
                         Načítám nejnovější videa přímo z kanálu...
                       </p>
                     );
@@ -332,7 +332,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                             key={`${activeChannel.channelName}-${video.videoId}`}
                             type="button"
                             onClick={() => onSelectVideo({ channelName: activeChannel.channelName, video })}
-                            className="group overflow-hidden rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white text-left shadow-[0_10px_20px_rgba(17,17,17,0.08)] transition hover:-translate-y-[1px] hover:border-[#ED742F]/35 hover:shadow-[0_16px_28px_rgba(17,17,17,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ED742F]/45"
+                            className="group overflow-hidden rounded-2xl bg-white text-left shadow-[0_10px_20px_rgba(17,17,17,0.08)] transition hover:-translate-y-[1px] hover:shadow-[0_16px_28px_rgba(17,17,17,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ED742F]/45"
                           >
                             <div className="relative aspect-[16/9] w-full overflow-hidden bg-abj-main">
                               <Image
@@ -357,7 +357,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                   if (activeChannel.channelId || activeChannel.channelUrl) {
                     return (
                       <div className="space-y-3">
-                        <p className="rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white px-4 py-3 text-sm text-abj-text2">
+                        <p className="rounded-2xl bg-white px-4 py-3 text-sm text-abj-text2">
                           {loadingError || "Kanál momentálně neposkytuje dostupná videa."}
                         </p>
                         <button
@@ -365,7 +365,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                           onClick={() => {
                             void loadFallbackVideos(activeChannel);
                           }}
-                          className="inline-flex min-h-10 items-center rounded-full border border-[#ED742F] bg-[#ED742F] px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white hover:opacity-90"
+                          className="inline-flex min-h-10 items-center rounded-full bg-[#ED742F] px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white hover:opacity-90"
                         >
                           Načíst videa kanálu
                         </button>
@@ -373,14 +373,14 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                     );
                   }
                   return (
-                    <p className="rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white px-4 py-3 text-sm text-abj-text2">
+                    <p className="rounded-2xl bg-white px-4 py-3 text-sm text-abj-text2">
                       U tohoto kanálu chybí interní mapování na YouTube kanál, proto nejde načíst nejnovější videa.
                     </p>
                   );
                 })()}
               </div>
             ) : (
-              <p className="rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white px-4 py-3 text-sm text-[#111111]/70">
+              <p className="rounded-2xl bg-white px-4 py-3 text-sm text-[#111111]/70">
                 Klikněte na vybraný kanál pro zobrazení detailu.
               </p>
             )}

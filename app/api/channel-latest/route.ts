@@ -19,6 +19,23 @@ type YouTubeSearchPayload = {
   }>;
 };
 
+type YouTubeVideoSearchPayload = {
+  items?: Array<{
+    id?: {
+      videoId?: string;
+    };
+    snippet?: {
+      title?: string;
+      publishedAt?: string;
+      thumbnails?: {
+        high?: { url?: string };
+        medium?: { url?: string };
+        default?: { url?: string };
+      };
+    };
+  }>;
+};
+
 const CHANNEL_ID_REGEXES = [
   /"channelId":"(UC[0-9A-Za-z_-]{20,})"/,
   /<meta itemprop="channelId" content="(UC[0-9A-Za-z_-]{20,})"/,
@@ -189,6 +206,45 @@ async function resolveChannelIdBySearchQuery(channelName: string, apiKey: string
   }
 }
 
+async function resolveLatestVideosBySearchQuery(channelName: string, apiKey: string | null, limit: number): Promise<ChannelLatestVideo[]> {
+  if (!apiKey) return [];
+  const normalized = channelName.trim();
+  if (!normalized) return [];
+  try {
+    const url = new URL("https://www.googleapis.com/youtube/v3/search");
+    url.searchParams.set("part", "snippet");
+    url.searchParams.set("type", "video");
+    url.searchParams.set("order", "date");
+    url.searchParams.set("maxResults", String(Math.min(10, Math.max(1, limit))));
+    url.searchParams.set("q", normalized);
+    url.searchParams.set("key", apiKey);
+    const response = await fetchWithTimeout(url.toString(), 9000);
+    if (!response.ok) return [];
+    const payload = (await response.json()) as YouTubeVideoSearchPayload;
+    return (payload.items ?? [])
+      .map((item): ChannelLatestVideo | null => {
+        const videoId = item.id?.videoId?.trim();
+        const title = item.snippet?.title?.trim();
+        if (!videoId || !title) return null;
+        const thumbnail =
+          item.snippet?.thumbnails?.high?.url?.trim() ||
+          item.snippet?.thumbnails?.medium?.url?.trim() ||
+          item.snippet?.thumbnails?.default?.url?.trim() ||
+          `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`;
+        return {
+          videoId,
+          title,
+          publishedAt: item.snippet?.publishedAt?.trim() || new Date(0).toISOString(),
+          thumbnail,
+        };
+      })
+      .filter((video): video is ChannelLatestVideo => Boolean(video))
+      .slice(0, limit);
+  } catch {
+    return [];
+  }
+}
+
 function parseChannelIdFromHtml(html: string): string | null {
   for (const regex of CHANNEL_ID_REGEXES) {
     const match = html.match(regex);
@@ -291,7 +347,7 @@ export async function GET(request: Request) {
 
   if (!channelId && channelUrl) {
     const parsed = parseChannelUrl(channelUrl);
-    if (parsed.directChannelId) {
+    if (parsed.directChannelId && isValidYouTubeChannelId(parsed.directChannelId)) {
       channelId = parsed.directChannelId;
     } else {
       if (apiKey && parsed.handle) {
@@ -326,7 +382,11 @@ export async function GET(request: Request) {
       let retriedChannelId = "";
       if (channelUrl) {
         const parsed = parseChannelUrl(channelUrl);
-        if (parsed.directChannelId && isValidYouTubeChannelId(parsed.directChannelId)) {
+        if (
+          parsed.directChannelId &&
+          isValidYouTubeChannelId(parsed.directChannelId) &&
+          parsed.directChannelId !== channelId
+        ) {
           retriedChannelId = parsed.directChannelId;
         } else {
           if (apiKey && parsed.handle) {
@@ -353,6 +413,10 @@ export async function GET(request: Request) {
     }
 
     if (!feedResult.ok) {
+      const fallbackVideos = await resolveLatestVideosBySearchQuery(channelName, apiKey, limit);
+      if (fallbackVideos.length > 0) {
+        return Response.json({ videos: fallbackVideos, resolvedChannelId: null, fallback: "search" });
+      }
       return Response.json(
         {
           videos: [],
