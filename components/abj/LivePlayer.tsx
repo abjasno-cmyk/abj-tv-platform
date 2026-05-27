@@ -181,17 +181,8 @@ export function LivePlayer({
     <section
       id="live-player-shell"
       ref={playerShellRef}
-      className="relative overflow-hidden rounded-[32px] border border-[rgba(17,17,17,0.14)] bg-white shadow-[0_26px_55px_rgba(17,17,17,0.11)]"
+      className="relative overflow-hidden rounded-[32px] border border-[#ED742F] bg-[#ED742F] shadow-[0_22px_45px_rgba(17,17,17,0.12)]"
     >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[rgba(237,116,47,0.2)]"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -bottom-28 left-1/3 h-56 w-56 rounded-full border border-[rgba(237,116,47,0.22)]"
-      />
-
       <div className="relative aspect-video w-full overflow-hidden bg-[#0B0D10]">
         {videoId ? (
           <div className="abj-slow-zoom absolute inset-0">
@@ -221,16 +212,6 @@ export function LivePlayer({
         )}
 
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.2)_0%,rgba(0,0,0,0.02)_42%,rgba(0,0,0,0.65)_100%)]" />
-
-        <div className="absolute left-4 top-4 z-10 space-y-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ED742F] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white">
-            <span className="abj-live-dot h-1.5 w-1.5 rounded-full bg-white" />
-            {isLive ? "Živě" : "Záznam"}
-          </span>
-          <p className="rounded-full bg-black/50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/90">
-            {channel}
-          </p>
-        </div>
 
         <div className="absolute right-3 top-1/2 z-10 -translate-y-1/2">
           <div className="flex flex-col items-center gap-2 rounded-[18px] border border-white/20 bg-black/45 p-2 backdrop-blur-sm">
@@ -282,48 +263,17 @@ export function LivePlayer({
         ) : null}
       </div>
 
-      <div className="relative z-10 grid gap-4 border-t border-[rgba(17,17,17,0.1)] bg-white px-5 py-5 md:grid-cols-[minmax(0,1fr)_240px] md:gap-6 md:px-6 md:py-6">
-        <div>
-          <h1 className="text-[clamp(1.35rem,2.7vw,2.45rem)] font-black leading-[1.06] text-[var(--abj-text1)]">
+      <div className="relative z-10 border-t border-black/10 bg-[#ED742F] px-5 pb-6 pt-5 md:px-6 md:pb-7 md:pt-6">
+        <div className="pr-24 sm:pr-28 md:pr-32">
+          <h1 className="text-[clamp(1.35rem,2.7vw,2.45rem)] font-black leading-[1.06] text-white">
             {title}
           </h1>
-          <p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--abj-text2)]">{channel}</p>
-        </div>
-
-        <div className="space-y-2 rounded-2xl border border-[#ED742F]/30 bg-[#FFF2EA] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#A5491D]">zbývá</p>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-[rgba(237,116,47,0.2)]">
-            <div
-              className="h-full rounded-full bg-[#ED742F] transition-[width] duration-700 ease-out"
-              style={{ width: `${clampedProgress}%` }}
-            />
-          </div>
-          <p className="text-sm font-semibold text-[#111111]">{remainingLabel}</p>
-        </div>
-      </div>
-
-      <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(17,17,17,0.1)] bg-[#F8F5F0] px-5 py-4 md:px-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={onGoLive}
-            disabled={isLive}
-            className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
-              isLive
-                ? "cursor-default border-[#ED742F] bg-[#ED742F] text-white"
-                : "border-[#ED742F] bg-white text-[#A5491D] hover:bg-[rgba(237,116,47,0.1)]"
-            }`}
-          >
-            <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full ${isLive ? "bg-white/20" : "bg-[#ED742F] text-white"}`}>
-              ↺
-            </span>
-            {isLive ? "Právě živě" : "Zpět na živé vysílání"}
-          </button>
+          <p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-black">{channel}</p>
           {!isLive && continueFromSeconds !== null && continueFromSeconds > 30 ? (
             <button
               type="button"
               onClick={() => onContinueFromSaved?.(continueFromSeconds)}
-              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#ED742F]/45 bg-[rgba(237,116,47,0.1)] px-4 py-2 text-sm font-semibold text-[#A5491D] hover:bg-[rgba(237,116,47,0.16)]"
+              className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-full border border-black/20 bg-white/20 px-4 py-2 text-sm font-semibold text-black transition hover:bg-white/30"
             >
               Pokračovat od {Math.floor(continueFromSeconds / 60)
                 .toString()
@@ -331,7 +281,21 @@ export function LivePlayer({
               :{Math.floor(continueFromSeconds % 60).toString().padStart(2, "0")}
             </button>
           ) : null}
+          <p className="sr-only">
+            Zbývá {remainingLabel}. Průběh přehrávání {Math.round(clampedProgress)} procent.
+          </p>
         </div>
+
+        <button
+          type="button"
+          onClick={onGoLive}
+          aria-label="Přepnout na živé vysílání"
+          className={`absolute bottom-4 right-4 inline-flex h-20 w-20 items-center justify-center rounded-full border-4 border-white text-center text-[10px] font-black uppercase leading-[1.05] tracking-[0.08em] transition sm:bottom-5 sm:right-5 sm:h-24 sm:w-24 sm:text-[11px] ${
+            isLive ? "bg-[#ED742F] text-white/90" : "bg-[#ED742F] text-white hover:scale-[1.02]"
+          }`}
+        >
+          Živé<br />vysílání
+        </button>
       </div>
     </section>
   );
