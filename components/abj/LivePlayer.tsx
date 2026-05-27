@@ -242,7 +242,7 @@ export function LivePlayer({
 
   return (
     <div className="relative mb-12 font-[Helvetica,Arial,sans-serif] text-[#111111]">
-      <p className="pointer-events-none absolute right-2 top-0 z-20 -translate-y-[36%] text-[clamp(2.9rem,10.5vw,5.8rem)] font-black leading-[0.9] tracking-tight text-[#ED742F] sm:right-3">
+      <p className="pointer-events-none absolute -top-1 right-2 z-20 -translate-y-full text-[clamp(2.9rem,10.5vw,5.8rem)] font-black leading-[0.9] tracking-tight text-[#ED742F] sm:right-3">
         {clockLabel}
       </p>
       <section id="live-player-shell" ref={playerShellRef} className="relative overflow-visible rounded-[32px] bg-[#ED742F] text-[#111111]">

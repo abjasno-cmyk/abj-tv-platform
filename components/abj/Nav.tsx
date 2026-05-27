@@ -94,7 +94,7 @@ export function ABJNav() {
           isVisible ? "translate-y-0" : "-translate-y-[calc(100%-10px)]"
         }`}
       >
-        <header className="border-b border-[rgba(17,17,17,0.12)] bg-white/95 px-4 backdrop-blur-md md:px-6 shadow-[0_10px_24px_rgba(17,17,17,0.06)]">
+        <header className="bg-[#FFFFFF] px-4 font-[Helvetica,Arial,sans-serif] text-[#111111] md:px-6">
           <div className="flex h-[62px] items-center gap-4">
             <div className="flex min-w-0 items-center">
               <Link
@@ -102,7 +102,7 @@ export function ABJNav() {
                 className="relative z-10 inline-flex items-center"
                 aria-label="Přejít na stránku Živě"
               >
-                <p className="font-[var(--font-serif)] text-[30px] font-black tracking-[0.02em] text-abj-text1 leading-none">
+                <p className="text-[30px] font-black leading-none tracking-[0.02em] text-[#111111]">
                   VEROX
                 </p>
                 <span className="absolute -right-2 top-0 h-3 w-3 rounded-full bg-[#ED742F]" />
@@ -121,10 +121,10 @@ export function ABJNav() {
                               openMyVeroxLoginModal();
                             }
                           }}
-                          className={`border-b-[2px] pb-1.5 font-[var(--font-sans)] text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${
+                          className={`border-b-[2px] pb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${
                             isActive
-                              ? "border-[#ED742F] text-[#C8521A]"
-                              : "border-transparent text-abj-text2 hover:text-abj-text1"
+                              ? "border-[#ED742F] text-[#ED742F]"
+                              : "border-transparent text-[#111111]/70 hover:text-[#111111]"
                           }`}
                         >
                           {link.label}
@@ -136,7 +136,7 @@ export function ABJNav() {
               </nav>
             </div>
             <div className="pointer-events-none hidden flex-1 justify-center px-3 lg:flex">
-              <p className="truncate whitespace-nowrap rounded-full border border-[rgba(17,17,17,0.08)] bg-[rgba(249,246,241,0.9)] px-3 py-1 font-[var(--font-sans)] text-[10px] font-semibold uppercase tracking-[0.14em] text-abj-text2">
+              <p className="truncate whitespace-nowrap rounded-full bg-[#FFFFFF] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#111111]/65">
                 VEROX · MAINSTREAMOVÝ DETOX
               </p>
             </div>
@@ -144,7 +144,7 @@ export function ABJNav() {
             <div className="ml-auto flex items-center gap-3 md:gap-4">
               <button
                 type="button"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(17,17,17,0.16)] text-abj-text1 md:hidden"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full text-[#111111] md:hidden"
                 aria-label={mobileOpen ? "Zavřít menu" : "Otevřít menu"}
                 aria-expanded={mobileOpen}
                 onClick={() =>
@@ -170,7 +170,7 @@ export function ABJNav() {
                 <div className="hidden items-center gap-2 sm:flex">
                   <Link
                     href="/muj-verox"
-                    className="inline-flex min-h-9 items-center rounded-full border border-[rgba(17,17,17,0.16)] bg-white px-3 py-1.5 text-xs font-semibold text-abj-text1 hover:border-[#ED742F] hover:text-[#A5491D]"
+                    className="inline-flex min-h-9 items-center rounded-full bg-[#FFFFFF] px-3 py-1.5 text-xs font-semibold text-[#111111] hover:text-[#ED742F]"
                   >
                     {profile?.display_name ? `Můj Verox · ${profile.display_name}` : "Můj Verox"}
                   </Link>
@@ -179,7 +179,7 @@ export function ABJNav() {
                     onClick={() => {
                       void signOut();
                     }}
-                    className="inline-flex min-h-9 items-center rounded-full border border-[rgba(17,17,17,0.16)] px-3 py-1.5 text-xs font-semibold text-abj-text2 hover:border-[#ED742F] hover:text-abj-text1"
+                    className="inline-flex min-h-9 items-center rounded-full px-3 py-1.5 text-xs font-semibold text-[#111111]/70 hover:text-[#111111]"
                   >
                     Odhlásit
                   </button>
@@ -200,7 +200,7 @@ export function ABJNav() {
             </div>
           </div>
           {mobileOpen ? (
-            <nav className="border-t border-[rgba(17,17,17,0.12)] py-2 md:hidden">
+            <nav className="py-2 md:hidden">
               <ul className="grid grid-cols-2 gap-1">
                 {navLinks.map((link) => {
                   const isActive = activeHref === link.href;
@@ -219,8 +219,8 @@ export function ABJNav() {
                         }}
                         className={`block rounded-lg px-3 py-2 text-sm font-semibold transition ${
                           isActive
-                            ? "bg-[rgba(237,116,47,0.12)] text-[#C8521A]"
-                            : "text-abj-text2 hover:bg-[rgba(237,116,47,0.1)] hover:text-abj-text1"
+                            ? "bg-[rgba(237,116,47,0.12)] text-[#ED742F]"
+                            : "text-[#111111]/75 hover:bg-[rgba(237,116,47,0.1)] hover:text-[#111111]"
                         }`}
                       >
                         {link.label}
@@ -229,13 +229,13 @@ export function ABJNav() {
                   );
                 })}
               </ul>
-              <div className="mt-2 border-t border-[rgba(17,17,17,0.1)] pt-2">
+              <div className="mt-2 pt-2">
                 {isAuthenticated ? (
                   <div className="flex items-center gap-2">
                     <Link
                       href="/muj-verox"
                       onClick={() => setMobileOpen(false)}
-                      className="flex-1 rounded-lg border border-[rgba(17,17,17,0.16)] px-3 py-2 text-center text-sm font-semibold text-abj-text1"
+                      className="flex-1 rounded-lg px-3 py-2 text-center text-sm font-semibold text-[#111111]"
                     >
                       Můj Verox
                     </Link>
@@ -245,7 +245,7 @@ export function ABJNav() {
                         void signOut();
                         setMobileOpen(false);
                       }}
-                      className="rounded-lg border border-[rgba(17,17,17,0.16)] px-3 py-2 text-sm font-semibold text-abj-text2"
+                      className="rounded-lg px-3 py-2 text-sm font-semibold text-[#111111]/75"
                     >
                       Odhlásit
                     </button>
@@ -274,7 +274,7 @@ export function ABJNav() {
           onFocus={revealHeader}
           onTouchStart={revealHeader}
           aria-label="Zobrazit navigační lištu"
-          className={`mx-auto block w-24 rounded-b-full border border-t-0 border-[rgba(17,17,17,0.14)] bg-white/95 transition-all ${
+          className={`mx-auto block w-24 rounded-b-full bg-[#FFFFFF] transition-all ${
             isVisible ? "pointer-events-none h-0 opacity-0" : "h-[10px] opacity-100"
           }`}
         />
