@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { FollowChannelButton } from "@/components/auth/FollowChannelButton";
 
@@ -94,16 +94,50 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
   const [fetchedVideosByChannel, setFetchedVideosByChannel] = useState<Record<string, LiveChannelVideo[]>>({});
   const [loadingByChannel, setLoadingByChannel] = useState<Record<string, boolean>>({});
   const [errorByChannel, setErrorByChannel] = useState<Record<string, string>>({});
+  const channelScrollRef = useRef<HTMLDivElement | null>(null);
+  const [channelScrollState, setChannelScrollState] = useState({ left: 0, max: 0 });
 
   const orderedChannels = useMemo(
     () => [...channels].sort((a, b) => a.channelName.localeCompare(b.channelName, "cs-CZ")),
     [channels]
   );
-  const resolvedActiveChannelName = activeChannelName ?? orderedChannels[0]?.channelName ?? null;
   const activeChannel = useMemo(
-    () => orderedChannels.find((channel) => channel.channelName === resolvedActiveChannelName) ?? null,
-    [orderedChannels, resolvedActiveChannelName]
+    () => orderedChannels.find((channel) => channel.channelName === activeChannelName) ?? null,
+    [orderedChannels, activeChannelName]
   );
+  const canScrollChannels = channelScrollState.max > 6;
+  const canScrollChannelsLeft = channelScrollState.left > 6;
+  const canScrollChannelsRight = channelScrollState.left < channelScrollState.max - 6;
+
+  const updateChannelScrollState = useCallback(() => {
+    const container = channelScrollRef.current;
+    if (!container) {
+      setChannelScrollState({ left: 0, max: 0 });
+      return;
+    }
+    setChannelScrollState({
+      left: Math.max(0, container.scrollLeft),
+      max: Math.max(0, container.scrollWidth - container.clientWidth),
+    });
+  }, []);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => updateChannelScrollState());
+    const onResize = () => updateChannelScrollState();
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [orderedChannels.length, updateChannelScrollState]);
+
+  useEffect(() => {
+    const container = channelScrollRef.current;
+    if (!container) return;
+    const onScroll = () => updateChannelScrollState();
+    container.addEventListener("scroll", onScroll, { passive: true });
+    return () => container.removeEventListener("scroll", onScroll);
+  }, [updateChannelScrollState]);
 
   const loadFallbackVideos = async (channel: LiveChannelGroup) => {
     const channelKey = channel.channelName;
@@ -165,13 +199,13 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
   };
 
   return (
-    <section className="rounded-[32px] border border-[rgba(17,17,17,0.1)] bg-white px-5 py-5 shadow-[0_16px_35px_rgba(17,17,17,0.08)]">
+    <section className="rounded-[32px] border border-[rgba(17,17,17,0.1)] bg-white px-5 py-5 font-[Helvetica,Arial,sans-serif] text-[#111111] shadow-[0_16px_35px_rgba(17,17,17,0.08)]">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h3 className="text-xl font-black tracking-tight text-abj-text1">Kanály</h3>
-          <p className="text-[11px] uppercase tracking-[0.16em] text-abj-text2">Vyberte kanál a spusťte videa</p>
+          <h3 className="text-xl font-black tracking-tight text-[#111111]">Kanály</h3>
+          <p className="text-[11px] uppercase tracking-[0.16em] text-[#111111]/55">Vyberte kanál a spusťte videa</p>
         </div>
-        <span className="rounded-full border border-[#ED742F]/35 bg-[rgba(237,116,47,0.1)] px-3 py-1 text-xs font-semibold text-[#A5491D]">
+        <span className="rounded-full border border-[#ED742F]/35 bg-[rgba(237,116,47,0.1)] px-3 py-1 text-xs font-semibold text-[#111111]">
           {orderedChannels.length} kanálů
         </span>
       </div>
@@ -183,17 +217,17 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
           </p>
         ) : (
           <>
-            <div className="-mx-1 overflow-x-auto rounded-2xl border border-[rgba(17,17,17,0.1)] bg-[#FCFAF7] p-2">
+            <div ref={channelScrollRef} className="-mx-1 overflow-x-auto rounded-2xl border border-[rgba(17,17,17,0.1)] bg-[#FCFAF7] p-2">
               <div className="flex min-w-max gap-2">
                 {orderedChannels.map((channel) => {
-                  const selected = resolvedActiveChannelName === channel.channelName;
+                  const selected = activeChannelName === channel.channelName;
                   const featured = isAbyByloJasno(channel.channelName);
                   return (
                     <button
                       key={channel.channelName}
                       type="button"
                       onClick={() => {
-                        setActiveChannelName(channel.channelName);
+                        setActiveChannelName((prev) => (prev === channel.channelName ? null : channel.channelName));
                         if (channel.videos.length === 0) {
                           void loadFallbackVideos(channel);
                         }
@@ -213,14 +247,63 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
               </div>
             </div>
 
+            <div className="mt-1 flex items-center gap-3">
+              <p className="text-[33px] font-black uppercase leading-none tracking-[0.06em] text-[#111111]">Channels</p>
+              <button
+                type="button"
+                onClick={() => {
+                  const container = channelScrollRef.current;
+                  if (!container) return;
+                  container.scrollBy({ left: -260, behavior: "smooth" });
+                }}
+                disabled={!canScrollChannels || !canScrollChannelsLeft}
+                aria-label="Posunout kanály doleva"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#111111] bg-white text-sm font-bold text-[#111111] transition disabled:opacity-35"
+              >
+                ←
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const container = channelScrollRef.current;
+                  if (!container) return;
+                  container.scrollBy({ left: 260, behavior: "smooth" });
+                }}
+                disabled={!canScrollChannels || !canScrollChannelsRight}
+                aria-label="Posunout kanály doprava"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#ED742F] bg-[#ED742F] text-sm font-bold text-white transition disabled:opacity-35"
+              >
+                →
+              </button>
+              <div className="relative h-5 flex-1 overflow-hidden rounded-[2px] bg-[#ED742F]">
+                <input
+                  type="range"
+                  min={0}
+                  max={Math.max(1, Math.round(channelScrollState.max))}
+                  value={Math.min(Math.round(channelScrollState.left), Math.max(1, Math.round(channelScrollState.max)))}
+                  onChange={(event) => {
+                    const container = channelScrollRef.current;
+                    if (!container) return;
+                    container.scrollTo({
+                      left: Number(event.currentTarget.value),
+                      behavior: "auto",
+                    });
+                  }}
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  disabled={!canScrollChannels}
+                  aria-label="Posuvník kanálů"
+                />
+              </div>
+            </div>
+
             {activeChannel ? (
               <div className="rounded-[24px] border border-[rgba(17,17,17,0.12)] bg-[#FCFAF7] p-4">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">
                     <ChannelAvatar channelName={activeChannel.channelName} avatarUrl={activeChannel.avatarUrl} />
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-abj-text2">Aktivní kanál</p>
-                      <p className="text-lg font-black tracking-tight text-abj-text1">{activeChannel.channelName}</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#111111]/55">Aktivní kanál</p>
+                      <p className="text-lg font-black tracking-tight text-[#111111]">{activeChannel.channelName}</p>
                     </div>
                   </div>
                   <FollowChannelButton
@@ -264,7 +347,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                             <div className="space-y-1 px-3 py-3">
                               <p className="line-clamp-2 text-sm font-semibold leading-snug text-abj-text1">{video.title}</p>
                               <p className="text-xs text-abj-text2">Publikováno {formatPublishedLabel(video.publishedAt)}</p>
-                              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#A5491D]">Přehrát v hlavním okně</p>
+                              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#ED742F]">Přehrát v hlavním okně</p>
                             </div>
                           </button>
                         ))}
@@ -282,7 +365,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                           onClick={() => {
                             void loadFallbackVideos(activeChannel);
                           }}
-                          className="inline-flex min-h-10 items-center rounded-full border border-[#ED742F] bg-[#ED742F] px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white hover:bg-[#d86625]"
+                          className="inline-flex min-h-10 items-center rounded-full border border-[#ED742F] bg-[#ED742F] px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white hover:opacity-90"
                         >
                           Načíst videa kanálu
                         </button>
@@ -296,7 +379,11 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                   );
                 })()}
               </div>
-            ) : null}
+            ) : (
+              <p className="rounded-2xl border border-[rgba(17,17,17,0.14)] bg-white px-4 py-3 text-sm text-[#111111]/70">
+                Klikněte na vybraný kanál pro zobrazení detailu.
+              </p>
+            )}
           </>
         )}
       </div>

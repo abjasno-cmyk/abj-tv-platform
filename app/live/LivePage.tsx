@@ -6,10 +6,7 @@ import type { LiveChannelGroup } from "@/components/abj/ChannelDirectory";
 import type { DayProgram } from "@/lib/epg-types";
 import { LiveAlert } from "@/components/abj/LiveAlert";
 import { HomePage } from "@/components/abj/HomePage";
-import { CommentsSection } from "@/components/auth/CommentsSection";
-import { LikeButton } from "@/components/auth/LikeButton";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { ChatPanel } from "@/components/ChatPanel";
 import { trackAnalyticsEvent, trackVideoProgressThrottled } from "@/lib/analytics/client";
 
 type LivePageProps = {
@@ -201,8 +198,24 @@ export default function LivePage({
     [continueFromSeconds, isAuthenticated, isLive, videoId]
   );
 
+  const communityBlock = (
+    <section className="relative overflow-hidden rounded-[28px] bg-[#ED742F] px-5 pb-7 pt-6 font-[Helvetica,Arial,sans-serif] shadow-[0_16px_30px_rgba(17,17,17,0.14)] sm:px-7 sm:pb-8 sm:pt-7">
+      <span className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-white px-4 py-1 text-lg font-black uppercase tracking-[0.08em] text-[#111111]">
+        Komunita
+      </span>
+      <p className="mt-4 text-center text-[clamp(1rem,2.2vw,1.35rem)] font-semibold uppercase tracking-[0.06em] text-white">
+        ZDE NAPIŠTE ZPRÁVU
+      </p>
+      <input
+        type="text"
+        aria-label="Napsat zprávu do komunity"
+        className="mt-4 min-h-14 w-full rounded-md border border-white bg-white px-4 py-3 text-base text-[#111111] outline-none"
+      />
+    </section>
+  );
+
   return (
-    <section data-ui-version="abj-geometric-v3" className="min-h-screen bg-white text-abj-text1">
+    <section data-ui-version="abj-geometric-v3" className="min-h-screen bg-white text-[#111111]">
       <HomePage
         days={safeEpg}
         channels={channels}
@@ -275,20 +288,8 @@ export default function LivePage({
             properties: { source: "channel_select", channel_name: selectedChannelName },
           });
         }}
-        engagementSlot={
-          videoId ? (
-            <section className="rounded-[24px] border border-[rgba(17,17,17,0.12)] bg-white p-4 shadow-[0_10px_24px_rgba(17,17,17,0.08)]">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-abj-text2">Váš bezplatný divácký účet</p>
-                  <p className="text-sm text-abj-text1">Komentujte, lajkujte a pokračujte tam, kde jste skončili.</p>
-                </div>
-                <LikeButton entityType="video" entityId={videoId} />
-              </div>
-            </section>
-          ) : null
-        }
-        reactionsSlot={videoId ? <CommentsSection entityType="video" entityId={videoId} heading="Reakce diváků na toto video" /> : null}
+        engagementSlot={null}
+        reactionsSlot={communityBlock}
       />
       <LiveAlert
         currentVideoId={videoId}
@@ -314,12 +315,6 @@ export default function LivePage({
           });
         }}
       />
-      <div className="mx-auto w-full max-w-[1320px] space-y-6 px-4 pb-10 sm:px-6 lg:px-10">
-        <div className="space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-abj-text2">Komunita</p>
-          <ChatPanel />
-        </div>
-      </div>
     </section>
   );
 }

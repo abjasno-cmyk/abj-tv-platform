@@ -166,16 +166,16 @@ export function Timeline({ days, onSelect }: TimelineProps) {
   }, [activeDay?.date, currentSlot, updateScrollState]);
 
   return (
-    <section className="rounded-[32px] border border-[rgba(17,17,17,0.12)] bg-white px-5 py-5 shadow-[0_16px_35px_rgba(17,17,17,0.08)]">
+    <section className="rounded-[32px] border border-[rgba(17,17,17,0.12)] bg-white px-5 py-5 font-[Helvetica,Arial,sans-serif] text-[#111111] shadow-[0_16px_35px_rgba(17,17,17,0.08)]">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h3 className="text-[clamp(1.35rem,2.3vw,2rem)] font-black leading-tight text-abj-text1">
+          <h3 className="text-[clamp(1.35rem,2.3vw,2rem)] font-black leading-tight text-[#111111]">
             Vyberte <span className="text-[#ED742F]">video</span> podle data
           </h3>
-          <p className="text-xs text-abj-text2">Kliknutím na náhled spustíte video v hlavním přehrávači.</p>
+          <p className="text-xs text-[#111111]/60">Kliknutím na náhled spustíte video v hlavním přehrávači.</p>
         </div>
         {currentSlot ? (
-          <span className="inline-flex items-center gap-1 rounded-full border border-[#ED742F]/35 bg-[rgba(237,116,47,0.1)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#ED742F]">
+          <span className="inline-flex items-center gap-1 rounded-full border border-[#ED742F]/35 bg-[rgba(237,116,47,0.1)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#111111]">
             <span className="h-2 w-2 rounded-full bg-[#ED742F]" />
             Teď běží
           </span>
@@ -228,7 +228,7 @@ export function Timeline({ days, onSelect }: TimelineProps) {
                       </span>
                     </div>
                   </div>
-                  <p className="mt-1.5 line-clamp-2 text-xs font-semibold leading-snug text-abj-text1">{item.title}</p>
+                  <p className="mt-1.5 line-clamp-2 text-xs font-semibold leading-snug text-[#111111]">{item.title}</p>
                 </button>
               );
             })
@@ -236,7 +236,8 @@ export function Timeline({ days, onSelect }: TimelineProps) {
         </div>
       </div>
 
-      <div className="mt-4 flex items-center gap-3">
+      <div className="mt-5 flex items-center gap-3">
+        <p className="text-[33px] font-black uppercase leading-none tracking-[0.06em] text-[#111111]">Timelines</p>
         <button
           type="button"
           onClick={() => {
@@ -245,28 +246,11 @@ export function Timeline({ days, onSelect }: TimelineProps) {
             container.scrollBy({ left: -260, behavior: "smooth" });
           }}
           disabled={!canScrollTimeline || !canScrollLeft}
-          className="min-h-10 rounded-full border border-[rgba(17,17,17,0.22)] bg-white px-3 py-1 text-xs font-semibold text-abj-text2 transition enabled:hover:border-[#ED742F] enabled:hover:text-[#ED742F] disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#111111] bg-white text-sm font-bold text-[#111111] transition disabled:opacity-35"
           aria-label="Posunout timeline doleva"
         >
           ←
         </button>
-        <input
-          type="range"
-          min={0}
-          max={Math.max(1, Math.round(scrollState.max))}
-          value={Math.min(Math.round(scrollState.left), Math.max(1, Math.round(scrollState.max)))}
-          onChange={(event) => {
-            const container = timelineScrollRef.current;
-            if (!container) return;
-            container.scrollTo({
-              left: Number(event.currentTarget.value),
-              behavior: "auto",
-            });
-          }}
-          className="h-2 w-full cursor-pointer accent-[#ED742F] disabled:cursor-not-allowed"
-          disabled={!canScrollTimeline}
-          aria-label="Posuvník timeline"
-        />
         <button
           type="button"
           onClick={() => {
@@ -275,11 +259,30 @@ export function Timeline({ days, onSelect }: TimelineProps) {
             container.scrollBy({ left: 260, behavior: "smooth" });
           }}
           disabled={!canScrollTimeline || !canScrollRight}
-          className="min-h-10 rounded-full border border-[rgba(17,17,17,0.22)] bg-white px-3 py-1 text-xs font-semibold text-abj-text2 transition enabled:hover:border-[#ED742F] enabled:hover:text-[#ED742F] disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#ED742F] bg-[#ED742F] text-sm font-bold text-white transition disabled:opacity-35"
           aria-label="Posunout timeline doprava"
         >
           →
         </button>
+        <div className="relative h-5 flex-1 overflow-hidden rounded-[2px] bg-[#ED742F]">
+          <input
+            type="range"
+            min={0}
+            max={Math.max(1, Math.round(scrollState.max))}
+            value={Math.min(Math.round(scrollState.left), Math.max(1, Math.round(scrollState.max)))}
+            onChange={(event) => {
+              const container = timelineScrollRef.current;
+              if (!container) return;
+              container.scrollTo({
+                left: Number(event.currentTarget.value),
+                behavior: "auto",
+              });
+            }}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            disabled={!canScrollTimeline}
+            aria-label="Posuvník timeline"
+          />
+        </div>
       </div>
     </section>
   );

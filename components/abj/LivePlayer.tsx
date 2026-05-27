@@ -181,9 +181,9 @@ export function LivePlayer({
     <section
       id="live-player-shell"
       ref={playerShellRef}
-      className="relative overflow-hidden rounded-[32px] border border-[#ED742F] bg-[#ED742F] shadow-[0_22px_45px_rgba(17,17,17,0.12)]"
+      className="relative mb-12 overflow-visible rounded-[32px] border border-[#ED742F] bg-[#ED742F] font-[Helvetica,Arial,sans-serif] text-[#111111] shadow-[0_22px_45px_rgba(17,17,17,0.12)]"
     >
-      <div className="relative aspect-video w-full overflow-hidden bg-[#0B0D10]">
+      <div className="relative aspect-video w-full overflow-hidden rounded-t-[30px] bg-[#0B0D10]">
         {videoId ? (
           <div className="abj-slow-zoom absolute inset-0">
             <YouTube
@@ -263,7 +263,7 @@ export function LivePlayer({
         ) : null}
       </div>
 
-      <div className="relative z-10 border-t border-black/10 bg-[#ED742F] px-5 pb-6 pt-5 md:px-6 md:pb-7 md:pt-6">
+      <div className="relative z-10 border-t border-black/10 bg-[#ED742F] px-5 pb-7 pt-5 md:px-6 md:pb-8 md:pt-6">
         <div className="pr-24 sm:pr-28 md:pr-32">
           <h1 className="text-[clamp(1.35rem,2.7vw,2.45rem)] font-black leading-[1.06] text-white">
             {title}
@@ -290,7 +290,7 @@ export function LivePlayer({
           type="button"
           onClick={onGoLive}
           aria-label="Přepnout na živé vysílání"
-          className={`absolute bottom-4 right-4 inline-flex h-20 w-20 items-center justify-center rounded-full border-4 border-white text-center text-[10px] font-black uppercase leading-[1.05] tracking-[0.08em] transition sm:bottom-5 sm:right-5 sm:h-24 sm:w-24 sm:text-[11px] ${
+          className={`absolute bottom-0 right-4 z-20 inline-flex h-20 w-20 translate-y-1/2 items-center justify-center rounded-full border-4 border-white text-center text-[10px] font-black uppercase leading-[1.05] tracking-[0.08em] shadow-[0_10px_20px_rgba(17,17,17,0.22)] ring-[6px] ring-white transition sm:right-6 sm:h-24 sm:w-24 sm:text-[11px] ${
             isLive ? "bg-[#ED742F] text-white/90" : "bg-[#ED742F] text-white hover:scale-[1.02]"
           }`}
         >
