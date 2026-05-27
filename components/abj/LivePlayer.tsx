@@ -69,6 +69,52 @@ async function exitFullscreenFor(doc: FullscreenDocument): Promise<void> {
   }
 }
 
+function HeroFullscreenIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" aria-hidden="true" className={className}>
+      <circle cx="50" cy="50" r="50" fill="#ED742F" />
+      <path
+        d="M27 40V27H40M60 27H73V40M27 60V73H40M60 73H73V60"
+        stroke="white"
+        strokeWidth="8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      <path d="M43 43 L50 50 L43 57" fill="white" />
+      <path d="M57 43 L50 50 L57 57" fill="white" />
+      <path d="M43 43 L50 50 L57 43" fill="white" />
+      <path d="M43 57 L50 50 L57 57" fill="white" />
+    </svg>
+  );
+}
+
+function HeroVolumeIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" aria-hidden="true" className={className}>
+      <circle cx="50" cy="50" r="50" fill="#ED742F" />
+      <path d="M22 42 H36 L52 28 V72 L36 58 H22 Z" fill="white" />
+      <path d="M60 40 Q70 50 60 60" stroke="white" strokeWidth="7" strokeLinecap="round" fill="none" />
+      <path d="M67 33 Q82 50 67 67" stroke="white" strokeWidth="7" strokeLinecap="round" fill="none" />
+      <path d="M74 26 Q95 50 74 74" stroke="white" strokeWidth="7" strokeLinecap="round" fill="none" />
+    </svg>
+  );
+}
+
+function HeroBroadcastIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" aria-hidden="true" className={className}>
+      <circle cx="50" cy="50" r="50" fill="#ED742F" />
+      <path d="M24 27 C10 40 10 60 24 73" stroke="white" strokeWidth="7" strokeLinecap="round" fill="none" />
+      <path d="M31 34 C22 43 22 57 31 66" stroke="white" strokeWidth="7" strokeLinecap="round" fill="none" />
+      <path d="M69 34 C78 43 78 57 69 66" stroke="white" strokeWidth="7" strokeLinecap="round" fill="none" />
+      <path d="M76 27 C90 40 90 60 76 73" stroke="white" strokeWidth="7" strokeLinecap="round" fill="none" />
+      <circle cx="50" cy="50" r="18" fill="white" />
+      <path d="M45 42 L58 50 L45 58 Z" fill="#ED742F" />
+    </svg>
+  );
+}
+
 export function LivePlayer({
   videoId,
   title,
@@ -195,14 +241,12 @@ export function LivePlayer({
   }, [isPaused, videoId]);
 
   return (
-    <div className="mb-12 font-[Helvetica,Arial,sans-serif] text-[#111111]">
-      <div className="mb-1 flex justify-end pr-1 sm:pr-2">
-        <p className="pointer-events-none text-[clamp(3rem,8vw,6.2rem)] font-black leading-none tracking-tight text-[#ED742F]">
-          {clockLabel}
-        </p>
-      </div>
+    <div className="relative mb-12 font-[Helvetica,Arial,sans-serif] text-[#111111]">
+      <p className="pointer-events-none absolute right-1 top-0 z-20 -translate-y-[56%] text-[clamp(4.2rem,8.7vw,7rem)] font-black leading-[0.9] tracking-tight text-[#ED742F] sm:right-2">
+        {clockLabel}
+      </p>
       <section id="live-player-shell" ref={playerShellRef} className="relative overflow-visible rounded-[32px] bg-[#ED742F] text-[#111111]">
-      <div className="relative aspect-video w-full overflow-hidden rounded-t-[30px] bg-[#0B0D10]">
+        <div className="relative aspect-video w-full overflow-hidden rounded-t-[30px] bg-[#0B0D10]">
         {videoId ? (
           <div className="abj-slow-zoom absolute inset-0">
             <YouTube
@@ -232,36 +276,45 @@ export function LivePlayer({
 
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.2)_0%,rgba(0,0,0,0.02)_42%,rgba(0,0,0,0.65)_100%)]" />
 
-        <div className="absolute right-3 top-1/2 z-10 -translate-y-1/2">
-          <div className="flex flex-col items-center gap-2 rounded-[18px] border border-white/20 bg-black/45 p-2 backdrop-blur-sm">
-            <button
-              type="button"
-              onClick={() => {
-                void toggleFullscreen();
-              }}
-              aria-label={isFullscreen ? "Ukončit režim celé obrazovky" : "Přepnout celou obrazovku"}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/40 text-lg text-white transition hover:border-[#ED742F] hover:text-[#ED742F]"
-            >
-              {isFullscreen ? "⤡" : "⛶"}
-            </button>
-            <button
-              type="button"
-              onClick={toggleMute}
-              aria-label={isMuted ? "Zapnout zvuk" : "Vypnout zvuk"}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/40 text-lg text-white transition hover:border-[#ED742F] hover:text-[#ED742F]"
-            >
-              {isMuted ? "🔇" : "🔊"}
-            </button>
-            <button
-              type="button"
-              onClick={togglePause}
-              aria-label={isPaused ? "Spustit přehrávání" : "Pozastavit přehrávání"}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/40 text-lg text-white transition hover:border-[#ED742F] hover:text-[#ED742F]"
-            >
-              {isPaused ? "▶" : "⏸"}
-            </button>
+          <div className="absolute right-3 top-1/2 z-10 -translate-y-1/2">
+            <div className="flex flex-col items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  void toggleFullscreen();
+                }}
+                aria-label={isFullscreen ? "Ukončit režim celé obrazovky" : "Přepnout celou obrazovku"}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full transition hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-12 sm:w-12"
+              >
+                <HeroFullscreenIcon className="h-full w-full drop-shadow-[0_8px_14px_rgba(17,17,17,0.32)]" />
+              </button>
+              <button
+                type="button"
+                onClick={toggleMute}
+                aria-label={isMuted ? "Zapnout zvuk" : "Vypnout zvuk"}
+                className="relative inline-flex h-11 w-11 items-center justify-center rounded-full transition hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-12 sm:w-12"
+              >
+                <HeroVolumeIcon className="h-full w-full drop-shadow-[0_8px_14px_rgba(17,17,17,0.32)]" />
+                {isMuted ? (
+                  <span className="pointer-events-none absolute h-[2px] w-7 rotate-[-35deg] rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.35)]" />
+                ) : null}
+              </button>
+              <button
+                type="button"
+                onClick={togglePause}
+                aria-label={isPaused ? "Spustit přehrávání" : "Pozastavit přehrávání"}
+                className="relative inline-flex h-11 w-11 items-center justify-center rounded-full transition hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-12 sm:w-12"
+              >
+                <HeroBroadcastIcon className="h-full w-full drop-shadow-[0_8px_14px_rgba(17,17,17,0.32)]" />
+                {!isPaused ? (
+                  <span className="pointer-events-none absolute inline-flex gap-[3px]">
+                    <span className="h-3.5 w-1 rounded-full bg-[#ED742F]" />
+                    <span className="h-3.5 w-1 rounded-full bg-[#ED742F]" />
+                  </span>
+                ) : null}
+              </button>
+            </div>
           </div>
-        </div>
 
         {offsetSeconds > 0 ? (
           <span className="absolute bottom-4 left-4 z-10 rounded-full bg-black/50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/90">
@@ -282,40 +335,40 @@ export function LivePlayer({
         ) : null}
       </div>
 
-      <div className="relative z-10 bg-[#ED742F] px-5 pb-7 pt-5 md:px-6 md:pb-8 md:pt-6">
-        <div className="pr-24 sm:pr-28 md:pr-32">
-          <h1 className="text-[clamp(1.35rem,2.7vw,2.45rem)] font-black leading-[1.06] text-white">
-            {title}
-          </h1>
-          <p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-black">{channel}</p>
-          {!isLive && continueFromSeconds !== null && continueFromSeconds > 30 ? (
-            <button
-              type="button"
-              onClick={() => onContinueFromSaved?.(continueFromSeconds)}
-              className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-semibold text-[#111111] transition hover:bg-white/30"
-            >
-              Pokračovat od {Math.floor(continueFromSeconds / 60)
-                .toString()
-                .padStart(2, "0")}
-              :{Math.floor(continueFromSeconds % 60).toString().padStart(2, "0")}
-            </button>
-          ) : null}
-          <p className="sr-only">
-            Zbývá {remainingLabel}. Průběh přehrávání {Math.round(clampedProgress)} procent.
-          </p>
-        </div>
+        <div className="relative z-10 bg-[#ED742F] px-5 pb-7 pt-5 md:px-6 md:pb-8 md:pt-6">
+          <div className="pr-24 sm:pr-28 md:pr-32">
+            <h1 className="text-[clamp(1.35rem,2.7vw,2.45rem)] font-black leading-[1.06] text-white">
+              {title}
+            </h1>
+            <p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-black">{channel}</p>
+            {!isLive && continueFromSeconds !== null && continueFromSeconds > 30 ? (
+              <button
+                type="button"
+                onClick={() => onContinueFromSaved?.(continueFromSeconds)}
+                className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-semibold text-[#111111] transition hover:bg-white/30"
+              >
+                Pokračovat od {Math.floor(continueFromSeconds / 60)
+                  .toString()
+                  .padStart(2, "0")}
+                :{Math.floor(continueFromSeconds % 60).toString().padStart(2, "0")}
+              </button>
+            ) : null}
+            <p className="sr-only">
+              Zbývá {remainingLabel}. Průběh přehrávání {Math.round(clampedProgress)} procent.
+            </p>
+          </div>
 
-        <button
-          type="button"
-          onClick={onGoLive}
-          aria-label="Přepnout na živé vysílání"
-          className={`absolute bottom-0 right-4 z-20 inline-flex h-20 w-20 translate-y-1/2 items-center justify-center rounded-full border-[4px] border-[#FFFFFF] text-center text-[10px] font-black uppercase leading-[1.05] tracking-[0.08em] ring-[7px] ring-[#FFFFFF] transition sm:right-6 sm:h-24 sm:w-24 sm:text-[11px] ${
-            isLive ? "bg-[#ED742F] text-white/90" : "bg-[#ED742F] text-white hover:scale-[1.02]"
-          }`}
-        >
-          Živé<br />vysílání
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={onGoLive}
+            aria-label="Přepnout na živé vysílání"
+            className={`absolute bottom-0 right-4 z-20 inline-flex h-20 w-20 translate-y-1/2 items-center justify-center rounded-full border-[4px] border-[#FFFFFF] text-center text-[10px] font-black uppercase leading-[1.05] tracking-[0.08em] ring-[7px] ring-[#FFFFFF] transition sm:right-6 sm:h-24 sm:w-24 sm:text-[11px] ${
+              isLive ? "bg-[#ED742F] text-white/90" : "bg-[#ED742F] text-white hover:scale-[1.02]"
+            }`}
+          >
+            Živé<br />vysílání
+          </button>
+        </div>
       </section>
     </div>
   );
