@@ -1,7 +1,7 @@
-import { AbjXClient } from "@/app/abj-x/AbjXClient";
+import { VKostcePage } from "@/components/v-kostce/VKostcePage";
 
 export const dynamic = "force-dynamic";
 
-export default function VKostcePage() {
-  return <AbjXClient />;
+export default function VKostceRoutePage() {
+  return <VKostcePage />;
 }

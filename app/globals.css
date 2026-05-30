@@ -492,3 +492,81 @@ a {
 .verox-live-carousel-track::-webkit-scrollbar {
   display: none;
 }
+
+/* VEROX — mobilní stránka V KOSTCE */
+.verox-vkostce-month {
+  font-size: clamp(0.95rem, 1.88vw, 1.3rem);
+  line-height: 1.1;
+}
+
+.verox-vkostce-day {
+  font-size: clamp(2.5rem, 12.54vw, 4rem);
+  margin-top: 0.1em;
+}
+
+.verox-vkostce-headline {
+  font-size: clamp(1rem, 2.26vw, 1.3rem);
+  line-height: 1.1;
+}
+
+.verox-vkostce-source {
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
+  line-height: 1.15;
+}
+
+.verox-vkostce-perex {
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+}
+
+.verox-vkostce-action-btn {
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
+  line-height: 1.15;
+  min-height: clamp(28px, 7vw, 36px);
+}
+
+.verox-vkostce-cta-link {
+  width: 100%;
+}
+
+.verox-vkostce-card-grid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 21.3% 1.8% minmax(0, 48%);
+  align-items: start;
+}
+
+.verox-vkostce-card-grid--auth {
+  grid-template-columns: 21.3% 1.8% minmax(0, 48%) 3.5% minmax(0, 24.9%);
+}
+
+.verox-vkostce-date {
+  grid-column: 1;
+}
+
+.verox-vkostce-content {
+  grid-column: 3;
+  min-width: 0;
+}
+
+.verox-vkostce-actions-col {
+  grid-column: 5;
+  align-self: start;
+  min-width: 0;
+}
+
+@media (max-width: 480px) {
+  .verox-vkostce-page {
+    background-color: #ffffff;
+    color: #303030;
+  }
+
+  .verox-vkostce-page .verox-live-desktop-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 481px) {
+  .verox-vkostce-page .verox-vkostce-mobile-only {
+    display: none !important;
+  }
+}
