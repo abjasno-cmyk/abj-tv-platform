@@ -8,6 +8,9 @@ import { LoginModal } from "@/components/auth/LoginModal";
 
 const PENDING_CONSENTS_KEY = "verox_pending_consents_v1";
 const CANONICAL_VERCEL_HOST = "abj-tv-platform-n7e8.vercel.app";
+// Preview deployments must stay on their own host (visual review before
+// merge). Only the production deployment canonicalizes the host.
+const IS_PREVIEW_DEPLOYMENT = process.env.NEXT_PUBLIC_VERCEL_ENV === "preview";
 
 type ViewerProfile = {
   id: string;
@@ -92,6 +95,7 @@ function resolvePreferredAuthOrigin(): string | null {
 
 function redirectToPreferredAuthOriginIfNeeded(): boolean {
   if (typeof window === "undefined") return false;
+  if (IS_PREVIEW_DEPLOYMENT) return false;
   const preferredOrigin = resolvePreferredAuthOrigin();
   if (!preferredOrigin) return false;
   const currentOrigin = `${window.location.protocol}//${window.location.host}`;
