@@ -75,6 +75,10 @@ export function ABJNav() {
 
   const navLinks = BASE_NAV_LINKS;
 
+  // The /design-system showcase ships its own self-contained VEROX header,
+  // so the global app chrome steps aside there. No effect on any live route.
+  const isDesignSystemRoute = pathname.startsWith("/design-system");
+
   const activeHref = useMemo(() => {
     if (pathname.startsWith("/studio")) return "/studio";
     if (pathname.startsWith("/archiv") || pathname.startsWith("/feed") || pathname.startsWith("/videa")) return "/videa";
@@ -84,6 +88,10 @@ export function ABJNav() {
     if (pathname.startsWith("/live")) return "/live";
     return "";
   }, [pathname]);
+
+  if (isDesignSystemRoute) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-x-0 top-0 z-50">
