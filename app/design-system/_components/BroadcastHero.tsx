@@ -80,15 +80,21 @@ export function BroadcastHero() {
         </div>
       </div>
 
-      {/* Meta + primary action under the frame */}
-      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
-        <span className="vx-kicker text-verox-orangeText">Dnešní hlavní vysílání</span>
-        <span className="vx-meta">{HERO.tag}</span>
-        <span className="vx-meta">·</span>
-        <span className="vx-meta">{HERO.watching} sleduje</span>
-        <button type="button" className="ml-auto vx-btn vx-btn--solid">
-          <PlayMark size={16} /> Spustit video
-        </button>
+      {/* Editorial separator + two-line synopsis + primary action */}
+      <div className="mt-6">
+        <hr className="vx-rule-double" />
+        <p className="mt-4 max-w-[70ch] text-[1.05rem] leading-relaxed text-verox-charcoal line-clamp-2">
+          {HERO.dek}
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3">
+          <span className="vx-kicker text-verox-orangeText">Dnešní hlavní vysílání</span>
+          <span className="vx-meta">{HERO.tag}</span>
+          <span className="vx-meta">·</span>
+          <span className="vx-meta">{HERO.watching} sleduje</span>
+          <button type="button" className="ml-auto vx-btn vx-btn--solid">
+            <PlayMark size={16} /> Spustit video
+          </button>
+        </div>
       </div>
     </section>
   );

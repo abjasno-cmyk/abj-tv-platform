@@ -155,6 +155,14 @@
   border: 0;
   background: var(--vx-line);
 }
+/* Two tight orange lines — the editorial separator under hero headlines. */
+.vx-rule-double {
+  height: 5px;
+  border: 0;
+  border-top: 2px solid var(--vx-orange);
+  border-bottom: 2px solid var(--vx-orange);
+  background: transparent;
+}
 
 /* ----------------------------------------------------------- LIVE CLOCK -- */
 .vx-clock {

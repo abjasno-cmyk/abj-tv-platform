@@ -25,6 +25,7 @@ export const HERO = {
   show: "The Tucker Carlson Show",
   title: "The Secret History of Biblical Giants, Demons & the Advanced Civilizations Before the Great Flood",
   author: "Tucker Carlson",
+  dek: "Rozhovor o zapomenutých civilizacích, biblických obrech a démonech — a o tom, co se podle nejstarších textů mohlo odehrát v dávných dějinách lidstva ještě před velkou potopou.",
   tag: "Dokument",
   remaining: "22:08",
   watching: "4 312",
