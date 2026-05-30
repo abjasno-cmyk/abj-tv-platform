@@ -257,7 +257,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                           void loadFallbackVideos(channel);
                         }
                       }}
-                      className={`inline-flex min-h-12 items-center gap-2 rounded-full px-3 py-2 text-left shadow-[0_3px_10px_rgba(17,17,17,0.1)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ED742F]/45 ${
+                      className={`inline-flex min-h-12 items-center gap-2 rounded-full px-3 py-2 text-left shadow-[0_3px_10px_rgba(17,17,17,0.1)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F37021]/45 ${
                         selected
                           ? "bg-[rgba(237,116,47,0.14)] text-[#111111]"
                           : "bg-white text-abj-text1 hover:bg-[rgba(237,116,47,0.08)]"
@@ -265,7 +265,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                     >
                       <ChannelAvatar channelName={channel.channelName} avatarUrl={channel.avatarUrl} />
                       <span className="max-w-[180px] truncate text-xs font-semibold uppercase tracking-[0.08em]">{channel.channelName}</span>
-                      {featured ? <span className="rounded-full bg-[#ED742F] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-white">ABJ</span> : null}
+                      {featured ? <span className="rounded-full bg-[#F37021] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-white">ABJ</span> : null}
                     </button>
                   );
                 })}
@@ -290,11 +290,11 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                 onClick={() => scrollChannelsBy("right")}
                 disabled={!canScrollChannels}
                 aria-label="Posunout kanály doprava"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#ED742F] bg-[#ED742F] text-xs font-bold text-white transition disabled:opacity-35 sm:h-8 sm:w-8 sm:text-sm"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#F37021] bg-[#F37021] text-xs font-bold text-white transition disabled:opacity-35 sm:h-8 sm:w-8 sm:text-sm"
               >
                 →
               </button>
-              <div className="relative h-4 min-w-[110px] flex-1 overflow-hidden rounded-[2px] bg-[#ED742F] sm:h-5">
+              <div className="relative h-4 min-w-[110px] flex-1 overflow-hidden rounded-[2px] bg-[#F37021] sm:h-5">
                 <input
                   type="range"
                   min={0}
@@ -351,7 +351,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                             key={`${activeChannel.channelName}-${video.videoId}`}
                             type="button"
                             onClick={() => onSelectVideo({ channelName: activeChannel.channelName, video })}
-                            className="group overflow-hidden rounded-2xl bg-white text-left shadow-[0_10px_20px_rgba(17,17,17,0.08)] transition hover:-translate-y-[1px] hover:shadow-[0_16px_28px_rgba(17,17,17,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ED742F]/45"
+                            className="group overflow-hidden rounded-2xl bg-white text-left shadow-[0_10px_20px_rgba(17,17,17,0.08)] transition hover:-translate-y-[1px] hover:shadow-[0_16px_28px_rgba(17,17,17,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F37021]/45"
                           >
                             <div className="relative aspect-[16/9] w-full overflow-hidden bg-abj-main">
                               <Image
@@ -366,7 +366,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                             <div className="space-y-1 px-3 py-3">
                               <p className="line-clamp-2 text-sm font-semibold leading-snug text-abj-text1">{video.title}</p>
                               <p className="text-xs text-abj-text2">Publikováno {formatPublishedLabel(video.publishedAt)}</p>
-                              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#ED742F]">Přehrát v hlavním okně</p>
+                              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#F37021]">Přehrát v hlavním okně</p>
                             </div>
                           </button>
                         ))}
@@ -384,7 +384,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                           onClick={() => {
                             void loadFallbackVideos(activeChannel);
                           }}
-                          className="inline-flex min-h-10 items-center rounded-full bg-[#ED742F] px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white hover:opacity-90"
+                          className="inline-flex min-h-10 items-center rounded-full bg-[#F37021] px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white hover:opacity-90"
                         >
                           Načíst videa kanálu
                         </button>

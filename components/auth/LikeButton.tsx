@@ -82,8 +82,8 @@ export function LikeButton({ entityType, entityId, className }: LikeButtonProps)
             !isAuthenticated
               ? "border-[rgba(17,17,17,0.16)] bg-[rgba(17,17,17,0.04)] text-abj-text2"
               : effectiveLiked
-              ? "border-[#FF6A00] bg-[rgba(255,106,0,0.15)] text-[#B04A00]"
-              : "border-[rgba(17,17,17,0.2)] bg-white text-abj-text1 hover:border-[#FF6A00]/45 hover:bg-[rgba(255,106,0,0.06)]"
+              ? "border-[#F37021] bg-[rgba(255,106,0,0.15)] text-[#B04A00]"
+              : "border-[rgba(17,17,17,0.2)] bg-white text-abj-text1 hover:border-[#F37021]/45 hover:bg-[rgba(255,106,0,0.06)]"
           }`
         }
         disabled={loading}

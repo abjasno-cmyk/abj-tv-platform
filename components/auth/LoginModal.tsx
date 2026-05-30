@@ -58,7 +58,7 @@ export function LoginModal({
         aria-label="Zavřít přihlášení"
         onClick={onClose}
       />
-      <section className="relative z-[1] w-full max-w-md rounded-3xl border border-[#FF6A00]/30 bg-[#121316] p-5 text-white shadow-[0_24px_60px_rgba(0,0,0,0.45)] sm:p-6">
+      <section className="relative z-[1] w-full max-w-md rounded-3xl border border-[#F37021]/30 bg-[#121316] p-5 text-white shadow-[0_24px_60px_rgba(0,0,0,0.45)] sm:p-6">
         <header className="mb-4 space-y-2">
           <p className="text-[11px] uppercase tracking-[0.16em] text-[#FFB782]">Váš bezplatný divácký účet</p>
           <h2 className="text-2xl font-extrabold leading-tight">Přihlásit zdarma</h2>
@@ -84,7 +84,7 @@ export function LoginModal({
               }
               void onOAuth("google", { termsAccepted, newsletterOptIn });
             }}
-            className="flex min-h-11 w-full items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold transition hover:border-[#FF6A00] hover:bg-[#FF6A00]/15 disabled:opacity-70"
+            className="flex min-h-11 w-full items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold transition hover:border-[#F37021] hover:bg-[#F37021]/15 disabled:opacity-70"
           >
             {busyProvider === "google" ? "Přesměrovávám..." : "Pokračovat přes Google"}
           </button>
@@ -100,7 +100,7 @@ export function LoginModal({
                 }
                 void onOAuth("facebook", { termsAccepted, newsletterOptIn });
               }}
-              className="flex min-h-11 w-full items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold transition hover:border-[#FF6A00] hover:bg-[#FF6A00]/15 disabled:opacity-70"
+              className="flex min-h-11 w-full items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold transition hover:border-[#F37021] hover:bg-[#F37021]/15 disabled:opacity-70"
             >
               {busyProvider === "facebook" ? "Přesměrovávám..." : "Pokračovat přes Facebook"}
             </button>
@@ -118,7 +118,7 @@ export function LoginModal({
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="vas@email.cz"
-                className="min-h-11 w-full rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-[#9BA2B2] focus:border-[#FF6A00]"
+                className="min-h-11 w-full rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-[#9BA2B2] focus:border-[#F37021]"
               />
             </label>
             <button
@@ -137,7 +137,7 @@ export function LoginModal({
                 }
                 void onEmail(normalizedEmail, { termsAccepted, newsletterOptIn });
               }}
-              className="flex min-h-11 w-full items-center justify-center rounded-xl border border-[#FF6A00]/50 bg-[#FF6A00] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#e35f00] disabled:opacity-70"
+              className="flex min-h-11 w-full items-center justify-center rounded-xl border border-[#F37021]/50 bg-[#F37021] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#e35f00] disabled:opacity-70"
             >
               {busyProvider === "email" ? "Odesílám odkaz..." : "Pokračovat e-mailem"}
             </button>
@@ -152,7 +152,7 @@ export function LoginModal({
               type="checkbox"
               checked={termsAccepted}
               onChange={(event) => setTermsAccepted(event.target.checked)}
-              className="mt-[2px] h-4 w-4 rounded border-white/30 bg-transparent accent-[#FF6A00]"
+              className="mt-[2px] h-4 w-4 rounded border-white/30 bg-transparent accent-[#F37021]"
             />
             Souhlasím s podmínkami používání a zásadami ochrany osobních údajů.
           </label>
@@ -161,7 +161,7 @@ export function LoginModal({
               type="checkbox"
               checked={newsletterOptIn}
               onChange={(event) => setNewsletterOptIn(event.target.checked)}
-              className="mt-[2px] h-4 w-4 rounded border-white/30 bg-transparent accent-[#FF6A00]"
+              className="mt-[2px] h-4 w-4 rounded border-white/30 bg-transparent accent-[#F37021]"
             />
             Chci dostávat e-mailové novinky a upozornění.
           </label>

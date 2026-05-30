@@ -45,7 +45,7 @@ export function EditionsArchive({ entries }: EditionsArchiveProps) {
                       <li key={`${entry.dayKey}-${slot}`} className="rounded-lg border border-gray-200 px-3 py-2 text-sm">
                         <p className="font-semibold text-gray-900">{slotLabel(slot)}</p>
                         {item.edition ? (
-                          <Link href={`/jasne-zpravy/${item.edition.slug}`} className="mt-1 block text-xs text-gray-600 hover:text-[#FF6A00]">
+                          <Link href={`/jasne-zpravy/${item.edition.slug}`} className="mt-1 block text-xs text-gray-600 hover:text-[#F37021]">
                             {formatPragueTime(getEditionTimestamp(item.edition))} • {item.itemCount} zpráv
                           </Link>
                         ) : (
@@ -61,7 +61,7 @@ export function EditionsArchive({ entries }: EditionsArchiveProps) {
         </div>
       )}
       <div className="mt-4">
-        <Link href="/jasne-zpravy/archiv" className="text-sm font-bold text-[#FF6A00] hover:text-[#cc5500]">
+        <Link href="/jasne-zpravy/archiv" className="text-sm font-bold text-[#F37021] hover:text-[#cc5500]">
           Zobrazit celý archiv →
         </Link>
       </div>

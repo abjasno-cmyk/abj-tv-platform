@@ -192,13 +192,13 @@ export function Timeline({ days, onSelect }: TimelineProps) {
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h3 className="text-[clamp(1.35rem,2.3vw,2rem)] font-black leading-tight text-[#111111]">
-            Vyberte <span className="text-[#ED742F]">video</span> podle data
+            Vyberte <span className="text-[#F37021]">video</span> podle data
           </h3>
           <p className="text-xs text-[#111111]/60">Kliknutím na náhled spustíte video v hlavním přehrávači.</p>
         </div>
         {currentSlot ? (
           <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(237,116,47,0.14)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#111111]">
-            <span className="h-2 w-2 rounded-full bg-[#ED742F]" />
+            <span className="h-2 w-2 rounded-full bg-[#F37021]" />
             Teď běží
           </span>
         ) : null}
@@ -227,7 +227,7 @@ export function Timeline({ days, onSelect }: TimelineProps) {
                     setSelectedKey(key);
                     onSelect(item);
                   }}
-                  className={`group w-[166px] shrink-0 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ED742F]/45 ${
+                  className={`group w-[166px] shrink-0 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F37021]/45 ${
                     active ? "scale-[1.01]" : ""
                   }`}
                 >
@@ -240,7 +240,7 @@ export function Timeline({ days, onSelect }: TimelineProps) {
                         loading="lazy"
                       />
                       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
-                      {isCurrentTime ? <div className="pointer-events-none absolute inset-0 bg-[#ED742F]/45" /> : null}
+                      {isCurrentTime ? <div className="pointer-events-none absolute inset-0 bg-[#F37021]/45" /> : null}
                       <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/65 px-2 py-0.5 text-[10px] font-semibold tracking-[0.08em] text-white">
                         {item.time}
                       </span>
@@ -271,12 +271,12 @@ export function Timeline({ days, onSelect }: TimelineProps) {
           type="button"
           onClick={() => scrollTimelineBy("right")}
           disabled={!canScrollTimeline}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#ED742F] bg-[#ED742F] text-xs font-bold text-white transition disabled:opacity-35 sm:h-8 sm:w-8 sm:text-sm"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#F37021] bg-[#F37021] text-xs font-bold text-white transition disabled:opacity-35 sm:h-8 sm:w-8 sm:text-sm"
           aria-label="Posunout timeline doprava"
         >
           →
         </button>
-        <div className="relative h-4 min-w-[110px] flex-1 overflow-hidden rounded-[2px] bg-[#ED742F] sm:h-5">
+        <div className="relative h-4 min-w-[110px] flex-1 overflow-hidden rounded-[2px] bg-[#F37021] sm:h-5">
           <input
             type="range"
             min={0}

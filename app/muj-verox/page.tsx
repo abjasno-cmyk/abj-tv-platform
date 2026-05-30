@@ -57,7 +57,7 @@ export default async function MujVeroxPage() {
           <div className="mt-5 flex flex-wrap gap-2">
             <Link
               href="/live"
-              className="inline-flex min-h-10 items-center rounded-full border border-[#FF6A00] bg-[#FF6A00] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white"
+              className="inline-flex min-h-10 items-center rounded-full border border-[#F37021] bg-[#F37021] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white"
             >
               Přihlásit zdarma
             </Link>

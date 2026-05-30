@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ReplitHealthBadge } from "@/components/abj/ReplitHealthBadge";
+import { HeaderClock } from "@/components/abj/HeaderClock";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 const BASE_NAV_LINKS = [
@@ -75,8 +76,7 @@ export function ABJNav() {
 
   const navLinks = BASE_NAV_LINKS;
 
-  // The /design-system showcase ships its own self-contained VEROX header,
-  // so the global app chrome steps aside there. No effect on any live route.
+  // The /design-system showcase ships its own self-contained VEROX header.
   const isDesignSystemRoute = pathname.startsWith("/design-system");
 
   const activeHref = useMemo(() => {
@@ -102,37 +102,65 @@ export function ABJNav() {
           isVisible ? "translate-y-0" : "-translate-y-[calc(100%-10px)]"
         }`}
       >
-        <header className="bg-[#FFFFFF] px-4 font-[Helvetica,Arial,sans-serif] text-[#111111] md:px-6">
-          <div className="flex h-[62px] items-center gap-4">
-            <div className="flex min-w-0 items-center">
-              <Link
-                href="/live"
-                className="relative z-10 inline-flex items-center"
-                aria-label="Přejít na stránku Živě"
-              >
-                <p className="text-[30px] font-black leading-none tracking-[0.02em] text-[#111111]">
-                  VEROX
-                </p>
-                <span className="absolute -right-2 top-0 h-3 w-3 rounded-full bg-[#ED742F]" />
+        <header className="border-b-2 border-[#F37021] bg-[rgba(251,248,242,0.92)] px-4 text-[#171411] backdrop-blur-md md:px-6">
+          <div className="mx-auto w-full max-w-[1240px]">
+            {/* Tier 1 — wordmark + live clock */}
+            <div className="flex items-center gap-4 pt-2.5 pb-1.5">
+              <Link href="/live" className="relative z-10 inline-flex flex-col" aria-label="VEROX — Mainstreamový detox">
+                <span className="relative inline-flex items-start">
+                  <span className="vx-display text-[1.7rem] leading-none tracking-[-0.03em] text-[#171411]">VEROX</span>
+                  <span aria-hidden="true" className="ml-[3px] mt-[2px] h-[7px] w-[7px] rounded-full bg-[#F37021]" />
+                </span>
+                <span className="mt-[3px] font-[var(--font-mono)] text-[0.52rem] uppercase tracking-[0.32em] text-[#717171]">
+                  Mainstreamový&nbsp;detox
+                </span>
               </Link>
-              <nav className="ml-[20px] hidden md:block">
-                <ul className="flex items-center gap-[18px]">
+
+              <div className="ml-auto flex items-center gap-4 sm:gap-5">
+                <span className="hidden items-center gap-2 sm:inline-flex">
+                  <span className="vx-live-dot" />
+                  <span className="font-[var(--font-mono)] text-[0.6rem] font-bold uppercase tracking-[0.18em] text-[#B8480A]">
+                    Živě
+                  </span>
+                </span>
+                <HeaderClock />
+                <button
+                  type="button"
+                  className="grid h-9 w-9 place-items-center text-[#171411] md:hidden"
+                  aria-label={mobileOpen ? "Zavřít menu" : "Otevřít menu"}
+                  aria-expanded={mobileOpen}
+                  onClick={() =>
+                    setMobileOpen((prev) => {
+                      const next = !prev;
+                      if (next) setIsVisible(true);
+                      return next;
+                    })
+                  }
+                >
+                  <span className="text-2xl leading-none">{mobileOpen ? "×" : "≡"}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Tier 2 — primary nav + auth (desktop) */}
+            <div className="hidden items-center gap-8 pb-2 md:flex">
+              <nav>
+                <ul className="flex items-center gap-7">
                   {navLinks.map((link) => {
                     const isActive = activeHref === link.href;
                     return (
                       <li key={`${link.href}-${link.label}`}>
                         <Link
                           href={link.href}
+                          aria-current={isActive ? "page" : undefined}
                           onClick={(event) => {
                             if (link.href === "/muj-verox" && !isAuthenticated) {
                               event.preventDefault();
                               openMyVeroxLoginModal();
                             }
                           }}
-                          className={`border-b-[2px] pb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${
-                            isActive
-                              ? "border-[#ED742F] text-[#ED742F]"
-                              : "border-transparent text-[#111111]/70 hover:text-[#111111]"
+                          className={`font-[var(--font-sans)] text-[0.78rem] font-semibold uppercase tracking-[0.13em] transition-colors ${
+                            isActive ? "text-[#B8480A]" : "text-[#171411]/65 hover:text-[#B8480A]"
                           }`}
                         >
                           {link.label}
@@ -142,73 +170,49 @@ export function ABJNav() {
                   })}
                 </ul>
               </nav>
-            </div>
-            <div className="pointer-events-none hidden flex-1 justify-center px-3 lg:flex">
-              <p className="truncate whitespace-nowrap rounded-full bg-[#FFFFFF] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#111111]/65">
-                VEROX · MAINSTREAMOVÝ DETOX
-              </p>
-            </div>
 
-            <div className="ml-auto flex items-center gap-3 md:gap-4">
-              <button
-                type="button"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full text-[#111111] md:hidden"
-                aria-label={mobileOpen ? "Zavřít menu" : "Otevřít menu"}
-                aria-expanded={mobileOpen}
-                onClick={() =>
-                  setMobileOpen((prev) => {
-                    const next = !prev;
-                    if (next) setIsVisible(true);
-                    return next;
-                  })
-                }
-              >
-                <span className="text-lg leading-none">{mobileOpen ? "×" : "☰"}</span>
-              </button>
-              <div className="hidden sm:block">
-                <ReplitHealthBadge />
-              </div>
-              <div className="hidden items-center gap-2 sm:flex">
-                <span className="h-1.5 w-1.5 animate-[blink_2s_ease-in-out_infinite] rounded-full bg-[#ED742F]" />
-                <span className="font-[var(--font-sans)] text-[10px] font-semibold uppercase tracking-[0.14em] text-[#ED742F]">
-                  Živě
-                </span>
-              </div>
-              {isAuthenticated ? (
-                <div className="hidden items-center gap-2 sm:flex">
-                  <Link
-                    href="/muj-verox"
-                    className="inline-flex min-h-9 items-center rounded-full bg-[#FFFFFF] px-3 py-1.5 text-xs font-semibold text-[#111111] hover:text-[#ED742F]"
-                  >
-                    {profile?.display_name ? `Můj Verox · ${profile.display_name}` : "Můj Verox"}
-                  </Link>
+              <div className="ml-auto flex items-center gap-4">
+                <div className="hidden lg:block">
+                  <ReplitHealthBadge />
+                </div>
+                {isAuthenticated ? (
+                  <div className="flex items-center gap-3">
+                    <Link
+                      href="/muj-verox"
+                      className="text-[0.78rem] font-semibold text-[#171411] hover:text-[#B8480A]"
+                    >
+                      {profile?.display_name ? `Můj Verox · ${profile.display_name}` : "Můj Verox"}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void signOut();
+                      }}
+                      className="text-[0.78rem] font-semibold text-[#171411]/65 hover:text-[#171411]"
+                    >
+                      Odhlásit
+                    </button>
+                  </div>
+                ) : (
                   <button
                     type="button"
-                    onClick={() => {
-                      void signOut();
-                    }}
-                    className="inline-flex min-h-9 items-center rounded-full px-3 py-1.5 text-xs font-semibold text-[#111111]/70 hover:text-[#111111]"
+                    onClick={() =>
+                      openLoginModal({
+                        reason: "Komentujte, lajkujte a pokračujte tam, kde jste skončili.",
+                      })
+                    }
+                    className="vx-btn vx-btn--solid vx-btn--sm uppercase tracking-[0.08em]"
                   >
-                    Odhlásit
+                    Přihlásit zdarma
                   </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() =>
-                    openLoginModal({
-                      reason: "Komentujte, lajkujte a pokračujte tam, kde jste skončili.",
-                    })
-                  }
-                  className="hidden min-h-9 items-center rounded-full border border-[#ED742F] bg-[#ED742F] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-white hover:bg-[#d86625] sm:inline-flex"
-                >
-                  Přihlásit zdarma
-                </button>
-              )}
+                )}
+              </div>
             </div>
           </div>
+
+          {/* Mobile menu */}
           {mobileOpen ? (
-            <nav className="py-2 md:hidden">
+            <nav className="mx-auto w-full max-w-[1240px] pb-3 md:hidden">
               <ul className="grid grid-cols-2 gap-1">
                 {navLinks.map((link) => {
                   const isActive = activeHref === link.href;
@@ -225,10 +229,8 @@ export function ABJNav() {
                           }
                           setMobileOpen(false);
                         }}
-                        className={`block rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                          isActive
-                            ? "bg-[rgba(237,116,47,0.12)] text-[#ED742F]"
-                            : "text-[#111111]/75 hover:bg-[rgba(237,116,47,0.1)] hover:text-[#111111]"
+                        className={`block px-3 py-2 text-sm font-semibold ${
+                          isActive ? "text-[#B8480A]" : "text-[#171411]/75"
                         }`}
                       >
                         {link.label}
@@ -237,13 +239,13 @@ export function ABJNav() {
                   );
                 })}
               </ul>
-              <div className="mt-2 pt-2">
+              <div className="mt-2 pt-1">
                 {isAuthenticated ? (
                   <div className="flex items-center gap-2">
                     <Link
                       href="/muj-verox"
                       onClick={() => setMobileOpen(false)}
-                      className="flex-1 rounded-lg px-3 py-2 text-center text-sm font-semibold text-[#111111]"
+                      className="flex-1 px-3 py-2 text-center text-sm font-semibold text-[#171411]"
                     >
                       Můj Verox
                     </Link>
@@ -253,7 +255,7 @@ export function ABJNav() {
                         void signOut();
                         setMobileOpen(false);
                       }}
-                      className="rounded-lg px-3 py-2 text-sm font-semibold text-[#111111]/75"
+                      className="px-3 py-2 text-sm font-semibold text-[#171411]/75"
                     >
                       Odhlásit
                     </button>
@@ -267,7 +269,7 @@ export function ABJNav() {
                       });
                       setMobileOpen(false);
                     }}
-                    className="w-full rounded-lg border border-[#ED742F] bg-[#ED742F] px-3 py-2 text-sm font-semibold text-white"
+                    className="vx-btn vx-btn--solid vx-btn--block uppercase tracking-[0.08em]"
                   >
                     Přihlásit zdarma
                   </button>
@@ -276,13 +278,14 @@ export function ABJNav() {
             </nav>
           ) : null}
         </header>
+
         <button
           type="button"
           onMouseEnter={revealHeader}
           onFocus={revealHeader}
           onTouchStart={revealHeader}
           aria-label="Zobrazit navigační lištu"
-          className={`mx-auto block w-24 rounded-b-full bg-[#FFFFFF] transition-all ${
+          className={`mx-auto block w-24 rounded-b-full bg-[rgba(251,248,242,0.92)] transition-all ${
             isVisible ? "pointer-events-none h-0 opacity-0" : "h-[10px] opacity-100"
           }`}
         />

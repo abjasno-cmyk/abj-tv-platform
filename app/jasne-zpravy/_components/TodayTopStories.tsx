@@ -71,7 +71,7 @@ export function TodayTopStories({ items, editionSlug, sourcesByItem }: TodayTopS
         </p>
       ) : (
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <article className="rounded-3xl border border-[#FF6A00]/25 bg-white p-6 shadow-[0_10px_26px_rgba(17,17,17,0.08)]">
+          <article className="rounded-3xl border border-[#F37021]/25 bg-white p-6 shadow-[0_10px_26px_rgba(17,17,17,0.08)]">
             <p className="jz-meta font-bold text-[#B04A00]">
               {getCategoryLabel(topStory.category)}
             </p>
@@ -80,14 +80,14 @@ export function TodayTopStories({ items, editionSlug, sourcesByItem }: TodayTopS
             </h3>
             <p className="jz-deck mt-3 text-base">{oneLineLead(topStory)}</p>
             {topStory.why_it_matters ? (
-              <div className="mt-4 border-l-2 border-[#FF6A00] bg-[#fff7f1] px-3 py-2">
+              <div className="mt-4 border-l-2 border-[#F37021] bg-[#fff7f1] px-3 py-2">
                 <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#B04A00]">Proč je to důležité</p>
                 <p className="mt-1 text-sm leading-6 text-gray-700">{topStory.why_it_matters}</p>
               </div>
             ) : null}
             <div className="mt-4 h-1 w-full overflow-hidden rounded bg-gray-100">
               <div
-                className="h-full rounded bg-[#FF6A00]"
+                className="h-full rounded bg-[#F37021]"
                 style={{ width: `${Math.max(8, confidencePercent(topStory.confidence_score))}%` }}
               />
             </div>
@@ -98,7 +98,7 @@ export function TodayTopStories({ items, editionSlug, sourcesByItem }: TodayTopS
               </p>
               <Link
                 href={`/jasne-zpravy/${editionSlug}/${getItemSlug(topStory)}`}
-                className="text-sm font-bold uppercase tracking-[0.08em] text-[#FF6A00] hover:text-[#cc5500]"
+                className="text-sm font-bold uppercase tracking-[0.08em] text-[#F37021] hover:text-[#cc5500]"
               >
                 Číst zprávu
               </Link>
@@ -130,7 +130,7 @@ export function TodayTopStories({ items, editionSlug, sourcesByItem }: TodayTopS
                   </p>
                   <Link
                     href={`/jasne-zpravy/${editionSlug}/${getItemSlug(curiosity)}`}
-                    className="mt-2 inline-flex text-xs font-bold uppercase tracking-[0.08em] text-[#FF6A00]"
+                    className="mt-2 inline-flex text-xs font-bold uppercase tracking-[0.08em] text-[#F37021]"
                   >
                     Otevřít
                   </Link>

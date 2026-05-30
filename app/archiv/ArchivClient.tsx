@@ -73,7 +73,7 @@ const KNOWN_CHANNEL_COUNTRY_HINTS: Array<{ pattern: RegExp; country: CountryCode
 ];
 
 const AVATAR_GRADIENTS: Array<[string, string]> = [
-  ["#FF6A00", "#F0983B"],
+  ["#F37021", "#F0983B"],
   ["#4250A0", "#7C92F1"],
   ["#0F766E", "#22A6A0"],
   ["#A16207", "#D79F2A"],
@@ -662,20 +662,20 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, edi
   return (
     <article
       className={`group block overflow-hidden border bg-white transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 ${
-        compactEditorial ? "focus-visible:ring-[#ED742F]/45" : "focus-visible:ring-[#FF6A00]/60"
+        compactEditorial ? "focus-visible:ring-[#F37021]/45" : "focus-visible:ring-[#F37021]/60"
       } ${
         compactEditorial
           ? "rounded-[20px] border-[rgba(17,17,17,0.14)]"
           : `rounded-2xl ${
               accent
-                ? "border-[#FF6A00]/35 shadow-[0_8px_24px_rgba(255,106,0,0.12)] hover:border-[#FF6A00]/55"
+                ? "border-[#F37021]/35 shadow-[0_8px_24px_rgba(255,106,0,0.12)] hover:border-[#F37021]/55"
                 : "border-[var(--abj-gold-dim)] shadow-[0_8px_22px_rgba(17,17,17,0.08)] hover:border-[rgba(17,17,17,0.28)]"
             }`
       } ${
         isDisabled
           ? "cursor-default opacity-70"
           : compactEditorial
-            ? "hover:border-[#ED742F]/45"
+            ? "hover:border-[#F37021]/45"
             : "hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(17,17,17,0.12)]"
       }`}
     >
@@ -710,7 +710,7 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, edi
             unoptimized={thumbnailSrc.startsWith("http")}
           />
           {tag && !compactEditorial ? (
-            <span className="absolute left-2 top-2 rounded-full border border-[#FF6A00]/35 bg-white/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#C14900]">
+            <span className="absolute left-2 top-2 rounded-full border border-[#F37021]/35 bg-white/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#C14900]">
               {tag}
             </span>
           ) : null}
@@ -750,7 +750,7 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, edi
                 {publishedLabel ? <p className="text-[11px] text-abj-text3">{publishedLabel}</p> : null}
               </>
             )}
-            <p className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${compactEditorial ? "text-[#ED742F]" : "text-[#C14900]"}`}>
+            <p className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${compactEditorial ? "text-[#F37021]" : "text-[#C14900]"}`}>
               {expanded ? "Skrýt video" : compactEditorial ? "Zobrazit detail" : "Rozkliknout video"}
             </p>
           </div>
@@ -768,7 +768,7 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, edi
           {embedUrl ? (
             <div
               className={`overflow-hidden rounded-lg bg-black ${
-                compactEditorial ? "border border-[#ED742F]/30" : "border border-[rgba(255,106,0,0.25)]"
+                compactEditorial ? "border border-[#F37021]/30" : "border border-[rgba(255,106,0,0.25)]"
               }`}
             >
               {!startedPlayback ? (
@@ -783,7 +783,7 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, edi
                 >
                   <span
                     className={`rounded-full bg-[rgba(255,255,255,0.1)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white ${
-                      compactEditorial ? "border border-[#ED742F]/60" : "border border-[rgba(255,106,0,0.4)]"
+                      compactEditorial ? "border border-[#F37021]/60" : "border border-[rgba(255,106,0,0.4)]"
                     }`}
                   >
                     Přehrát video
@@ -891,11 +891,11 @@ function ChannelTileCard({ entry, active, onSelect, featured = false }: ChannelT
     <button
       type="button"
       onClick={() => onSelect(entry.key)}
-      className={`relative min-w-[190px] rounded-xl border text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6A00]/60 sm:min-w-0 ${
+      className={`relative min-w-[190px] rounded-xl border text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F37021]/60 sm:min-w-0 ${
         active
-          ? "border-[#FF6A00]/55 bg-[rgba(255,106,0,0.08)] shadow-[0_8px_20px_rgba(255,106,0,0.12)]"
+          ? "border-[#F37021]/55 bg-[rgba(255,106,0,0.08)] shadow-[0_8px_20px_rgba(255,106,0,0.12)]"
           : isAbj
-            ? "border-[#FF6A00]/30 bg-white hover:border-[#FF6A00]/55 hover:shadow-[0_8px_20px_rgba(255,106,0,0.1)]"
+            ? "border-[#F37021]/30 bg-white hover:border-[#F37021]/55 hover:shadow-[0_8px_20px_rgba(255,106,0,0.1)]"
             : "border-[var(--abj-gold-dim)] bg-white hover:border-[rgba(17,17,17,0.28)] hover:shadow-[0_8px_20px_rgba(17,17,17,0.08)]"
       } ${featured ? "p-3.5" : "p-3"}`}
       style={{ boxShadow: active ? undefined : `inset 0 2px 0 0 ${accentColor}22` }}
@@ -911,7 +911,7 @@ function ChannelTileCard({ entry, active, onSelect, featured = false }: ChannelT
         <div className="flex flex-col items-end gap-1">
           <CountryBadge country={entry.country} />
           {isAbj ? (
-            <span className="rounded-full bg-[#FF6A00]/14 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#C14900]">
+            <span className="rounded-full bg-[#F37021]/14 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#C14900]">
               Hlavní kanál
             </span>
           ) : null}
@@ -1029,7 +1029,7 @@ function ChannelTiles({
               value={query}
               onChange={(event) => onQueryChange(event.target.value)}
               placeholder="Hledat kanál..."
-              className="w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2 text-sm text-abj-text1 outline-none transition focus:border-[#FF6A00]/65 focus:ring-2 focus:ring-[#FF6A00]/25"
+              className="w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2 text-sm text-abj-text1 outline-none transition focus:border-[#F37021]/65 focus:ring-2 focus:ring-[#F37021]/25"
             />
           </div>
           {showCountryFilters ? (
@@ -1044,7 +1044,7 @@ function ChannelTiles({
                     onClick={() => onFilterChange(entry)}
                     className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] transition ${
                       active
-                        ? "border-[#FF6A00]/55 bg-[rgba(255,106,0,0.1)] text-[#C14900]"
+                        ? "border-[#F37021]/55 bg-[rgba(255,106,0,0.1)] text-[#C14900]"
                         : "border-[var(--abj-gold-dim)] bg-white text-abj-text2 hover:text-abj-text1"
                     }`}
                   >
@@ -1163,7 +1163,7 @@ function EditorialVideoListItem({ video, expanded, onToggleExpanded }: Editorial
             {dateParts.monthLabel}
           </span>
           <span className="mt-3 h-px w-9 bg-[rgba(17,17,17,0.35)]" />
-          <span className="mt-3 text-[3.2rem] font-black leading-none text-[#ED742F]">{dateParts.dayLabel}</span>
+          <span className="mt-3 text-[3.2rem] font-black leading-none text-[#F37021]">{dateParts.dayLabel}</span>
         </div>
 
         <div className="relative aspect-video w-full overflow-hidden bg-[#D3D3D3]">
@@ -1193,7 +1193,7 @@ function EditorialVideoListItem({ video, expanded, onToggleExpanded }: Editorial
               }`}
             >
               <span>{expanded ? "Skrýt" : "Zjistit více"}</span>
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#ED742F] text-base leading-none text-white">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#F37021] text-base leading-none text-white">
                 →
               </span>
             </button>
@@ -1214,7 +1214,7 @@ function EditorialVideoListItem({ video, expanded, onToggleExpanded }: Editorial
                     setStartedPlayback(true);
                   }}
                 >
-                  <span className="rounded-full border border-[#ED742F] bg-[rgba(255,255,255,0.12)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white">
+                  <span className="rounded-full border border-[#F37021] bg-[rgba(255,255,255,0.12)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white">
                     Přehrát video
                   </span>
                 </button>
@@ -1226,7 +1226,7 @@ function EditorialVideoListItem({ video, expanded, onToggleExpanded }: Editorial
                       href={externalHref}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex min-h-10 items-center rounded-full border border-[#ED742F] bg-[#ED742F] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#111111] hover:opacity-90"
+                      className="inline-flex min-h-10 items-center rounded-full border border-[#F37021] bg-[#F37021] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#111111] hover:opacity-90"
                     >
                       Přehrát na YouTube
                     </a>
@@ -1250,7 +1250,7 @@ function EditorialVideoListItem({ video, expanded, onToggleExpanded }: Editorial
               href={externalHref}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.08em] text-[#ED742F] hover:underline"
+              className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.08em] text-[#F37021] hover:underline"
             >
               Otevřít video
             </a>
@@ -1285,7 +1285,7 @@ function VideoGrid({ title, subtitle, videos, loading, emptyMessage, editorialMo
       {editorialMode ? (
         <>
           <div className="flex justify-end">
-            <p className="pointer-events-none text-[clamp(2.7rem,8vw,5.9rem)] font-black leading-[0.84] tracking-tight text-[#ED742F]">
+            <p className="pointer-events-none text-[clamp(2.7rem,8vw,5.9rem)] font-black leading-[0.84] tracking-tight text-[#F37021]">
               {clockLabel}
             </p>
           </div>
@@ -1306,7 +1306,7 @@ function VideoGrid({ title, subtitle, videos, loading, emptyMessage, editorialMo
                 <h2 className="text-[clamp(2rem,5vw,4.5rem)] font-black uppercase tracking-[0.02em]">NEJNOVĚJŠÍ VIDEA</h2>
                 <a
                   href="#videa-editorial-feed"
-                  className="mt-8 inline-flex h-24 w-24 items-center justify-center rounded-full bg-[#ED742F] text-center text-[0.9rem] font-bold uppercase tracking-[0.03em] text-[#111111] transition hover:opacity-90 sm:h-28 sm:w-28"
+                  className="mt-8 inline-flex h-24 w-24 items-center justify-center rounded-full bg-[#F37021] text-center text-[0.9rem] font-bold uppercase tracking-[0.03em] text-[#111111] transition hover:opacity-90 sm:h-28 sm:w-28"
                 >
                   Zjistit více
                 </a>
@@ -1487,7 +1487,7 @@ function ChannelDetailPanel({ channel, selectedVideo, open, loading, onClose, on
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg border border-[var(--abj-gold-dim)] px-3 py-1.5 text-xs uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6A00]/50"
+          className="rounded-lg border border-[var(--abj-gold-dim)] px-3 py-1.5 text-xs uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F37021]/50"
         >
           Zavřít panel
         </button>
@@ -1514,9 +1514,9 @@ function ChannelDetailPanel({ channel, selectedVideo, open, loading, onClose, on
                   key={`channel-video-${key}`}
                   type="button"
                   onClick={() => onSelectVideo(key)}
-                  className={`w-full rounded-xl border p-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6A00]/55 ${
+                  className={`w-full rounded-xl border p-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F37021]/55 ${
                     active
-                      ? "border-[#FF6A00]/55 bg-[rgba(255,106,0,0.08)]"
+                      ? "border-[#F37021]/55 bg-[rgba(255,106,0,0.08)]"
                       : "border-[var(--abj-gold-dim)] bg-white hover:border-[rgba(17,17,17,0.26)]"
                   }`}
                 >
@@ -1778,8 +1778,8 @@ export function ArchivClient({ initialData, mode = "default" }: ArchivClientProp
             type="button"
             className={`rounded-full border bg-white px-5 py-2 text-xs font-semibold uppercase tracking-[0.1em] transition focus-visible:outline-none focus-visible:ring-2 ${
               isVideaMode
-                ? "border-[#ED742F]/40 text-[#ED742F] hover:border-[#ED742F] hover:bg-[rgba(237,116,47,0.07)] focus-visible:ring-[#ED742F]/45"
-                : "border-[var(--abj-gold-dim)] text-abj-text2 hover:border-[#FF6A00]/45 hover:text-abj-text1 focus-visible:ring-[#FF6A00]/60"
+                ? "border-[#F37021]/40 text-[#F37021] hover:border-[#F37021] hover:bg-[rgba(237,116,47,0.07)] focus-visible:ring-[#F37021]/45"
+                : "border-[var(--abj-gold-dim)] text-abj-text2 hover:border-[#F37021]/45 hover:text-abj-text1 focus-visible:ring-[#F37021]/60"
             }`}
             onClick={() => {
               void loadMore();

@@ -23,7 +23,7 @@ function formatDateTime(value: string | null): string {
 
 function toneClass(tone: "ok" | "warning" | "error" | undefined): string {
   if (tone === "error") return "border-[#ff5a5a]/60 bg-[#2b1414] text-[#ffb3b3]";
-  if (tone === "warning") return "border-[#ff6a00]/60 bg-[#2b1d12] text-[#ffd0ad]";
+  if (tone === "warning") return "border-[#F37021]/60 bg-[#2b1d12] text-[#ffd0ad]";
   return "border-[#3f5f4f] bg-[#142017] text-[#b4efc5]";
 }
 
@@ -47,7 +47,7 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
     return (
       <main className="mx-auto w-full max-w-md px-4 py-10">
         <section className="rounded-2xl border border-[#2f3647] bg-[#0f131b] p-6 text-[#edf2fb] shadow-[0_20px_45px_rgba(0,0,0,0.35)]">
-          <p className="text-xs uppercase tracking-[0.18em] text-[#ff6a00]">VEROX Studio</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-[#F37021]">VEROX Studio</p>
           <h1 className="mt-2 text-2xl font-semibold text-white">Vstup do Studia</h1>
           <p className="mt-3 text-sm text-[#b7c1d3]">
             Studio je dostupné pouze přes přihlašovací údaj a heslo. Odkaz je pouze v zápatí webu.
@@ -67,7 +67,7 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
                 id="studio-credential"
                 name="credential"
                 required
-                className="mt-1 w-full rounded-md border border-[#30384a] bg-[#101625] px-3 py-2 text-sm text-[#edf2fb] outline-none focus:border-[#ff6a00]"
+                className="mt-1 w-full rounded-md border border-[#30384a] bg-[#101625] px-3 py-2 text-sm text-[#edf2fb] outline-none focus:border-[#F37021]"
               />
             </div>
             <div>
@@ -79,12 +79,12 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
                 name="password"
                 type="password"
                 required
-                className="mt-1 w-full rounded-md border border-[#30384a] bg-[#101625] px-3 py-2 text-sm text-[#edf2fb] outline-none focus:border-[#ff6a00]"
+                className="mt-1 w-full rounded-md border border-[#30384a] bg-[#101625] px-3 py-2 text-sm text-[#edf2fb] outline-none focus:border-[#F37021]"
               />
             </div>
             <button
               type="submit"
-              className="w-full rounded-md border border-[#ff6a00] bg-[#ff6a00] px-3 py-2 text-sm font-semibold text-white hover:bg-[#e95f00]"
+              className="w-full rounded-md border border-[#F37021] bg-[#F37021] px-3 py-2 text-sm font-semibold text-white hover:bg-[#e95f00]"
             >
               Odemknout Studio
             </button>
@@ -113,7 +113,7 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
       <section className="rounded-2xl border border-[#2f3647] bg-[#0f131b] p-5 shadow-[0_20px_45px_rgba(0,0,0,0.35)]">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-[#ff6a00]">VEROX Studio / Control Room</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-[#F37021]">VEROX Studio / Control Room</p>
             <h1 className="mt-2 text-2xl font-semibold text-white md:text-3xl">Řídicí vrstva automatizované platformy</h1>
             <p className="mt-2 max-w-3xl text-sm text-[#b7c1d3]">
               Automatizace je default (AUTO MODE). Manuální zásahy jsou výjimečné, auditovatelné a po zásahu se systém vrací
@@ -128,7 +128,7 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
             <form action="/api/studio/gate" method="post" className="mt-2">
               <input type="hidden" name="mode" value="logout" />
               <input type="hidden" name="redirect_to" value="/studio" />
-              <button className="rounded-md border border-[#30384a] bg-[#101625] px-2 py-1 text-[11px] text-[#d8e2f3] hover:border-[#ff6a00]/70">
+              <button className="rounded-md border border-[#30384a] bg-[#101625] px-2 py-1 text-[11px] text-[#d8e2f3] hover:border-[#F37021]/70">
                 Uzamknout Studio
               </button>
             </form>
@@ -139,7 +139,7 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
           <span className="rounded-full border border-[#3f5f4f] bg-[#142017] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#b4efc5]">
             AUTO MODE
           </span>
-          <span className="rounded-full border border-[#ff6a00]/55 bg-[#2b1d12] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#ffd0ad]">
+          <span className="rounded-full border border-[#F37021]/55 bg-[#2b1d12] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#ffd0ad]">
             Manual override
           </span>
           <span className="rounded-full border border-[#35508b] bg-[#111a2e] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#bfd3ff]">
@@ -191,18 +191,18 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
         <aside className="rounded-xl border border-[#2f3647] bg-[#0f131b] p-4 xl:sticky xl:top-24 xl:self-start">
           <h2 className="text-sm font-semibold text-white">Sekce Studia</h2>
           <ol className="mt-3 space-y-2 text-sm text-[#c4cede]">
-            <li><a href="#prehled" className="hover:text-[#ff6a00]">1. Přehled</a></li>
-            <li><a href="#automatizace" className="hover:text-[#ff6a00]">2. Automatizace</a></li>
-            <li><a href="#zpravy" className="hover:text-[#ff6a00]">3. Zprávy</a></li>
-            <li><a href="#breaking" className="hover:text-[#ff6a00]">4. Breaking news</a></li>
-            <li><a href="#program" className="hover:text-[#ff6a00]">5. Program / živé vysílání</a></li>
-            <li><a href="#videa" className="hover:text-[#ff6a00]">6. Videa</a></li>
-            <li><a href="#kanaly" className="hover:text-[#ff6a00]">7. Kanály</a></li>
-            <li><a href="#komentare" className="hover:text-[#ff6a00]">8. Komentáře a komunita</a></li>
-            <li><a href="#divaci" className="hover:text-[#ff6a00]">9. Diváci</a></li>
-            <li><a href="#statistiky" className="hover:text-[#ff6a00]">10. Statistiky</a></li>
-            <li><a href="#nastaveni" className="hover:text-[#ff6a00]">11. Nastavení</a></li>
-            <li><a href="#audit" className="hover:text-[#ff6a00]">12. Audit log</a></li>
+            <li><a href="#prehled" className="hover:text-[#F37021]">1. Přehled</a></li>
+            <li><a href="#automatizace" className="hover:text-[#F37021]">2. Automatizace</a></li>
+            <li><a href="#zpravy" className="hover:text-[#F37021]">3. Zprávy</a></li>
+            <li><a href="#breaking" className="hover:text-[#F37021]">4. Breaking news</a></li>
+            <li><a href="#program" className="hover:text-[#F37021]">5. Program / živé vysílání</a></li>
+            <li><a href="#videa" className="hover:text-[#F37021]">6. Videa</a></li>
+            <li><a href="#kanaly" className="hover:text-[#F37021]">7. Kanály</a></li>
+            <li><a href="#komentare" className="hover:text-[#F37021]">8. Komentáře a komunita</a></li>
+            <li><a href="#divaci" className="hover:text-[#F37021]">9. Diváci</a></li>
+            <li><a href="#statistiky" className="hover:text-[#F37021]">10. Statistiky</a></li>
+            <li><a href="#nastaveni" className="hover:text-[#F37021]">11. Nastavení</a></li>
+            <li><a href="#audit" className="hover:text-[#F37021]">12. Audit log</a></li>
           </ol>
         </aside>
 
@@ -230,7 +230,7 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
                 <p className="mt-1">Další přepočet programu: <strong>{snapshot.automation.nextProgramRebuildHint}</strong></p>
               </div>
               <div className="rounded-lg border border-[#2f3647] bg-[#0c1018] p-3 text-sm">
-                <p className="text-xs uppercase tracking-[0.1em] text-[#ff6a00]">Vrátit řízení automatu</p>
+                <p className="text-xs uppercase tracking-[0.1em] text-[#F37021]">Vrátit řízení automatu</p>
                 {canProgramOverride ? (
                   <form action="/api/studio/control" method="post" className="mt-2 flex flex-wrap items-center gap-2">
                     <input type="hidden" name="action" value="return_to_auto" />
@@ -238,7 +238,7 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
                     <input
                       name="reason"
                       placeholder="Důvod zásahu"
-                      className="min-w-[220px] rounded-md border border-[#30384a] bg-[#101625] px-3 py-2 text-xs text-[#edf2fb] outline-none focus:border-[#ff6a00]"
+                      className="min-w-[220px] rounded-md border border-[#30384a] bg-[#101625] px-3 py-2 text-xs text-[#edf2fb] outline-none focus:border-[#F37021]"
                     />
                     <button className="rounded-md border border-[#35508b] bg-[#15233f] px-3 py-2 text-xs font-semibold text-[#cfe0ff]">
                       Vrátit řízení automatu
@@ -360,17 +360,17 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
                   name="title"
                   required
                   placeholder="title"
-                  className="rounded-md border border-[#30384a] bg-[#101625] px-3 py-2 text-sm text-[#edf2fb] outline-none focus:border-[#ff6a00]"
+                  className="rounded-md border border-[#30384a] bg-[#101625] px-3 py-2 text-sm text-[#edf2fb] outline-none focus:border-[#F37021]"
                 />
                 <input
                   name="short_text"
                   placeholder="short_text"
-                  className="rounded-md border border-[#30384a] bg-[#101625] px-3 py-2 text-sm text-[#edf2fb] outline-none focus:border-[#ff6a00]"
+                  className="rounded-md border border-[#30384a] bg-[#101625] px-3 py-2 text-sm text-[#edf2fb] outline-none focus:border-[#F37021]"
                 />
                 <textarea
                   name="body"
                   placeholder="body"
-                  className="md:col-span-2 min-h-[82px] rounded-md border border-[#30384a] bg-[#101625] px-3 py-2 text-sm text-[#edf2fb] outline-none focus:border-[#ff6a00]"
+                  className="md:col-span-2 min-h-[82px] rounded-md border border-[#30384a] bg-[#101625] px-3 py-2 text-sm text-[#edf2fb] outline-none focus:border-[#F37021]"
                 />
                 <div className="md:col-span-2 flex flex-wrap items-center gap-3 text-xs text-[#b8c2d3]">
                   <label className="inline-flex items-center gap-2"><input type="checkbox" name="show_on_homepage" /> show_on_homepage</label>
@@ -390,7 +390,7 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
                   <button
                     name="initial_status"
                     value="published"
-                    className="rounded-md border border-[#ff6a00] bg-[#ff6a00] px-3 py-2 text-xs font-semibold text-white"
+                    className="rounded-md border border-[#F37021] bg-[#F37021] px-3 py-2 text-xs font-semibold text-white"
                   >
                     Publikovat breaking news
                   </button>
@@ -475,7 +475,7 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
                   placeholder="Důvod"
                   className="rounded-md border border-[#30384a] bg-[#101625] px-3 py-2 text-sm text-[#edf2fb]"
                 />
-                <button className="md:col-span-2 rounded-md border border-[#ff6a00] bg-[#ff6a00] px-3 py-2 text-xs font-semibold text-white">
+                <button className="md:col-span-2 rounded-md border border-[#F37021] bg-[#F37021] px-3 py-2 text-xs font-semibold text-white">
                   Vložit do programu
                 </button>
               </form>

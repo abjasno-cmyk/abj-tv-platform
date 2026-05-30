@@ -43,7 +43,7 @@ export default function DesignSystemLayout({ children }: DesignSystemLayoutProps
   // giving the showcase a true full-bleed canvas.
   return (
     <div
-      className={`verox-ds -mt-[68px] ${veroxDisplay.variable} ${veroxSans.variable} ${veroxMono.variable}`}
+      className={`verox-ds -mt-[56px] md:-mt-[92px] ${veroxDisplay.variable} ${veroxSans.variable} ${veroxMono.variable}`}
     >
       {children}
     </div>

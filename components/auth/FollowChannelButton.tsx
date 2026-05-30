@@ -69,8 +69,8 @@ export function FollowChannelButton({ channelId, channelName, className }: Follo
           !isAuthenticated
             ? "border-[rgba(17,17,17,0.16)] bg-[rgba(17,17,17,0.04)] text-abj-text2"
             : effectiveFollowed
-            ? "border-[#FF6A00] bg-[rgba(255,106,0,0.15)] text-[#B04A00]"
-            : "border-[rgba(17,17,17,0.2)] bg-white text-abj-text2 hover:border-[#FF6A00]/45 hover:text-abj-text1"
+            ? "border-[#F37021] bg-[rgba(255,106,0,0.15)] text-[#B04A00]"
+            : "border-[rgba(17,17,17,0.2)] bg-white text-abj-text2 hover:border-[#F37021]/45 hover:text-abj-text1"
         }`
       }
       disabled={loading || !channelId}

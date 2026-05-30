@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Montserrat } from "next/font/google";
+import { Bricolage_Grotesque, JetBrains_Mono, Source_Sans_3 } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { ABJNav } from "@/components/abj/Nav";
@@ -17,15 +17,29 @@ type RootLayoutProps = {
   children: React.ReactNode;
 };
 
-const inter = Inter({
-  subsets: ["latin"],
+// VEROX type system (global). Source Sans 3 is the open-source descendant of
+// Myriad Pro from the original layouts; Bricolage Grotesque is the display face;
+// JetBrains Mono carries the clock / timestamps / kickers. Latin Extended subset
+// covers Czech diacritics.
+const sourceSans = Source_Sans_3({
+  subsets: ["latin", "latin-ext"],
   variable: "--font-sans",
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
-const montserrat = Montserrat({
-  subsets: ["latin"],
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin", "latin-ext"],
   variable: "--font-serif",
-  weight: ["600", "700", "800"],
+  weight: ["500", "600", "700", "800"],
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-mono",
+  weight: ["400", "500", "700"],
+  display: "swap",
 });
 
 export default function RootLayout({ children }: RootLayoutProps) {
@@ -36,7 +50,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   // visual changes can be reviewed before merging to main.
   const isProductionDeployment = process.env.VERCEL_ENV === "production";
   return (
-    <html lang="cs" className={`${montserrat.variable} ${inter.variable}`}>
+    <html lang="cs" className={`${bricolage.variable} ${sourceSans.variable} ${jetbrainsMono.variable}`}>
       <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
         {isProductionDeployment ? (
           <Script id="verox-canonical-host-guard" strategy="beforeInteractive">
@@ -80,7 +94,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <AuthProvider>
           {/* Single global nav only — prevents duplicate legacy header stacks. */}
           <ABJNav />
-          <main className="min-h-[calc(100vh-68px-46px)] pt-[68px]">{children}</main>
+          <main className="min-h-[calc(100vh-56px-46px)] pt-[56px] md:min-h-[calc(100vh-92px-46px)] md:pt-[92px]">
+            {children}
+          </main>
           <AppChrome>
             <LegalFooter />
             {showEditorialDebug ? <EditorialEventDebugPanel /> : null}

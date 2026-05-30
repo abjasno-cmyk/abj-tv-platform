@@ -139,9 +139,9 @@ export default async function EditionPage({
         </Link>
       </nav>
 
-      <header className="mb-8 rounded-3xl border border-[#FF6A00]/20 bg-gradient-to-b from-[#fffaf3] via-[#fffdfa] to-white p-6 shadow-[0_12px_30px_rgba(17,17,17,0.06)] md:p-8">
+      <header className="mb-8 rounded-3xl border border-[#F37021]/20 bg-gradient-to-b from-[#fffaf3] via-[#fffdfa] to-white p-6 shadow-[0_12px_30px_rgba(17,17,17,0.06)] md:p-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="rounded-full bg-[#FF6A00] px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-white">
+          <span className="rounded-full bg-[#F37021] px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-white">
             {getEditionTypeLabel(edition.edition_type)} vydání
           </span>
           <time className="text-sm text-gray-500">{formatPragueDateTime(getEditionTimestamp(edition))}</time>
@@ -176,7 +176,7 @@ export default async function EditionPage({
               {adjacentRes.previous ? (
                 <Link
                   href={`/jasne-zpravy/${adjacentRes.previous.slug}`}
-                  className="inline-flex min-h-10 items-center rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-[#FF6A00]/35 hover:text-[#FF6A00]"
+                  className="inline-flex min-h-10 items-center rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-[#F37021]/35 hover:text-[#F37021]"
                 >
                   ← Předchozí vydání
                 </Link>
@@ -187,14 +187,14 @@ export default async function EditionPage({
               )}
               <Link
                 href="/jasne-zpravy"
-                className="inline-flex min-h-10 items-center rounded-xl border border-[#FF6A00]/25 bg-[#FF6A00]/10 px-3 py-2 text-sm font-semibold text-[#B04A00] hover:bg-[#FF6A00]/15"
+                className="inline-flex min-h-10 items-center rounded-xl border border-[#F37021]/25 bg-[#F37021]/10 px-3 py-2 text-sm font-semibold text-[#B04A00] hover:bg-[#F37021]/15"
               >
                 Zpět na homepage
               </Link>
               {adjacentRes.next ? (
                 <Link
                   href={`/jasne-zpravy/${adjacentRes.next.slug}`}
-                  className="inline-flex min-h-10 items-center rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-[#FF6A00]/35 hover:text-[#FF6A00]"
+                  className="inline-flex min-h-10 items-center rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-[#F37021]/35 hover:text-[#F37021]"
                 >
                   Další vydání →
                 </Link>
@@ -219,7 +219,7 @@ export default async function EditionPage({
               <ol className="mt-3 space-y-2">
                 {sortedItems.map((item, index) => (
                   <li key={item.id}>
-                    <a href={`#${getItemSlug(item)}`} className="block rounded-lg border border-gray-200 px-3 py-2 hover:border-[#FF6A00]/35">
+                    <a href={`#${getItemSlug(item)}`} className="block rounded-lg border border-gray-200 px-3 py-2 hover:border-[#F37021]/35">
                       <p className="text-[11px] uppercase tracking-[0.12em] text-gray-500">#{item.rank ?? index + 1}</p>
                       <p className="jz-headline mt-1 line-clamp-2 text-sm font-medium text-gray-900">{item.short_headline ?? item.headline}</p>
                     </a>
@@ -239,7 +239,7 @@ export default async function EditionPage({
                   <li key={item.id}>
                     <a
                       href={`#${getItemSlug(item)}`}
-                      className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-[#FF6A00]/35"
+                      className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-[#F37021]/35"
                     >
                       <span className="jz-headline line-clamp-2 text-sm font-medium text-gray-900">{item.short_headline ?? item.headline}</span>
                       <span className="text-xs text-gray-500">{getItemSourceCount(item, sourcesByItem)}</span>

@@ -84,7 +84,7 @@ export function StoryDetail({ item, edition, sources, sourcesByItem, showBackToE
     <article className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm md:p-7">
       <header className="border-b border-gray-100 pb-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex rounded-full bg-[#FF6A00]/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.1em] text-[#B04A00]">
+          <span className="inline-flex rounded-full bg-[#F37021]/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.1em] text-[#B04A00]">
             {getCategoryLabel(item.category)}
           </span>
           <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-semibold text-gray-600">
@@ -100,7 +100,7 @@ export function StoryDetail({ item, edition, sources, sourcesByItem, showBackToE
           Publikováno: {formatPragueDateTime(getEditionTimestamp(edition))} • Důvěra {confidence}%
         </p>
         <div className="mt-3 h-1 w-full overflow-hidden rounded bg-gray-100">
-          <div className="h-full rounded bg-[#FF6A00]" style={{ width: `${Math.max(8, confidence)}%` }} />
+          <div className="h-full rounded bg-[#F37021]" style={{ width: `${Math.max(8, confidence)}%` }} />
         </div>
       </header>
 
@@ -111,7 +111,7 @@ export function StoryDetail({ item, edition, sources, sourcesByItem, showBackToE
               key={`${item.id}-${section.key}`}
               className={`rounded-2xl p-4 ${
                 section.key === "HOOK"
-                  ? "border border-[#FF6A00]/25 bg-[#fff7f1]"
+                  ? "border border-[#F37021]/25 bg-[#fff7f1]"
                   : section.key === "DOPAD"
                     ? "border border-[#1f4f9c]/25 bg-[#eef4ff]"
                     : section.key === "POINTA"
@@ -170,7 +170,7 @@ export function StoryDetail({ item, edition, sources, sourcesByItem, showBackToE
           <p className="font-semibold text-gray-900">Souvisí s předchozím vydáním</p>
           <p className="mt-1">
             {relatedHref ? (
-              <Link href={relatedHref} className="font-semibold text-[#FF6A00] hover:text-[#cc5500]">
+              <Link href={relatedHref} className="font-semibold text-[#F37021] hover:text-[#cc5500]">
                 Otevřít související zprávu →
               </Link>
             ) : (
@@ -193,7 +193,7 @@ export function StoryDetail({ item, edition, sources, sourcesByItem, showBackToE
 
       {showBackToEdition ? (
         <footer className="mt-6 border-t border-gray-100 pt-4">
-          <Link href={`/jasne-zpravy/${edition.slug}#${getItemSlug(item)}`} className="text-sm font-bold text-[#FF6A00] hover:text-[#cc5500]">
+          <Link href={`/jasne-zpravy/${edition.slug}#${getItemSlug(item)}`} className="text-sm font-bold text-[#F37021] hover:text-[#cc5500]">
             ← Zpět na vydání
           </Link>
         </footer>

@@ -165,12 +165,12 @@ export function NewsSections({
                       className={`group rounded-2xl border p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${
                         isCuriosity
                           ? "border-amber-200/80 bg-amber-50/45 hover:border-amber-300"
-                          : "border-gray-200 bg-white hover:border-[#FF6A00]/40"
+                          : "border-gray-200 bg-white hover:border-[#F37021]/40"
                       }`}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center rounded-full border border-[#FF6A00]/30 bg-[#FF6A00]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#B04A00]">
+                          <span className="inline-flex items-center rounded-full border border-[#F37021]/30 bg-[#F37021]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#B04A00]">
                             {getCategoryLabel(category)}
                           </span>
                           <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-medium text-gray-600">
@@ -189,7 +189,7 @@ export function NewsSections({
                       {preview ? <p className="mt-2 text-[15px] leading-6 text-gray-700">{preview}</p> : null}
 
                       {item.why_it_matters ? (
-                        <div className="mt-3 rounded-xl border border-[#FF6A00]/20 bg-orange-50/60 px-3 py-2">
+                        <div className="mt-3 rounded-xl border border-[#F37021]/20 bg-orange-50/60 px-3 py-2">
                           <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#B04A00]">
                             Proč to řešíme
                           </p>
@@ -202,7 +202,7 @@ export function NewsSections({
                       <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-3">
                         <Link
                           href={detailHref}
-                          className="text-sm font-bold uppercase tracking-[0.1em] text-[#FF6A00] hover:text-[#cc5500]"
+                          className="text-sm font-bold uppercase tracking-[0.1em] text-[#F37021] hover:text-[#cc5500]"
                         >
                           Číst zprávu →
                         </Link>
@@ -230,7 +230,7 @@ export function NewsSections({
                       <header className="border-b border-gray-100 pb-4">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="inline-flex items-center rounded-full border border-[#FF6A00]/30 bg-[#FF6A00]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#B04A00]">
+                            <span className="inline-flex items-center rounded-full border border-[#F37021]/30 bg-[#F37021]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#B04A00]">
                               {getCategoryLabel(category)}
                             </span>
                             <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-medium text-gray-600">
@@ -256,12 +256,12 @@ export function NewsSections({
                       </header>
 
                       {detailBullets.length > 0 ? (
-                        <section className="mt-5 rounded-2xl border border-[#FF6A00]/20 bg-orange-50/55 p-4">
+                        <section className="mt-5 rounded-2xl border border-[#F37021]/20 bg-orange-50/55 p-4">
                           <h4 className="text-xs font-bold uppercase tracking-[0.14em] text-[#B04A00]">Ve 3 bodech</h4>
                           <ul className="mt-2 space-y-2">
                             {detailBullets.map((bullet) => (
                               <li key={`${item.id}-${bullet}`} className="flex gap-2 text-sm leading-6 text-gray-800">
-                                <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-[#FF6A00]" />
+                                <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-[#F37021]" />
                                 <span>{bullet}</span>
                               </li>
                             ))}
@@ -343,7 +343,7 @@ export function NewsSections({
                           {nav.previous ? (
                             <Link
                               href={`#zprava-${nav.previous.id}`}
-                              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-gray-700 hover:border-[#FF6A00]/35 hover:text-[#FF6A00]"
+                              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-gray-700 hover:border-[#F37021]/35 hover:text-[#F37021]"
                             >
                               ← Předchozí zpráva
                             </Link>
@@ -355,7 +355,7 @@ export function NewsSections({
                           {nav.next ? (
                             <Link
                               href={`#zprava-${nav.next.id}`}
-                              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-gray-700 hover:border-[#FF6A00]/35 hover:text-[#FF6A00]"
+                              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-gray-700 hover:border-[#F37021]/35 hover:text-[#F37021]"
                             >
                               Další zpráva →
                             </Link>
@@ -367,7 +367,7 @@ export function NewsSections({
                         </div>
                         <Link
                           href={editionSlug ? `/jasne-zpravy/${editionSlug}` : "#vydani-top"}
-                          className="text-xs font-semibold uppercase tracking-[0.08em] text-[#FF6A00] hover:text-[#cc5500]"
+                          className="text-xs font-semibold uppercase tracking-[0.08em] text-[#F37021] hover:text-[#cc5500]"
                         >
                           Zpět na celé vydání
                         </Link>

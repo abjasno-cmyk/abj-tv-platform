@@ -39,7 +39,7 @@ const PRAGUE_TIMEZONE = "Europe/Prague";
 const REFRESH_EVERY_MS = 5 * 60 * 1000;
 
 const FRESHNESS_CLASS: Record<Freshness, string> = {
-  breaking: "border-[#FF6A00] bg-[rgba(255,106,0,0.2)] text-[#FFE5D1]",
+  breaking: "border-[#F37021] bg-[rgba(255,106,0,0.2)] text-[#FFE5D1]",
   today: "border-[#4F79B8] bg-[rgba(79,121,184,0.2)] text-[#D8E4F3]",
   week: "border-[rgba(154,163,178,0.5)] bg-[rgba(154,163,178,0.14)] text-[#D2D8E2]",
   evergreen: "border-[#4A7E61] bg-[rgba(74,126,97,0.2)] text-[#D5EBDD]",
@@ -421,15 +421,15 @@ export default function ProgramPage() {
                         {active ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(255,106,0,0.25)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#FFE5D1]">
                             <span className="relative flex h-2.5 w-2.5 items-center justify-center">
-                              <span className="absolute inline-flex h-2.5 w-2.5 animate-ping rounded-full bg-[#FF6A00]/70" />
-                              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#FF6A00]" />
+                              <span className="absolute inline-flex h-2.5 w-2.5 animate-ping rounded-full bg-[#F37021]/70" />
+                              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#F37021]" />
                             </span>
                             Teď běží
                           </span>
                         ) : null}
 
                         {urgency3 ? (
-                          <span className="rounded-full bg-[#FF6A00] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white">
+                          <span className="rounded-full bg-[#F37021] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white">
                             BREAKING
                           </span>
                         ) : null}

@@ -71,7 +71,7 @@ export function MyVeroxSettings({ initialDisplayName, initialNewsletterGranted }
           <input
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
-            className="min-h-10 w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2 text-sm text-abj-text1 outline-none focus:border-[#FF6A00]"
+            className="min-h-10 w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2 text-sm text-abj-text1 outline-none focus:border-[#F37021]"
             maxLength={120}
           />
         </label>
@@ -81,7 +81,7 @@ export function MyVeroxSettings({ initialDisplayName, initialNewsletterGranted }
           onClick={() => {
             void saveProfile();
           }}
-          className="inline-flex min-h-10 items-center rounded-full border border-[#FF6A00] bg-[#FF6A00] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white disabled:opacity-60"
+          className="inline-flex min-h-10 items-center rounded-full border border-[#F37021] bg-[#F37021] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white disabled:opacity-60"
         >
           {savingProfile ? "Ukládám..." : "Uložit jméno"}
         </button>
@@ -97,7 +97,7 @@ export function MyVeroxSettings({ initialDisplayName, initialNewsletterGranted }
               const next = event.target.checked;
               void saveNewsletter(next);
             }}
-            className="mt-[2px] h-4 w-4 accent-[#FF6A00]"
+            className="mt-[2px] h-4 w-4 accent-[#F37021]"
           />
           Chci dostávat e-mailové novinky a upozornění.
         </label>

@@ -33,7 +33,7 @@ export function StoryListItem({ item, editionSlug, order, sourcesByItem }: Story
         </div>
         <Link
           href={href}
-          className="inline-flex items-center text-xs font-bold uppercase tracking-[0.08em] text-[#FF6A00] hover:text-[#cc5500]"
+          className="inline-flex items-center text-xs font-bold uppercase tracking-[0.08em] text-[#F37021] hover:text-[#cc5500]"
         >
           Číst
         </Link>

@@ -20,11 +20,11 @@ export function ChatPanel() {
           <input
             type="text"
             placeholder="Napište zprávu..."
-            className="min-h-12 w-full rounded-xl border border-white/20 bg-black/20 px-4 py-3 text-base text-white placeholder:text-white/45 outline-none focus:border-[#ED742F]"
+            className="min-h-12 w-full rounded-xl border border-white/20 bg-black/20 px-4 py-3 text-base text-white placeholder:text-white/45 outline-none focus:border-[#F37021]"
           />
           <button
             type="button"
-            className="min-h-12 rounded-xl border border-[#ED742F] bg-[#ED742F] px-5 py-3 text-base font-semibold text-white transition-all duration-200 ease-out hover:bg-[#d86625]"
+            className="min-h-12 rounded-xl border border-[#F37021] bg-[#F37021] px-5 py-3 text-base font-semibold text-white transition-all duration-200 ease-out hover:bg-[#d86625]"
           >
             Odeslat
           </button>

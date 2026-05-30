@@ -138,8 +138,8 @@ export default async function JasneZpravyArchivePage({
               href={href}
               className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
                 isActive
-                  ? "border-[#FF6A00] bg-[#FF6A00] text-white"
-                  : "border-gray-200 bg-white text-gray-700 hover:border-[#FF6A00]/40 hover:text-[#FF6A00]"
+                  ? "border-[#F37021] bg-[#F37021] text-white"
+                  : "border-gray-200 bg-white text-gray-700 hover:border-[#F37021]/40 hover:text-[#F37021]"
               }`}
             >
               {label}
@@ -177,7 +177,7 @@ export default async function JasneZpravyArchivePage({
                     <li key={edition.id}>
                       <Link
                         href={`/jasne-zpravy/${edition.slug}`}
-                        className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm transition hover:text-[#FF6A00]"
+                        className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm transition hover:text-[#F37021]"
                       >
                         <span>
                           {formatPragueTime(getEditionTimestamp(edition))} ·{" "}
@@ -204,7 +204,7 @@ export default async function JasneZpravyArchivePage({
               fromDate,
               toDate,
             })}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-[#FF6A00]/35 hover:text-[#FF6A00]"
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-[#F37021]/35 hover:text-[#F37021]"
           >
             ← Předchozí stránka
           </Link>
@@ -226,7 +226,7 @@ export default async function JasneZpravyArchivePage({
               fromDate,
               toDate,
             })}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-[#FF6A00]/35 hover:text-[#FF6A00]"
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-[#F37021]/35 hover:text-[#F37021]"
           >
             Další stránka →
           </Link>

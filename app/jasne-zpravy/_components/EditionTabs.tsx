@@ -28,8 +28,8 @@ export function EditionTabs({ tabs, activeEditionSlug }: EditionTabsProps) {
             <article
               className={`min-w-[220px] rounded-2xl border p-3 transition ${
                 isActive
-                  ? "border-[#FF6A00] bg-[#fff7f0] shadow-[0_8px_20px_rgba(255,106,0,0.18)]"
-                  : "border-gray-200 bg-white hover:border-[#FF6A00]/35"
+                  ? "border-[#F37021] bg-[#fff7f0] shadow-[0_8px_20px_rgba(255,106,0,0.18)]"
+                  : "border-gray-200 bg-white hover:border-[#F37021]/35"
               }`}
             >
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">{label}</p>

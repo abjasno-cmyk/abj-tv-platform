@@ -9,20 +9,22 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Remapped to the VEROX palette so existing abj-* utility classes across
+        // the live app inherit the new design without per-component edits.
         abj: {
-          deep: "#FFFFFF",
-          main: "#FFFFFF",
-          light: "#F5F5F5",
-          panel: "#F5F5F5",
+          deep: "#FBF8F2",
+          main: "#FBF8F2",
+          light: "#F2ECE0",
+          panel: "#F2ECE0",
           hospoda: "#FFFFFF",
           card: "#FFFFFF",
-          gold: "#111111",
-          goldDim: "rgba(17,17,17,0.14)",
-          red: "#FF6A00",
-          redDim: "rgba(255,106,0,0.14)",
-          text1: "#111111",
-          text2: "rgba(17,17,17,0.72)",
-          text3: "rgba(17,17,17,0.45)",
+          gold: "#171411",
+          goldDim: "rgba(23,20,17,0.12)",
+          red: "#F37021",
+          redDim: "rgba(243,112,33,0.14)",
+          text1: "#171411",
+          text2: "rgba(23,20,17,0.72)",
+          text3: "rgba(23,20,17,0.45)",
         },
         // VEROX design-system palette (additive — consumed only by /design-system).
         // Source of truth: zasilka VZORNIK.png brand swatch (#F37021).

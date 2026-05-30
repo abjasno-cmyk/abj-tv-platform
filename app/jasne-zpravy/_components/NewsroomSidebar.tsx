@@ -40,7 +40,7 @@ export function NewsroomSidebar({
             <li key={type} className="rounded-lg border border-gray-200 px-3 py-2 text-sm">
               <p className="font-semibold text-gray-900">{getEditionTypeLabel(type)}</p>
               {edition ? (
-                <Link href={`/jasne-zpravy/${edition.slug}`} className="mt-1 block text-xs text-gray-600 hover:text-[#FF6A00]">
+                <Link href={`/jasne-zpravy/${edition.slug}`} className="mt-1 block text-xs text-gray-600 hover:text-[#F37021]">
                   {formatPragueTime(getEditionTimestamp(edition))} • {itemCount} zpráv
                 </Link>
               ) : (
@@ -59,7 +59,7 @@ export function NewsroomSidebar({
           <ul className="mt-3 space-y-2">
             {watchList.map((point) => (
               <li key={point} className="flex gap-2 text-sm leading-6 text-gray-800">
-                <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-[#FF6A00]" />
+                <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-[#F37021]" />
                 <span>{point}</span>
               </li>
             ))}
@@ -77,7 +77,7 @@ export function NewsroomSidebar({
               <li key={item.id}>
                 <Link
                   href={`/jasne-zpravy/${currentEditionSlug}/${getItemSlug(item)}`}
-                  className="block rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-900 hover:border-[#FF6A00]/35"
+                  className="block rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-900 hover:border-[#F37021]/35"
                 >
                   {item.short_headline ?? item.headline}
                 </Link>
@@ -97,7 +97,7 @@ export function NewsroomSidebar({
               <li key={item.id}>
                 <Link
                   href={`/jasne-zpravy/${currentEditionSlug}/${getItemSlug(item)}`}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-[#FF6A00]/35"
+                  className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-[#F37021]/35"
                 >
                   <span className="line-clamp-2 text-sm font-medium text-gray-900">{item.short_headline ?? item.headline}</span>
                   <span className="text-xs text-gray-500">
@@ -120,7 +120,7 @@ export function NewsroomSidebar({
               <li key={edition.id}>
                 <Link
                   href={`/jasne-zpravy/${edition.slug}`}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-[#FF6A00]/35"
+                  className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-[#F37021]/35"
                 >
                   <span className="text-sm font-medium text-gray-900">{formatPragueDate(getEditionTimestamp(edition))}</span>
                   <span className="text-xs text-gray-500">{getEditionTypeLabel(edition.edition_type)}</span>

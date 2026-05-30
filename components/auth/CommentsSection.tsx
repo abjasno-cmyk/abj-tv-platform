@@ -122,7 +122,7 @@ export function CommentsSection({ entityType, entityId, heading = "Diskuse divá
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-abj-text2">Reakce diváků</p>
           <h3 className="mt-1 text-lg font-black tracking-tight text-abj-text1">{heading}</h3>
         </div>
-        <span className="rounded-full border border-[#ED742F]/35 bg-[rgba(237,116,47,0.1)] px-3 py-1 text-xs font-semibold text-[#A5491D]">
+        <span className="rounded-full border border-[#F37021]/35 bg-[rgba(237,116,47,0.1)] px-3 py-1 text-xs font-semibold text-[#A5491D]">
           {comments.length} komentářů
         </span>
       </header>
@@ -142,7 +142,7 @@ export function CommentsSection({ entityType, entityId, heading = "Diskuse divá
                 }
               )
             }
-            className="mt-2 inline-flex min-h-10 items-center rounded-full border border-[#ED742F] bg-[#ED742F] px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white hover:bg-[#d86625]"
+            className="mt-2 inline-flex min-h-10 items-center rounded-full border border-[#F37021] bg-[#F37021] px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white hover:bg-[#d86625]"
           >
             Přihlásit zdarma
           </button>
@@ -157,7 +157,7 @@ export function CommentsSection({ entityType, entityId, heading = "Diskuse divá
             rows={3}
             maxLength={2000}
             placeholder="Napište komentář..."
-            className="w-full resize-y rounded-xl border border-[rgba(17,17,17,0.14)] bg-white px-3 py-2 text-sm text-abj-text1 outline-none focus:border-[#ED742F]"
+            className="w-full resize-y rounded-xl border border-[rgba(17,17,17,0.14)] bg-white px-3 py-2 text-sm text-abj-text1 outline-none focus:border-[#F37021]"
           />
           <div className="mt-2 flex items-center justify-between gap-3">
             <span className="text-xs text-abj-text2">{draft.trim().length}/2000</span>
@@ -167,7 +167,7 @@ export function CommentsSection({ entityType, entityId, heading = "Diskuse divá
               onClick={() => {
                 void addComment();
               }}
-              className="inline-flex min-h-10 items-center rounded-full border border-[#ED742F] bg-[#ED742F] px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white disabled:opacity-60"
+              className="inline-flex min-h-10 items-center rounded-full border border-[#F37021] bg-[#F37021] px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white disabled:opacity-60"
             >
               {saving ? "Ukládám..." : "Přidat komentář"}
             </button>
