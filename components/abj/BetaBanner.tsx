@@ -33,7 +33,7 @@ export function BetaBanner() {
   };
 
   return (
-    <div className="bg-[#303030] px-4 py-2 text-[12px] leading-snug text-white">
+    <div className="fixed inset-x-0 bottom-0 z-[60] bg-[#303030] px-4 py-2 text-[12px] leading-snug text-white shadow-[0_-2px_12px_rgba(0,0,0,0.25)]">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-center gap-3 text-center">
         <p className="m-0">
           <span className="font-semibold text-[#F37021]">BETA:</span> Obsah je generován s pomocí

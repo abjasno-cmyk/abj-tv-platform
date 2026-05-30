@@ -56,6 +56,20 @@ export default function RootLayout({ children }: RootLayoutProps) {
             })();
           `}
         </Script>
+        <Script id="verox-legacy-token-cookie-cleanup" strategy="beforeInteractive">
+          {`
+            (function () {
+              try {
+                // F-C2 migration: actively expire the legacy non-HttpOnly
+                // access-token cookie left over from older builds.
+                document.cookie =
+                  "verox_access_token=; Path=/; Max-Age=0; SameSite=Lax; Secure";
+              } catch (_err) {
+                // Ignore cleanup failures.
+              }
+            })();
+          `}
+        </Script>
         <AuthProvider>
           {/* Single global nav only — prevents duplicate legacy header stacks. */}
           <ABJNav />
