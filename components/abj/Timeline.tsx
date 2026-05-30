@@ -188,16 +188,16 @@ export function Timeline({ days, onSelect }: TimelineProps) {
   }, []);
 
   return (
-    <section className="bg-white px-5 py-5 font-[Helvetica,Arial,sans-serif] text-[#111111]">
+    <section className="rounded-[6px] border border-[rgba(23,20,17,0.1)] bg-white px-5 py-5 text-[#171411]">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h3 className="text-[clamp(1.35rem,2.3vw,2rem)] font-black leading-tight text-[#111111]">
-            Vyberte <span className="text-[#F37021]">video</span> podle data
+          <h3 className="vx-display text-[clamp(1.35rem,2.3vw,2rem)] leading-tight text-[#171411]">
+            Vyberte <span className="text-[#B8480A]">video</span> podle data
           </h3>
-          <p className="text-xs text-[#111111]/60">Kliknutím na náhled spustíte video v hlavním přehrávači.</p>
+          <p className="vx-meta mt-1 normal-case tracking-[0.04em]">Kliknutím na náhled spustíte video v hlavním přehrávači.</p>
         </div>
         {currentSlot ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(237,116,47,0.14)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#111111]">
+          <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(243,112,33,0.14)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#B8480A]">
             <span className="h-2 w-2 rounded-full bg-[#F37021]" />
             Teď běží
           </span>

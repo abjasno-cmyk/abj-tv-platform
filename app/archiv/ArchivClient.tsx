@@ -668,7 +668,7 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, edi
           ? "rounded-[20px] border-[rgba(17,17,17,0.14)]"
           : `rounded-2xl ${
               accent
-                ? "border-[#F37021]/35 shadow-[0_8px_24px_rgba(255,106,0,0.12)] hover:border-[#F37021]/55"
+                ? "border-[#F37021]/35 shadow-[0_8px_24px_rgba(243, 112, 33,0.12)] hover:border-[#F37021]/55"
                 : "border-[var(--abj-gold-dim)] shadow-[0_8px_22px_rgba(17,17,17,0.08)] hover:border-[rgba(17,17,17,0.28)]"
             }`
       } ${
@@ -761,14 +761,14 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, edi
         <div
           className={`space-y-2 border-t p-3 ${
             compactEditorial
-              ? "border-[rgba(17,17,17,0.12)] bg-[rgba(237,116,47,0.05)] sm:p-4"
-              : "border-[var(--abj-gold-dim)] bg-[rgba(255,106,0,0.03)]"
+              ? "border-[rgba(17,17,17,0.12)] bg-[rgba(243, 112, 33,0.05)] sm:p-4"
+              : "border-[var(--abj-gold-dim)] bg-[rgba(243, 112, 33,0.03)]"
           }`}
         >
           {embedUrl ? (
             <div
               className={`overflow-hidden rounded-lg bg-black ${
-                compactEditorial ? "border border-[#F37021]/30" : "border border-[rgba(255,106,0,0.25)]"
+                compactEditorial ? "border border-[#F37021]/30" : "border border-[rgba(243, 112, 33,0.25)]"
               }`}
             >
               {!startedPlayback ? (
@@ -776,14 +776,14 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, edi
                   type="button"
                   className={`flex aspect-video w-full items-center justify-center ${
                     compactEditorial
-                      ? "bg-[radial-gradient(circle_at_center,rgba(237,116,47,0.22),rgba(0,0,0,0.84))]"
-                      : "bg-[radial-gradient(circle_at_center,rgba(255,106,0,0.22),rgba(0,0,0,0.8))]"
+                      ? "bg-[radial-gradient(circle_at_center,rgba(243, 112, 33,0.22),rgba(0,0,0,0.84))]"
+                      : "bg-[radial-gradient(circle_at_center,rgba(243, 112, 33,0.22),rgba(0,0,0,0.8))]"
                   }`}
                   onClick={() => setStartedPlayback(true)}
                 >
                   <span
                     className={`rounded-full bg-[rgba(255,255,255,0.1)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white ${
-                      compactEditorial ? "border border-[#F37021]/60" : "border border-[rgba(255,106,0,0.4)]"
+                      compactEditorial ? "border border-[#F37021]/60" : "border border-[rgba(243, 112, 33,0.4)]"
                     }`}
                   >
                     Přehrát video
@@ -893,9 +893,9 @@ function ChannelTileCard({ entry, active, onSelect, featured = false }: ChannelT
       onClick={() => onSelect(entry.key)}
       className={`relative min-w-[190px] rounded-xl border text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F37021]/60 sm:min-w-0 ${
         active
-          ? "border-[#F37021]/55 bg-[rgba(255,106,0,0.08)] shadow-[0_8px_20px_rgba(255,106,0,0.12)]"
+          ? "border-[#F37021]/55 bg-[rgba(243, 112, 33,0.08)] shadow-[0_8px_20px_rgba(243, 112, 33,0.12)]"
           : isAbj
-            ? "border-[#F37021]/30 bg-white hover:border-[#F37021]/55 hover:shadow-[0_8px_20px_rgba(255,106,0,0.1)]"
+            ? "border-[#F37021]/30 bg-white hover:border-[#F37021]/55 hover:shadow-[0_8px_20px_rgba(243, 112, 33,0.1)]"
             : "border-[var(--abj-gold-dim)] bg-white hover:border-[rgba(17,17,17,0.28)] hover:shadow-[0_8px_20px_rgba(17,17,17,0.08)]"
       } ${featured ? "p-3.5" : "p-3"}`}
       style={{ boxShadow: active ? undefined : `inset 0 2px 0 0 ${accentColor}22` }}
@@ -1044,7 +1044,7 @@ function ChannelTiles({
                     onClick={() => onFilterChange(entry)}
                     className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] transition ${
                       active
-                        ? "border-[#F37021]/55 bg-[rgba(255,106,0,0.1)] text-[#C14900]"
+                        ? "border-[#F37021]/55 bg-[rgba(243, 112, 33,0.1)] text-[#C14900]"
                         : "border-[var(--abj-gold-dim)] bg-white text-abj-text2 hover:text-abj-text1"
                     }`}
                   >
@@ -1104,7 +1104,7 @@ function ChannelTiles({
       </div>
 
       {isExpandingChannels ? (
-        <div className="rounded-xl border border-[rgba(255,106,0,0.24)] bg-[rgba(255,106,0,0.07)] px-3 py-2 text-xs uppercase tracking-[0.08em] text-[#C14900]">
+        <div className="rounded-xl border border-[rgba(243, 112, 33,0.24)] bg-[rgba(243, 112, 33,0.07)] px-3 py-2 text-xs uppercase tracking-[0.08em] text-[#C14900]">
           Načítám další kanály...
         </div>
       ) : null}
@@ -1208,7 +1208,7 @@ function EditorialVideoListItem({ video, expanded, onToggleExpanded }: Editorial
               {!startedPlayback ? (
                 <button
                   type="button"
-                  className="flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(237,116,47,0.24),rgba(0,0,0,0.84))]"
+                  className="flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(243, 112, 33,0.24),rgba(0,0,0,0.84))]"
                   onClick={() => {
                     setEmbedBlocked(false);
                     setStartedPlayback(true);
@@ -1219,7 +1219,7 @@ function EditorialVideoListItem({ video, expanded, onToggleExpanded }: Editorial
                   </span>
                 </button>
               ) : embedBlocked ? (
-                <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 bg-[radial-gradient(circle_at_center,rgba(237,116,47,0.16),rgba(0,0,0,0.9))] px-4 text-center">
+                <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 bg-[radial-gradient(circle_at_center,rgba(243, 112, 33,0.16),rgba(0,0,0,0.9))] px-4 text-center">
                   <p className="text-sm text-white/90">Vlastník videa zakázal přehrávání na externích stránkách.</p>
                   {externalHref ? (
                     <a
@@ -1360,7 +1360,7 @@ function VideoGrid({ title, subtitle, videos, loading, emptyMessage, editorialMo
                     <div className="space-y-3">
                       <div className="h-4 w-12 animate-pulse rounded bg-[rgba(17,17,17,0.1)]" />
                       <div className="h-px w-9 bg-[rgba(17,17,17,0.25)]" />
-                      <div className="h-10 w-10 animate-pulse rounded bg-[rgba(237,116,47,0.28)]" />
+                      <div className="h-10 w-10 animate-pulse rounded bg-[rgba(243, 112, 33,0.28)]" />
                     </div>
                     <div className="aspect-video animate-pulse bg-[rgba(17,17,17,0.1)]" />
                     <div className="space-y-3">
@@ -1516,7 +1516,7 @@ function ChannelDetailPanel({ channel, selectedVideo, open, loading, onClose, on
                   onClick={() => onSelectVideo(key)}
                   className={`w-full rounded-xl border p-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F37021]/55 ${
                     active
-                      ? "border-[#F37021]/55 bg-[rgba(255,106,0,0.08)]"
+                      ? "border-[#F37021]/55 bg-[rgba(243, 112, 33,0.08)]"
                       : "border-[var(--abj-gold-dim)] bg-white hover:border-[rgba(17,17,17,0.26)]"
                   }`}
                 >
@@ -1778,7 +1778,7 @@ export function ArchivClient({ initialData, mode = "default" }: ArchivClientProp
             type="button"
             className={`rounded-full border bg-white px-5 py-2 text-xs font-semibold uppercase tracking-[0.1em] transition focus-visible:outline-none focus-visible:ring-2 ${
               isVideaMode
-                ? "border-[#F37021]/40 text-[#F37021] hover:border-[#F37021] hover:bg-[rgba(237,116,47,0.07)] focus-visible:ring-[#F37021]/45"
+                ? "border-[#F37021]/40 text-[#F37021] hover:border-[#F37021] hover:bg-[rgba(243, 112, 33,0.07)] focus-visible:ring-[#F37021]/45"
                 : "border-[var(--abj-gold-dim)] text-abj-text2 hover:border-[#F37021]/45 hover:text-abj-text1 focus-visible:ring-[#F37021]/60"
             }`}
             onClick={() => {

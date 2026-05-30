@@ -274,7 +274,7 @@ export function WallBoard({
           <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">Komunitní nástěnka</p>
           <h1 className="mt-2 font-[var(--font-serif)] text-3xl font-semibold text-abj-text1">{heading}</h1>
           <p className="mt-2 text-base leading-relaxed text-abj-text2">{intro}</p>
-          <p className="mt-3 rounded-lg border border-[rgba(255,106,0,0.25)] bg-[rgba(255,106,0,0.08)] px-3 py-2 text-sm text-abj-text1">
+          <p className="mt-3 rounded-lg border border-[rgba(243, 112, 33,0.25)] bg-[rgba(243, 112, 33,0.08)] px-3 py-2 text-sm text-abj-text1">
             {RULES_TEXT}
           </p>
         </header>
@@ -291,7 +291,7 @@ export function WallBoard({
         ) : null}
 
         {!isAuthenticated ? (
-          <div className="mb-3 rounded-lg border border-[rgba(255,106,0,0.25)] bg-[rgba(255,106,0,0.08)] px-3 py-3 text-sm text-abj-text1">
+          <div className="mb-3 rounded-lg border border-[rgba(243, 112, 33,0.25)] bg-[rgba(243, 112, 33,0.08)] px-3 py-3 text-sm text-abj-text1">
             Interakce v Komunitě (přidání, reakce, nahlášení) jsou dostupné pouze po přihlášení.
             <button
               type="button"
@@ -337,11 +337,11 @@ export function WallBoard({
         </div>
 
         {replyTarget ? (
-          <div className="mt-3 rounded-lg border border-[rgba(255,106,0,0.3)] bg-[rgba(255,106,0,0.08)] px-3 py-2 text-sm text-abj-text1">
+          <div className="mt-3 rounded-lg border border-[rgba(243, 112, 33,0.3)] bg-[rgba(243, 112, 33,0.08)] px-3 py-2 text-sm text-abj-text1">
             Odpovídáte na příspěvek autora {replyTarget.author}.
             <button
               type="button"
-              className="ml-3 underline decoration-[rgba(255,106,0,0.7)] underline-offset-2"
+              className="ml-3 underline decoration-[rgba(243, 112, 33,0.7)] underline-offset-2"
               onClick={() => setReplyTarget(null)}
             >
               Zrušit odpověď
@@ -388,7 +388,7 @@ export function WallBoard({
               type="button"
               onClick={() => setSort("newest")}
               className={`rounded-md px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] ${
-                sort === "newest" ? "bg-[rgba(255,106,0,0.12)] text-[#F37021]" : "text-abj-text2"
+                sort === "newest" ? "bg-[rgba(243, 112, 33,0.12)] text-[#F37021]" : "text-abj-text2"
               }`}
             >
               Nejnovější
@@ -397,7 +397,7 @@ export function WallBoard({
               type="button"
               onClick={() => setSort("popular")}
               className={`rounded-md px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] ${
-                sort === "popular" ? "bg-[rgba(255,106,0,0.12)] text-[#F37021]" : "text-abj-text2"
+                sort === "popular" ? "bg-[rgba(243, 112, 33,0.12)] text-[#F37021]" : "text-abj-text2"
               }`}
             >
               Populární
@@ -427,12 +427,12 @@ export function WallBoard({
 
                 {post.video_id ? (
                   <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <span className="inline-flex rounded-full border border-[rgba(255,106,0,0.3)] bg-[rgba(255,106,0,0.08)] px-2 py-0.5 text-[11px] font-medium text-[#F37021]">
+                    <span className="inline-flex rounded-full border border-[rgba(243, 112, 33,0.3)] bg-[rgba(243, 112, 33,0.08)] px-2 py-0.5 text-[11px] font-medium text-[#F37021]">
                       Reakce na video: {post.video_title ?? "Video bez názvu"}
                     </span>
                     <Link
                       href={`/live?videoId=${encodeURIComponent(post.video_id)}`}
-                      className="text-[11px] font-medium text-abj-text2 underline decoration-[rgba(255,106,0,0.5)] underline-offset-2 hover:text-abj-text1"
+                      className="text-[11px] font-medium text-abj-text2 underline decoration-[rgba(243, 112, 33,0.5)] underline-offset-2 hover:text-abj-text1"
                     >
                       Otevřít video
                     </Link>
@@ -462,7 +462,7 @@ export function WallBoard({
                   </button>
                   <button
                     type="button"
-                    className="rounded-lg border border-[rgba(255,106,0,0.35)] bg-[rgba(255,106,0,0.08)] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.08em] text-[#F37021]"
+                    className="rounded-lg border border-[rgba(243, 112, 33,0.35)] bg-[rgba(243, 112, 33,0.08)] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.08em] text-[#F37021]"
                     onClick={() => {
                       void handleReact(post.id);
                     }}
@@ -491,7 +491,7 @@ export function WallBoard({
                         <div className="mt-2 flex flex-wrap gap-2">
                           <button
                             type="button"
-                            className="rounded-md border border-[rgba(255,106,0,0.35)] bg-[rgba(255,106,0,0.08)] px-2 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[#F37021]"
+                            className="rounded-md border border-[rgba(243, 112, 33,0.35)] bg-[rgba(243, 112, 33,0.08)] px-2 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[#F37021]"
                             onClick={() => {
                               void handleReact(reply.id);
                             }}

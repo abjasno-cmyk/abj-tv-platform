@@ -132,7 +132,7 @@ export function AdminSourcesClient() {
                 onClick={() => setFilterMode(filter.key)}
                 className={`rounded-lg border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] ${
                   active
-                    ? "border-[#F37021] bg-[rgba(255,106,0,0.1)] text-[#F37021]"
+                    ? "border-[#F37021] bg-[rgba(243, 112, 33,0.1)] text-[#F37021]"
                     : "border-[var(--abj-gold-dim)] text-abj-text2"
                 }`}
               >

@@ -122,13 +122,13 @@ export function CommentsSection({ entityType, entityId, heading = "Diskuse divá
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-abj-text2">Reakce diváků</p>
           <h3 className="mt-1 text-lg font-black tracking-tight text-abj-text1">{heading}</h3>
         </div>
-        <span className="rounded-full border border-[#F37021]/35 bg-[rgba(237,116,47,0.1)] px-3 py-1 text-xs font-semibold text-[#A5491D]">
+        <span className="rounded-full border border-[#F37021]/35 bg-[rgba(243, 112, 33,0.1)] px-3 py-1 text-xs font-semibold text-[#A5491D]">
           {comments.length} komentářů
         </span>
       </header>
 
       {!isAuthenticated ? (
-        <div className="mb-4 rounded-2xl border border-[rgba(237,116,47,0.3)] bg-[rgba(237,116,47,0.1)] px-4 py-3 text-sm text-abj-text1">
+        <div className="mb-4 rounded-2xl border border-[rgba(243, 112, 33,0.3)] bg-[rgba(243, 112, 33,0.1)] px-4 py-3 text-sm text-abj-text1">
           <p>Zapojte se do diskuse. Přihlášení je zdarma.</p>
           <button
             type="button"

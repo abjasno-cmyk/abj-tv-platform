@@ -147,7 +147,7 @@ export function AdminWallClient() {
               onClick={() => setStatus(option.value)}
               className={`rounded-lg border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] ${
                 status === option.value
-                  ? "border-[#F37021] bg-[rgba(255,106,0,0.1)] text-[#F37021]"
+                  ? "border-[#F37021] bg-[rgba(243, 112, 33,0.1)] text-[#F37021]"
                   : "border-[var(--abj-gold-dim)] text-abj-text2"
               }`}
             >
@@ -192,7 +192,7 @@ export function AdminWallClient() {
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="rounded-lg border border-[rgba(255,106,0,0.35)] bg-[rgba(255,106,0,0.08)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[#F37021]"
+                  className="rounded-lg border border-[rgba(243, 112, 33,0.35)] bg-[rgba(243, 112, 33,0.08)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[#F37021]"
                   onClick={() => {
                     void runAction(post.id, "approve");
                   }}

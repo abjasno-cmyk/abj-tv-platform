@@ -28,7 +28,7 @@ export function EditionTabs({ tabs, activeEditionSlug }: EditionTabsProps) {
             <article
               className={`min-w-[220px] rounded-2xl border p-3 transition ${
                 isActive
-                  ? "border-[#F37021] bg-[#fff7f0] shadow-[0_8px_20px_rgba(255,106,0,0.18)]"
+                  ? "border-[#F37021] bg-[#fff7f0] shadow-[0_8px_20px_rgba(243, 112, 33,0.18)]"
                   : "border-gray-200 bg-white hover:border-[#F37021]/35"
               }`}
             >

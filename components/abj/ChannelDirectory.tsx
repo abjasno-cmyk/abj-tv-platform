@@ -221,13 +221,13 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
   };
 
   return (
-    <section className="bg-white px-5 py-5 font-[Helvetica,Arial,sans-serif] text-[#111111]">
+    <section className="rounded-[6px] border border-[rgba(23,20,17,0.1)] bg-white px-5 py-5 text-[#171411]">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h3 className="text-xl font-black tracking-tight text-[#111111]">Kanály</h3>
-          <p className="text-[11px] uppercase tracking-[0.16em] text-[#111111]/55">Vyberte kanál a spusťte videa</p>
+          <h3 className="vx-display text-2xl tracking-[-0.01em] text-[#171411]">Kanály</h3>
+          <p className="vx-meta mt-1 uppercase tracking-[0.16em]">Vyberte kanál a spusťte videa</p>
         </div>
-        <span className="rounded-full bg-[rgba(237,116,47,0.14)] px-3 py-1 text-xs font-semibold text-[#111111]">
+        <span className="rounded-full bg-[rgba(243,112,33,0.14)] px-3 py-1 text-xs font-semibold text-[#B8480A]">
           {orderedChannels.length} kanálů
         </span>
       </div>
@@ -259,8 +259,8 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                       }}
                       className={`inline-flex min-h-12 items-center gap-2 rounded-full px-3 py-2 text-left shadow-[0_3px_10px_rgba(17,17,17,0.1)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F37021]/45 ${
                         selected
-                          ? "bg-[rgba(237,116,47,0.14)] text-[#111111]"
-                          : "bg-white text-abj-text1 hover:bg-[rgba(237,116,47,0.08)]"
+                          ? "bg-[rgba(243, 112, 33,0.14)] text-[#111111]"
+                          : "bg-white text-abj-text1 hover:bg-[rgba(243, 112, 33,0.08)]"
                       }`}
                     >
                       <ChannelAvatar channelName={channel.channelName} avatarUrl={channel.avatarUrl} />

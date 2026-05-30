@@ -87,7 +87,7 @@ function toItems(posts: FeedPost[]): FeedItem[] {
 }
 
 function freshnessClass(value: FeedItem["freshness"]): string {
-  if (value === "breaking") return "border-[#F37021] bg-[rgba(255,106,0,0.2)] text-[#FFE6D1]";
+  if (value === "breaking") return "border-[#F37021] bg-[rgba(243, 112, 33,0.2)] text-[#FFE6D1]";
   if (value === "today") return "border-[#4F79B8] bg-[rgba(79,121,184,0.2)] text-[#D8E4F3]";
   if (value === "week") return "border-[rgba(154,163,178,0.5)] bg-[rgba(154,163,178,0.14)] text-[#D2D8E2]";
   return "border-[#4A7E61] bg-[rgba(74,126,97,0.2)] text-[#D5EBDD]";

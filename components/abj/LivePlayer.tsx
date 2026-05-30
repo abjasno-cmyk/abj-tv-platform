@@ -254,12 +254,12 @@ export function LivePlayer({
   }, [isPaused, videoId]);
 
   return (
-    <div className="relative mb-12 pt-12 font-[Helvetica,Arial,sans-serif] text-[#111111] sm:pt-14">
-      <section id="live-player-shell" ref={playerShellRef} className="relative overflow-visible rounded-[32px] bg-[#F37021] text-[#111111]">
-        <p className="pointer-events-none absolute bottom-full right-2 z-20 mb-0 text-[clamp(2.9rem,10.5vw,5.8rem)] font-black leading-[0.86] tracking-tight text-[#F37021] sm:right-3">
+    <div className="relative mb-12 pt-12 text-[#171411] sm:pt-14">
+      <section id="live-player-shell" ref={playerShellRef} className="relative overflow-visible rounded-[10px] bg-[#F37021] text-[#171411]">
+        <p className="vx-display pointer-events-none absolute bottom-full right-2 z-20 mb-0 text-[clamp(2.9rem,10.5vw,5.8rem)] leading-[0.86] tracking-tight text-[#F37021] sm:right-3">
           {clockLabel}
         </p>
-        <div ref={videoViewportRef} className="relative aspect-video w-full overflow-hidden rounded-t-[30px] bg-[#0B0D10]">
+        <div ref={videoViewportRef} className="relative aspect-video w-full overflow-hidden rounded-t-[8px] bg-[#0B0D10]">
         {videoId ? (
           <div className="abj-slow-zoom absolute inset-0">
             <YouTube
@@ -281,7 +281,7 @@ export function LivePlayer({
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="abj-dot-grid absolute inset-0 opacity-30" />
-            <div className="relative flex h-40 w-40 items-center justify-center rounded-full border border-[rgba(237,116,47,0.4)] bg-[rgba(255,255,255,0.9)]">
+            <div className="relative flex h-40 w-40 items-center justify-center rounded-full border border-[rgba(243, 112, 33,0.4)] bg-[rgba(255,255,255,0.9)]">
               <span className="h-5 w-5 rounded-full bg-[#F37021]" />
             </div>
           </div>
@@ -343,17 +343,17 @@ export function LivePlayer({
             <span className="absolute bottom-5 left-12 text-[11px] uppercase tracking-[0.16em] text-white/78">
               VEROX mezi pořady
             </span>
-            <span className="abj-circular-return absolute inset-0 bg-[rgba(237,116,47,0.12)]" />
+            <span className="abj-circular-return absolute inset-0 bg-[rgba(243, 112, 33,0.12)]" />
           </div>
         ) : null}
       </div>
 
         <div className="relative z-10 bg-[#F37021] px-5 pb-7 pt-5 md:px-6 md:pb-8 md:pt-6">
           <div className="pr-24 sm:pr-28 md:pr-32">
-            <h1 className="text-[clamp(1.35rem,2.7vw,2.45rem)] font-black leading-[1.06] text-white">
+            <h1 className="vx-display text-[clamp(1.35rem,2.7vw,2.45rem)] leading-[1.06] text-white">
               {title}
             </h1>
-            <p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-black">{channel}</p>
+            <p className="mt-2 font-[var(--font-mono)] text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-black">{channel}</p>
             {!isLive && continueFromSeconds !== null && continueFromSeconds > 30 ? (
               <button
                 type="button"
