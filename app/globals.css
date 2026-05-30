@@ -240,3 +240,64 @@ a {
     display: none !important;
   }
 }
+
+/* VEROX — mobilní stránka VIDEA */
+.verox-videa-clock {
+  font-size: clamp(1.6rem, 6.9vw, 2.4rem);
+}
+
+.verox-videa-month {
+  font-size: clamp(0.95rem, 3.01vw, 1.3rem);
+  line-height: 1.1;
+}
+
+.verox-videa-day {
+  font-size: clamp(2.5rem, 12.54vw, 4rem);
+  margin-top: 0.15em;
+}
+
+.verox-videa-title {
+  font-size: clamp(1rem, 2.26vw, 1.15rem);
+  line-height: 1.15;
+}
+
+.verox-videa-author {
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  line-height: 1.2;
+}
+
+.verox-videa-perex {
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  line-height: 1.35;
+}
+
+.verox-videa-cta {
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  line-height: 1.2;
+}
+
+.verox-videa-card-grid {
+  display: grid;
+  grid-template-columns: 14.2% 36.4% minmax(0, 1fr);
+  column-gap: 3.6%;
+  width: 92.4%;
+  max-width: 92.4%;
+  align-items: stretch;
+}
+
+@media (max-width: 480px) {
+  .verox-videa-page {
+    background-color: #ffffff;
+    color: #303030;
+  }
+
+  .verox-videa-page .verox-live-desktop-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 481px) {
+  .verox-videa-page .verox-videa-mobile-only {
+    display: none !important;
+  }
+}

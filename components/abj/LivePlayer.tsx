@@ -6,6 +6,7 @@ import YouTube, { type YouTubeProps } from "react-youtube";
 
 import { LiveCommunityStrip } from "@/components/abj/LiveCommunityStrip";
 import { VeroxDoubleDivider } from "@/components/abj/VeroxDoubleDivider";
+import { VeroxPageHeader } from "@/components/abj/VeroxPageHeader";
 
 type LivePlayerProps = {
   videoId: string | null;
@@ -53,27 +54,6 @@ function getPragueTimeLabel(date: Date): string {
     minute: "2-digit",
     hour12: false,
   }).format(date);
-}
-
-function getPragueDateHeader(date: Date): string {
-  const parts = new Intl.DateTimeFormat("cs-CZ", {
-    timeZone: "Europe/Prague",
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  })
-    .formatToParts(date)
-    .reduce<Record<string, string>>((acc, part) => {
-      if (part.type !== "literal") acc[part.type] = part.value;
-      return acc;
-    }, {});
-
-  const weekday = (parts.weekday ?? "").toLocaleUpperCase("cs-CZ");
-  const day = parts.day ?? "";
-  const month = (parts.month ?? "").toLocaleUpperCase("cs-CZ");
-  const year = parts.year ?? "";
-  return `${weekday} ${day}.${month} ${year}`.replace(/\s+/g, " ").trim();
 }
 
 function splitRemainingLabel(remainingLabel: string): { prefix: string; value: string } {
@@ -295,7 +275,6 @@ export function LivePlayer({
   const [pausedByVideoId, setPausedByVideoId] = useState<Record<string, boolean>>({});
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [clockLabel, setClockLabel] = useState(() => getPragueTimeLabel(new Date()));
-  const [dateLabel, setDateLabel] = useState(() => getPragueDateHeader(new Date()));
   const isMuted = videoId ? (mutedByVideoId[videoId] ?? true) : true;
   const isPaused = videoId ? (pausedByVideoId[videoId] ?? false) : false;
   const offsetSeconds = Math.max(0, Math.floor(startSeconds));
@@ -317,9 +296,7 @@ export function LivePlayer({
 
   useEffect(() => {
     const tick = () => {
-      const now = new Date();
-      setClockLabel(getPragueTimeLabel(now));
-      setDateLabel(getPragueDateHeader(now));
+      setClockLabel(getPragueTimeLabel(new Date()));
     };
     tick();
     const timer = window.setInterval(tick, 30_000);
@@ -443,10 +420,7 @@ export function LivePlayer({
     <div className="relative mb-12 pt-12 font-[Helvetica,Arial,sans-serif] text-[#111111] max-[480px]:mb-6 max-[480px]:pt-3">
       {/* Mobile — VEROX visual refresh */}
       <div className="verox-live-mobile-only">
-        <header className="mb-2 flex flex-col items-end px-3 text-right">
-          <p className="verox-font-myriad-bold text-[13px] uppercase leading-normal tracking-normal text-[#303030]">{dateLabel}</p>
-          <p className="verox-font-myriad-bold text-[28px] leading-normal tracking-[0.025em] text-[#F37021]">{clockLabel}</p>
-        </header>
+        <VeroxPageHeader className="px-3" />
 
         <LiveVideoViewport {...videoViewportProps} overlayControlsClassName="absolute right-2 top-2 z-10" />
 
