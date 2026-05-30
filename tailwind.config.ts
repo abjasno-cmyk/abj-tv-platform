@@ -9,6 +9,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        verox: {
+          brand: "#F37021",
+          text: "#303030",
+          muted: "#717171",
+          surface: "#FFFFFF",
+          black: "#000000",
+        },
         abj: {
           deep: "#FFFFFF",
           main: "#FFFFFF",

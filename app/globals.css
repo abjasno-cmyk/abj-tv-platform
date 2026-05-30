@@ -153,3 +153,90 @@ a {
   max-width: 75ch;
   line-height: 1.85;
 }
+
+/* VEROX live mobile visual refresh (design/visual-refresh) */
+@font-face {
+  font-family: "Verox Myriad Pro";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src:
+    url("/fonts/MyriadPro-Bold.woff2") format("woff2"),
+    url("/fonts/MyriadPro-Bold.woff") format("woff"),
+    local("Myriad Pro Bold"),
+    local("MyriadPro-Bold");
+}
+
+@font-face {
+  font-family: "Verox Myriad Pro";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src:
+    url("/fonts/MyriadPro-Regular.woff2") format("woff2"),
+    url("/fonts/MyriadPro-Regular.woff") format("woff"),
+    local("Myriad Pro"),
+    local("MyriadPro-Regular");
+}
+
+@font-face {
+  font-family: "Verox Impact";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src:
+    url("/fonts/Impact.woff2") format("woff2"),
+    url("/fonts/Impact.woff") format("woff"),
+    local("Impact"),
+    local("Impact Regular");
+}
+
+.verox-font-myriad-bold {
+  font-family: "Verox Myriad Pro", "Myriad Pro", sans-serif;
+  font-weight: 700;
+}
+
+.verox-font-myriad-regular {
+  font-family: "Verox Myriad Pro", "Myriad Pro", sans-serif;
+  font-weight: 400;
+}
+
+.verox-font-impact {
+  font-family: "Verox Impact", Impact, sans-serif;
+  font-weight: 400;
+}
+
+.verox-double-divider {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+.verox-double-divider span {
+  display: block;
+  height: 1.5px;
+  width: 100%;
+  background-color: #f37021;
+}
+
+@media (max-width: 480px) {
+  .verox-live-page {
+    --verox-brand: #f37021;
+    --verox-text: #303030;
+    --verox-text-muted: #717171;
+    --verox-surface: #ffffff;
+    background-color: var(--verox-surface);
+    color: var(--verox-text);
+  }
+
+  .verox-live-page .verox-live-desktop-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 481px) {
+  .verox-live-page .verox-live-mobile-only {
+    display: none !important;
+  }
+}

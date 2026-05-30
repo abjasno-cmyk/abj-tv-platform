@@ -1,7 +1,11 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import YouTube, { type YouTubeProps } from "react-youtube";
+
+import { LiveCommunityStrip } from "@/components/abj/LiveCommunityStrip";
+import { VeroxDoubleDivider } from "@/components/abj/VeroxDoubleDivider";
 
 type LivePlayerProps = {
   videoId: string | null;
@@ -16,6 +20,7 @@ type LivePlayerProps = {
   continueFromSeconds?: number | null;
   onContinueFromSaved?: (seconds: number) => void;
   onPlaybackSample?: (sample: { videoId: string; positionSeconds: number; durationSeconds: number }) => void;
+  communitySlot?: ReactNode;
 };
 
 type FullscreenElement = HTMLElement & {
@@ -48,6 +53,40 @@ function getPragueTimeLabel(date: Date): string {
     minute: "2-digit",
     hour12: false,
   }).format(date);
+}
+
+function getPragueDateHeader(date: Date): string {
+  const parts = new Intl.DateTimeFormat("cs-CZ", {
+    timeZone: "Europe/Prague",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  })
+    .formatToParts(date)
+    .reduce<Record<string, string>>((acc, part) => {
+      if (part.type !== "literal") acc[part.type] = part.value;
+      return acc;
+    }, {});
+
+  const weekday = (parts.weekday ?? "").toLocaleUpperCase("cs-CZ");
+  const day = parts.day ?? "";
+  const month = (parts.month ?? "").toLocaleUpperCase("cs-CZ");
+  const year = parts.year ?? "";
+  return `${weekday} ${day}.${month} ${year}`.replace(/\s+/g, " ").trim();
+}
+
+function splitRemainingLabel(remainingLabel: string): { prefix: string; value: string } {
+  const trimmed = remainingLabel.trim();
+  const colonMatch = trimmed.match(/^([^:]+):\s*(.+)$/);
+  if (colonMatch) {
+    return { prefix: `${colonMatch[1].trim()} :`, value: colonMatch[2].trim() };
+  }
+  const zaMatch = trimmed.match(/^za\s+(.+)$/i);
+  if (zaMatch) {
+    return { prefix: "DO KONCE ZBÝVÁ :", value: zaMatch[1].trim() };
+  }
+  return { prefix: "DO KONCE ZBÝVÁ :", value: trimmed };
 }
 
 function readFullscreenElement(doc: FullscreenDocument): Element | null {
@@ -120,6 +159,120 @@ function HeroBroadcastIcon({ className = "" }: { className?: string }) {
   );
 }
 
+function LiveVideoViewport({
+  videoId,
+  title,
+  isMuted,
+  isPaused,
+  offsetSeconds,
+  isFiller,
+  opts,
+  videoViewportRef,
+  onReady,
+  onToggleFullscreen,
+  onToggleMute,
+  onTogglePause,
+  isFullscreen,
+  overlayControlsClassName = "absolute right-2 top-2 z-10 sm:right-3 sm:top-3",
+}: {
+  videoId: string | null;
+  title: string;
+  isMuted: boolean;
+  isPaused: boolean;
+  offsetSeconds: number;
+  isFiller: boolean;
+  opts: YouTubeProps["opts"];
+  videoViewportRef: React.RefObject<HTMLDivElement | null>;
+  onReady: YouTubeProps["onReady"];
+  onToggleFullscreen: () => void;
+  onToggleMute: () => void;
+  onTogglePause: () => void;
+  isFullscreen: boolean;
+  overlayControlsClassName?: string;
+}) {
+  return (
+    <div ref={videoViewportRef} className="relative aspect-video w-full overflow-hidden bg-[#000000]">
+      {videoId ? (
+        <div className="abj-slow-zoom absolute inset-0">
+          <YouTube
+            key={`${videoId}-${isMuted ? "muted" : "unmuted"}-${offsetSeconds}`}
+            videoId={videoId}
+            title={title}
+            iframeClassName="absolute inset-0 h-full w-full"
+            opts={opts}
+            onReady={onReady}
+          />
+        </div>
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="abj-dot-grid absolute inset-0 opacity-30" />
+          <div className="relative flex h-40 w-40 items-center justify-center rounded-full border border-[rgba(243,112,33,0.4)] bg-[rgba(255,255,255,0.9)]">
+            <span className="h-5 w-5 rounded-full bg-[#F37021]" />
+          </div>
+        </div>
+      )}
+
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.2)_0%,rgba(0,0,0,0.02)_42%,rgba(0,0,0,0.65)_100%)]" />
+
+      <div className={overlayControlsClassName}>
+        <div className="flex flex-col items-center gap-1.5 opacity-85 sm:gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              void onToggleFullscreen();
+            }}
+            aria-label={isFullscreen ? "Ukončit režim celé obrazovky" : "Přepnout celou obrazovku"}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full transition hover:scale-[1.04] hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-10 sm:w-10"
+          >
+            <HeroFullscreenIcon className="h-full w-full drop-shadow-[0_8px_14px_rgba(17,17,17,0.32)]" />
+          </button>
+          <button
+            type="button"
+            onClick={onToggleMute}
+            aria-label={isMuted ? "Zapnout zvuk" : "Vypnout zvuk"}
+            className="relative inline-flex h-8 w-8 items-center justify-center rounded-full transition hover:scale-[1.04] hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-10 sm:w-10"
+          >
+            <HeroVolumeIcon className="h-full w-full drop-shadow-[0_8px_14px_rgba(17,17,17,0.32)]" />
+            {isMuted ? (
+              <span className="pointer-events-none absolute h-[2px] w-5 rotate-[-35deg] rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.35)] sm:w-6" />
+            ) : null}
+          </button>
+          <button
+            type="button"
+            onClick={onTogglePause}
+            aria-label={isPaused ? "Spustit přehrávání" : "Pozastavit přehrávání"}
+            className="relative inline-flex h-8 w-8 items-center justify-center rounded-full transition hover:scale-[1.04] hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-10 sm:w-10"
+          >
+            <HeroBroadcastIcon className="h-full w-full drop-shadow-[0_8px_14px_rgba(17,17,17,0.32)]" />
+            {!isPaused ? (
+              <span className="pointer-events-none absolute inline-flex gap-[3px]">
+                <span className="h-2.5 w-[2px] rounded-full bg-[#ED742F] sm:h-3 sm:w-[3px]" />
+                <span className="h-2.5 w-[2px] rounded-full bg-[#ED742F] sm:h-3 sm:w-[3px]" />
+              </span>
+            ) : null}
+          </button>
+        </div>
+      </div>
+
+      {offsetSeconds > 0 ? (
+        <span className="absolute bottom-4 left-4 z-10 rounded-full bg-black/50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/90">
+          +{String(Math.floor(offsetSeconds / 60)).padStart(2, "0")}:{String(offsetSeconds % 60).padStart(2, "0")}
+        </span>
+      ) : null}
+
+      {isFiller ? (
+        <div className="pointer-events-none absolute inset-0">
+          <div className="abj-dot-grid absolute inset-0 opacity-20" />
+          <span className="abj-soft-pulse absolute right-6 top-6 h-4 w-4 rounded-full bg-[#F37021]" />
+          <span className="abj-soft-pulse absolute bottom-6 left-6 h-3 w-3 rounded-full bg-[#F37021]" />
+          <span className="absolute bottom-5 left-12 text-[11px] uppercase tracking-[0.16em] text-white/78">VEROX mezi pořady</span>
+          <span className="abj-circular-return absolute inset-0 bg-[rgba(243,112,33,0.12)]" />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function LivePlayer({
   videoId,
   title,
@@ -133,6 +286,7 @@ export function LivePlayer({
   continueFromSeconds = null,
   onContinueFromSaved,
   onPlaybackSample,
+  communitySlot,
 }: LivePlayerProps) {
   const playerShellRef = useRef<HTMLElement | null>(null);
   const videoViewportRef = useRef<HTMLDivElement | null>(null);
@@ -141,10 +295,13 @@ export function LivePlayer({
   const [pausedByVideoId, setPausedByVideoId] = useState<Record<string, boolean>>({});
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [clockLabel, setClockLabel] = useState(() => getPragueTimeLabel(new Date()));
+  const [dateLabel, setDateLabel] = useState(() => getPragueDateHeader(new Date()));
   const isMuted = videoId ? (mutedByVideoId[videoId] ?? true) : true;
   const isPaused = videoId ? (pausedByVideoId[videoId] ?? false) : false;
   const offsetSeconds = Math.max(0, Math.floor(startSeconds));
   const clampedProgress = Math.max(0, Math.min(100, progressPercent));
+  const remainingParts = useMemo(() => splitRemainingLabel(remainingLabel), [remainingLabel]);
+  const mobileCommunity = communitySlot ?? <LiveCommunityStrip />;
 
   useEffect(() => {
     const doc = document as FullscreenDocument;
@@ -159,9 +316,13 @@ export function LivePlayer({
   }, []);
 
   useEffect(() => {
-    const timer = window.setInterval(() => {
-      setClockLabel(getPragueTimeLabel(new Date()));
-    }, 30_000);
+    const tick = () => {
+      const now = new Date();
+      setClockLabel(getPragueTimeLabel(now));
+      setDateLabel(getPragueDateHeader(now));
+    };
+    tick();
+    const timer = window.setInterval(tick, 30_000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -204,6 +365,15 @@ export function LivePlayer({
     }),
     [isMuted, offsetSeconds]
   );
+
+  const onYouTubeReady = useCallback<NonNullable<YouTubeProps["onReady"]>>((event) => {
+    youtubePlayerRef.current = event.target as unknown as YouTubePlayerHandle;
+    if (isMuted) {
+      youtubePlayerRef.current.mute?.();
+    } else {
+      youtubePlayerRef.current.unMute?.();
+    }
+  }, [isMuted]);
 
   const toggleFullscreen = useCallback(async () => {
     const doc = document as FullscreenDocument;
@@ -253,106 +423,102 @@ export function LivePlayer({
     setPausedByVideoId((prev) => ({ ...prev, [videoId]: true }));
   }, [isPaused, videoId]);
 
+  const videoViewportProps = {
+    videoId,
+    title,
+    isMuted,
+    isPaused,
+    offsetSeconds,
+    isFiller,
+    opts,
+    videoViewportRef,
+    onReady: onYouTubeReady,
+    onToggleFullscreen: toggleFullscreen,
+    onToggleMute: toggleMute,
+    onTogglePause: togglePause,
+    isFullscreen,
+  };
+
   return (
-    <div className="relative mb-12 pt-12 font-[Helvetica,Arial,sans-serif] text-[#111111] sm:pt-14">
-      <section id="live-player-shell" ref={playerShellRef} className="relative overflow-visible rounded-[32px] bg-[#ED742F] text-[#111111]">
+    <div className="relative mb-12 pt-12 font-[Helvetica,Arial,sans-serif] text-[#111111] max-[480px]:mb-6 max-[480px]:pt-3">
+      {/* Mobile — VEROX visual refresh */}
+      <div className="verox-live-mobile-only">
+        <header className="mb-2 flex flex-col items-end px-3 text-right">
+          <p className="verox-font-myriad-bold text-[13px] uppercase leading-normal tracking-normal text-[#303030]">{dateLabel}</p>
+          <p className="verox-font-myriad-bold text-[28px] leading-normal tracking-[0.025em] text-[#F37021]">{clockLabel}</p>
+        </header>
+
+        <LiveVideoViewport {...videoViewportProps} overlayControlsClassName="absolute right-2 top-2 z-10" />
+
+        <div className="relative mt-0">{mobileCommunity}</div>
+
+        <div className="relative px-3 pb-2 pt-3">
+          <div className="pr-[52px]">
+            <h1 className="verox-font-impact text-[24px] leading-normal tracking-normal text-[#303030]">{title}</h1>
+            <p className="verox-font-myriad-regular mt-1 text-[12px] leading-normal tracking-normal text-[#303030]">{channel}</p>
+            <p className="verox-font-myriad-regular mt-2 text-[12px] leading-normal tracking-[0.05em] text-[#303030]">
+              {remainingParts.prefix}{" "}
+              <span className="text-[15px] tracking-[0.05em]">{remainingParts.value}</span>
+            </p>
+            {!isLive && continueFromSeconds !== null && continueFromSeconds > 30 ? (
+              <button
+                type="button"
+                onClick={() => onContinueFromSaved?.(continueFromSeconds)}
+                className="verox-font-myriad-bold mt-2 inline-flex min-h-8 items-center rounded-none bg-[#F37021] px-3 py-1 text-[10px] uppercase tracking-[0.05em] text-white"
+              >
+                Pokračovat od {Math.floor(continueFromSeconds / 60).toString().padStart(2, "0")}:
+                {Math.floor(continueFromSeconds % 60).toString().padStart(2, "0")}
+              </button>
+            ) : null}
+          </div>
+
+          <button
+            type="button"
+            onClick={onGoLive}
+            aria-label="Přepnout na živé vysílání"
+            className={`verox-font-myriad-bold absolute right-3 top-3 inline-flex h-[40px] w-[40px] items-center justify-center rounded-full text-center text-[7px] uppercase leading-[1.05] tracking-normal text-white transition ${
+              isLive ? "bg-[#F37021]" : "bg-[#F37021] hover:opacity-95"
+            }`}
+          >
+            ŽIVÉ
+            <br />
+            VYSÍLÁNÍ
+          </button>
+        </div>
+
+        <div className="px-3 pb-4">
+          <p className="verox-font-myriad-bold mb-1 text-[9px] uppercase leading-normal tracking-normal text-[#F37021]">
+            <span aria-hidden="true">● </span>
+            PRÁVĚ BĚŽÍ
+          </p>
+          <h2 className="verox-font-myriad-bold text-[15px] leading-[15px] tracking-[0.025em] text-[#303030]">{title}</h2>
+          <p className="verox-font-myriad-regular mt-1 text-[9px] leading-normal tracking-[0.025em] text-[#717171]">{channel}</p>
+        </div>
+
+        <VeroxDoubleDivider className="px-0" />
+
+        <p className="sr-only">
+          Zbývá {remainingLabel}. Průběh přehrávání {Math.round(clampedProgress)} procent.
+        </p>
+      </div>
+
+      {/* Desktop — stávající layout */}
+      <section
+        id="live-player-shell"
+        ref={playerShellRef}
+        className="verox-live-desktop-only relative overflow-visible rounded-[32px] bg-[#ED742F] text-[#111111]"
+      >
         <p className="pointer-events-none absolute bottom-full right-2 z-20 mb-0 text-[clamp(2.9rem,10.5vw,5.8rem)] font-black leading-[0.86] tracking-tight text-[#ED742F] sm:right-3">
           {clockLabel}
         </p>
-        <div ref={videoViewportRef} className="relative aspect-video w-full overflow-hidden rounded-t-[30px] bg-[#0B0D10]">
-        {videoId ? (
-          <div className="abj-slow-zoom absolute inset-0">
-            <YouTube
-              key={`${videoId}-${isMuted ? "muted" : "unmuted"}-${offsetSeconds}`}
-              videoId={videoId}
-              title={title}
-              iframeClassName="absolute inset-0 h-full w-full"
-              opts={opts}
-              onReady={(event) => {
-                youtubePlayerRef.current = event.target as unknown as YouTubePlayerHandle;
-                if (isMuted) {
-                  youtubePlayerRef.current.mute?.();
-                } else {
-                  youtubePlayerRef.current.unMute?.();
-                }
-              }}
-            />
-          </div>
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="abj-dot-grid absolute inset-0 opacity-30" />
-            <div className="relative flex h-40 w-40 items-center justify-center rounded-full border border-[rgba(237,116,47,0.4)] bg-[rgba(255,255,255,0.9)]">
-              <span className="h-5 w-5 rounded-full bg-[#ED742F]" />
-            </div>
-          </div>
-        )}
-
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.2)_0%,rgba(0,0,0,0.02)_42%,rgba(0,0,0,0.65)_100%)]" />
-
-          <div className="absolute right-2 top-2 z-10 sm:right-3 sm:top-3">
-            <div className="flex flex-col items-center gap-1.5 opacity-85 sm:gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  void toggleFullscreen();
-                }}
-                aria-label={isFullscreen ? "Ukončit režim celé obrazovky" : "Přepnout celou obrazovku"}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full transition hover:scale-[1.04] hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-10 sm:w-10"
-              >
-                <HeroFullscreenIcon className="h-full w-full drop-shadow-[0_8px_14px_rgba(17,17,17,0.32)]" />
-              </button>
-              <button
-                type="button"
-                onClick={toggleMute}
-                aria-label={isMuted ? "Zapnout zvuk" : "Vypnout zvuk"}
-                className="relative inline-flex h-8 w-8 items-center justify-center rounded-full transition hover:scale-[1.04] hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-10 sm:w-10"
-              >
-                <HeroVolumeIcon className="h-full w-full drop-shadow-[0_8px_14px_rgba(17,17,17,0.32)]" />
-                {isMuted ? (
-                  <span className="pointer-events-none absolute h-[2px] w-5 rotate-[-35deg] rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.35)] sm:w-6" />
-                ) : null}
-              </button>
-              <button
-                type="button"
-                onClick={togglePause}
-                aria-label={isPaused ? "Spustit přehrávání" : "Pozastavit přehrávání"}
-                className="relative inline-flex h-8 w-8 items-center justify-center rounded-full transition hover:scale-[1.04] hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-10 sm:w-10"
-              >
-                <HeroBroadcastIcon className="h-full w-full drop-shadow-[0_8px_14px_rgba(17,17,17,0.32)]" />
-                {!isPaused ? (
-                  <span className="pointer-events-none absolute inline-flex gap-[3px]">
-                    <span className="h-2.5 w-[2px] rounded-full bg-[#ED742F] sm:h-3 sm:w-[3px]" />
-                    <span className="h-2.5 w-[2px] rounded-full bg-[#ED742F] sm:h-3 sm:w-[3px]" />
-                  </span>
-                ) : null}
-              </button>
-            </div>
-          </div>
-
-        {offsetSeconds > 0 ? (
-          <span className="absolute bottom-4 left-4 z-10 rounded-full bg-black/50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/90">
-            +{String(Math.floor(offsetSeconds / 60)).padStart(2, "0")}:{String(offsetSeconds % 60).padStart(2, "0")}
-          </span>
-        ) : null}
-
-        {isFiller ? (
-          <div className="pointer-events-none absolute inset-0">
-            <div className="abj-dot-grid absolute inset-0 opacity-20" />
-            <span className="abj-soft-pulse absolute right-6 top-6 h-4 w-4 rounded-full bg-[#ED742F]" />
-            <span className="abj-soft-pulse absolute bottom-6 left-6 h-3 w-3 rounded-full bg-[#ED742F]" />
-            <span className="absolute bottom-5 left-12 text-[11px] uppercase tracking-[0.16em] text-white/78">
-              VEROX mezi pořady
-            </span>
-            <span className="abj-circular-return absolute inset-0 bg-[rgba(237,116,47,0.12)]" />
-          </div>
-        ) : null}
-      </div>
+        <LiveVideoViewport
+          {...videoViewportProps}
+          overlayControlsClassName="absolute right-2 top-2 z-10 sm:right-3 sm:top-3"
+        />
 
         <div className="relative z-10 bg-[#ED742F] px-5 pb-7 pt-5 md:px-6 md:pb-8 md:pt-6">
           <div className="pr-24 sm:pr-28 md:pr-32">
-            <h1 className="text-[clamp(1.35rem,2.7vw,2.45rem)] font-black leading-[1.06] text-white">
-              {title}
-            </h1>
+            <h1 className="text-[clamp(1.35rem,2.7vw,2.45rem)] font-black leading-[1.06] text-white">{title}</h1>
             <p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-black">{channel}</p>
             {!isLive && continueFromSeconds !== null && continueFromSeconds > 30 ? (
               <button
@@ -360,10 +526,8 @@ export function LivePlayer({
                 onClick={() => onContinueFromSaved?.(continueFromSeconds)}
                 className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-semibold text-[#111111] transition hover:bg-white/30"
               >
-                Pokračovat od {Math.floor(continueFromSeconds / 60)
-                  .toString()
-                  .padStart(2, "0")}
-                :{Math.floor(continueFromSeconds % 60).toString().padStart(2, "0")}
+                Pokračovat od {Math.floor(continueFromSeconds / 60).toString().padStart(2, "0")}:
+                {Math.floor(continueFromSeconds % 60).toString().padStart(2, "0")}
               </button>
             ) : null}
             <p className="sr-only">
@@ -379,7 +543,9 @@ export function LivePlayer({
               isLive ? "bg-[#ED742F] text-white/90" : "bg-[#ED742F] text-white hover:scale-[1.02]"
             }`}
           >
-            Živé<br />vysílání
+            Živé
+            <br />
+            vysílání
           </button>
         </div>
       </section>

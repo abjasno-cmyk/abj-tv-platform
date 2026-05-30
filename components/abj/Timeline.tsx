@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { LiveProgramCarousel } from "@/components/abj/live-mobile/LiveProgramCarousel";
 import type { DayProgram, ProgramItem } from "@/lib/epg-types";
 
 type TimelineProps = {
@@ -188,7 +189,16 @@ export function Timeline({ days, onSelect }: TimelineProps) {
   }, []);
 
   return (
-    <section className="bg-white px-5 py-5 font-[Helvetica,Arial,sans-serif] text-[#111111]">
+    <>
+      <LiveProgramCarousel
+        items={items}
+        currentSlotKey={currentSlot?.key ?? null}
+        onSelect={onSelect}
+        itemKey={itemKey}
+        resolveThumbnail={resolveThumbnail}
+      />
+
+      <section className="verox-live-desktop-only bg-white px-5 py-5 font-[Helvetica,Arial,sans-serif] text-[#111111]">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h3 className="text-[clamp(1.35rem,2.3vw,2rem)] font-black leading-tight text-[#111111]">
@@ -297,5 +307,6 @@ export function Timeline({ days, onSelect }: TimelineProps) {
         </div>
       </div>
     </section>
+     </>
   );
 }

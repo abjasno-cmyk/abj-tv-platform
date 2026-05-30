@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import { LiveChannelsMobile } from "@/components/abj/live-mobile/LiveChannelsMobile";
 import { FollowChannelButton } from "@/components/auth/FollowChannelButton";
 
 export type LiveChannelVideo = {
@@ -221,7 +222,25 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
   };
 
   return (
-    <section className="bg-white px-5 py-5 font-[Helvetica,Arial,sans-serif] text-[#111111]">
+    <>
+      <LiveChannelsMobile
+        channels={orderedChannels}
+        activeChannelName={activeChannelName}
+        onToggleChannel={(channel) => {
+          setActiveChannelName((prev) => (prev === channel.channelName ? null : channel.channelName));
+          if (channel.videos.length === 0) {
+            void loadFallbackVideos(channel);
+          }
+        }}
+        onSelectVideo={onSelectVideo}
+        activeChannel={activeChannel}
+        fetchedVideosByChannel={fetchedVideosByChannel}
+        loadingByChannel={loadingByChannel}
+        errorByChannel={errorByChannel}
+        initialsFromName={initialsFromName}
+      />
+
+      <section className="verox-live-desktop-only bg-white px-5 py-5 font-[Helvetica,Arial,sans-serif] text-[#111111]">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h3 className="text-xl font-black tracking-tight text-[#111111]">Kanály</h3>
@@ -407,5 +426,6 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
         )}
       </div>
     </section>
+     </>
   );
 }
