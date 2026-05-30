@@ -1,3 +1,4 @@
+import { enforceWriteRateLimit } from "@/lib/rateLimit";
 import { buildWallIdentityMeta } from "@/lib/wallSecurity";
 import {
   createWallPost,
@@ -39,6 +40,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const limited = enforceWriteRateLimit(request, "wall");
+  if (limited) return limited;
   try {
     const payload = (await request.json()) as CreateWallPostPayload;
     const identity = buildWallIdentityMeta(request);

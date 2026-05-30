@@ -7,7 +7,6 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { LoginModal } from "@/components/auth/LoginModal";
 
 const PENDING_CONSENTS_KEY = "verox_pending_consents_v1";
-const FALLBACK_ACCESS_TOKEN_COOKIE = "verox_access_token";
 const CANONICAL_VERCEL_HOST = "abj-tv-platform-n7e8.vercel.app";
 
 type ViewerProfile = {
@@ -81,46 +80,6 @@ function clearPendingConsentsStorage() {
   }
 }
 
-function setFallbackAccessTokenCookie(accessToken: string) {
-  if (typeof window === "undefined") return;
-  if (!accessToken) return;
-  const encoded = encodeURIComponent(accessToken);
-  document.cookie = `${FALLBACK_ACCESS_TOKEN_COOKIE}=${encoded}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`;
-}
-
-function clearFallbackAccessTokenCookie() {
-  if (typeof window === "undefined") return;
-  document.cookie = `${FALLBACK_ACCESS_TOKEN_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax; Secure`;
-}
-
-function readAccessTokenFromStorage(): string | null {
-  if (typeof window === "undefined") return null;
-  const candidates = Object.keys(window.localStorage).filter((key) =>
-    /^sb-[a-z0-9]+-auth-token$/i.test(key)
-  );
-  for (const key of candidates) {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) continue;
-    try {
-      const parsed = JSON.parse(raw) as { access_token?: unknown } | { currentSession?: { access_token?: unknown } };
-      if ("access_token" in parsed && typeof parsed.access_token === "string" && parsed.access_token.length > 20) {
-        return parsed.access_token;
-      }
-      if (
-        "currentSession" in parsed &&
-        parsed.currentSession &&
-        typeof parsed.currentSession.access_token === "string" &&
-        parsed.currentSession.access_token.length > 20
-      ) {
-        return parsed.currentSession.access_token;
-      }
-    } catch {
-      // Ignore malformed localStorage payloads.
-    }
-  }
-  return null;
-}
-
 function resolvePreferredAuthOrigin(): string | null {
   if (typeof window === "undefined") return null;
   const protocol = window.location.protocol || "https:";
@@ -189,25 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ignore best-effort cleanup errors.
     });
     lastSyncedAccessTokenRef.current = null;
-    clearFallbackAccessTokenCookie();
   }, []);
-
-  const persistFallbackAccessToken = useCallback(
-    async (preferredToken?: string | null) => {
-      const fromSession = preferredToken && preferredToken.length > 20 ? preferredToken : null;
-      const fromStorage = readAccessTokenFromStorage();
-      const token = fromSession ?? fromStorage;
-      if (!token) return;
-      setFallbackAccessTokenCookie(token);
-      if (lastSyncedAccessTokenRef.current !== token) {
-        const {
-          data: { session },
-        } = await (supabase?.auth.getSession() ?? Promise.resolve({ data: { session: null } }));
-        await syncServerSession(token, session?.refresh_token ?? null);
-      }
-    },
-    [supabase, syncServerSession]
-  );
 
   const refreshProfile = useCallback(async () => {
     if (!supabase) return;
@@ -278,10 +219,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(userResult.data.user ?? null);
       const session = sessionResult.data.session;
       if (session?.access_token) {
-        setFallbackAccessTokenCookie(session.access_token);
         void syncServerSession(session.access_token, session.refresh_token ?? null);
-      } else {
-        void persistFallbackAccessToken(session?.access_token ?? null);
       }
       setLoading(false);
     });
@@ -295,10 +233,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         lastBootstrappedUserIdRef.current = null;
         void clearServerSession();
       } else if (session.access_token) {
-        setFallbackAccessTokenCookie(session.access_token);
         void syncServerSession(session.access_token, session.refresh_token ?? null);
-      } else {
-        void persistFallbackAccessToken(session?.access_token ?? null);
       }
       setLoading(false);
     });
@@ -307,16 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [clearServerSession, persistFallbackAccessToken, supabase, syncServerSession]);
-
-  useEffect(() => {
-    if (!user) return;
-    const timer = window.setInterval(() => {
-      void persistFallbackAccessToken();
-    }, 3000);
-    void persistFallbackAccessToken();
-    return () => window.clearInterval(timer);
-  }, [persistFallbackAccessToken, user]);
+  }, [clearServerSession, supabase, syncServerSession]);
 
   useEffect(() => {
     if (!user) return;

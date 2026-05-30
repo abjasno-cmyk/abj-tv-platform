@@ -125,6 +125,17 @@ function requiredEnv(name: string): string {
   return value;
 }
 
+/**
+ * Service-role client for the ingest cron. Bypasses RLS so the trusted
+ * server-side import can upsert videos/sources and log ingest_runs once
+ * those tables have RLS enabled (anon key would be rejected).
+ */
+function createIngestClient() {
+  return createClient(requiredEnv("NEXT_PUBLIC_SUPABASE_URL"), requiredEnv("SUPABASE_SERVICE_ROLE_KEY"), {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -280,10 +291,8 @@ async function upsertVideosResiliently(
 }
 
 export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
-  const supabaseUrl = requiredEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const supabaseAnonKey = requiredEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
   const youtubeApiKey = requiredEnv("YOUTUBE_API_KEY");
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const supabase = createIngestClient();
 
   const { data: sourcesData, error: sourcesError } = await supabase
     .from("sources")
@@ -490,7 +499,7 @@ export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
 }
 
 async function main() {
-  const supabase = createClient(requiredEnv("NEXT_PUBLIC_SUPABASE_URL"), requiredEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"));
+  const supabase = createIngestClient();
   const runStartedAt = new Date().toISOString();
 
   let status: IngestRunStatus = "success";

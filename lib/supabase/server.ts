@@ -25,48 +25,27 @@ function sanitizeEnvValue(value?: string): string | undefined {
   return withoutInlineKeyName;
 }
 
-function decodeCookieValue(value?: string): string | undefined {
-  if (!value) return undefined;
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
-}
-
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
   const supabaseUrl = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);
   const supabaseAnonKey = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-  const fallbackAccessToken = decodeCookieValue(cookieStore.get("verox_access_token")?.value);
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error("Supabase env vars not set");
   }
 
-  return createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      global: fallbackAccessToken
-        ? {
-            headers: {
-              Authorization: `Bearer ${fallbackAccessToken}`,
-            },
-          }
-        : undefined,
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
-          });
-        },
+  return createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          cookieStore.set(name, value, options);
+        });
       },
     },
-  );
+  });
 }
 
 export function createSupabaseAnonServerClient() {
@@ -78,6 +57,30 @@ export function createSupabaseAnonServerClient() {
   }
 
   return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
+/**
+ * Service-role client for trusted server-side writes (ingest cron, logging).
+ * Bypasses RLS — never expose its results to an untrusted caller and never
+ * import it into client components. Requires SUPABASE_SERVICE_ROLE_KEY.
+ */
+export function createSupabaseServiceClient() {
+  const supabaseUrl = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const serviceRoleKey = sanitizeEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+  if (!supabaseUrl) {
+    throw new Error("Supabase URL not set");
+  }
+  if (!serviceRoleKey) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY not set");
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
