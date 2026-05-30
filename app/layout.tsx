@@ -29,11 +29,17 @@ const montserrat = Montserrat({
 
 export default function RootLayout({ children }: RootLayoutProps) {
   const showEditorialDebug = process.env.NODE_ENV !== "production";
+  // Only canonicalize the host on the production deployment. Preview
+  // deployments (VERCEL_ENV="preview", e.g. branch builds like
+  // *-git-design-visual-refresh-*.vercel.app) must stay on their own host so
+  // visual changes can be reviewed before merging to main.
+  const isProductionDeployment = process.env.VERCEL_ENV === "production";
   return (
     <html lang="cs" className={`${montserrat.variable} ${inter.variable}`}>
       <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
-        <Script id="verox-canonical-host-guard" strategy="beforeInteractive">
-          {`
+        {isProductionDeployment ? (
+          <Script id="verox-canonical-host-guard" strategy="beforeInteractive">
+            {`
             (function () {
               try {
                 var canonicalHost = "abj-tv-platform-n7e8.vercel.app";
@@ -54,7 +60,8 @@ export default function RootLayout({ children }: RootLayoutProps) {
               }
             })();
           `}
-        </Script>
+          </Script>
+        ) : null}
         <Script id="verox-legacy-token-cookie-cleanup" strategy="beforeInteractive">
           {`
             (function () {
