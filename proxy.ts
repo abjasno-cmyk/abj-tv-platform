@@ -21,8 +21,12 @@ function sanitizeEnvValue(value?: string): string | undefined {
 
 export async function proxy(request: NextRequest) {
   const requestHost = request.nextUrl.host.toLowerCase();
+  // Canonicalize only on the production deployment. NODE_ENV is "production"
+  // on every Vercel build (preview included), so gating on it bounced preview
+  // deployments to prod and made branch visual review impossible. VERCEL_ENV
+  // is "preview" on preview deployments and "production" only on production.
   const shouldCanonicalizeHost =
-    process.env.NODE_ENV === "production" &&
+    process.env.VERCEL_ENV === "production" &&
     /^abj-tv-platform-n7e8(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(requestHost) &&
     requestHost !== CANONICAL_VERCEL_HOST;
 
