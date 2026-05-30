@@ -3,7 +3,6 @@ import { Inter, Montserrat } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { ABJNav } from "@/components/abj/Nav";
-import { BetaBanner } from "@/components/abj/BetaBanner";
 import { LegalFooter } from "@/components/abj/LegalFooter";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { EditorialEventDebugPanel } from "@/components/dev/EditorialEventDebugPanel";
@@ -74,7 +73,6 @@ export default function RootLayout({ children }: RootLayoutProps) {
           {/* Single global nav only — prevents duplicate legacy header stacks. */}
           <ABJNav />
           <main className="min-h-[calc(100vh-68px-46px)] pt-[68px]">{children}</main>
-          <BetaBanner />
           <LegalFooter />
           {showEditorialDebug ? <EditorialEventDebugPanel /> : null}
         </AuthProvider>
