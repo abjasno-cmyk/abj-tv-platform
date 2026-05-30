@@ -117,6 +117,10 @@
   position: relative;
   display: inline-block;
   isolation: isolate;
+  /* The ::before swash bleeds 0.18em past the text on each side; this inline
+     margin compensates that bleed so the marker never overhangs its box and
+     adjacent markers keep real breathing room. */
+  margin-inline: 0.32em;
 }
 .vx-mark > span {
   position: relative;
