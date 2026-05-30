@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ReplitHealthBadge } from "@/components/abj/ReplitHealthBadge";
+import { VeroxMobileHeader } from "@/components/abj/VeroxMobileHeader";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 const BASE_NAV_LINKS = [
@@ -86,7 +87,12 @@ export function ABJNav() {
   }, [pathname]);
 
   return (
-    <div className="fixed inset-x-0 top-0 z-50">
+    <>
+      <div className="min-[481px]:hidden">
+        <VeroxMobileHeader />
+      </div>
+
+      <div className="fixed inset-x-0 top-0 z-50 max-[480px]:hidden min-[481px]:block">
       <div
         onMouseEnter={revealHeader}
         onTouchStart={revealHeader}
@@ -280,5 +286,6 @@ export function ABJNav() {
         />
       </div>
     </div>
+    </>
   );
 }

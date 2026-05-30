@@ -570,3 +570,176 @@ a {
     display: none !important;
   }
 }
+
+/* VEROX — globální mobilní ukotvená lišta (≤480px) */
+:root {
+  --verox-mobile-header-height: clamp(108px, 29vw, 132px);
+}
+
+.verox-mobile-tagline {
+  font-size: clamp(0.55rem, 1.4vw, 0.7rem);
+  line-height: 1.1;
+}
+
+.verox-mobile-header-date {
+  font-size: clamp(0.75rem, 1.7vw, 0.95rem);
+}
+
+.verox-mobile-header-clock {
+  font-size: clamp(1.5rem, 6.9vw, 2.3rem);
+  line-height: 1;
+}
+
+.verox-mobile-header-cta {
+  font-size: clamp(0.9rem, 1.88vw, 1.1rem);
+  line-height: 1.15;
+}
+
+.verox-mobile-nav-link {
+  font-size: clamp(0.9rem, 1.88vw, 1.1rem);
+  line-height: 1.15;
+}
+
+@media (max-width: 480px) {
+  .verox-page-inline-header {
+    display: none !important;
+  }
+
+  body {
+    padding-top: 0;
+  }
+}
+
+@media (min-width: 481px) {
+  .verox-mobile-header {
+    display: none !important;
+  }
+}
+
+/* VEROX — mobilní MŮJ VEROX (nepřihlášený) */
+.verox-muj-verox-intro-title {
+  font-size: clamp(1.5rem, 4.51vw, 2.2rem);
+  line-height: 1.1;
+}
+
+.verox-muj-verox-intro-subtitle {
+  font-size: clamp(0.9rem, 1.88vw, 1.1rem);
+  line-height: 1.2;
+}
+
+.verox-muj-verox-intro-muted {
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  line-height: 1.35;
+}
+
+.verox-muj-verox-cta-primary {
+  font-size: clamp(0.9rem, 1.88vw, 1.1rem);
+  min-height: clamp(36px, 9vw, 44px);
+  width: min(45vw, 220px);
+}
+
+.verox-muj-verox-form-grid {
+  display: grid;
+  grid-template-columns: 32.9% 0.9% minmax(0, 60.4%);
+  width: 100%;
+  align-items: start;
+}
+
+.verox-muj-verox-form-labels {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(14px, 3.5vw, 22px);
+  text-align: right;
+  padding-right: 0.25rem;
+}
+
+.verox-muj-verox-form-fields {
+  grid-column: 3;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 2.5vw, 16px);
+  max-width: 100%;
+}
+
+.verox-muj-verox-label {
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
+  line-height: 1.15;
+}
+
+.verox-muj-verox-input,
+.verox-muj-verox-textarea {
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  border: 2px solid #f37021;
+  background: #ffffff;
+  color: #303030;
+  width: 100%;
+}
+
+.verox-muj-verox-input {
+  min-height: clamp(32px, 8vw, 40px);
+  padding: 0.35rem 0.5rem;
+}
+
+.verox-muj-verox-textarea {
+  min-height: clamp(120px, 28vw, 180px);
+  padding: 0.5rem;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.verox-muj-verox-submit-row {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 2vw, 14px);
+  flex-wrap: wrap;
+}
+
+.verox-muj-verox-submit-btn {
+  font-size: clamp(0.9rem, 1.88vw, 1.1rem);
+  min-height: clamp(36px, 9vw, 44px);
+  padding: 0.4rem 1rem;
+}
+
+.verox-muj-verox-counter {
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+}
+
+.verox-muj-verox-pinned-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 28%) minmax(0, 1fr);
+  gap: clamp(8px, 2vw, 14px);
+  align-items: start;
+}
+
+.verox-muj-verox-filter-btn {
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
+  min-height: clamp(32px, 8vw, 40px);
+  border: 2px solid #f37021;
+  padding: 0.35rem 0.5rem;
+}
+
+.verox-muj-verox-pinned-title {
+  font-size: clamp(1.1rem, 3.01vw, 1.4rem);
+  line-height: 1.1;
+}
+
+.verox-muj-verox-empty-box {
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  line-height: 1.4;
+  border: 2px solid #f37021;
+  padding: clamp(12px, 3vw, 20px);
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 480px) {
+  .verox-muj-verox-page .verox-live-desktop-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 481px) {
+  .verox-muj-verox-page .verox-muj-verox-mobile-only {
+    display: none !important;
+  }
+}

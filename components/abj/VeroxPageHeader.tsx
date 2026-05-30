@@ -2,35 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-function getPragueTimeLabel(date: Date): string {
-  return new Intl.DateTimeFormat("cs-CZ", {
-    timeZone: "Europe/Prague",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
-}
-
-function getPragueDateHeader(date: Date): string {
-  const parts = new Intl.DateTimeFormat("cs-CZ", {
-    timeZone: "Europe/Prague",
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  })
-    .formatToParts(date)
-    .reduce<Record<string, string>>((acc, part) => {
-      if (part.type !== "literal") acc[part.type] = part.value;
-      return acc;
-    }, {});
-
-  const weekday = (parts.weekday ?? "").toLocaleUpperCase("cs-CZ");
-  const day = parts.day ?? "";
-  const month = (parts.month ?? "").toLocaleUpperCase("cs-CZ");
-  const year = parts.year ?? "";
-  return `${weekday} ${day}.${month} ${year}`.replace(/\s+/g, " ").trim();
-}
+import { getPragueDateHeader, getPragueTimeLabel } from "@/components/abj/verox-header-utils";
 
 export function VeroxPageHeader({ className = "" }: { className?: string }) {
   const [clockLabel, setClockLabel] = useState(() => getPragueTimeLabel(new Date()));
@@ -48,7 +20,9 @@ export function VeroxPageHeader({ className = "" }: { className?: string }) {
   }, []);
 
   return (
-    <header className={`verox-live-page-header flex flex-col items-end text-right ${className}`.trim()}>
+    <header
+      className={`verox-page-inline-header verox-live-page-header flex flex-col items-end text-right ${className}`.trim()}
+    >
       <p className="verox-live-date verox-font-myriad-bold uppercase leading-normal tracking-normal text-[#303030]">{dateLabel}</p>
       <p className="verox-live-clock verox-font-myriad-bold leading-normal tracking-[0.025em] text-[#F37021]">{clockLabel}</p>
     </header>
