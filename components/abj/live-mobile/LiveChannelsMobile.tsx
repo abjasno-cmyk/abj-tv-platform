@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useRef } from "react";
 
 import { VeroxCarouselChevron } from "@/components/abj/VeroxCarouselChevron";
-import { VeroxDoubleDivider } from "@/components/abj/VeroxDoubleDivider";
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 
 type LiveChannelsMobileProps = {
@@ -70,19 +69,24 @@ export function LiveChannelsMobile({
 
   return (
     <section className="verox-live-mobile-only bg-white px-0 py-4">
-      <h3 className="verox-font-myriad-regular mb-3 text-center text-[24px] uppercase leading-normal tracking-[0.05em] text-[#F37021]">
+      <h3 className="verox-live-channels-title verox-font-myriad-regular mb-3 text-center uppercase leading-normal tracking-[0.05em] text-[#F37021]">
         KANÁLY
       </h3>
 
       {channels.length === 0 ? (
         <p className="verox-font-myriad-regular px-3 py-2 text-sm text-[#717171]">Seznam kanálů se připravuje.</p>
       ) : (
-        <div className="flex items-center gap-1">
-          <button type="button" onClick={() => scrollBy("left")} className="px-1" aria-label="Posunout kanály doleva">
+        <div className="verox-live-carousel-wrap px-1">
+          <button
+            type="button"
+            onClick={() => scrollBy("left")}
+            className="verox-carousel-chevron-btn verox-carousel-chevron-btn--left"
+            aria-label="Posunout kanály doleva"
+          >
             <VeroxCarouselChevron direction="left" />
           </button>
 
-          <div ref={scrollRef} className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div ref={scrollRef} className="verox-live-carousel-track mx-8">
             <div className="flex min-w-max gap-2 px-1">
               {channels.map((channel) => {
                 const selected = activeChannelName === channel.channelName;
@@ -91,7 +95,7 @@ export function LiveChannelsMobile({
                     key={`mobile-${channel.channelName}`}
                     type="button"
                     onClick={() => onToggleChannel(channel)}
-                    className={`inline-flex min-h-[52px] w-[72vw] max-w-[280px] shrink-0 items-center gap-2 border bg-white px-2 py-2 text-left ${
+                    className={`inline-flex min-h-[52px] w-[72vw] max-w-[280px] shrink-0 snap-center items-center gap-2 border bg-white px-2 py-2 text-left ${
                       selected ? "border-[3px] border-[#F37021]" : "border border-[#717171]"
                     }`}
                   >
@@ -103,13 +107,18 @@ export function LiveChannelsMobile({
             </div>
           </div>
 
-          <button type="button" onClick={() => scrollBy("right")} className="px-1" aria-label="Posunout kanály doprava">
+          <button
+            type="button"
+            onClick={() => scrollBy("right")}
+            className="verox-carousel-chevron-btn verox-carousel-chevron-btn--right"
+            aria-label="Posunout kanály doprava"
+          >
             <VeroxCarouselChevron direction="right" />
           </button>
         </div>
       )}
 
-      <p className="verox-font-myriad-regular mt-3 px-3 text-center text-[9px] uppercase tracking-[0.05em] text-[#303030]">
+      <p className="verox-live-channels-hint verox-font-myriad-regular mt-3 text-center uppercase tracking-[0.05em] text-[#303030]">
         KLIKNĚTE NA VYBRANÝ KANÁL PRO ZOBRAZENÍ DETAILU.
       </p>
 
@@ -156,7 +165,6 @@ export function LiveChannelsMobile({
         </div>
       ) : null}
 
-      <VeroxDoubleDivider className="mt-4" />
     </section>
   );
 }

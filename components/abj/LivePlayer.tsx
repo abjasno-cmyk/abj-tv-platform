@@ -154,6 +154,7 @@ function LiveVideoViewport({
   onTogglePause,
   isFullscreen,
   overlayControlsClassName = "absolute right-2 top-2 z-10 sm:right-3 sm:top-3",
+  viewportClassName = "aspect-video",
 }: {
   videoId: string | null;
   title: string;
@@ -169,9 +170,10 @@ function LiveVideoViewport({
   onTogglePause: () => void;
   isFullscreen: boolean;
   overlayControlsClassName?: string;
+  viewportClassName?: string;
 }) {
   return (
-    <div ref={videoViewportRef} className="relative aspect-video w-full overflow-hidden bg-[#000000]">
+    <div ref={videoViewportRef} className={`relative w-full overflow-hidden bg-[#000000] ${viewportClassName}`}>
       {videoId ? (
         <div className="abj-slow-zoom absolute inset-0">
           <YouTube
@@ -419,26 +421,28 @@ export function LivePlayer({
   return (
     <div className="relative mb-12 pt-12 font-[Helvetica,Arial,sans-serif] text-[#111111] max-[480px]:mb-6 max-[480px]:pt-3">
       {/* Mobile — VEROX visual refresh */}
-      <div className="verox-live-mobile-only">
-        <VeroxPageHeader className="px-3" />
+      <div className="verox-live-mobile-only verox-live-mobile-shell">
+        <VeroxPageHeader />
 
-        <LiveVideoViewport {...videoViewportProps} overlayControlsClassName="absolute right-2 top-2 z-10" />
+        <div className="verox-live-hero">
+          <LiveVideoViewport
+            {...videoViewportProps}
+            viewportClassName="verox-live-hero-viewport"
+            overlayControlsClassName="absolute right-2 top-2 z-10"
+          />
+        </div>
 
-        <div className="relative mt-0">{mobileCommunity}</div>
+        <div className="verox-live-meta-grid">
+          <div className="verox-live-meta-community">{mobileCommunity}</div>
 
-        <div className="relative px-3 pb-2 pt-3">
-          <div className="pr-[52px]">
-            <h1 className="verox-font-impact text-[24px] leading-normal tracking-normal text-[#303030]">{title}</h1>
-            <p className="verox-font-myriad-regular mt-1 text-[12px] leading-normal tracking-normal text-[#303030]">{channel}</p>
-            <p className="verox-font-myriad-regular mt-2 text-[12px] leading-normal tracking-[0.05em] text-[#303030]">
-              {remainingParts.prefix}{" "}
-              <span className="text-[15px] tracking-[0.05em]">{remainingParts.value}</span>
-            </p>
+          <div className="verox-live-meta-title">
+            <h1 className="verox-live-show-title">{title}</h1>
+            <p className="verox-live-show-author verox-font-myriad-regular mt-1">{channel}</p>
             {!isLive && continueFromSeconds !== null && continueFromSeconds > 30 ? (
               <button
                 type="button"
                 onClick={() => onContinueFromSaved?.(continueFromSeconds)}
-                className="verox-font-myriad-bold mt-2 inline-flex min-h-8 items-center rounded-none bg-[#F37021] px-3 py-1 text-[10px] uppercase tracking-[0.05em] text-white"
+                className="verox-font-myriad-bold mt-2 inline-flex min-h-8 items-center bg-[#F37021] px-2 py-1 text-[0.65rem] uppercase tracking-[0.05em] text-white"
               >
                 Pokračovat od {Math.floor(continueFromSeconds / 60).toString().padStart(2, "0")}:
                 {Math.floor(continueFromSeconds % 60).toString().padStart(2, "0")}
@@ -446,30 +450,28 @@ export function LivePlayer({
             ) : null}
           </div>
 
-          <button
-            type="button"
-            onClick={onGoLive}
-            aria-label="Přepnout na živé vysílání"
-            className={`verox-font-myriad-bold absolute right-3 top-3 inline-flex h-[40px] w-[40px] items-center justify-center rounded-full text-center text-[7px] uppercase leading-[1.05] tracking-normal text-white transition ${
-              isLive ? "bg-[#F37021]" : "bg-[#F37021] hover:opacity-95"
-            }`}
-          >
-            ŽIVÉ
-            <br />
-            VYSÍLÁNÍ
-          </button>
+          <div className="verox-live-meta-aside">
+            <button
+              type="button"
+              onClick={onGoLive}
+              aria-label="Přepnout na živé vysílání"
+              className={`verox-live-live-btn verox-font-myriad-bold inline-flex items-center justify-center rounded-full text-center uppercase text-white ${
+                isLive ? "bg-[#F37021]" : "bg-[#F37021]"
+              }`}
+            >
+              ŽIVÉ
+              <br />
+              VYSÍLÁNÍ
+            </button>
+            <p className="verox-live-countdown verox-font-myriad-regular mt-1">
+              {remainingParts.prefix}
+              <br />
+              <span className="verox-font-myriad-regular">{remainingParts.value}</span>
+            </p>
+          </div>
         </div>
 
-        <div className="px-3 pb-4">
-          <p className="verox-font-myriad-bold mb-1 text-[9px] uppercase leading-normal tracking-normal text-[#F37021]">
-            <span aria-hidden="true">● </span>
-            PRÁVĚ BĚŽÍ
-          </p>
-          <h2 className="verox-font-myriad-bold text-[15px] leading-[15px] tracking-[0.025em] text-[#303030]">{title}</h2>
-          <p className="verox-font-myriad-regular mt-1 text-[9px] leading-normal tracking-[0.025em] text-[#717171]">{channel}</p>
-        </div>
-
-        <VeroxDoubleDivider className="px-0" />
+        <VeroxDoubleDivider partial thick className="my-[clamp(10px,2vw,16px)]" />
 
         <p className="sr-only">
           Zbývá {remainingLabel}. Průběh přehrávání {Math.round(clampedProgress)} procent.

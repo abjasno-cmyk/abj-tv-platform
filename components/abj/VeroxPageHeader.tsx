@@ -48,9 +48,9 @@ export function VeroxPageHeader({ className = "" }: { className?: string }) {
   }, []);
 
   return (
-    <header className={`mb-2 flex flex-col items-end text-right ${className}`.trim()}>
-      <p className="verox-font-myriad-bold text-[13px] uppercase leading-normal tracking-normal text-[#303030]">{dateLabel}</p>
-      <p className="verox-videa-clock verox-font-myriad-bold leading-normal tracking-[0.025em] text-[#F37021]">{clockLabel}</p>
+    <header className={`verox-live-page-header flex flex-col items-end text-right ${className}`.trim()}>
+      <p className="verox-live-date verox-font-myriad-bold uppercase leading-normal tracking-normal text-[#303030]">{dateLabel}</p>
+      <p className="verox-live-clock verox-font-myriad-bold leading-normal tracking-[0.025em] text-[#F37021]">{clockLabel}</p>
     </header>
   );
 }

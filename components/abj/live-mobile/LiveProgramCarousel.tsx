@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { VeroxCarouselChevron } from "@/components/abj/VeroxCarouselChevron";
-import { VeroxDoubleDivider } from "@/components/abj/VeroxDoubleDivider";
 import type { ProgramItem } from "@/lib/epg-types";
 
 type LiveProgramCarouselProps = {
@@ -52,18 +51,24 @@ export function LiveProgramCarousel({ items, currentSlotKey, onSelect, itemKey, 
   };
 
   return (
-    <section className="verox-live-mobile-only bg-white px-0 py-4">
-      <h3 className="verox-font-myriad-regular mb-3 text-center text-[24px] uppercase leading-normal tracking-[0.05em] text-[#F37021]">
+    <section className="verox-live-mobile-only verox-live-program-section py-4">
+      <h3 className="verox-live-program-title verox-font-myriad-regular mb-3 text-center uppercase leading-normal text-[#F37021]">
         PRÁVĚ HRAJE
       </h3>
 
-      <div className="flex items-center gap-1">
-        <button type="button" onClick={() => scrollBy("left")} disabled={items.length === 0} className="px-1 disabled:opacity-35" aria-label="Posunout program doleva">
+      <div className="verox-live-carousel-wrap px-1">
+        <button
+          type="button"
+          onClick={() => scrollBy("left")}
+          disabled={items.length === 0}
+          className="verox-carousel-chevron-btn verox-carousel-chevron-btn--left disabled:opacity-35"
+          aria-label="Posunout program doleva"
+        >
           <VeroxCarouselChevron direction="left" />
         </button>
 
-        <div ref={scrollRef} className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex min-w-max snap-x snap-mandatory gap-2 px-1">
+        <div ref={scrollRef} className="verox-live-carousel-track mx-10">
+          <div className="flex min-w-max gap-2">
             {items.length === 0 ? (
               <p className="verox-font-myriad-regular px-2 py-4 text-sm text-[#717171]">Program se připravuje.</p>
             ) : (
@@ -80,14 +85,13 @@ export function LiveProgramCarousel({ items, currentSlotKey, onSelect, itemKey, 
                       setActiveDotIndex(idx);
                       onSelect(item);
                     }}
-                    className={`w-[62vw] max-w-[240px] shrink-0 snap-center text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F37021]/45 ${
-                      active ? "scale-[1.02]" : "opacity-80"
+                    className={`w-[56vw] max-w-[220px] shrink-0 snap-center snap-always text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F37021]/45 ${
+                      active || isCurrentTime ? "scale-[1.02] opacity-100" : "scale-[0.96] opacity-55"
                     }`}
                   >
                     <div className="relative aspect-[16/9] w-full bg-black">
                       <img src={resolveThumbnail(item)} alt={item.title} className="h-full w-full object-cover" loading="lazy" />
                       {isCurrentTime ? <div className="pointer-events-none absolute inset-0 bg-[#F37021]/35" /> : null}
-                      <span className="verox-font-myriad-bold absolute bottom-1 left-1 bg-black/65 px-1.5 py-0.5 text-[9px] uppercase text-white">{item.time}</span>
                     </div>
                   </button>
                 );
@@ -96,7 +100,13 @@ export function LiveProgramCarousel({ items, currentSlotKey, onSelect, itemKey, 
           </div>
         </div>
 
-        <button type="button" onClick={() => scrollBy("right")} disabled={items.length === 0} className="px-1 disabled:opacity-35" aria-label="Posunout program doprava">
+        <button
+          type="button"
+          onClick={() => scrollBy("right")}
+          disabled={items.length === 0}
+          className="verox-carousel-chevron-btn verox-carousel-chevron-btn--right disabled:opacity-35"
+          aria-label="Posunout program doprava"
+        >
           <VeroxCarouselChevron direction="right" />
         </button>
       </div>
@@ -110,8 +120,6 @@ export function LiveProgramCarousel({ items, currentSlotKey, onSelect, itemKey, 
           })}
         </div>
       ) : null}
-
-      <VeroxDoubleDivider className="mt-4" />
     </section>
   );
 }

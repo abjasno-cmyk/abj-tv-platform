@@ -301,3 +301,194 @@ a {
     display: none !important;
   }
 }
+
+/* VEROX — mobilní ŽIVĚ / homepage (přesná mřížka návrhu) */
+.verox-live-page-header {
+  padding-right: 3.6%;
+  margin-bottom: 0.35rem;
+}
+
+.verox-live-date {
+  font-size: clamp(0.8rem, 2.2vw, 1rem);
+  line-height: 1.15;
+}
+
+.verox-live-clock {
+  font-size: clamp(1.6rem, 6.9vw, 2.4rem);
+  line-height: 1;
+}
+
+.verox-live-hero {
+  width: 100%;
+  margin: 0;
+}
+
+.verox-live-hero .verox-live-hero-viewport {
+  aspect-ratio: 21 / 9;
+  width: 100%;
+}
+
+.verox-live-meta-grid {
+  display: grid;
+  grid-template-columns: 21.4% 5.4% 48.2% 21.4%;
+  width: 100%;
+  align-items: start;
+  min-height: clamp(6.5rem, 16vw, 9.5rem);
+  margin-top: 0.15rem;
+}
+
+.verox-live-meta-community .verox-live-community {
+  margin-left: 0;
+  border-radius: 0;
+}
+
+.verox-live-meta-community {
+  grid-column: 1;
+  align-self: stretch;
+}
+
+.verox-live-meta-title {
+  grid-column: 3;
+  min-width: 0;
+  padding-top: 0.1rem;
+}
+
+.verox-live-meta-aside {
+  grid-column: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+}
+
+.verox-live-show-title {
+  font-family: "Verox Impact", Impact, sans-serif;
+  font-size: clamp(1.1rem, 4.2vw, 1.6rem);
+  line-height: 1.05;
+  letter-spacing: 0;
+  color: #303030;
+}
+
+.verox-live-show-author {
+  font-size: clamp(0.85rem, 1.9vw, 1rem);
+  line-height: 1.15;
+  letter-spacing: 0;
+  color: #303030;
+}
+
+.verox-live-community-title {
+  font-size: clamp(1rem, 3vw, 1.3rem);
+}
+
+.verox-live-community-hint {
+  font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+}
+
+.verox-live-live-btn {
+  width: 9.8vw;
+  height: 9.8vw;
+  max-width: 46px;
+  max-height: 46px;
+  min-width: 36px;
+  min-height: 36px;
+  font-size: clamp(0.5rem, 1.65vw, 0.65rem);
+  line-height: 1.05;
+}
+
+.verox-live-countdown {
+  font-size: clamp(0.85rem, 1.9vw, 1rem);
+  line-height: 1.2;
+  letter-spacing: 0.05em;
+  color: #303030;
+  margin-top: 0.35rem;
+  text-align: center;
+  width: 100%;
+}
+
+.verox-live-program-title {
+  font-size: clamp(1rem, 3vw, 1.3rem);
+  letter-spacing: 0.05em;
+}
+
+.verox-live-now-label {
+  font-size: clamp(0.75rem, 1.6vw, 0.9rem);
+  padding-left: 3.6%;
+}
+
+.verox-live-now-headline {
+  font-size: clamp(0.95rem, 2.5vw, 1.25rem);
+  padding-left: 3.6%;
+  padding-right: 3.6%;
+}
+
+.verox-live-now-source {
+  font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+  padding-left: 3.6%;
+  padding-right: 3.6%;
+}
+
+.verox-live-now-block {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.verox-live-channels-title {
+  font-size: clamp(1rem, 3vw, 1.3rem);
+  letter-spacing: 0.05em;
+}
+
+.verox-live-channels-hint {
+  font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+  letter-spacing: 0.05em;
+  padding-left: 3.6%;
+  padding-right: 3.6%;
+}
+
+.verox-double-divider--thick {
+  gap: 6px;
+}
+
+.verox-double-divider--thick span {
+  height: 6px;
+}
+
+.verox-double-divider--partial {
+  width: 75%;
+  max-width: 75%;
+}
+
+.verox-live-carousel-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.verox-live-carousel-wrap .verox-carousel-chevron-btn {
+  position: absolute;
+  top: 50%;
+  z-index: 5;
+  transform: translateY(-50%);
+  padding: 0;
+}
+
+.verox-live-carousel-wrap .verox-carousel-chevron-btn--left {
+  left: 0;
+  transform: translate(-42%, -50%);
+}
+
+.verox-live-carousel-wrap .verox-carousel-chevron-btn--right {
+  right: 0;
+  transform: translate(42%, -50%);
+}
+
+.verox-live-carousel-track {
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: calc(50% - min(28vw, 110px));
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.verox-live-carousel-track::-webkit-scrollbar {
+  display: none;
+}

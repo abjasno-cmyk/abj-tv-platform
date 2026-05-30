@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { ChannelDirectory, type LiveChannelGroup, type LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import { LiveCommunityStrip } from "@/components/abj/LiveCommunityStrip";
 import { LivePlayer } from "@/components/abj/LivePlayer";
+import { VeroxLiveNowArticle } from "@/components/abj/VeroxLiveNowArticle";
 import { Timeline } from "@/components/abj/Timeline";
 import type { DayProgram, ProgramItem } from "@/lib/epg-types";
 
@@ -74,9 +75,7 @@ export function HomePage({
         </div>
 
         {hasReactions || hasEngagement ? (
-          <div
-            className={`verox-live-desktop-only order-2 grid gap-6 ${hasReactions && hasEngagement ? "xl:grid-cols-2" : ""}`}
-          >
+          <div className={`verox-live-desktop-only order-2 grid gap-6 ${hasReactions && hasEngagement ? "xl:grid-cols-2" : ""}`}>
             {hasReactions ? <div id="live-reactions-section">{reactionsSlot}</div> : null}
             {hasEngagement ? <div id="live-engagement-section">{engagementSlot}</div> : null}
           </div>
@@ -85,6 +84,8 @@ export function HomePage({
         <div id="live-timeline-section" className="order-3">
           <Timeline days={days} onSelect={onSelect} />
         </div>
+
+        <VeroxLiveNowArticle title={title} channel={channelName || "ABJ Síť"} />
 
         <div id="live-channels-section" className="order-4">
           <ChannelDirectory channels={channels} onSelectVideo={onSelectChannelVideo} />
