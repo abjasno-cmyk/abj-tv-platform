@@ -90,12 +90,6 @@ export async function POST(request: NextRequest) {
     mode: syncMode,
     warning: syncWarning,
   });
-  response.cookies.set("verox_access_token", encodeURIComponent(accessToken), {
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30,
-    secure: true,
-    sameSite: "lax",
-  });
   applyCookies(response);
   return response;
 }
@@ -104,12 +98,6 @@ export async function DELETE(request: NextRequest) {
   const { supabase, applyCookies } = createRouteSupabaseClient(request);
   await supabase.auth.signOut();
   const response = NextResponse.json({ ok: true });
-  response.cookies.set("verox_access_token", "", {
-    path: "/",
-    maxAge: 0,
-    secure: true,
-    sameSite: "lax",
-  });
   applyCookies(response);
   return response;
 }

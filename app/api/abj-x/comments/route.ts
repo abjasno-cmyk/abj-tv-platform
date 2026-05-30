@@ -1,3 +1,4 @@
+import { enforceWriteRateLimit } from "@/lib/rateLimit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -77,6 +78,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const limited = enforceWriteRateLimit(request, "abjx");
+  if (limited) return limited;
+
   let payload: CreateCommentPayload;
   try {
     payload = (await request.json()) as CreateCommentPayload;

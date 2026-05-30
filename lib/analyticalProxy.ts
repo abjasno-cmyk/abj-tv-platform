@@ -2,6 +2,17 @@ import "server-only";
 
 const DEFAULT_ANALYTICAL_BASE_URL = "https://analytical-service-abjasno.replit.app";
 
+const ALLOWED_ANALYTICAL_PATH_PATTERNS: ReadonlyArray<RegExp> = [
+  /^\/health(?:\/[^/]+)?$/,
+  /^\/context\/[^/]+$/,
+  /^\/api\/context\/[^/]+$/,
+  /^\/context\/(?:video|job)\/[^/]+$/,
+];
+
+function isAllowedAnalyticalPath(upstreamPath: string): boolean {
+  return ALLOWED_ANALYTICAL_PATH_PATTERNS.some((pattern) => pattern.test(upstreamPath));
+}
+
 function sanitizeEnvValue(value?: string): string | undefined {
   if (!value) return undefined;
   const trimmed = value.trim();
@@ -65,6 +76,10 @@ function makeUpstreamUrl(baseUrl: string, upstreamPath: string, request: Request
 }
 
 async function proxyAnalyticalRequest(request: Request, upstreamPath: string, method: "GET" | "POST"): Promise<Response> {
+  if (!isAllowedAnalyticalPath(upstreamPath)) {
+    return Response.json({ error: "Not found." }, { status: 404 });
+  }
+
   const baseCandidates = buildBaseCandidates();
   if (baseCandidates.length === 0) {
     return Response.json(

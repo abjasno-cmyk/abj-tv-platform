@@ -2,6 +2,22 @@ import "server-only";
 
 const DEFAULT_REPLIT_BASE_URL = "https://attached-assets-abjasno.replit.app";
 
+const ALLOWED_REPLIT_PATH_PATTERNS: ReadonlyArray<RegExp> = [
+  /^\/health(?:\/[^/]+)?$/,
+  /^\/program$/,
+  /^\/program\/tomorrow$/,
+  /^\/feed$/,
+  /^\/feed\/stream$/,
+  /^\/feed\/[^/]+\/(?:like|view)$/,
+  /^\/videos$/,
+  /^\/api\/videos$/,
+  /^\/context\/[^/]+$/,
+];
+
+function isAllowedReplitPath(upstreamPath: string): boolean {
+  return ALLOWED_REPLIT_PATH_PATTERNS.some((pattern) => pattern.test(upstreamPath));
+}
+
 function sanitizeEnvValue(value?: string): string | undefined {
   if (!value) return undefined;
   const trimmed = value.trim();
@@ -60,6 +76,10 @@ function makeUpstreamUrl(baseUrl: string, upstreamPath: string, request: Request
 }
 
 async function proxyReplitRequest(request: Request, upstreamPath: string, method: "GET" | "POST"): Promise<Response> {
+  if (!isAllowedReplitPath(upstreamPath)) {
+    return Response.json({ error: "Not found." }, { status: 404 });
+  }
+
   const baseCandidates = buildBaseCandidates();
   if (baseCandidates.length === 0) {
     return Response.json(

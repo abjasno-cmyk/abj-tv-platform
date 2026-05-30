@@ -1,3 +1,4 @@
+import { enforceWriteRateLimit } from "@/lib/rateLimit";
 import { buildWallIdentityMeta } from "@/lib/wallSecurity";
 import { addWallReaction, WallServiceError } from "@/lib/wallService";
 
@@ -8,6 +9,8 @@ type RouteContext = {
 };
 
 export async function POST(request: Request, context: RouteContext) {
+  const limited = enforceWriteRateLimit(request, "wall");
+  if (limited) return limited;
   try {
     const { id } = await Promise.resolve(context.params);
     const identity = buildWallIdentityMeta(request);
