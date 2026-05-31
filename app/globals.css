@@ -368,3 +368,80 @@ a {
   outline: 2.5px solid var(--vx-orange-text);
   outline-offset: 2px;
 }
+
+/* ----------------------------------------------------------------------------
+   VEROX homepage editorial sections (V kostce / Videa / Komunita / Ticker).
+   Ported un-scoped from verox-ds.css so the live homepage reuses the showcase
+   primitives. Kept intentionally small — structure is plain Tailwind in the
+   section components, matching the existing live idiom (Timeline, ChannelDirectory).
+   ========================================================================== */
+.vx-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--vx-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vx-orange-text);
+}
+.vx-action svg {
+  transition: transform 0.18s ease;
+}
+.vx-action:hover svg {
+  transform: translateX(3px);
+}
+
+.vx-numeral--ghost {
+  color: transparent;
+  /* Brand-orange outline so alternating feed rows stay unmistakably VEROX. */
+  -webkit-text-stroke: 2px rgba(243, 112, 33, 0.42);
+  text-stroke: 2px rgba(243, 112, 33, 0.42);
+}
+
+/* Broadcast headline ticker — two identical tracks each translate a full -100%,
+   so as one exits left its twin fills behind it (seamless loop). */
+.vx-ticker {
+  overflow: hidden;
+  border-block: 1.5px solid var(--vx-ink);
+  background: var(--vx-ink);
+  color: var(--vx-paper);
+}
+.vx-ticker__track {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  will-change: transform;
+  animation: vxMarquee 64s linear infinite;
+}
+.vx-ticker:hover .vx-ticker__track {
+  animation-play-state: paused;
+}
+.vx-ticker__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding-inline: 1.1rem;
+  font-family: var(--vx-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.vx-ticker__star {
+  color: var(--vx-orange);
+}
+@keyframes vxMarquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vx-ticker__track {
+    animation-duration: 0.001ms;
+    animation-iteration-count: 1;
+  }
+}

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { LiveChannelGroup } from "@/components/abj/ChannelDirectory";
 import type { DayProgram } from "@/lib/epg-types";
+import type { HomeNewsItem, HomeVideoItem, HomeWallPost } from "@/lib/home-sections";
 import { LiveAlert } from "@/components/abj/LiveAlert";
 import { HomePage } from "@/components/abj/HomePage";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -16,6 +17,10 @@ type LivePageProps = {
   initialChannelName: string;
   initialStartSeconds?: number;
   channels: LiveChannelGroup[];
+  tickerItems?: string[];
+  news?: HomeNewsItem[];
+  videos?: HomeVideoItem[];
+  communityPosts?: HomeWallPost[];
 };
 
 export default function LivePage({
@@ -25,6 +30,10 @@ export default function LivePage({
   initialChannelName,
   initialStartSeconds = 0,
   channels,
+  tickerItems = [],
+  news = [],
+  videos = [],
+  communityPosts = [],
 }: LivePageProps) {
   const { isAuthenticated } = useAuth();
   const safeEpg = epg;
@@ -294,6 +303,10 @@ export default function LivePage({
         }}
         engagementSlot={null}
         reactionsSlot={null}
+        tickerItems={tickerItems}
+        news={news}
+        videos={videos}
+        communityPosts={communityPosts}
       />
       <LiveAlert
         currentVideoId={videoId}

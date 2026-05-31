@@ -1,7 +1,21 @@
 import { buildEPG } from "@/lib/buildEPG";
-import { loadStructuredFeedPayload, parsePublishedTimestamp, type FeedVideo } from "@/lib/dayOverview";
+import {
+  loadStructuredFeedPayload,
+  parsePublishedTimestamp,
+  type FeedVideo,
+  type StructuredFeedPayload,
+} from "@/lib/dayOverview";
 import { createSupabaseAnonServerClient } from "@/lib/supabase/server";
 import { getNowPlaying, getProgram } from "@/lib/programEngine";
+import { createSupabaseNewsClient, fetchRecentPublishedEditions, getEditionTypeLabel } from "@/lib/jasne-zpravy";
+import { listPublicWallPosts } from "@/lib/wallService";
+import {
+  formatHomeDate,
+  formatHomeStamp,
+  type HomeNewsItem,
+  type HomeVideoItem,
+  type HomeWallPost,
+} from "@/lib/home-sections";
 import LivePage from "@/app/live/LivePage";
 import type { DayProgram, ProgramBlock, ProgramItem } from "@/lib/epg-types";
 
@@ -656,15 +670,20 @@ function mergeLiveChannels(feedChannels: LiveChannelGroup[], sourceChannels: Sou
   return [...merged.values()].sort((a, b) => a.channelName.localeCompare(b.channelName, "cs-CZ"));
 }
 
-async function loadLiveChannels(): Promise<LiveChannelGroup[]> {
+// Loads the structured video feed once so both the channel directory and the
+// homepage "Videa" rail share a single Supabase round-trip.
+async function loadHomeFeedPayload(): Promise<StructuredFeedPayload> {
   try {
-    const [feedPayload, sourceChannels] = await Promise.all([
-      loadStructuredFeedPayload().catch((error) => {
-        console.error("live-page-feed-channels-load-failed", error);
-        return { channels: {} as Record<string, FeedVideo[]> };
-      }),
-      loadSourceChannels(),
-    ]);
+    return await loadStructuredFeedPayload();
+  } catch (error) {
+    console.error("live-page-feed-payload-load-failed", error);
+    return { top: [], topics: {}, channels: {} };
+  }
+}
+
+async function loadLiveChannels(feedPayload: StructuredFeedPayload): Promise<LiveChannelGroup[]> {
+  try {
+    const sourceChannels = await loadSourceChannels();
     const feedChannels = mapLiveChannelsFromFeed(feedPayload.channels);
     const channelIds = sourceChannels
       .map((channel) => channel.channelId)
@@ -675,6 +694,101 @@ async function loadLiveChannels(): Promise<LiveChannelGroup[]> {
     console.error("live-page-channels-load-failed", error);
     return [];
   }
+}
+
+function freshnessLabel(freshness: FeedVideo["freshness"]): string {
+  switch (freshness) {
+    case "breaking":
+      return "Breaking";
+    case "today":
+      return "Dnes";
+    case "week":
+      return "Týden";
+    default:
+      return "Video";
+  }
+}
+
+function capitalizeFirst(value: string): string {
+  return value.length > 0 ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+}
+
+// "Videa" rail — newest videos from the structured feed.
+function mapHomeVideos(videos: FeedVideo[]): HomeVideoItem[] {
+  return videos
+    .filter((video) => typeof video.video_id === "string" && video.video_id.trim().length > 0)
+    .slice(0, 6)
+    .map((video) => {
+      const { day, month } = formatHomeDate(video.published_at);
+      const topic = video.topics?.[0];
+      return {
+        videoId: video.video_id,
+        day,
+        month,
+        title: video.title,
+        tag: topic ? capitalizeFirst(topic) : freshnessLabel(video.freshness),
+        thumbnail: video.thumbnail && video.thumbnail.trim().length > 0 ? video.thumbnail : null,
+      } satisfies HomeVideoItem;
+    });
+}
+
+// "V kostce" rail — last published Jasné zprávy editions.
+async function loadHomeNews(): Promise<HomeNewsItem[]> {
+  try {
+    const supabase = createSupabaseNewsClient();
+    const { data, error } = await fetchRecentPublishedEditions(supabase, 5);
+    if (error || !data) {
+      if (error) console.error("live-page-home-news-query-failed", error.message);
+      return [];
+    }
+    return data
+      .map((edition) => {
+        const iso = edition.published_at ?? edition.generated_at ?? null;
+        const { day, month } = formatHomeDate(iso);
+        return {
+          slug: edition.slug ?? "",
+          day,
+          month,
+          title: edition.title,
+          source: getEditionTypeLabel(edition.edition_type),
+          stamp: formatHomeStamp(iso),
+          summary: edition.summary ?? edition.subtitle ?? "",
+        } satisfies HomeNewsItem;
+      })
+      .filter((item) => item.title.trim().length > 0);
+  } catch (error) {
+    console.error("live-page-home-news-load-failed", error);
+    return [];
+  }
+}
+
+// "Komunita" rail — recent approved wall posts.
+async function loadHomeCommunity(): Promise<HomeWallPost[]> {
+  try {
+    const { posts } = await listPublicWallPosts({ limit: 6, sort: "newest" });
+    return posts.map((post) => ({
+      id: post.id,
+      author: post.author_name,
+      body: post.body,
+      likes: post.likes_count ?? 0,
+      stamp: formatHomeStamp(post.created_at),
+    }));
+  } catch (error) {
+    console.error("live-page-home-community-load-failed", error);
+    return [];
+  }
+}
+
+// Headline ticker — current programme highlight plus the freshest news titles.
+function buildTickerItems(nowPlayingTitle: string | null, news: HomeNewsItem[]): string[] {
+  const items: string[] = [];
+  if (nowPlayingTitle && nowPlayingTitle.trim().length > 0) {
+    items.push(`Živě — ${nowPlayingTitle.trim()}`);
+  }
+  for (const item of news) {
+    if (item.title.trim().length > 0) items.push(item.title.trim());
+  }
+  return items.slice(0, 8);
 }
 
 export default async function LivePageServer(
@@ -693,7 +807,11 @@ export default async function LivePageServer(
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const rawVideoId = resolvedSearchParams?.videoId;
   const requestedVideoId = Array.isArray(rawVideoId) ? rawVideoId[0] : rawVideoId;
-  const liveChannelsPromise = loadLiveChannels();
+  // Load the structured feed once; channels + the homepage "Videa" rail share it.
+  const feedPayloadPromise = loadHomeFeedPayload();
+  const liveChannelsPromise = feedPayloadPromise.then((payload) => loadLiveChannels(payload));
+  const homeNewsPromise = loadHomeNews();
+  const homeCommunityPromise = loadHomeCommunity();
 
   try {
     timeline = await loadExternalProgramTimeline();
@@ -724,6 +842,11 @@ export default async function LivePageServer(
   }
 
   liveChannels = await liveChannelsPromise;
+
+  const feedPayload = await feedPayloadPromise;
+  const homeVideos = mapHomeVideos(feedPayload.top ?? []);
+  const homeNews = await homeNewsPromise;
+  const homeCommunity = await homeCommunityPromise;
 
   if (epg.length === 0 || epg.every((day) => day.items.length === 0)) {
     try {
@@ -778,6 +901,8 @@ export default async function LivePageServer(
         ? mapOffsetFromStartIso(externalNowPlaying.startIso)
         : mapInitialTimelineOffsetSeconds(timeline, initialVideoId);
 
+  const tickerItems = buildTickerItems(initialFromNowPlaying?.title ?? null, homeNews);
+
   return (
     <LivePage
       epg={epg}
@@ -786,6 +911,10 @@ export default async function LivePageServer(
       initialChannelName={initialChannelName}
       initialStartSeconds={initialStartOffsetSeconds}
       channels={liveChannels}
+      tickerItems={tickerItems}
+      news={homeNews}
+      videos={homeVideos}
+      communityPosts={homeCommunity}
     />
   );
 }
