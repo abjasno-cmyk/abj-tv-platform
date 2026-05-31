@@ -1,0 +1,359 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VEROX — mobilní wireframe v2</title>
+<!-- Bezplatné náhrady: Source Sans 3 (~Myriad Pro), Anton (~Impact) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;700&family=Anton&display=swap" rel="stylesheet">
+<style>
+:root{
+  --vx-orange:#F37021; --vx-gray-dark:#303030; --vx-gray-light:#717171;
+  --vx-white:#FFFFFF; --vx-black:#000000;
+  /* PRODUKCE: nahradit za "Myriad Pro" / "Impact" po self-hostu */
+  --vx-myriad:"Source Sans 3","Myriad Pro",Arial,sans-serif;
+  --vx-impact:"Anton","Impact",sans-serif;
+  --L1:3.55%; --L2:21.35%; --L3:23.1%; --L4:26.8%; --L5:32.9%; --L6:33.8%;
+  --L7:71.1%; --L8:74.6%; --L9:75%; --R0:94.2%; --R1:96.4%; --R2:99.5%;
+  --header-h:clamp(108px,29vw,132px);
+  --gutter:3vw;
+
+  /* ===== PROPORČNÍ TYPOGRAFIE LIŠTY =====
+     Naměřené poměry z PS layoutu (čistě poměrově, bez absolutní reference):
+       datum 24pt : hodiny 110pt : navigace/login 30pt  =>  1 : 4.583 : 1.25
+     Vše odvozeno z jedné základní jednotky --u, která plynule škáluje
+     se šířkou zařízení (clamp drží dolní/horní mez kvůli čitelnosti). */
+  --u:clamp(0.62rem,3.05vw,0.84rem);          /* základní jednotka = datum (poměr 1.00) */
+  --fz-date:var(--u);                          /* 24pt -> 1.000 */
+  --fz-nav:calc(var(--u) * 1.25);              /* 30pt -> 1.250 */
+  --fz-login:calc(var(--u) * 1.25);            /* 30pt -> 1.250 */
+  --fz-clock:calc(var(--u) * 4.583);           /* 110pt -> 4.583 */
+  --track:0.05em;                              /* VA 50 ~ tracking */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--vx-white);color:var(--vx-gray-dark);font-family:var(--vx-myriad);
+  -webkit-font-smoothing:antialiased;max-width:480px;margin:0 auto;border-inline:1px solid #eee;min-height:100vh}
+img{display:block;max-width:100%}
+.upper{text-transform:uppercase}
+
+/* Oddělovací dvojčára – tenké vlasové linky s mezerou (poměr dle PS reference).
+   Tloušťka linky ~0.25vw (min 1px), mezera mezi linkami ~3× tloušťka.
+   Všechny dvojčáry končí 11% od pravého okraje (jako první .w75). */
+.vx-strip{margin:3.5vw 0;margin-right:11%}
+.vx-strip span{display:block;height:max(1px,0.25vw);background:var(--vx-orange)}
+.vx-strip span+span{margin-top:max(3px,0.85vw)}
+.vx-strip.w75{margin-right:0;margin-top:2.1vw}
+.vx-strip.w75 span{width:89%}
+
+/* CTA šipka – používá reálnou ikonu ikona_sipka.png */
+.vx-arrow{display:flex;align-items:center;gap:2vw;margin-top:1.5vw}
+.vx-arrow b{font-weight:700;font-size:clamp(.85rem,1.5vw,.95rem);letter-spacing:.05em;color:var(--vx-gray-dark)}
+.vx-arrow img{height:clamp(14px,3vw,20px);width:auto}
+
+/* ============ LIŠTA ============ */
+.vx-header{position:sticky;top:0;z-index:50;background:var(--vx-white);padding:3vw var(--L1) 0;border-bottom:1px solid #f0f0f0}
+.vx-header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:3vw}
+.vx-logo{flex:0 1 auto;min-width:0}
+.vx-logo .logo-img{height:clamp(26px,7.2vw,36px);width:auto;max-width:min(52vw,200px);display:block}
+.vx-logo small{display:block;font-family:var(--vx-myriad);font-weight:400;font-size:clamp(.55rem,1.4vw,.7rem);
+  letter-spacing:var(--track);color:var(--vx-black);margin-top:.35em;white-space:nowrap}
+.vx-header-right{text-align:right;flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end}
+/* datum 24pt (poměr 1.00) */
+.vx-date{font-weight:700;font-size:var(--fz-date);color:var(--vx-gray-dark);letter-spacing:var(--track);white-space:nowrap;line-height:1.1}
+/* hodiny 110pt (poměr 4.583) */
+.vx-clock{font-weight:700;font-size:var(--fz-clock);color:var(--vx-orange);letter-spacing:.02em;line-height:.95;white-space:nowrap}
+/* navigace 30pt (poměr 1.25); horizontální scroll místo zalomení slov */
+.vx-nav{display:flex;justify-content:flex-start;gap:clamp(7px,3.4vw,26px);padding:2.5vw 0;
+  overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.vx-nav::-webkit-scrollbar{display:none}
+.vx-nav a{flex:0 0 auto;white-space:nowrap;font-weight:400;font-size:var(--fz-nav);letter-spacing:var(--track);
+  color:var(--vx-gray-dark);text-decoration:none;padding-bottom:.2em}
+.vx-nav a.active{color:var(--vx-orange);border-bottom:2px solid var(--vx-orange)}
+.vx-nav a.login{font-weight:700;color:var(--vx-orange)}
+
+.vx-page{display:none;padding-bottom:10vw}
+.vx-page.show{display:block}
+
+/* ============ ŽIVĚ ============ */
+/* Hero: poměr 16/9 (změřeno z PS reference ~1.778), nativní formát videa */
+.hero{width:100%;aspect-ratio:16/9;object-fit:cover;background:#111}
+
+/* Levý oranžový pruh: plná oranžová nahoře -> plynulý gradient do bílé,
+   čistá bílá až úplně na spodním okraji pruhu (pruh sahá až ke dvojčáře nad KANÁLY) */
+.live-block{position:relative}
+.live-block::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:var(--L2);
+  background:linear-gradient(to bottom, var(--vx-orange) 0%, var(--vx-orange) 30%, #fff 100%);
+  z-index:0;pointer-events:none
+}
+.live-block > *{position:relative;z-index:1}
+
+.live-meta{
+  display:grid;
+  grid-template-columns:
+    var(--L2)                               /* 1 KOMUNITA: 0–21,35% */
+    calc(var(--L4) - var(--L2))             /* mezera 21,35–26,8% */
+    calc(var(--L9) - var(--L4))             /* 2 název: 26,8–75% */
+    calc(var(--R1) - var(--L9));            /* 3 pravá zóna: 75–96,4% */
+  align-items:start;margin-top:0;column-gap:0
+}
+/* KOMUNITA blok – zarovnání na střed, VA 50 (tracking .05em).
+   Nadpis auto-fit (3.42vw) = vždy 1 řádek, nikdy se nerozbije.
+   Podtitul čitelný (2.9vw); smí zalomit MEZI slovy (ZDE NAPIŠTE / ZPRÁVU),
+   nikdy uvnitř slova – overflow-wrap:normal to zaručuje. */
+.komunita{grid-column:1;padding:3vw 1.8vw 0;text-align:center;overflow:hidden;min-width:0}
+.komunita h3{font-weight:700;font-size:3.42vw;color:var(--vx-gray-dark);
+  letter-spacing:.05em;line-height:.83;white-space:nowrap}                /* 30/36 = 0.83 */
+.komunita p{font-weight:400;font-size:2.9vw;color:var(--vx-gray-dark);
+  letter-spacing:.02em;margin:.5em 0 .9em;line-height:1.15;
+  overflow-wrap:normal;word-break:keep-all;hyphens:none}
+.komunita input{display:block;width:84%;margin:0 auto;border:0;height:7vw;max-height:30px;background:var(--vx-white)}
+/* Blok názvu pořadu vedle hero. Svislé rozestupy dle PS reference (proporčně):
+   hero->titulek ~2.1vw, titulek->autor ~1.1vw, autor->dvojčára ~2.1vw.
+   Titulek Anton 48pt : autor Source Sans 24pt = poměr 2:1, VA 0 (bez trackingu). */
+.show-title{grid-column:3;min-width:0;padding:2.1vw 2vw 0 0}
+.show-title h2{font-family:var(--vx-impact);font-weight:400;font-size:clamp(1.1rem,4.2vw,1.7rem);
+  line-height:1.04;color:var(--vx-gray-dark);letter-spacing:0;margin:0}
+.show-title .author{font-family:var(--vx-myriad);font-weight:400;font-size:clamp(.8rem,2.1vw,.95rem);
+  color:var(--vx-gray-dark);letter-spacing:0;margin-top:1.1vw}
+.live-right{grid-column:4;display:flex;flex-direction:column;align-items:flex-end;gap:1.5vw;min-width:0;padding-top:2vw}
+.live-right .circle{width:clamp(40px,9.8vw,54px);height:auto;aspect-ratio:1}
+.countdown{font-weight:400;font-size:clamp(.65rem,1.7vw,.95rem);color:var(--vx-gray-dark);
+  letter-spacing:.05em;text-align:right;line-height:1.2}
+.countdown b{font-weight:400}
+
+/* Nadpis sekce (DNEŠNÍ PROGRAM / KANÁLY) – 48pt oranžový na střed, VA 50.
+   Velikost vázaná na šířku (~5vw), nadpis se nikdy nezalomí. */
+.section-h{text-align:center;color:var(--vx-orange);font-weight:400;font-size:clamp(1.15rem,4.97vw,1.9rem);
+  letter-spacing:.05em;margin:4.5vw 0 3.5vw;white-space:nowrap}
+.carousel{display:flex;align-items:center;gap:2vw;padding:0 var(--L1)}
+.carousel .chev{flex:0 0 auto;cursor:pointer}
+.carousel .chev img{height:clamp(20px,5vw,30px);width:auto}
+.carousel .chev.left img{transform:scaleX(-1)}
+.carousel .track{display:flex;gap:2vw;overflow-x:auto;flex:1;scrollbar-width:none}
+.carousel .track::-webkit-scrollbar{display:none}
+.carousel .track .thumb{flex:0 0 46%;aspect-ratio:16/9;background:#ccc;border-radius:2px}
+.dots{display:flex;justify-content:center;gap:1.4vw;margin:2vw 0}
+.dots i{width:1.6vw;height:1.6vw;border-radius:50%;background:var(--vx-gray-light);max-width:8px;max-height:8px}
+.dots i.on{background:var(--vx-orange)}
+/* PRÁVĚ BĚŽÍ – zarovnáno pod sekci (levá hrana L3=23.1%), ne k okraji obrazovky.
+   Štítek 18pt Bold oranžový; titulek 30pt Bold #303030 VA25 řádk.30/30;
+   zdroj 18pt Regular #717171 VA25. Poměr titulek:štítek/zdroj = 30:18.
+   Popisy z YouTube mají max 100 znaků (pravidlo zdroje). */
+.running{padding-left:var(--L3);padding-right:var(--L1)}
+.running .tag{display:flex;align-items:center;gap:1.5vw;color:var(--vx-orange);font-weight:700;
+  font-size:clamp(.8rem,2.1vw,1rem);letter-spacing:.025em}
+.running .tag::before{content:"";width:2vw;height:2vw;max-width:10px;max-height:10px;border-radius:50%;background:var(--vx-orange);flex:0 0 auto}
+.running h4{font-weight:700;font-size:clamp(1.05rem,3.5vw,1.4rem);line-height:1;letter-spacing:.025em;
+  color:var(--vx-gray-dark);margin:.55em 0 .35em;overflow-wrap:break-word}
+.running .src{font-weight:400;font-size:clamp(.8rem,2.1vw,.95rem);color:var(--vx-gray-light);letter-spacing:.025em}
+.channels{padding:0 var(--L1)}
+.ch-track{display:flex;align-items:center;gap:2vw}
+.ch-track .chev{flex:0 0 auto;cursor:pointer}
+.ch-track .chev img{height:clamp(20px,5vw,30px);width:auto}
+.ch-track .chev.left img{transform:scaleX(-1)}
+.ch-list{display:flex;gap:3vw;overflow-x:auto;flex:1;scrollbar-width:none;padding:2px}
+.ch-list::-webkit-scrollbar{display:none}
+/* Karta: logo kruh (~25% šířky karty) + název vedle. Aktivní = silný oranžový rámeček. */
+.ch-card{flex:0 0 60%;display:flex;align-items:center;gap:3.5%;
+  border:1.5px solid var(--vx-gray-light);padding:3.5% 4%;border-radius:3px;background:var(--vx-white)}
+.ch-card.active{border:max(2px,0.5vw) solid var(--vx-orange)}
+.ch-card .logo{width:25%;max-width:46px;aspect-ratio:1;border-radius:50%;background:var(--vx-black);flex:0 0 auto}
+.ch-card span{font-weight:700;font-size:clamp(.72rem,2.4vw,.95rem);letter-spacing:.03em;
+  color:var(--vx-gray-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.channels .hint{text-align:center;color:var(--vx-gray-dark);font-weight:400;
+  font-size:clamp(.78rem,2.1vw,.95rem);letter-spacing:.05em;margin-top:4vw}
+
+/* ============ VIDEA ============ */
+.card{display:grid;grid-template-columns:21.3% 1.8% 47% auto;gap:0 2vw;padding:0 var(--L1)}
+.card .date{text-align:left}
+.card .month{font-weight:700;font-size:clamp(.95rem,3.01vw,1.3rem);color:var(--vx-gray-light);letter-spacing:.05em}
+.card .day{font-family:var(--vx-myriad);font-weight:700;font-size:clamp(2.5rem,12.54vw,4rem);color:var(--vx-orange);letter-spacing:.05em;line-height:1}
+.card .thumb{grid-column:3;aspect-ratio:16/9;background:#111;align-self:start;margin-top:1vw}
+.card .thumb.portrait{aspect-ratio:9/16;background:var(--vx-black);max-height:60vw;margin-inline:auto}
+.card .body{grid-column:4}
+.card .body h3{font-weight:700;font-size:clamp(1rem,2.26vw,1.15rem);color:var(--vx-gray-dark);letter-spacing:.05em;line-height:1.1}
+.card .body .by{font-weight:700;font-size:clamp(.85rem,1.5vw,1rem);color:var(--vx-gray-light);letter-spacing:.05em;margin:.6em 0}
+.card .body p{font-weight:400;font-size:clamp(.85rem,1.5vw,.95rem);color:var(--vx-gray-light);letter-spacing:.05em;line-height:1.35;margin-bottom:1em}
+
+/* ============ V KOSTCE ============ */
+.kostka{display:grid;grid-template-columns:21.3% 1.8% 48% auto;gap:0 2vw;padding:0 var(--L1)}
+.kostka .date{text-align:left}
+.kostka .month{font-weight:700;font-size:clamp(.95rem,3.01vw,1.3rem);color:var(--vx-gray-light);letter-spacing:.05em}
+.kostka .day{font-family:var(--vx-myriad);font-weight:700;font-size:clamp(2.5rem,12.54vw,4rem);color:var(--vx-orange);letter-spacing:.05em;line-height:1}
+.kostka .body{grid-column:3}
+.kostka .body h3{font-weight:700;font-size:clamp(1rem,2.26vw,1.3rem);color:var(--vx-gray-dark);letter-spacing:.05em;line-height:1.1}
+.kostka .body .src{font-weight:700;font-size:clamp(.85rem,1.5vw,1rem);color:var(--vx-gray-light);letter-spacing:.05em;margin:.5em 0}
+.kostka .body p{font-weight:400;font-size:clamp(.85rem,1.5vw,.95rem);color:var(--vx-gray-light);letter-spacing:.05em;line-height:1.4;margin-bottom:1em}
+.kostka .actions{grid-column:4;display:flex;flex-direction:column;gap:2vw}
+.kostka .actions button{text-align:left;padding:2vw;background:var(--vx-white);border:2px solid var(--vx-orange);
+  font-family:var(--vx-myriad);font-weight:700;font-size:clamp(.85rem,1.5vw,1rem);letter-spacing:.05em;color:var(--vx-gray-dark)}
+.kostka .actions button.neutral{border-color:var(--vx-gray-light)}
+
+/* ============ MŮJ VEROX ============ */
+.mv{padding:0 var(--L1);text-align:center}
+.mv h1{font-weight:400;font-size:clamp(1.5rem,4.51vw,2.2rem);color:var(--vx-orange);letter-spacing:.05em;margin:4vw 0 3vw}
+.mv h2{font-weight:700;font-size:clamp(.9rem,1.88vw,1.1rem);color:var(--vx-gray-dark);letter-spacing:.02em;line-height:1.2}
+.mv .sub{font-weight:400;font-size:clamp(.85rem,1.5vw,.95rem);color:var(--vx-gray-light);margin:1vw 0 4vw}
+.mv .info{font-weight:400;font-size:clamp(.85rem,1.5vw,.95rem);color:var(--vx-gray-dark);margin-bottom:5vw}
+.mv .cta{display:block;width:43%;margin:0 auto 5vw;padding:3vw;background:var(--vx-orange);color:#fff;border:0;
+  font-family:var(--vx-myriad);font-weight:400;font-size:clamp(.9rem,1.88vw,1.1rem);letter-spacing:.05em}
+.form-row{display:grid;grid-template-columns:32.9% .9% auto;gap:0 2vw;align-items:start;margin-bottom:3vw;padding:0 var(--L1)}
+.form-row label{grid-column:1;text-align:right;font-weight:700;font-size:clamp(.85rem,1.5vw,1rem);color:var(--vx-gray-dark);letter-spacing:.05em;padding-top:1.5vw}
+.form-row label small{display:block;font-weight:700}
+.form-row .field{grid-column:3}
+.form-row input,.form-row textarea{width:100%;border:2px solid var(--vx-orange);background:var(--vx-white);padding:2vw;font-family:var(--vx-myriad);font-size:clamp(.85rem,1.5vw,.95rem);color:var(--vx-gray-light)}
+.form-row textarea{min-height:30vw;resize:vertical}
+.submit-row{display:grid;grid-template-columns:32.9% .9% auto;gap:0 2vw;padding:0 var(--L1);align-items:center}
+.submit-row .submit{grid-column:3;display:flex;align-items:center;gap:3vw}
+.submit-row button{background:var(--vx-orange);color:#fff;border:0;padding:3vw 6vw;font-family:var(--vx-myriad);font-weight:400;font-size:clamp(.9rem,1.88vw,1.1rem);letter-spacing:.05em}
+.submit-row .count{color:var(--vx-gray-light);font-size:clamp(.85rem,1.5vw,.95rem)}
+.pinned{display:grid;grid-template-columns:30% auto;gap:0 3vw;padding:0 var(--L1);margin-top:2vw}
+.pinned .filters{display:flex;flex-direction:column;gap:2vw}
+.pinned .filters button{padding:2vw;font-family:var(--vx-myriad);font-weight:400;font-size:clamp(.85rem,1.5vw,1rem);letter-spacing:.05em;border:2px solid var(--vx-orange)}
+.pinned .filters .inactive{background:var(--vx-white);color:var(--vx-gray-dark)}
+.pinned .filters .active{background:var(--vx-orange);color:#fff}
+.pinned .col h2{color:var(--vx-orange);font-weight:400;font-size:clamp(1.1rem,3.01vw,1.4rem);letter-spacing:.05em}
+.pinned .empty{border:2px solid var(--vx-orange);padding:3vw;margin-top:2vw;color:var(--vx-gray-light);font-weight:400;font-size:clamp(.85rem,1.5vw,.95rem)}
+.note{font-size:10px;color:#bbb;text-align:center;padding:4vw;line-height:1.5}
+</style>
+
+<header class="vx-header">
+  <div class="vx-header-top">
+    <!-- LOGO: master SVG (wordmark + oranžová tečka), tagline jako text pod ním -->
+    <div class="vx-logo"><img class="logo-img" src="brand/verox-logo.svg" alt="VEROX"><small>MAINSTREAMOVÝ DETOX</small></div>
+    <div class="vx-header-right">
+      <div class="vx-date">PÁTEK 29.KVĚTNA 2026</div>
+      <div class="vx-clock">23:58</div>
+    </div>
+  </div>
+  <nav class="vx-nav">
+    <a class="active" href="#" data-p="zive">ŽIVĚ</a><a href="#" data-p="videa">VIDEA</a><a href="#" data-p="kostce">V KOSTCE</a><a href="#" data-p="muj">MŮJ VEROX</a><a class="login" href="#">PŘIHLÁSIT</a>
+  </nav>
+</header>
+
+<!-- ŽIVĚ -->
+<main class="vx-page show" id="zive">
+  <div class="hero"></div>
+  <div class="live-block">
+  <div class="live-meta">
+    <div class="komunita"><h3>KOMUNITA</h3><p>ZDE NAPIŠTE ZPRÁVU</p><input></div>
+    <div class="show-title">
+      <h2>The Secret History of Biblical Giants, Demons, and the Advanced Civilizations Before the Great Flood</h2>
+      <div class="author">Tucker Carlson</div>
+    </div>
+    <div class="live-right">
+      <img class="circle" src="icons/ikona_zive_vysilani.png" alt="ŽIVÉ VYSÍLÁNÍ">
+      <div class="countdown">DO KONCE ZBÝVÁ : <b>22:08</b></div>
+    </div>
+  </div>
+  <div class="vx-strip w75"><span></span><span></span></div>
+  <h3 class="section-h">PRÁVĚ HRAJE</h3>
+  <div class="carousel">
+    <span class="chev left"><img src="icons/ikona_sipka.png" alt="vlevo"></span>
+    <div class="track"><div class="thumb"></div><div class="thumb"></div><div class="thumb"></div></div>
+    <span class="chev"><img src="icons/ikona_sipka.png" alt="vpravo"></span>
+  </div>
+  <div class="dots"><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i></div>
+  <section class="running">
+    <div class="tag">PRÁVĚ BĚŽÍ</div>
+    <h4>J. Blanár: Európska únia sa sama diskvalifikovala a naďalej odmieta prijať realitu</h4>
+    <div class="src">SMER - Sociálna Demokracia</div>
+  </section>
+  <div class="vx-strip"><span></span><span></span></div>
+  </div><!-- /live-block -->
+  <h3 class="section-h">KANÁLY</h3>
+  <section class="channels">
+    <div class="ch-track">
+      <span class="chev left"><img src="icons/ikona_sipka.png" alt="vlevo"></span>
+      <div class="ch-list">
+        <div class="ch-card"><span class="logo"></span><span>DVOJÍ METR</span></div>
+        <div class="ch-card active"><span class="logo"></span><span>ABJ TV</span></div>
+        <div class="ch-card"><span class="logo"></span><span>DATARUN</span></div>
+        <div class="ch-card"><span class="logo"></span><span>DENÍK TO</span></div>
+      </div>
+      <span class="chev"><img src="icons/ikona_sipka.png" alt="vpravo"></span>
+    </div>
+    <p class="hint">KLIKNĚTE NA VYBRANÝ KANÁL PRO ZOBRAZENÍ DETAILU.</p>
+  </section>
+</main>
+
+<!-- VIDEA -->
+<main class="vx-page" id="videa">
+  <article class="card">
+    <div class="date"><div class="month">KVĚTEN</div><div class="day">22</div></div>
+    <div class="thumb"></div>
+    <div class="body">
+      <h3>Libor Vondráček: Odklon od uhlí je nesmysl | Napřímo</h3>
+      <div class="by">Libor Vondráček</div>
+      <p>Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum…</p>
+      <div class="vx-arrow"><b>Zjistit více</b><img src="icons/ikona_sipka.png" alt=""></div>
+    </div>
+  </article>
+  <div class="vx-strip"><span></span><span></span></div>
+  <article class="card">
+    <div class="date"><div class="month">KVĚTEN</div><div class="day">20</div></div>
+    <div class="thumb portrait"></div>
+    <div class="body">
+      <h3>We Worship the Economy…</h3>
+      <div class="by">Tucker Carlson</div>
+      <p>Ekonomika jako náhrada náboženství: lidské oběti v moderním hávu…</p>
+      <div class="vx-arrow"><b>Zjistit více</b><img src="icons/ikona_sipka.png" alt=""></div>
+    </div>
+  </article>
+  <div class="vx-strip"><span></span><span></span></div>
+</main>
+
+<!-- V KOSTCE (přihlášená) -->
+<main class="vx-page" id="kostce">
+  <article class="kostka">
+    <div class="date"><div class="month">KVĚTEN</div><div class="day">23</div></div>
+    <div class="body">
+      <h3>Danko a Cigániková na jednej strane? Toto nikto nečakal</h3>
+      <div class="src">Ereport&nbsp;&nbsp;30. 05. 12:01</div>
+      <p>Cigániková: Zo Sasky ma vyhodili, ja som neodišla dobrovoľne</p>
+      <p>Poslankyňa Janka Byto Cigániková tvrdí, že zo strany Saska ju vyhodili, pričom zdôrazňuje, že odchod nebol jej rozhodnutím.</p>
+      <div class="vx-arrow"><b>Spustit video</b><img src="icons/ikona_sipka.png" alt=""></div>
+    </div>
+    <div class="actions">
+      <button class="neutral">Reagovat</button>
+      <button>Komentáře</button>
+      <button>Přihlásit pro sdílení</button>
+      <button>Do komunity</button>
+    </div>
+  </article>
+  <div class="vx-strip"><span></span><span></span></div>
+</main>
+
+<!-- MŮJ VEROX -->
+<main class="vx-page" id="muj">
+  <div class="mv">
+    <h1>MŮJ VEROX</h1>
+    <h2>DISKUZE DIVÁKŮ, REAKCE A DOPORUČENÍ</h2>
+    <div class="sub">Kritika je vítaná, výhrůžky, vulgarity, osobní údaje a spam mažeme.</div>
+    <div class="info">INTERAKCE V KOMUNITĚ( PŘIDÁNÍ, REAKCE, NAHLÁŠENÍ ) JSOU DOSTOPNÉ POUZE PO PŘIHLÁŠENÍ.</div>
+    <button class="cta">PŘIHLÁSIT ZDARMA</button>
+  </div>
+  <div class="vx-strip w75"><span></span><span></span></div>
+  <div class="form-row"><label>PŘEZDÍVKA</label><span></span><div class="field"><input placeholder="Vaše přezdívka"></div></div>
+  <div class="form-row"><label>E-MAIL<small>( volitelné, nezveřejňujeme )</small></label><span></span><div class="field"><input placeholder="vas@email.cz"></div></div>
+  <div class="form-row"><label>VZKAZ</label><span></span><div class="field"><textarea placeholder="Co chcete vzkázat redakci, nebo ostatním divákům ?"></textarea></div></div>
+  <div class="submit-row"><span></span><span></span><div class="submit"><button>PŘIDAT VZKAZ</button><span class="count">0/1500</span></div></div>
+  <div class="vx-strip w75"><span></span><span></span></div>
+  <div class="pinned">
+    <div class="filters"><button class="inactive">NEJNOVĚJŠÍ</button><button class="active">POPULÁRNÍ</button></div>
+    <div class="col"><h2>PŘIPNUTÉ VZKAZY</h2><div class="empty">Zatím tu žádné příspěvky nejsou. Buďte první, kdo něco přidá do Komunity.</div></div>
+  </div>
+</main>
+
+<p class="note">Wireframe v2 — fonty Source Sans 3 + Anton (náhrady Myriad/Impact), reálné ikony i logo (brand/verox-logo.svg).<br>Pozn.: oranžová v logu je #ED742F, brand oranžová webu #F37021 (drobný rozdíl, logo ponecháno v originále).</p>
+
+<script>
+// Přepínání stránek řízené hlavní navigací (odkazy s data-p v .vx-nav)
+document.querySelectorAll('.vx-nav a[data-p]').forEach(a=>a.addEventListener('click',e=>{
+  e.preventDefault();
+  document.querySelectorAll('.vx-nav a[data-p]').forEach(x=>x.classList.remove('active'));
+  a.classList.add('active');
+  document.querySelectorAll('.vx-page').forEach(p=>p.classList.remove('show'));
+  document.getElementById(a.dataset.p).classList.add('show');
+}));
+</script>
