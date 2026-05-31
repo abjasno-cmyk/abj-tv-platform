@@ -14,8 +14,8 @@ export function VeroxLogo({ href = "/live", className = "", priority = true }: V
     <Image
       src={LOGO_SRC}
       alt="VEROX"
-      width={248}
-      height={56}
+      width={496}
+      height={331}
       priority={priority}
       className={`verox-logo-img block h-auto w-auto max-w-full object-contain object-left ${className}`.trim()}
     />
