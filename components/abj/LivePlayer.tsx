@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import YouTube, { type YouTubeProps } from "react-youtube";
 
 import { LiveCommunityStrip } from "@/components/abj/LiveCommunityStrip";
+import { VeroxIcon } from "@/components/abj/VeroxIcon";
 import { VeroxDoubleDivider } from "@/components/abj/VeroxDoubleDivider";
 
 type LivePlayerProps = {
@@ -92,52 +93,6 @@ async function exitFullscreenFor(doc: FullscreenDocument): Promise<void> {
   }
 }
 
-function HeroFullscreenIcon({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 100 100" aria-hidden="true" className={className}>
-      <circle cx="50" cy="50" r="50" fill="#ED742F" />
-      <path
-        d="M27 40V27H40M60 27H73V40M27 60V73H40M60 73H73V60"
-        stroke="white"
-        strokeWidth="8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      <path d="M43 43 L50 50 L43 57" fill="white" />
-      <path d="M57 43 L50 50 L57 57" fill="white" />
-      <path d="M43 43 L50 50 L57 43" fill="white" />
-      <path d="M43 57 L50 50 L57 57" fill="white" />
-    </svg>
-  );
-}
-
-function HeroVolumeIcon({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 100 100" aria-hidden="true" className={className}>
-      <circle cx="50" cy="50" r="50" fill="#ED742F" />
-      <path d="M22 42 H36 L52 28 V72 L36 58 H22 Z" fill="white" />
-      <path d="M60 40 Q70 50 60 60" stroke="white" strokeWidth="7" strokeLinecap="round" fill="none" />
-      <path d="M67 33 Q82 50 67 67" stroke="white" strokeWidth="7" strokeLinecap="round" fill="none" />
-      <path d="M74 26 Q95 50 74 74" stroke="white" strokeWidth="7" strokeLinecap="round" fill="none" />
-    </svg>
-  );
-}
-
-function HeroBroadcastIcon({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 100 100" aria-hidden="true" className={className}>
-      <circle cx="50" cy="50" r="50" fill="#ED742F" />
-      <path d="M24 27 C10 40 10 60 24 73" stroke="white" strokeWidth="7" strokeLinecap="round" fill="none" />
-      <path d="M31 34 C22 43 22 57 31 66" stroke="white" strokeWidth="7" strokeLinecap="round" fill="none" />
-      <path d="M69 34 C78 43 78 57 69 66" stroke="white" strokeWidth="7" strokeLinecap="round" fill="none" />
-      <path d="M76 27 C90 40 90 60 76 73" stroke="white" strokeWidth="7" strokeLinecap="round" fill="none" />
-      <circle cx="50" cy="50" r="18" fill="white" />
-      <path d="M45 42 L58 50 L45 58 Z" fill="#ED742F" />
-    </svg>
-  );
-}
-
 function LiveVideoViewport({
   videoId,
   title,
@@ -205,7 +160,7 @@ function LiveVideoViewport({
             aria-label={isFullscreen ? "Ukončit režim celé obrazovky" : "Přepnout celou obrazovku"}
             className="inline-flex h-8 w-8 items-center justify-center rounded-full transition hover:scale-[1.04] hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-10 sm:w-10"
           >
-            <HeroFullscreenIcon className="h-full w-full drop-shadow-[0_8px_14px_rgba(17,17,17,0.32)]" />
+            <VeroxIcon name="fullscreen" className="h-full w-full drop-shadow-[0_8px_14px_rgba(17,17,17,0.32)]" />
           </button>
           <button
             type="button"
@@ -213,7 +168,7 @@ function LiveVideoViewport({
             aria-label={isMuted ? "Zapnout zvuk" : "Vypnout zvuk"}
             className="relative inline-flex h-8 w-8 items-center justify-center rounded-full transition hover:scale-[1.04] hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-10 sm:w-10"
           >
-            <HeroVolumeIcon className="h-full w-full drop-shadow-[0_8px_14px_rgba(17,17,17,0.32)]" />
+            <VeroxIcon name="sound-on" className="h-full w-full drop-shadow-[0_8px_14px_rgba(17,17,17,0.32)]" />
             {isMuted ? (
               <span className="pointer-events-none absolute h-[2px] w-5 rotate-[-35deg] rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.35)] sm:w-6" />
             ) : null}
@@ -224,7 +179,7 @@ function LiveVideoViewport({
             aria-label={isPaused ? "Spustit přehrávání" : "Pozastavit přehrávání"}
             className="relative inline-flex h-8 w-8 items-center justify-center rounded-full transition hover:scale-[1.04] hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-10 sm:w-10"
           >
-            <HeroBroadcastIcon className="h-full w-full drop-shadow-[0_8px_14px_rgba(17,17,17,0.32)]" />
+            <VeroxIcon name="back-to-live" className="h-full w-full drop-shadow-[0_8px_14px_rgba(17,17,17,0.32)]" />
             {!isPaused ? (
               <span className="pointer-events-none absolute inline-flex gap-[3px]">
                 <span className="h-2.5 w-[2px] rounded-full bg-[#ED742F] sm:h-3 sm:w-[3px]" />
@@ -429,46 +384,43 @@ export function LivePlayer({
           />
         </div>
 
-        <div className="verox-live-meta-grid">
-          <div className="verox-live-meta-community">{mobileCommunity}</div>
+        <div className="verox-live-block">
+          <div className="verox-live-meta-grid">
+            <div className="verox-live-meta-community">{mobileCommunity}</div>
 
-          <div className="verox-live-meta-title">
-            <h1 className="verox-live-show-title">{title}</h1>
-            <p className="verox-live-show-author verox-font-myriad-regular mt-1">{channel}</p>
-            {!isLive && continueFromSeconds !== null && continueFromSeconds > 30 ? (
-              <button
-                type="button"
-                onClick={() => onContinueFromSaved?.(continueFromSeconds)}
-                className="verox-font-myriad-bold mt-2 inline-flex min-h-8 items-center bg-[#F37021] px-2 py-1 text-[0.65rem] uppercase tracking-[0.05em] text-white"
-              >
-                Pokračovat od {Math.floor(continueFromSeconds / 60).toString().padStart(2, "0")}:
-                {Math.floor(continueFromSeconds % 60).toString().padStart(2, "0")}
+            <div className="verox-live-meta-title">
+              <h1 className="verox-live-show-title">{title}</h1>
+              <p className="verox-live-show-author verox-font-myriad-regular">{channel}</p>
+              {!isLive && continueFromSeconds !== null && continueFromSeconds > 30 ? (
+                <button
+                  type="button"
+                  onClick={() => onContinueFromSaved?.(continueFromSeconds)}
+                  className="verox-font-myriad-bold mt-[1.1vw] inline-flex min-h-8 items-center bg-[#F37021] px-2 py-1 text-[0.65rem] uppercase tracking-[0.05em] text-white"
+                >
+                  Pokračovat od {Math.floor(continueFromSeconds / 60).toString().padStart(2, "0")}:
+                  {Math.floor(continueFromSeconds % 60).toString().padStart(2, "0")}
+                </button>
+              ) : null}
+            </div>
+
+            <div className="verox-live-meta-aside">
+              <button type="button" onClick={onGoLive} aria-label="Přepnout na živé vysílání" className="inline-block p-0">
+                <VeroxIcon
+                  name="zive-vysilani"
+                  className="verox-live-live-badge aspect-square w-[clamp(40px,9.8vw,54px)]"
+                  alt="Živé vysílání"
+                />
               </button>
-            ) : null}
+              <p className="verox-live-countdown verox-font-myriad-regular">
+                {remainingParts.prefix}{" "}
+                <b className="verox-font-myriad-bold">{remainingParts.value}</b>
+              </p>
+            </div>
           </div>
 
-          <div className="verox-live-meta-aside">
-            <button
-              type="button"
-              onClick={onGoLive}
-              aria-label="Přepnout na živé vysílání"
-              className={`verox-live-live-btn verox-font-myriad-bold inline-flex items-center justify-center rounded-full text-center uppercase text-white ${
-                isLive ? "bg-[#F37021]" : "bg-[#F37021]"
-              }`}
-            >
-              ŽIVÉ
-              <br />
-              VYSÍLÁNÍ
-            </button>
-            <p className="verox-live-countdown verox-font-myriad-regular mt-1">
-              {remainingParts.prefix}
-              <br />
-              <span className="verox-font-myriad-regular">{remainingParts.value}</span>
-            </p>
-          </div>
+          <VeroxDoubleDivider partial hairline className="verox-live-meta-strip" />
+
         </div>
-
-        <VeroxDoubleDivider partial thick className="my-[clamp(10px,2vw,16px)]" />
 
         <p className="sr-only">
           Zbývá {remainingLabel}. Průběh přehrávání {Math.round(clampedProgress)} procent.
