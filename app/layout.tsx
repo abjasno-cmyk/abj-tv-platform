@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { Inter, Montserrat } from "next/font/google";
+import { Anton, Montserrat, Source_Sans_3 } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import "./live/verox.css";
 import { ABJNav } from "@/components/abj/Nav";
 import { LegalFooter } from "@/components/abj/LegalFooter";
 import { AuthProvider } from "@/components/auth/AuthProvider";
@@ -16,9 +17,20 @@ type RootLayoutProps = {
   children: React.ReactNode;
 };
 
-const inter = Inter({
-  subsets: ["latin"],
+// Client template fonts: Source Sans 3 (~Myriad Pro) for body/UI, Anton
+// (~Impact) for display headings. Latin Extended carries Czech/Slovak diacritics.
+const sourceSans = Source_Sans_3({
+  subsets: ["latin", "latin-ext"],
   variable: "--font-sans",
+  weight: ["400", "600", "700"],
+  display: "swap",
+});
+
+const anton = Anton({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-anton",
+  weight: ["400"],
+  display: "swap",
 });
 
 const montserrat = Montserrat({
@@ -35,7 +47,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   // visual changes can be reviewed before merging to main.
   const isProductionDeployment = process.env.VERCEL_ENV === "production";
   return (
-    <html lang="cs" className={`${montserrat.variable} ${inter.variable}`}>
+    <html lang="cs" className={`${montserrat.variable} ${sourceSans.variable} ${anton.variable}`}>
       <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
         {isProductionDeployment ? (
           <Script id="verox-canonical-host-guard" strategy="beforeInteractive">
@@ -79,7 +91,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <AuthProvider>
           {/* Single global nav only — prevents duplicate legacy header stacks. */}
           <ABJNav />
-          <main className="min-h-[calc(100vh-68px-46px)] pt-[68px]">{children}</main>
+          <main className="min-h-[50vh]">{children}</main>
           <LegalFooter />
           {showEditorialDebug ? <EditorialEventDebugPanel /> : null}
         </AuthProvider>

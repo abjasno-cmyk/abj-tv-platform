@@ -213,24 +213,10 @@ export default function LivePage({
     [continueFromSeconds, isAuthenticated, isLive, videoId]
   );
 
-  const communityBlock = (
-    <section className="relative rounded-[20px] bg-[#ED742F] px-5 pb-8 pt-8 font-[Helvetica,Arial,sans-serif] sm:px-8 sm:pb-10 sm:pt-9">
-      <span className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 bg-white px-6 py-1 text-[clamp(1rem,2.5vw,2rem)] font-black uppercase tracking-[0.06em] text-[#111111]">
-        KOMUNITA
-      </span>
-      <p className="mt-6 text-center text-[clamp(1rem,2.2vw,1.6rem)] font-semibold uppercase tracking-[0.06em] text-white">
-        ZDE NAPIŠTE ZPRÁVU
-      </p>
-      <input
-        type="text"
-        aria-label="Napsat zprávu do komunity"
-        className="mx-auto mt-3 block h-12 w-full max-w-[540px] rounded-[2px] bg-white px-4 py-3 text-base text-[#111111] outline-none"
-      />
-    </section>
-  );
-
+  // KOMUNITA blok je nově součástí hero/live-block (viz HomePage), v souladu
+  // s klientskou šablonou — žádná samostatná sekce.
   return (
-    <section data-ui-version="abj-geometric-v3" className="min-h-screen bg-[#FFFFFF] text-[#111111]">
+    <section data-ui-version="abj-template-v1" className="min-h-screen bg-[#FFFFFF] text-[#171411]">
       <HomePage
         days={safeEpg}
         channels={channels}
@@ -307,7 +293,7 @@ export default function LivePage({
           });
         }}
         engagementSlot={null}
-        reactionsSlot={communityBlock}
+        reactionsSlot={null}
       />
       <LiveAlert
         currentVideoId={videoId}
