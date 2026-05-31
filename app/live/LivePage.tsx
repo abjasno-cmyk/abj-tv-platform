@@ -213,22 +213,8 @@ export default function LivePage({
     [continueFromSeconds, isAuthenticated, isLive, videoId]
   );
 
-  const communityBlock = (
-    <section className="vx-on-dark relative rounded-[6px] bg-[#F37021] px-5 pb-8 pt-8 sm:px-8 sm:pb-10 sm:pt-9">
-      <span className="vx-display absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 bg-white px-6 py-1 text-[clamp(1.2rem,2.6vw,2.1rem)] tracking-[-0.01em] text-[#171411]">
-        KOMUNITA
-      </span>
-      <p className="mt-6 text-center font-[var(--font-mono)] text-[clamp(0.8rem,1.6vw,1.05rem)] font-semibold uppercase tracking-[0.18em] text-white">
-        Zde napište zprávu
-      </p>
-      <input
-        type="text"
-        aria-label="Napsat zprávu do komunity"
-        className="mx-auto mt-3 block h-12 w-full max-w-[540px] rounded-[2px] bg-white px-4 py-3 text-base text-[#171411] outline-none"
-      />
-    </section>
-  );
-
+  // KOMUNITA now lives inside the hero band (see LivePlayer), matching the
+  // zasilka homepage composition — no separate full-width block.
   return (
     <section data-ui-version="abj-geometric-v3" className="min-h-screen bg-[#FBF8F2] text-[#171411]">
       <HomePage
@@ -307,7 +293,7 @@ export default function LivePage({
           });
         }}
         engagementSlot={null}
-        reactionsSlot={communityBlock}
+        reactionsSlot={null}
       />
       <LiveAlert
         currentVideoId={videoId}

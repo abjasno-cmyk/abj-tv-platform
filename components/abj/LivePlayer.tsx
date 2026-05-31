@@ -199,7 +199,12 @@ export function LivePlayer({
         start: offsetSeconds,
         rel: 0,
         modestbranding: 1,
-        controls: 1,
+        // Hide YouTube's native chrome so the frame reads as a clean VEROX hero;
+        // play/pause, mute and fullscreen are handled by the custom controls.
+        controls: 0,
+        disablekb: 1,
+        iv_load_policy: 3,
+        playsinline: 1,
       },
     }),
     [isMuted, offsetSeconds]
@@ -255,7 +260,7 @@ export function LivePlayer({
 
   return (
     <div className="relative mb-12 pt-12 text-[#171411] sm:pt-14">
-      <section id="live-player-shell" ref={playerShellRef} className="relative overflow-visible rounded-[10px] bg-[#F37021] text-[#171411]">
+      <section id="live-player-shell" ref={playerShellRef} className="relative overflow-visible rounded-[10px] text-[#171411]">
         <p className="vx-display pointer-events-none absolute bottom-full right-2 z-20 mb-0 text-[clamp(2.9rem,10.5vw,5.8rem)] leading-[0.86] tracking-tight text-[#F37021] sm:right-3">
           {clockLabel}
         </p>
@@ -287,7 +292,16 @@ export function LivePlayer({
           </div>
         )}
 
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.2)_0%,rgba(0,0,0,0.02)_42%,rgba(0,0,0,0.65)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.35)_0%,rgba(0,0,0,0.02)_38%,rgba(0,0,0,0.78)_100%)]" />
+
+          <div className="absolute left-3 top-3 z-10 flex flex-wrap items-center gap-2">
+            {isLive ? (
+              <span className="vx-badge">
+                <span className="vx-live-dot" style={{ background: "#fff" }} /> Živě
+              </span>
+            ) : null}
+            <span className="vx-badge vx-badge--ink max-w-[60vw] truncate">{channel}</span>
+          </div>
 
           <div className="absolute right-2 top-2 z-10 sm:right-3 sm:top-3">
             <div className="flex flex-col items-center gap-1.5 opacity-85 sm:gap-2">
@@ -348,38 +362,63 @@ export function LivePlayer({
         ) : null}
       </div>
 
-        <div className="relative z-10 bg-[#F37021] px-5 pb-7 pt-5 md:px-6 md:pb-8 md:pt-6">
-          <div className="pr-24 sm:pr-28 md:pr-32">
-            <h1 className="vx-display text-[clamp(1.35rem,2.7vw,2.45rem)] leading-[1.06] text-white">
-              {title}
-            </h1>
-            <p className="mt-2 font-[var(--font-mono)] text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-black">{channel}</p>
-            {!isLive && continueFromSeconds !== null && continueFromSeconds > 30 ? (
-              <button
-                type="button"
-                onClick={() => onContinueFromSaved?.(continueFromSeconds)}
-                className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-semibold text-[#111111] transition hover:bg-white/30"
-              >
-                Pokračovat od {Math.floor(continueFromSeconds / 60)
-                  .toString()
-                  .padStart(2, "0")}
-                :{Math.floor(continueFromSeconds % 60).toString().padStart(2, "0")}
-              </button>
-            ) : null}
-            <p className="sr-only">
-              Zbývá {remainingLabel}. Průběh přehrávání {Math.round(clampedProgress)} procent.
-            </p>
+        <div className="vx-on-dark relative z-10 rounded-b-[8px] bg-[#171411] px-4 pb-5 pt-5 text-white sm:px-6">
+          <div className="grid items-end gap-4 lg:grid-cols-[minmax(190px,230px)_1fr] lg:gap-6">
+            {/* KOMUNITA — compact community CTA that sticks up over the frame */}
+            <div className="-mt-24 hidden self-end bg-[#F37021] p-3 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)] lg:block">
+              <span className="vx-display block text-[1.15rem] leading-none text-white">Komunita</span>
+              <span className="mt-1 block font-[var(--font-mono)] text-[0.56rem] uppercase tracking-[0.18em] text-white">
+                Zde napište zprávu
+              </span>
+              <input
+                aria-label="Napsat zprávu do komunity"
+                placeholder="Napište zprávu…"
+                className="mt-2 h-9 w-full bg-white px-2 text-sm text-[#171411] outline-none placeholder:text-[#717171]"
+              />
+            </div>
+
+            {/* Headline + live countdown */}
+            <div className="min-w-0 pr-24 sm:pr-28">
+              <h1 className="vx-display text-[clamp(1.3rem,2.6vw,2.3rem)] leading-[1.04] text-white">{title}</h1>
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+                <span className="font-[var(--font-mono)] text-[0.64rem] uppercase tracking-[0.16em] text-white/65">{channel}</span>
+                <span className="inline-flex items-center gap-2">
+                  <span className="font-[var(--font-mono)] text-[0.58rem] uppercase tracking-[0.14em] text-white/55">
+                    Do konce zbývá
+                  </span>
+                  <span className="bg-white px-1.5 py-0.5 font-[var(--font-mono)] text-[0.72rem] font-bold text-[#171411]">
+                    {remainingLabel}
+                  </span>
+                </span>
+              </div>
+              {!isLive && continueFromSeconds !== null && continueFromSeconds > 30 ? (
+                <button
+                  type="button"
+                  onClick={() => onContinueFromSaved?.(continueFromSeconds)}
+                  className="mt-3 inline-flex min-h-10 items-center gap-2 bg-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/25"
+                >
+                  Pokračovat od {Math.floor(continueFromSeconds / 60)
+                    .toString()
+                    .padStart(2, "0")}
+                  :{Math.floor(continueFromSeconds % 60).toString().padStart(2, "0")}
+                </button>
+              ) : null}
+              <p className="sr-only">
+                Zbývá {remainingLabel}. Průběh přehrávání {Math.round(clampedProgress)} procent.
+              </p>
+            </div>
           </div>
 
+          {/* ŽIVĚ VYSÍLÁNÍ stamp riding the frame corner */}
           <button
             type="button"
             onClick={onGoLive}
             aria-label="Přepnout na živé vysílání"
-            className={`absolute bottom-0 right-4 z-20 inline-flex h-20 w-20 translate-y-1/2 items-center justify-center rounded-full border-[4px] border-[#FFFFFF] text-center text-[10px] font-black uppercase leading-[1.05] tracking-[0.08em] ring-[7px] ring-[#FFFFFF] transition sm:right-6 sm:h-24 sm:w-24 sm:text-[11px] ${
-              isLive ? "bg-[#F37021] text-white/90" : "bg-[#F37021] text-white hover:scale-[1.02]"
+            className={`absolute -top-12 right-4 z-20 inline-flex h-20 w-20 items-center justify-center rounded-full border-[4px] border-[#FBF8F2] text-center text-[10px] font-bold uppercase leading-[1.05] tracking-[0.08em] ring-[6px] ring-[#FBF8F2] transition sm:right-6 sm:h-24 sm:w-24 sm:text-[11px] ${
+              isLive ? "bg-[#D85B12] text-white" : "bg-[#D85B12] text-white hover:scale-[1.03]"
             }`}
           >
-            Živé<br />vysílání
+            Živě<br />vysílání
           </button>
         </div>
       </section>

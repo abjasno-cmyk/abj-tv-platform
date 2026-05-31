@@ -337,6 +337,32 @@ a {
   color: var(--vx-orange);
 }
 
+.vx-chev {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1.5px solid var(--vx-orange);
+  color: var(--vx-orange);
+  background: var(--vx-card);
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+.vx-chev:hover {
+  background: var(--vx-orange);
+  color: #fff;
+  transform: scale(1.06);
+}
+.vx-chev:disabled {
+  opacity: 0.35;
+  cursor: default;
+  transform: none;
+  background: var(--vx-card);
+  color: var(--vx-orange);
+}
+
 /* Visible keyboard focus across custom controls. */
 :where(a, button, input, textarea, select, [tabindex]):focus-visible {
   outline: 2.5px solid var(--vx-orange-text);

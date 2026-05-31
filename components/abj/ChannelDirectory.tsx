@@ -221,15 +221,11 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
   };
 
   return (
-    <section className="rounded-[6px] border border-[rgba(23,20,17,0.1)] bg-white px-5 py-5 text-[#171411]">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <h3 className="vx-display text-2xl tracking-[-0.01em] text-[#171411]">Kanály</h3>
-          <p className="vx-meta mt-1 uppercase tracking-[0.16em]">Vyberte kanál a spusťte videa</p>
-        </div>
-        <span className="rounded-full bg-[rgba(243,112,33,0.14)] px-3 py-1 text-xs font-semibold text-[#B8480A]">
-          {orderedChannels.length} kanálů
-        </span>
+    <section className="px-1 py-2 text-[#171411]">
+      <div className="mb-5 flex items-center justify-center gap-4">
+        <hr className="vx-rule-soft hidden flex-1 sm:block" />
+        <h3 className="vx-display text-center text-[clamp(1.4rem,2.6vw,2.1rem)] text-[#B8480A]">Kanály</h3>
+        <hr className="vx-rule-soft hidden flex-1 sm:block" />
       </div>
 
       <div className="space-y-4">

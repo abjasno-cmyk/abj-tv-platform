@@ -188,20 +188,17 @@ export function Timeline({ days, onSelect }: TimelineProps) {
   }, []);
 
   return (
-    <section className="rounded-[6px] border border-[rgba(23,20,17,0.1)] bg-white px-5 py-5 text-[#171411]">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <h3 className="vx-display text-[clamp(1.35rem,2.3vw,2rem)] leading-tight text-[#171411]">
-            Vyberte <span className="text-[#B8480A]">video</span> podle data
-          </h3>
-          <p className="vx-meta mt-1 normal-case tracking-[0.04em]">Kliknutím na náhled spustíte video v hlavním přehrávači.</p>
-        </div>
+    <section className="px-1 py-2 text-[#171411]">
+      <div className="mb-5 flex items-center justify-center gap-4">
+        <hr className="vx-rule-soft hidden flex-1 sm:block" />
+        <h3 className="vx-display text-center text-[clamp(1.4rem,2.6vw,2.1rem)] text-[#B8480A]">Dnešní program</h3>
         {currentSlot ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(243,112,33,0.14)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#B8480A]">
-            <span className="h-2 w-2 rounded-full bg-[#F37021]" />
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[rgba(243,112,33,0.14)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#B8480A]">
+            <span className="vx-live-dot" />
             Teď běží
           </span>
         ) : null}
+        <hr className="vx-rule-soft hidden flex-1 sm:block" />
       </div>
 
       <div
@@ -255,15 +252,14 @@ export function Timeline({ days, onSelect }: TimelineProps) {
       </div>
 
       <div className="mt-5 flex items-center gap-2 sm:gap-3">
-        <p className="text-lg font-black uppercase leading-none tracking-[0.08em] text-[#111111] sm:text-[33px] sm:tracking-[0.06em]">
-          TIMELINES
-        </p>
+        <span className="vx-kicker mr-1 hidden sm:inline">Posunout</span>
         <button
           type="button"
           onClick={() => scrollTimelineBy("left")}
           disabled={!canScrollTimeline}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#111111] bg-white text-xs font-bold text-[#111111] transition disabled:opacity-35 sm:h-8 sm:w-8 sm:text-sm"
-          aria-label="Posunout timeline doleva"
+          className="vx-chev shrink-0 disabled:opacity-35"
+          style={{ width: 40, height: 40 }}
+          aria-label="Posunout program doleva"
         >
           ←
         </button>
@@ -271,8 +267,9 @@ export function Timeline({ days, onSelect }: TimelineProps) {
           type="button"
           onClick={() => scrollTimelineBy("right")}
           disabled={!canScrollTimeline}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#F37021] bg-[#F37021] text-xs font-bold text-white transition disabled:opacity-35 sm:h-8 sm:w-8 sm:text-sm"
-          aria-label="Posunout timeline doprava"
+          className="vx-chev shrink-0 disabled:opacity-35"
+          style={{ width: 40, height: 40 }}
+          aria-label="Posunout program doprava"
         >
           →
         </button>
