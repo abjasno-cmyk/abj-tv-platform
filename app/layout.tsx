@@ -29,17 +29,11 @@ const montserrat = Montserrat({
 
 export default function RootLayout({ children }: RootLayoutProps) {
   const showEditorialDebug = process.env.NODE_ENV !== "production";
-  // Only canonicalize the host on the production deployment. Preview
-  // deployments (VERCEL_ENV="preview", e.g. branch builds like
-  // *-git-design-visual-refresh-*.vercel.app) must stay on their own host so
-  // visual changes can be reviewed before merging to main.
-  const isProductionDeployment = process.env.VERCEL_ENV === "production";
   return (
     <html lang="cs" className={`${montserrat.variable} ${inter.variable}`}>
       <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
-        {isProductionDeployment ? (
-          <Script id="verox-canonical-host-guard" strategy="beforeInteractive">
-            {`
+        <Script id="verox-canonical-host-guard" strategy="beforeInteractive">
+          {`
             (function () {
               try {
                 var canonicalHost = "abj-tv-platform-n7e8.vercel.app";
@@ -60,8 +54,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
               }
             })();
           `}
-          </Script>
-        ) : null}
+        </Script>
         <Script id="verox-legacy-token-cookie-cleanup" strategy="beforeInteractive">
           {`
             (function () {
@@ -79,7 +72,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <AuthProvider>
           {/* Single global nav only — prevents duplicate legacy header stacks. */}
           <ABJNav />
-          <main className="min-h-[calc(100vh-68px-46px)] pt-[68px]">{children}</main>
+          <main className="min-h-[calc(100vh-68px-46px)] pt-[var(--vx-mobile-header-height)] min-[481px]:pt-[68px]">
+            {children}
+          </main>
           <LegalFooter />
           {showEditorialDebug ? <EditorialEventDebugPanel /> : null}
         </AuthProvider>

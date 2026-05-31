@@ -1,6 +1,36 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* VEROX design tokens — mobilní šablona (docs/VEROX_MOBILE_TEMPLATE.md) */
+:root {
+  --vx-orange: #f37021;
+  --vx-gray-dark: #303030;
+  --vx-gray-light: #717171;
+  --vx-white: #ffffff;
+  --vx-black: #000000;
+  --L0: 0%;
+  --L1: 3.55%;
+  --L2: 21.35%;
+  --L3: 23.1%;
+  --L4: 26.8%;
+  --L5: 32.9%;
+  --L6: 33.8%;
+  --L7: 71.1%;
+  --L8: 74.6%;
+  --L9: 75%;
+  --R0: 94.2%;
+  --R1: 96.4%;
+  --R2: 99.5%;
+  --C: 50%;
+  --vx-mobile-header-height: clamp(108px, 29vw, 132px);
+  /* Lišta — poměrová typografie (wireframe v2) */
+  --u: clamp(0.62rem, 3.05vw, 0.84rem);
+  --fz-date: var(--u);
+  --fz-nav: calc(var(--u) * 1.25);
+  --fz-login: calc(var(--u) * 1.25);
+  --fz-clock: calc(var(--u) * 4.583);
+}
+
 
 :root {
   color-scheme: light;
@@ -152,4 +182,656 @@ a {
 .jz-prose {
   max-width: 75ch;
   line-height: 1.85;
+}
+
+/* VEROX live mobile visual refresh (design/visual-refresh) */
+@font-face {
+  font-family: "Verox Myriad Pro";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src:
+    url("/fonts/MyriadPro-Bold.woff2") format("woff2"),
+    url("/fonts/MyriadPro-Bold.woff") format("woff"),
+    local("Myriad Pro Bold"),
+    local("MyriadPro-Bold");
+}
+
+@font-face {
+  font-family: "Verox Myriad Pro";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src:
+    url("/fonts/MyriadPro-Regular.woff2") format("woff2"),
+    url("/fonts/MyriadPro-Regular.woff") format("woff"),
+    local("Myriad Pro"),
+    local("MyriadPro-Regular");
+}
+
+@font-face {
+  font-family: "Verox Impact";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src:
+    url("/fonts/Impact.woff2") format("woff2"),
+    url("/fonts/Impact.woff") format("woff"),
+    local("Impact"),
+    local("Impact Regular");
+}
+
+.verox-font-myriad-bold {
+  font-family: "Verox Myriad Pro", "Myriad Pro", sans-serif;
+  font-weight: 700;
+}
+
+.verox-font-myriad-regular {
+  font-family: "Verox Myriad Pro", "Myriad Pro", sans-serif;
+  font-weight: 400;
+}
+
+.verox-font-impact {
+  font-family: "Verox Impact", Impact, sans-serif;
+  font-weight: 400;
+}
+
+.verox-double-divider {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+.verox-double-divider span {
+  display: block;
+  height: 1.5px;
+  width: 100%;
+  background-color: var(--vx-orange, #f37021);
+}
+
+@media (max-width: 480px) {
+  .verox-live-page {
+    --verox-brand: #f37021;
+    --verox-text: #303030;
+    --verox-text-muted: #717171;
+    --verox-surface: #ffffff;
+    background-color: var(--verox-surface);
+    color: var(--verox-text);
+  }
+
+  .verox-live-page .verox-live-desktop-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 481px) {
+  .verox-live-page .verox-live-mobile-only {
+    display: none !important;
+  }
+}
+
+/* VEROX — mobilní stránka VIDEA */
+.verox-videa-clock {
+  font-size: clamp(1.6rem, 6.9vw, 2.4rem);
+}
+
+.verox-videa-month {
+  font-size: clamp(0.95rem, 3.01vw, 1.3rem);
+  line-height: 1.1;
+}
+
+.verox-videa-day {
+  font-size: clamp(2.5rem, 12.54vw, 4rem);
+  margin-top: 0.15em;
+}
+
+.verox-videa-title {
+  font-size: clamp(1rem, 2.26vw, 1.15rem);
+  line-height: 1.15;
+}
+
+.verox-videa-author {
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  line-height: 1.2;
+}
+
+.verox-videa-perex {
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  line-height: 1.35;
+}
+
+.verox-videa-cta {
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  line-height: 1.2;
+}
+
+.verox-videa-card-grid {
+  display: grid;
+  grid-template-columns: 14.2% 36.4% minmax(0, 1fr);
+  column-gap: 3.6%;
+  width: 92.4%;
+  max-width: 92.4%;
+  align-items: stretch;
+}
+
+@media (max-width: 480px) {
+  .verox-videa-page {
+    background-color: #ffffff;
+    color: #303030;
+  }
+
+  .verox-videa-page .verox-live-desktop-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 481px) {
+  .verox-videa-page .verox-videa-mobile-only {
+    display: none !important;
+  }
+}
+
+/* VEROX — mobilní ŽIVĚ / homepage (přesná mřížka návrhu) */
+.verox-live-page-header {
+  padding-right: 3.6%;
+  margin-bottom: 0.35rem;
+}
+
+.verox-live-date {
+  font-size: clamp(0.8rem, 2.2vw, 1rem);
+  line-height: 1.15;
+}
+
+.verox-live-clock {
+  font-size: clamp(1.6rem, 6.9vw, 2.4rem);
+  line-height: 1;
+}
+
+.verox-live-hero {
+  width: 100%;
+  margin: 0;
+}
+
+.verox-live-hero .verox-live-hero-viewport {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+}
+
+.verox-live-block {
+  position: relative;
+}
+
+.verox-live-block::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--L2);
+  background: linear-gradient(to bottom, var(--vx-orange) 0%, var(--vx-orange) 30%, #fff 100%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.verox-live-block > * {
+  position: relative;
+  z-index: 1;
+}
+
+.verox-live-meta-grid {
+  display: grid;
+  grid-template-columns: var(--L2) calc(var(--L4) - var(--L2)) calc(var(--L9) - var(--L4)) calc(var(--R1) - var(--L9));
+  width: 100%;
+  align-items: start;
+  column-gap: 0;
+  margin-top: 0;
+}
+
+.verox-live-meta-community .verox-live-community {
+  margin-left: 0;
+  border-radius: 0;
+}
+
+.verox-live-meta-community {
+  grid-column: 1;
+  align-self: stretch;
+}
+
+.verox-live-meta-title {
+  grid-column: 3;
+  min-width: 0;
+  padding: 2.1vw 2vw 0 0;
+}
+
+.verox-live-meta-aside {
+  grid-column: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-start;
+  text-align: right;
+  padding-top: 2vw;
+  gap: 1.5vw;
+}
+
+.verox-live-show-title {
+  font-family: "Verox Impact", Impact, sans-serif;
+  font-size: clamp(1.1rem, 4.2vw, 1.6rem);
+  line-height: 1.05;
+  letter-spacing: 0;
+  color: #303030;
+}
+
+.verox-live-show-author {
+  font-size: clamp(0.85rem, 1.9vw, 1rem);
+  line-height: 1.15;
+  letter-spacing: 0;
+  color: #303030;
+}
+
+.verox-live-community-title {
+  font-size: 3.42vw;
+  line-height: 0.83;
+  white-space: nowrap;
+}
+
+.verox-live-community-hint {
+  font-size: 2.9vw;
+  line-height: 1.15;
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+
+.verox-live-live-btn {
+  width: clamp(36px, 9.8vw, 46px);
+  height: clamp(36px, 9.8vw, 46px);
+  font-size: clamp(0.5rem, 1.65vw, 0.65rem);
+  line-height: 1.05;
+}
+
+.verox-live-countdown {
+  font-size: clamp(0.85rem, 1.9vw, 1rem);
+  line-height: 1.2;
+  letter-spacing: 0.05em;
+  color: #303030;
+  margin-top: 0.35rem;
+  text-align: center;
+  width: 100%;
+}
+
+.verox-live-program-title {
+  font-size: clamp(1rem, 3vw, 1.3rem);
+  letter-spacing: 0.05em;
+}
+
+.verox-live-now-label {
+  font-size: clamp(0.75rem, 1.6vw, 0.9rem);
+  padding-left: 3.6%;
+}
+
+.verox-live-now-headline {
+  font-size: clamp(0.95rem, 2.5vw, 1.25rem);
+  padding-left: 3.6%;
+  padding-right: 3.6%;
+}
+
+.verox-live-now-source {
+  font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+  padding-left: 3.6%;
+  padding-right: 3.6%;
+}
+
+.verox-live-now-block {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.verox-live-channels-title {
+  font-size: clamp(1rem, 3vw, 1.3rem);
+  letter-spacing: 0.05em;
+}
+
+.verox-live-channels-hint {
+  font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+  letter-spacing: 0.05em;
+  padding-left: 3.6%;
+  padding-right: 3.6%;
+}
+
+.verox-double-divider--thick {
+  gap: 6px;
+}
+
+.verox-double-divider--thick span {
+  height: 6px;
+}
+
+.verox-double-divider--partial {
+  width: 75%;
+  max-width: 75%;
+}
+
+.verox-double-divider--hairline {
+  gap: max(3px, 0.85vw);
+  margin: 3.5vw 0;
+  margin-right: 11%;
+}
+
+.verox-double-divider--hairline.verox-double-divider--partial {
+  margin-right: 0;
+  margin-top: 2.1vw;
+}
+
+.verox-double-divider--hairline.verox-double-divider--partial span {
+  width: 89%;
+}
+
+.verox-double-divider--hairline span {
+  height: max(1px, 0.25vw);
+}
+
+.verox-live-meta-strip {
+  margin-bottom: 0;
+}
+
+.verox-live-carousel-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.verox-live-carousel-wrap .verox-carousel-chevron-btn {
+  position: absolute;
+  top: 50%;
+  z-index: 5;
+  transform: translateY(-50%);
+  padding: 0;
+}
+
+.verox-live-carousel-wrap .verox-carousel-chevron-btn--left {
+  left: 0;
+  transform: translate(-42%, -50%);
+}
+
+.verox-live-carousel-wrap .verox-carousel-chevron-btn--right {
+  right: 0;
+  transform: translate(42%, -50%);
+}
+
+.verox-live-carousel-track {
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: calc(50% - min(28vw, 110px));
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.verox-live-carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+/* VEROX — mobilní stránka V KOSTCE */
+.verox-vkostce-month {
+  font-size: clamp(0.95rem, 1.88vw, 1.3rem);
+  line-height: 1.1;
+}
+
+.verox-vkostce-day {
+  font-size: clamp(2.5rem, 12.54vw, 4rem);
+  margin-top: 0.1em;
+}
+
+.verox-vkostce-headline {
+  font-size: clamp(1rem, 2.26vw, 1.3rem);
+  line-height: 1.1;
+}
+
+.verox-vkostce-source {
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
+  line-height: 1.15;
+}
+
+.verox-vkostce-perex {
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+}
+
+.verox-vkostce-action-btn {
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
+  line-height: 1.15;
+  min-height: clamp(28px, 7vw, 36px);
+}
+
+.verox-vkostce-cta-link {
+  width: 100%;
+}
+
+.verox-vkostce-card-grid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 21.3% 1.8% minmax(0, 48%);
+  align-items: start;
+}
+
+.verox-vkostce-card-grid--auth {
+  grid-template-columns: 21.3% 1.8% minmax(0, 48%) 3.5% minmax(0, 24.9%);
+}
+
+.verox-vkostce-date {
+  grid-column: 1;
+}
+
+.verox-vkostce-content {
+  grid-column: 3;
+  min-width: 0;
+}
+
+.verox-vkostce-actions-col {
+  grid-column: 5;
+  align-self: start;
+  min-width: 0;
+}
+
+@media (max-width: 480px) {
+  .verox-vkostce-page {
+    background-color: #ffffff;
+    color: #303030;
+  }
+
+  .verox-vkostce-page .verox-live-desktop-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 481px) {
+  .verox-vkostce-page .verox-vkostce-mobile-only {
+    display: none !important;
+  }
+}
+
+/* VEROX — globální mobilní ukotvená lišta (≤480px) */
+:root {
+  --verox-mobile-header-height: clamp(108px, 29vw, 132px);
+}
+
+.verox-mobile-tagline {
+  font-size: clamp(0.55rem, 1.4vw, 0.7rem);
+  line-height: 1.1;
+}
+
+.verox-mobile-header-date {
+  font-size: clamp(0.75rem, 1.7vw, 0.95rem);
+}
+
+.verox-mobile-header-clock {
+  font-size: clamp(1.5rem, 6.9vw, 2.3rem);
+  line-height: 1;
+}
+
+.verox-mobile-header-cta {
+  font-size: clamp(0.9rem, 1.88vw, 1.1rem);
+  line-height: 1.15;
+}
+
+.verox-mobile-nav-link {
+  font-size: var(--fz-nav);
+  line-height: 1.15;
+}
+
+@media (max-width: 480px) {
+  .verox-page-inline-header {
+    display: none !important;
+  }
+
+  body {
+    padding-top: 0;
+  }
+}
+
+@media (min-width: 481px) {
+  .verox-mobile-header {
+    display: none !important;
+  }
+}
+
+/* VEROX — mobilní MŮJ VEROX (nepřihlášený) */
+.verox-muj-verox-intro-title {
+  font-size: clamp(1.5rem, 4.51vw, 2.2rem);
+  line-height: 1.1;
+}
+
+.verox-muj-verox-intro-subtitle {
+  font-size: clamp(0.9rem, 1.88vw, 1.1rem);
+  line-height: 1.2;
+}
+
+.verox-muj-verox-intro-muted {
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  line-height: 1.35;
+}
+
+.verox-muj-verox-cta-primary {
+  font-size: clamp(0.9rem, 1.88vw, 1.1rem);
+  min-height: clamp(36px, 9vw, 44px);
+  width: min(45vw, 220px);
+}
+
+.verox-muj-verox-form-grid {
+  display: grid;
+  grid-template-columns: 32.9% 0.9% minmax(0, 60.4%);
+  width: 100%;
+  align-items: start;
+}
+
+.verox-muj-verox-form-labels {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(14px, 3.5vw, 22px);
+  text-align: right;
+  padding-right: 0.25rem;
+}
+
+.verox-muj-verox-form-fields {
+  grid-column: 3;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 2.5vw, 16px);
+  max-width: 100%;
+}
+
+.verox-muj-verox-label {
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
+  line-height: 1.15;
+}
+
+.verox-muj-verox-input,
+.verox-muj-verox-textarea {
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  border: 2px solid #f37021;
+  background: #ffffff;
+  color: #303030;
+  width: 100%;
+}
+
+.verox-muj-verox-input {
+  min-height: clamp(32px, 8vw, 40px);
+  padding: 0.35rem 0.5rem;
+}
+
+.verox-muj-verox-textarea {
+  min-height: clamp(120px, 28vw, 180px);
+  padding: 0.5rem;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.verox-muj-verox-submit-row {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 2vw, 14px);
+  flex-wrap: wrap;
+}
+
+.verox-muj-verox-submit-btn {
+  font-size: clamp(0.9rem, 1.88vw, 1.1rem);
+  min-height: clamp(36px, 9vw, 44px);
+  padding: 0.4rem 1rem;
+}
+
+.verox-muj-verox-counter {
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+}
+
+.verox-muj-verox-pinned-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 28%) minmax(0, 1fr);
+  gap: clamp(8px, 2vw, 14px);
+  align-items: start;
+}
+
+.verox-muj-verox-filter-btn {
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
+  min-height: clamp(32px, 8vw, 40px);
+  border: 2px solid #f37021;
+  padding: 0.35rem 0.5rem;
+}
+
+.verox-muj-verox-pinned-title {
+  font-size: clamp(1.1rem, 3.01vw, 1.4rem);
+  line-height: 1.1;
+}
+
+.verox-muj-verox-empty-box {
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  line-height: 1.4;
+  border: 2px solid #f37021;
+  padding: clamp(12px, 3vw, 20px);
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 480px) {
+  .verox-muj-verox-page .verox-live-desktop-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 481px) {
+  .verox-muj-verox-page .verox-muj-verox-mobile-only {
+    display: none !important;
+  }
+}
+
+.verox-logo-img {
+  height: auto;
+  width: auto;
+}
+
+.verox-logo-img--mobile-header {
+  height: clamp(26px, 7.2vw, 36px);
+  max-width: min(52vw, 200px);
+}
+
+.verox-logo-img--desktop-header {
+  height: 36px;
+  max-width: 200px;
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ReplitHealthBadge } from "@/components/abj/ReplitHealthBadge";
+import { VeroxMobileHeader } from "@/components/abj/VeroxMobileHeader";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 const BASE_NAV_LINKS = [
@@ -86,7 +87,12 @@ export function ABJNav() {
   }, [pathname]);
 
   return (
-    <div className="fixed inset-x-0 top-0 z-50">
+    <>
+      <div className="min-[481px]:hidden">
+        <VeroxMobileHeader />
+      </div>
+
+      <div className="fixed inset-x-0 top-0 z-50 max-[480px]:hidden min-[481px]:block">
       <div
         onMouseEnter={revealHeader}
         onTouchStart={revealHeader}
@@ -102,10 +108,10 @@ export function ABJNav() {
                 className="relative z-10 inline-flex items-center"
                 aria-label="Přejít na stránku Živě"
               >
-                <p className="text-[30px] font-black leading-none tracking-[0.02em] text-[#111111]">
+                <p className="text-[30px] font-black leading-none tracking-[0.02em] text-[#303030]">
                   VEROX
                 </p>
-                <span className="absolute -right-2 top-0 h-3 w-3 rounded-full bg-[#ED742F]" />
+                <span className="absolute -right-2 top-0 h-3 w-3 rounded-full bg-[#F37021]" />
               </Link>
               <nav className="ml-[20px] hidden md:block">
                 <ul className="flex items-center gap-[18px]">
@@ -280,5 +286,6 @@ export function ABJNav() {
         />
       </div>
     </div>
+    </>
   );
 }

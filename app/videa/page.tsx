@@ -1,11 +1,7 @@
-import { ArchivClient, type ArchivViewData } from "@/app/archiv/ArchivClient";
+import { VideaPage } from "@/components/videa/VideaPage";
 
 export const dynamic = "force-dynamic";
 
-export default async function VideaPage() {
-  const initialData: ArchivViewData = {
-    topForDisplay: [],
-    channels: [],
-  };
-  return <ArchivClient initialData={initialData} mode="videa" />;
+export default function VideaRoutePage() {
+  return <VideaPage />;
 }
