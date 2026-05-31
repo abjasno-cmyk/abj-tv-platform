@@ -82,7 +82,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
             })();
           `}
         </Script>
-        <AuthProvider>
+        <AuthProvider vercelEnv={process.env.VERCEL_ENV}>
           {/* Single global nav only — prevents duplicate legacy header stacks. */}
           <ABJNav />
           <main className="min-h-[50vh]">{children}</main>
