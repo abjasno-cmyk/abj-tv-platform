@@ -1,6 +1,30 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* VEROX design tokens — mobilní šablona (docs/VEROX_MOBILE_TEMPLATE.md) */
+:root {
+  --vx-orange: #f37021;
+  --vx-gray-dark: #303030;
+  --vx-gray-light: #717171;
+  --vx-white: #ffffff;
+  --vx-black: #000000;
+  --L0: 0%;
+  --L1: 3.55%;
+  --L2: 21.35%;
+  --L3: 23.1%;
+  --L4: 26.8%;
+  --L5: 32.9%;
+  --L6: 33.8%;
+  --L7: 71.1%;
+  --L8: 74.6%;
+  --L9: 75%;
+  --R0: 94.2%;
+  --R1: 96.4%;
+  --R2: 99.5%;
+  --C: 50%;
+  --vx-mobile-header-height: clamp(108px, 29vw, 132px);
+}
+
 
 :root {
   color-scheme: light;

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ReplitHealthBadge } from "@/components/abj/ReplitHealthBadge";
-import { VeroxLogo } from "@/components/abj/VeroxLogo";
 import { VeroxMobileHeader } from "@/components/abj/VeroxMobileHeader";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -104,7 +103,16 @@ export function ABJNav() {
         <header className="bg-[#FFFFFF] px-4 font-[Helvetica,Arial,sans-serif] text-[#111111] md:px-6">
           <div className="flex h-[62px] items-center gap-4">
             <div className="flex min-w-0 items-center">
-              <VeroxLogo className="verox-logo-img--desktop-header" />
+              <Link
+                href="/live"
+                className="relative z-10 inline-flex items-center"
+                aria-label="Přejít na stránku Živě"
+              >
+                <p className="text-[30px] font-black leading-none tracking-[0.02em] text-[#303030]">
+                  VEROX
+                </p>
+                <span className="absolute -right-2 top-0 h-3 w-3 rounded-full bg-[#F37021]" />
+              </Link>
               <nav className="ml-[20px] hidden md:block">
                 <ul className="flex items-center gap-[18px]">
                   {navLinks.map((link) => {
