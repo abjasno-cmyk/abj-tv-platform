@@ -204,8 +204,9 @@ export function HomePage({
           </div>
         </div>
         <button type="button" className="live-badge" onClick={onReturnToLive} aria-label="Přepnout na živé vysílání">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/handoff/assets/live-badge.webp" alt="Živé vysílání" />
+          ŽIVÉ
+          <br />
+          VYSÍLÁNÍ
         </button>
       </section>
 
