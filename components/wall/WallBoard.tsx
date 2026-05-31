@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { SectionLabel } from "@/components/abj/SectionLabel";
 import type { WallPost, WallSort, WallStatus } from "@/lib/wallTypes";
 
 type WallBoardProps = {
@@ -47,6 +48,11 @@ type ReplyTarget = {
 const EMPTY_STATE_TEXT = "Zatím tu žádné příspěvky nejsou. Buďte první, kdo něco přidá do Komunity.";
 const INTRO_DEFAULT = "Diskuze diváků, reakce a doporučení.";
 const RULES_TEXT = "Kritika je vítaná. Výhrůžky, vulgarity, osobní údaje a spam mažeme.";
+
+const CARD_CLASS =
+  "rounded-[14px] border border-verox-line bg-white shadow-[0_8px_18px_rgba(17,17,17,0.10)]";
+const INPUT_CLASS =
+  "w-full rounded-[10px] border border-verox-line bg-white px-3 py-2 text-base text-verox-ink outline-none transition-colors focus:border-verox-orange";
 
 function formatPostTime(value: string): string {
   const date = new Date(value);
@@ -268,34 +274,41 @@ export function WallBoard({
   };
 
   return (
-    <section className={compact ? "space-y-6" : "mx-auto w-full max-w-6xl space-y-8 px-4 py-6 sm:px-6"}>
+    <section className={compact ? "space-y-8" : "mx-auto w-full max-w-6xl space-y-10 px-4 py-8 sm:px-6"}>
       {showHero ? (
-        <header className="rounded-2xl border border-[var(--abj-gold-dim)] bg-abj-panel p-5 shadow-[0_8px_24px_rgba(17,17,17,0.08)]">
-          <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">Komunitní nástěnka</p>
-          <h1 className="mt-2 font-[var(--font-serif)] text-3xl font-semibold text-abj-text1">{heading}</h1>
-          <p className="mt-2 text-base leading-relaxed text-abj-text2">{intro}</p>
-          <p className="mt-3 rounded-lg border border-[rgba(243, 112, 33,0.25)] bg-[rgba(243, 112, 33,0.08)] px-3 py-2 text-sm text-abj-text1">
+        <header className="overflow-hidden bg-verox-orange text-white">
+          <div className="flex items-center justify-between gap-3 px-6 pt-5">
+            <span className="vx-display text-[1.5rem] leading-none">{heading}</span>
+            <span className="text-[0.62rem] uppercase tracking-[0.18em]" style={{ fontFamily: "var(--vx-mono)" }}>
+              Komunitní nástěnka
+            </span>
+          </div>
+          <p className="max-w-[52ch] px-6 pt-3 text-[1.02rem] leading-relaxed text-white/95">{intro}</p>
+          <p className="mx-6 mb-6 mt-4 border-l-2 border-white/60 bg-black/15 px-3 py-2 text-sm leading-relaxed text-white/90">
             {RULES_TEXT}
           </p>
         </header>
       ) : null}
 
-      <section className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-4 shadow-[0_8px_24px_rgba(17,17,17,0.08)] sm:p-5">
+      <section className={`${CARD_CLASS} p-5 sm:p-6`}>
         {!showHero ? (
-          <header className="mb-3">
-            <h2 className="font-[var(--font-serif)] text-2xl font-semibold text-abj-text1">{heading}</h2>
+          <header className="mb-4">
+            <h2 className="vx-display text-[1.6rem] leading-none text-verox-ink">{heading}</h2>
             {videoTitle ? (
-              <p className="mt-1 text-sm text-abj-text2">Reagujete na video: {videoTitle}</p>
+              <p className="vx-meta mt-2">Reagujete na video: {videoTitle}</p>
             ) : null}
+            <hr className="vx-rule mt-3 h-[2px]" />
           </header>
         ) : null}
 
         {!isAuthenticated ? (
-          <div className="mb-3 rounded-lg border border-[rgba(243, 112, 33,0.25)] bg-[rgba(243, 112, 33,0.08)] px-3 py-3 text-sm text-abj-text1">
-            Interakce v Komunitě (přidání, reakce, nahlášení) jsou dostupné pouze po přihlášení.
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-[10px] border border-verox-orange/35 bg-verox-orangeSoft px-4 py-3 text-sm text-verox-ink">
+            <span className="flex-1">
+              Interakce v Komunitě (přidání, reakce, nahlášení) jsou dostupné pouze po přihlášení.
+            </span>
             <button
               type="button"
-              className="ml-3 inline-flex rounded-md border border-[#F37021] bg-[#F37021] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-white hover:bg-[#e35f00]"
+              className="vx-btn vx-btn--solid vx-btn--sm"
               onClick={() =>
                 requestAuth(
                   () => {
@@ -310,26 +323,26 @@ export function WallBoard({
           </div>
         ) : null}
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <label className="space-y-1">
-            <span className="text-sm font-medium text-abj-text1">Přezdívka</span>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <label className="space-y-1.5">
+            <span className="vx-kicker text-verox-ink">Přezdívka</span>
             <input
               value={authorName}
               onChange={(event) => setAuthorName(event.target.value)}
               disabled={!isAuthenticated}
-              className="w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2 text-base text-abj-text1 outline-none focus:border-[#F37021]"
+              className={`${INPUT_CLASS} disabled:cursor-not-allowed disabled:opacity-60`}
               maxLength={60}
               placeholder="Vaše přezdívka"
             />
           </label>
 
-          <label className="space-y-1">
-            <span className="text-sm font-medium text-abj-text1">E-mail (volitelné, nezveřejňujeme)</span>
+          <label className="space-y-1.5">
+            <span className="vx-kicker text-verox-ink">E-mail (volitelné, nezveřejňujeme)</span>
             <input
               value={authorEmail}
               onChange={(event) => setAuthorEmail(event.target.value)}
               disabled={!isAuthenticated}
-              className="w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2 text-base text-abj-text1 outline-none focus:border-[#F37021]"
+              className={`${INPUT_CLASS} disabled:cursor-not-allowed disabled:opacity-60`}
               maxLength={120}
               placeholder="vas@email.cz"
             />
@@ -337,11 +350,11 @@ export function WallBoard({
         </div>
 
         {replyTarget ? (
-          <div className="mt-3 rounded-lg border border-[rgba(243, 112, 33,0.3)] bg-[rgba(243, 112, 33,0.08)] px-3 py-2 text-sm text-abj-text1">
-            Odpovídáte na příspěvek autora {replyTarget.author}.
+          <div className="mt-4 flex flex-wrap items-center gap-2 rounded-[10px] border border-verox-orange/35 bg-verox-orangeSoft px-4 py-2.5 text-sm text-verox-ink">
+            <span>Odpovídáte na příspěvek autora {replyTarget.author}.</span>
             <button
               type="button"
-              className="ml-3 underline decoration-[rgba(243, 112, 33,0.7)] underline-offset-2"
+              className="vx-action"
               onClick={() => setReplyTarget(null)}
             >
               Zrušit odpověď
@@ -349,19 +362,19 @@ export function WallBoard({
           </div>
         ) : null}
 
-        <label className="mt-3 block space-y-1">
-          <span className="text-sm font-medium text-abj-text1">Vzkaz</span>
+        <label className="mt-4 block space-y-1.5">
+          <span className="vx-kicker text-verox-ink">Vzkaz</span>
           <textarea
             value={body}
             onChange={(event) => setBody(event.target.value)}
             disabled={!isAuthenticated}
-            className="min-h-[120px] w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2 text-base leading-relaxed text-abj-text1 outline-none focus:border-[#F37021]"
+            className={`${INPUT_CLASS} min-h-[120px] leading-relaxed disabled:cursor-not-allowed disabled:opacity-60`}
             maxLength={1500}
             placeholder="Co chcete vzkázat redakci nebo ostatním divákům?"
           />
         </label>
 
-        <div className="mt-3 flex flex-wrap items-center gap-3">
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={() => {
@@ -369,82 +382,85 @@ export function WallBoard({
             }}
             disabled={submitting}
             aria-disabled={!isAuthenticated}
-            className="rounded-lg border border-[#F37021] bg-[#F37021] px-4 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-white disabled:cursor-not-allowed disabled:opacity-70"
+            className="vx-btn vx-btn--solid disabled:cursor-not-allowed disabled:opacity-70"
           >
             {submitting ? "Odesílám..." : !isAuthenticated ? "Přihlásit pro přidání" : "Přidat do Komunity"}
           </button>
-          <span className="text-xs text-abj-text2">{body.trim().length}/1500</span>
+          <span className="vx-meta">{body.trim().length}/1500</span>
         </div>
 
-        {submitInfo ? <p className="mt-3 text-sm text-abj-text1">{submitInfo}</p> : null}
-        {error ? <p className="mt-2 text-sm text-[#D14A2A]">{error}</p> : null}
+        {submitInfo ? <p className="mt-4 text-sm text-verox-ink">{submitInfo}</p> : null}
+        {error ? <p className="mt-2 text-sm text-verox-orangeText">{error}</p> : null}
       </section>
 
-      <section className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="font-[var(--font-serif)] text-2xl font-semibold text-abj-text1">Připnuté vzkazy</h2>
-          <div className="inline-flex rounded-lg border border-[var(--abj-gold-dim)] bg-white p-1">
-            <button
-              type="button"
-              onClick={() => setSort("newest")}
-              className={`rounded-md px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] ${
-                sort === "newest" ? "bg-[rgba(243, 112, 33,0.12)] text-[#F37021]" : "text-abj-text2"
-              }`}
-            >
-              Nejnovější
-            </button>
-            <button
-              type="button"
-              onClick={() => setSort("popular")}
-              className={`rounded-md px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] ${
-                sort === "popular" ? "bg-[rgba(243, 112, 33,0.12)] text-[#F37021]" : "text-abj-text2"
-              }`}
-            >
-              Populární
-            </button>
-          </div>
-        </div>
+      <section className="space-y-4">
+        <SectionLabel
+          index="(01)"
+          title="Připnuté vzkazy"
+          right={
+            <div className="inline-flex rounded-[10px] border border-verox-line bg-white p-1">
+              <button
+                type="button"
+                onClick={() => setSort("newest")}
+                className={`rounded-[7px] px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.1em] transition-colors ${
+                  sort === "newest" ? "bg-verox-orange text-white" : "text-verox-gray hover:text-verox-ink"
+                }`}
+              >
+                Nejnovější
+              </button>
+              <button
+                type="button"
+                onClick={() => setSort("popular")}
+                className={`rounded-[7px] px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.1em] transition-colors ${
+                  sort === "popular" ? "bg-verox-orange text-white" : "text-verox-gray hover:text-verox-ink"
+                }`}
+              >
+                Populární
+              </button>
+            </div>
+          }
+        />
 
         {loading ? (
-          <p className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel px-4 py-4 text-sm text-abj-text2">
+          <p className={`${CARD_CLASS} px-4 py-4 text-sm text-verox-gray`}>
             Načítám vzkazy...
           </p>
         ) : roots.length === 0 ? (
-          <p className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel px-4 py-4 text-sm text-abj-text2">
+          <p className={`${CARD_CLASS} px-4 py-4 text-sm text-verox-gray`}>
             {EMPTY_STATE_TEXT}
           </p>
         ) : (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3">
             {roots.map((post) => (
               <article
                 key={post.id}
-                className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-4 shadow-[0_8px_20px_rgba(17,17,17,0.08)]"
+                className={`${CARD_CLASS} p-5`}
               >
                 <header className="space-y-1">
-                  <p className="text-sm font-semibold text-abj-text1">{post.author_name}</p>
-                  <p className="text-xs text-abj-text2">{formatPostTime(post.created_at)}</p>
+                  <p className="vx-kicker text-verox-ink">{post.author_name}</p>
+                  <p className="vx-meta">{formatPostTime(post.created_at)}</p>
                 </header>
 
                 {post.video_id ? (
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <span className="inline-flex rounded-full border border-[rgba(243, 112, 33,0.3)] bg-[rgba(243, 112, 33,0.08)] px-2 py-0.5 text-[11px] font-medium text-[#F37021]">
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span className="vx-badge">
                       Reakce na video: {post.video_title ?? "Video bez názvu"}
                     </span>
                     <Link
                       href={`/live?videoId=${encodeURIComponent(post.video_id)}`}
-                      className="text-[11px] font-medium text-abj-text2 underline decoration-[rgba(243, 112, 33,0.5)] underline-offset-2 hover:text-abj-text1"
+                      className="vx-action"
                     >
                       Otevřít video
                     </Link>
                   </div>
                 ) : null}
 
-                <p className="mt-3 whitespace-pre-wrap text-base leading-relaxed text-abj-text1">{post.body}</p>
+                <p className="mt-4 whitespace-pre-wrap text-base leading-relaxed text-verox-ink">{post.body}</p>
 
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-5 flex flex-wrap gap-2">
                   <button
                     type="button"
-                    className="rounded-lg border border-[var(--abj-gold-dim)] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1"
+                    className="vx-btn vx-btn--ghost-ink vx-btn--sm"
                     onClick={() => {
                       if (!isAuthenticated) {
                         requestAuth(
@@ -462,7 +478,7 @@ export function WallBoard({
                   </button>
                   <button
                     type="button"
-                    className="rounded-lg border border-[rgba(243, 112, 33,0.35)] bg-[rgba(243, 112, 33,0.08)] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.08em] text-[#F37021]"
+                    className="vx-btn vx-btn--sm"
                     onClick={() => {
                       void handleReact(post.id);
                     }}
@@ -471,7 +487,7 @@ export function WallBoard({
                   </button>
                   <button
                     type="button"
-                    className="rounded-lg border border-[var(--abj-gold-dim)] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1"
+                    className="vx-btn vx-btn--ghost-ink vx-btn--sm"
                     onClick={() => {
                       void handleReport(post.id);
                     }}
@@ -481,17 +497,17 @@ export function WallBoard({
                 </div>
 
                 {(repliesByParent.get(post.id) ?? []).length > 0 ? (
-                  <div className="mt-4 space-y-2 border-t border-[var(--abj-gold-dim)] pt-3">
+                  <div className="mt-5 space-y-3 border-t border-verox-line pt-4">
                     {(repliesByParent.get(post.id) ?? []).map((reply) => (
-                      <div key={reply.id} className="rounded-lg border border-[var(--abj-gold-dim)] bg-abj-panel p-3">
-                        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-abj-text2">
+                      <div key={reply.id} className="rounded-[10px] border border-verox-line bg-verox-paper p-3">
+                        <p className="vx-kicker text-verox-ink">
                           {reply.author_name} · {formatPostTime(reply.created_at)}
                         </p>
-                        <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-abj-text1">{reply.body}</p>
-                        <div className="mt-2 flex flex-wrap gap-2">
+                        <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-verox-ink">{reply.body}</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
                           <button
                             type="button"
-                            className="rounded-md border border-[rgba(243, 112, 33,0.35)] bg-[rgba(243, 112, 33,0.08)] px-2 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[#F37021]"
+                            className="vx-btn vx-btn--sm"
                             onClick={() => {
                               void handleReact(reply.id);
                             }}
@@ -500,7 +516,7 @@ export function WallBoard({
                           </button>
                           <button
                             type="button"
-                            className="rounded-md border border-[var(--abj-gold-dim)] px-2 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-abj-text2"
+                            className="vx-btn vx-btn--ghost-ink vx-btn--sm"
                             onClick={() => {
                               void handleReport(reply.id);
                             }}
@@ -520,4 +536,3 @@ export function WallBoard({
     </section>
   );
 }
-

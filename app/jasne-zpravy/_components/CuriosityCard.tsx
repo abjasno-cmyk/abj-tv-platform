@@ -10,7 +10,7 @@ type CuriosityCardProps = {
 export function CuriosityCard({ item, editionSlug, sourcesByItem }: CuriosityCardProps) {
   if (!item) {
     return (
-      <article className="rounded-2xl border border-dashed border-gray-300 bg-white p-4 text-sm text-gray-600">
+      <article className="border-2 border-dashed border-verox-line bg-verox-card p-4 text-sm text-verox-charcoal">
         Kuriozita dne zatím není publikována.
       </article>
     );

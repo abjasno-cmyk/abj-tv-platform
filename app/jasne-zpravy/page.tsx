@@ -141,7 +141,7 @@ export default async function JasneZpravyPage() {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Neznámá chyba";
     return (
-      <main className="mx-auto max-w-6xl px-4 py-12">
+      <main className="mx-auto max-w-6xl bg-[#FBF8F2] px-4 py-12">
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
           Nepodařilo se navázat připojení k datům Jasných zpráv: {message}
         </div>
@@ -152,7 +152,7 @@ export default async function JasneZpravyPage() {
   const latestRes = await fetchLatestPublishedEdition(supabase);
   if (latestRes.error) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-12">
+      <main className="mx-auto max-w-6xl bg-[#FBF8F2] px-4 py-12">
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
           Nepodařilo se načíst poslední vydání: {latestRes.error.message}
         </div>
@@ -163,8 +163,8 @@ export default async function JasneZpravyPage() {
   const latestEdition = latestRes.data as NewsEdition | null;
   if (!latestEdition) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-12">
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 text-gray-700">
+      <main className="mx-auto max-w-6xl bg-[#FBF8F2] px-4 py-12">
+        <div className="border-2 border-verox-line bg-verox-card p-6 text-verox-charcoal">
           Zatím není publikované žádné vydání Jasných zpráv.
         </div>
       </main>
@@ -178,7 +178,7 @@ export default async function JasneZpravyPage() {
 
   if (itemsRes.error) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-12">
+      <main className="mx-auto max-w-6xl bg-[#FBF8F2] px-4 py-12">
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
           Nepodařilo se načíst obsah vydání: {itemsRes.error.message}
         </div>
@@ -196,7 +196,7 @@ export default async function JasneZpravyPage() {
   );
   if (currentSourcesRes.error) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-12">
+      <main className="mx-auto max-w-6xl bg-[#FBF8F2] px-4 py-12">
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
           Nepodařilo se načíst zdroje zpráv: {currentSourcesRes.error.message}
         </div>
@@ -286,9 +286,9 @@ export default async function JasneZpravyPage() {
     .slice(0, 7);
 
   return (
-    <main className="mx-auto w-full max-w-[1240px] px-4 py-8 text-[#111827] md:py-12">
+    <main className="mx-auto w-full max-w-[1240px] bg-[#FBF8F2] px-4 py-8 text-verox-ink md:py-12">
       {itemCountRes.error ? (
-        <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="mb-6 border-l-2 border-verox-orange bg-verox-paperDeep px-4 py-3 text-sm text-verox-charcoal">
           Nepodařilo se načíst všechny počty zpráv. Obsah je zobrazen s dostupnými daty.
         </div>
       ) : null}
@@ -302,8 +302,8 @@ export default async function JasneZpravyPage() {
         <EditionTabs tabs={tabs} activeEditionSlug={latestEdition.slug} />
       </div>
 
-      <div className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <section className="min-w-0 space-y-10">
+      <div className="mt-12 grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <section className="min-w-0 space-y-16">
           <TodayTopStories items={currentItems} editionSlug={latestEdition.slug} sourcesByItem={sourcesByItem} />
           <CurrentEditionView items={currentItems} editionSlug={latestEdition.slug} sourcesByItem={sourcesByItem} />
           <EditionsArchive entries={archiveEntries} />
@@ -324,7 +324,9 @@ export default async function JasneZpravyPage() {
         />
       </div>
 
-      <div className="mt-8 text-xs text-gray-500">Aktuální přehled: {currentItems.length} redakčních témat.</div>
+      <div className="vx-meta mt-10 border-t-2 border-verox-line pt-4">
+        Aktuální přehled: {currentItems.length} redakčních témat.
+      </div>
     </main>
   );
 }

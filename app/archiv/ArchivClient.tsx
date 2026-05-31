@@ -6,6 +6,9 @@ import YouTube, { type YouTubeProps } from "react-youtube";
 
 import { useFeed } from "@/hooks/useFeed";
 import type { FeedPost } from "@/lib/api";
+import { SectionLabel } from "@/components/abj/SectionLabel";
+import { DayNumeral } from "@/components/abj/DayNumeral";
+import { PlayMark, ArrowRight } from "@/components/abj/verox-icons";
 
 const EMPTY_MESSAGE = "Zatím nejsou dostupná žádná nová videa.";
 const LATEST_VIDEO_LIMIT = 16;
@@ -661,22 +664,12 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, edi
 
   return (
     <article
-      className={`group block overflow-hidden border bg-white transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 ${
-        compactEditorial ? "focus-visible:ring-[#F37021]/45" : "focus-visible:ring-[#F37021]/60"
-      } ${
-        compactEditorial
-          ? "rounded-[20px] border-[rgba(17,17,17,0.14)]"
-          : `rounded-2xl ${
-              accent
-                ? "border-[#F37021]/35 shadow-[0_8px_24px_rgba(243, 112, 33,0.12)] hover:border-[#F37021]/55"
-                : "border-[var(--abj-gold-dim)] shadow-[0_8px_22px_rgba(17,17,17,0.08)] hover:border-[rgba(17,17,17,0.28)]"
-            }`
+      className={`group block overflow-hidden rounded-[14px] border bg-white shadow-[0_8px_18px_rgba(17,17,17,0.10)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-verox-orange/55 ${
+        accent ? "border-verox-orange/35" : "border-verox-line"
       } ${
         isDisabled
           ? "cursor-default opacity-70"
-          : compactEditorial
-            ? "hover:border-[#F37021]/45"
-            : "hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(17,17,17,0.12)]"
+          : "hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(17,17,17,0.16)]"
       }`}
     >
       <button
@@ -691,13 +684,13 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, edi
           }
         }}
       >
-        <div className={`relative overflow-hidden bg-[#F2F2F2] ${mediaRatioClass} ${compactEditorial ? "rounded-none" : ""}`}>
+        <div className={`relative overflow-hidden bg-verox-ink ${mediaRatioClass}`}>
           <Image
             src={thumbnailSrc}
             alt={video.title}
             fill
             loading="lazy"
-            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
             sizes={
               isHero
                 ? "(max-width: 1024px) 100vw, 66vw"
@@ -709,20 +702,23 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, edi
             }
             unoptimized={thumbnailSrc.startsWith("http")}
           />
-          {tag && !compactEditorial ? (
-            <span className="absolute left-2 top-2 rounded-full border border-[#F37021]/35 bg-white/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#C14900]">
-              {tag}
-            </span>
-          ) : null}
-          {durationLabel && !compactEditorial ? (
-            <span className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-[10px] font-medium text-white">
+          {tag ? <span className="absolute left-3 top-3 vx-badge vx-badge--ink">{tag}</span> : null}
+          {durationLabel ? (
+            <span className="vx-meta absolute bottom-3 right-3 rounded bg-black/75 px-1.5 py-0.5 text-white">
               {durationLabel}
             </span>
           ) : null}
+          {!isHero ? (
+            <span className="absolute inset-0 grid place-items-center">
+              <span className="grid h-[52px] w-[52px] place-items-center rounded-full bg-verox-orange text-white shadow-[0_10px_24px_-8px_rgba(216,91,18,0.9)] transition-transform duration-300 group-hover:scale-110">
+                <PlayMark size={20} className="translate-x-[1px]" />
+              </span>
+            </span>
+          ) : null}
           {isHero ? (
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/45 to-transparent px-3 pb-3 pt-10 text-white">
-              <p className="line-clamp-2 font-[var(--font-serif)] text-[22px] leading-tight">{video.title}</p>
-              <p className="mt-2 text-xs text-white/85">
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/45 to-transparent px-4 pb-4 pt-12 text-white">
+              <p className="vx-display line-clamp-2 text-[1.4rem] leading-tight">{video.title}</p>
+              <p className="vx-meta mt-2 text-white/85">
                 {video.channel}
                 {publishedLabel ? ` · ${publishedLabel}` : ""}
               </p>
@@ -731,63 +727,40 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, edi
         </div>
 
         {!isHero ? (
-          <div className={compactEditorial ? "space-y-2 px-4 py-4 sm:px-5" : isFeatured ? "space-y-1.5 p-3.5" : "space-y-1 p-3"}>
-            <p
-              className={`line-clamp-2 text-abj-text1 ${
-                compactEditorial ? "text-[clamp(1.02rem,1.6vw,1.18rem)] font-semibold leading-snug" : isFeatured ? "text-[15px] font-semibold leading-snug" : "text-sm font-medium"
-              }`}
+          <div className={compactEditorial ? "space-y-2 px-5 py-4" : isFeatured ? "space-y-1.5 p-4" : "space-y-1.5 p-4"}>
+            <h3
+              className="vx-display line-clamp-2 text-verox-ink"
+              style={{ fontSize: compactEditorial ? "1.12rem" : "1.04rem", lineHeight: 1.08 }}
             >
               {video.title}
-            </p>
-            {compactEditorial ? (
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-abj-text2">
-                <span className="truncate font-medium">{video.channel}</span>
-                {publishedLabel ? <span className="text-abj-text3">{publishedLabel}</span> : null}
-              </div>
-            ) : (
-              <>
-                <p className="truncate text-xs font-medium text-abj-text2">{video.channel}</p>
-                {publishedLabel ? <p className="text-[11px] text-abj-text3">{publishedLabel}</p> : null}
-              </>
-            )}
-            <p className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${compactEditorial ? "text-[#F37021]" : "text-[#C14900]"}`}>
-              {expanded ? "Skrýt video" : compactEditorial ? "Zobrazit detail" : "Rozkliknout video"}
-            </p>
+            </h3>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <span className="vx-meta truncate text-verox-orangeDeep">{video.channel}</span>
+              {publishedLabel ? (
+                <>
+                  <span className="vx-meta">·</span>
+                  <span className="vx-meta">{publishedLabel}</span>
+                </>
+              ) : null}
+            </div>
+            <span className="vx-action mt-2 group-hover:text-verox-orange">
+              {expanded ? "Skrýt video" : "Přehrát"} <ArrowRight size={13} />
+            </span>
           </div>
         ) : null}
       </button>
 
       {expanded ? (
-        <div
-          className={`space-y-2 border-t p-3 ${
-            compactEditorial
-              ? "border-[rgba(17,17,17,0.12)] bg-[rgba(243, 112, 33,0.05)] sm:p-4"
-              : "border-[var(--abj-gold-dim)] bg-[rgba(243, 112, 33,0.03)]"
-          }`}
-        >
+        <div className="space-y-2 border-t border-verox-line bg-verox-paper p-4">
           {embedUrl ? (
-            <div
-              className={`overflow-hidden rounded-lg bg-black ${
-                compactEditorial ? "border border-[#F37021]/30" : "border border-[rgba(243, 112, 33,0.25)]"
-              }`}
-            >
+            <div className="overflow-hidden rounded-[10px] border border-verox-orange/30 bg-black">
               {!startedPlayback ? (
                 <button
                   type="button"
-                  className={`flex aspect-video w-full items-center justify-center ${
-                    compactEditorial
-                      ? "bg-[radial-gradient(circle_at_center,rgba(243, 112, 33,0.22),rgba(0,0,0,0.84))]"
-                      : "bg-[radial-gradient(circle_at_center,rgba(243, 112, 33,0.22),rgba(0,0,0,0.8))]"
-                  }`}
+                  className="flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(243,112,33,0.22),rgba(0,0,0,0.84))]"
                   onClick={() => setStartedPlayback(true)}
                 >
-                  <span
-                    className={`rounded-full bg-[rgba(255,255,255,0.1)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white ${
-                      compactEditorial ? "border border-[#F37021]/60" : "border border-[rgba(243, 112, 33,0.4)]"
-                    }`}
-                  >
-                    Přehrát video
-                  </span>
+                  <span className="vx-badge">Přehrát video</span>
                 </button>
               ) : (
                 <iframe
@@ -802,7 +775,7 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, edi
               )}
             </div>
           ) : (
-            <p className="text-sm text-abj-text2">Video nelze vložit do přehrávače.</p>
+            <p className="vx-meta text-verox-gray">Video nelze vložit do přehrávače.</p>
           )}
         </div>
       ) : null}
@@ -813,10 +786,10 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, edi
 function VideoCardSkeleton({ variant = "compact" }: { variant?: "hero" | "featured" | "compact" }) {
   const isHero = variant === "hero";
   return (
-    <div className="animate-pulse overflow-hidden rounded-2xl border border-[var(--abj-gold-dim)] bg-white">
+    <div className="animate-pulse overflow-hidden rounded-[14px] border border-verox-line bg-white shadow-[0_8px_18px_rgba(17,17,17,0.10)]">
       <div className="aspect-video bg-[rgba(17,17,17,0.08)]" />
       {!isHero ? (
-        <div className="space-y-2 p-3">
+        <div className="space-y-2 p-4">
           <div className="h-4 w-[85%] rounded bg-[rgba(17,17,17,0.1)]" />
           <div className="h-4 w-[65%] rounded bg-[rgba(17,17,17,0.08)]" />
           <div className="h-3 w-24 rounded bg-[rgba(17,17,17,0.08)]" />
@@ -834,7 +807,7 @@ function CountryBadge({ country }: { country: CountryCode }) {
       : "linear-gradient(135deg, #0B4EA2 0%, #0B4EA2 25%, #FFFFFF 25%, #FFFFFF 62%, #EE1C25 62%)";
 
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-[rgba(17,17,17,0.16)] bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-abj-text2">
+    <span className="inline-flex items-center gap-1 border border-verox-line bg-white px-2 py-0.5 font-[var(--vx-mono)] text-[0.62rem] font-bold uppercase tracking-[0.16em] text-verox-gray">
       <span
         className="inline-block h-[10px] w-[14px] rounded-[2px] border border-[rgba(17,17,17,0.1)]"
         style={{ backgroundImage: flagGradient }}
@@ -891,33 +864,29 @@ function ChannelTileCard({ entry, active, onSelect, featured = false }: ChannelT
     <button
       type="button"
       onClick={() => onSelect(entry.key)}
-      className={`relative min-w-[190px] rounded-xl border text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F37021]/60 sm:min-w-0 ${
+      className={`relative min-w-[190px] rounded-[14px] border bg-white text-left shadow-[0_8px_18px_rgba(17,17,17,0.10)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-verox-orange/55 sm:min-w-0 ${
         active
-          ? "border-[#F37021]/55 bg-[rgba(243, 112, 33,0.08)] shadow-[0_8px_20px_rgba(243, 112, 33,0.12)]"
+          ? "border-verox-orange/55 bg-verox-orangeSoft"
           : isAbj
-            ? "border-[#F37021]/30 bg-white hover:border-[#F37021]/55 hover:shadow-[0_8px_20px_rgba(243, 112, 33,0.1)]"
-            : "border-[var(--abj-gold-dim)] bg-white hover:border-[rgba(17,17,17,0.28)] hover:shadow-[0_8px_20px_rgba(17,17,17,0.08)]"
-      } ${featured ? "p-3.5" : "p-3"}`}
+            ? "border-verox-orange/30 hover:-translate-y-0.5 hover:border-verox-orange/55 hover:shadow-[0_16px_30px_rgba(17,17,17,0.16)]"
+            : "border-verox-line hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(17,17,17,0.16)]"
+      } ${featured ? "p-4" : "p-3.5"}`}
       style={{ boxShadow: active ? undefined : `inset 0 2px 0 0 ${accentColor}22` }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <ChannelAvatar channelName={entry.name} logoUrl={entry.logoUrl} size={featured ? "md" : "sm"} />
           <div className="min-w-0">
-            <p className={`truncate font-semibold text-abj-text1 ${featured ? "text-[15px]" : "text-sm"}`}>{entry.name}</p>
-            <p className="text-[11px] uppercase tracking-[0.08em] text-abj-text2">{entry.videos.length} videí</p>
+            <p className={`vx-display truncate text-verox-ink ${featured ? "text-[1.02rem]" : "text-[0.95rem]"}`}>{entry.name}</p>
+            <p className="vx-meta mt-0.5">{entry.videos.length} videí</p>
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">
           <CountryBadge country={entry.country} />
-          {isAbj ? (
-            <span className="rounded-full bg-[#F37021]/14 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#C14900]">
-              Hlavní kanál
-            </span>
-          ) : null}
+          {isAbj ? <span className="vx-badge vx-badge--ink">Hlavní kanál</span> : null}
         </div>
       </div>
-      <p className="mt-2 text-[11px] text-abj-text3">{newestLabel ? `Poslední: ${newestLabel}` : "Nově přidáno"}</p>
+      <p className="vx-meta mt-2">{newestLabel ? `Poslední: ${newestLabel}` : "Nově přidáno"}</p>
     </button>
   );
 }
@@ -932,11 +901,11 @@ function FeaturedAbjSection({ primary, secondary, loading }: FeaturedAbjSectionP
   if (!primary && !loading) return null;
 
   return (
-    <section className="space-y-4">
-      <div className="space-y-1">
-        <h2 className="text-xl font-semibold text-abj-text1">Doporučujeme z ABJ</h2>
-        <p className="text-sm text-abj-text2">Rychlý výběr nejčerstvějších pořadů s preferencí hlavního kanálu ABJ.</p>
-      </div>
+    <section className="space-y-5">
+      <SectionLabel index="(01)" title="Doporučujeme z ABJ" kicker="Výběr" />
+      <p className="max-w-[70ch] text-[0.98rem] leading-relaxed text-verox-charcoal">
+        Rychlý výběr nejčerstvějších pořadů s preferencí hlavního kanálu ABJ.
+      </p>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
         <div>
@@ -1015,21 +984,21 @@ function ChannelTiles({
   const remainingChannels = filteredChannels.filter((entry) => !spotlightKeys.has(entry.key));
 
   return (
-    <section className="space-y-3">
-      <div className="space-y-1">
-        <h2 className="text-xl font-semibold text-abj-text1">Kanály</h2>
-        <p className="text-sm text-abj-text2">Přehled všech načtených kanálů a rychlý vstup do posledních videí.</p>
-      </div>
+    <section className="space-y-4">
+      <SectionLabel index="(02)" title="Kanály" kicker="Přehled sítě" />
+      <p className="max-w-[70ch] text-[0.98rem] leading-relaxed text-verox-charcoal">
+        Přehled všech načtených kanálů a rychlý vstup do posledních videí.
+      </p>
 
       {showSearch ? (
-        <div className="flex flex-col gap-2 rounded-xl border border-[var(--abj-gold-dim)] bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-[14px] border border-verox-line bg-white p-4 shadow-[0_8px_18px_rgba(17,17,17,0.10)] sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-xs">
             <input
               type="text"
               value={query}
               onChange={(event) => onQueryChange(event.target.value)}
               placeholder="Hledat kanál..."
-              className="w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2 text-sm text-abj-text1 outline-none transition focus:border-[#F37021]/65 focus:ring-2 focus:ring-[#F37021]/25"
+              className="w-full rounded-[10px] border border-verox-line bg-verox-paper px-3 py-2 text-sm text-verox-ink outline-none transition focus:border-verox-orange/65 focus:ring-2 focus:ring-verox-orange/25"
             />
           </div>
           {showCountryFilters ? (
@@ -1042,11 +1011,7 @@ function ChannelTiles({
                     key={`country-filter-${entry}`}
                     type="button"
                     onClick={() => onFilterChange(entry)}
-                    className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] transition ${
-                      active
-                        ? "border-[#F37021]/55 bg-[rgba(243, 112, 33,0.1)] text-[#C14900]"
-                        : "border-[var(--abj-gold-dim)] bg-white text-abj-text2 hover:text-abj-text1"
-                    }`}
+                    className={active ? "vx-btn vx-btn--solid vx-btn--sm" : "vx-btn vx-btn--ghost-ink vx-btn--sm"}
                   >
                     {label}
                   </button>
@@ -1057,15 +1022,15 @@ function ChannelTiles({
         </div>
       ) : null}
 
-      <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.08em] text-abj-text2">
-        <span>Zobrazeno {filteredChannels.length}</span>
-        <span>Celkem {channels.length} kanálů</span>
+      <div className="flex items-center justify-between">
+        <span className="vx-meta">Zobrazeno {filteredChannels.length}</span>
+        <span className="vx-meta">Celkem {channels.length} kanálů</span>
       </div>
 
       {spotlightChannels.length > 0 ? (
-        <div className="space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-abj-text2">Doporučené kanály</p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="space-y-3">
+          <span className="vx-kicker text-verox-orangeDeep">Doporučené kanály</span>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {spotlightChannels.map((entry) => (
               <ChannelTileCard
                 key={`channel-featured-${entry.key}`}
@@ -1079,9 +1044,9 @@ function ChannelTiles({
         </div>
       ) : null}
 
-      <div className="space-y-2">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-abj-text2">Všechny kanály</p>
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+      <div className="space-y-3">
+        <span className="vx-kicker">Všechny kanály</span>
+        <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {(remainingChannels.length > 0 ? remainingChannels : filteredChannels).length > 0
             ? (remainingChannels.length > 0 ? remainingChannels : filteredChannels).map((entry) => (
                 <ChannelTileCard
@@ -1094,7 +1059,7 @@ function ChannelTiles({
             : [0, 1, 2, 3].map((slot) => (
                 <div
                   key={`channel-skeleton-${slot}`}
-                  className="min-w-[190px] animate-pulse rounded-xl border border-[var(--abj-gold-dim)] bg-white p-3 sm:min-w-0"
+                  className="min-w-[190px] animate-pulse rounded-[14px] border border-verox-line bg-white p-3.5 shadow-[0_8px_18px_rgba(17,17,17,0.10)] sm:min-w-0"
                 >
                   <div className="mb-2 h-4 w-28 rounded bg-[rgba(17,17,17,0.1)]" />
                   <div className="h-3 w-20 rounded bg-[rgba(17,17,17,0.08)]" />
@@ -1104,12 +1069,12 @@ function ChannelTiles({
       </div>
 
       {isExpandingChannels ? (
-        <div className="rounded-xl border border-[rgba(243, 112, 33,0.24)] bg-[rgba(243, 112, 33,0.07)] px-3 py-2 text-xs uppercase tracking-[0.08em] text-[#C14900]">
+        <div className="vx-meta rounded-[12px] border border-verox-orange/24 bg-verox-orangeSoft px-3 py-2 text-verox-orangeText">
           Načítám další kanály...
         </div>
       ) : null}
       {!loading && filteredChannels.length === 0 ? (
-        <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-white p-4 text-sm text-abj-text2">
+        <div className="rounded-[14px] border border-verox-line bg-white p-4 text-sm text-verox-gray shadow-[0_8px_18px_rgba(17,17,17,0.10)]">
           Pro zadaný filtr nebyly nalezeny žádné kanály.
         </div>
       ) : null}
@@ -1156,78 +1121,82 @@ function EditorialVideoListItem({ video, expanded, onToggleExpanded }: Editorial
   );
 
   return (
-    <article className="border-b border-[#111111] py-8 font-[Helvetica,Arial,sans-serif] text-[#111111]">
-      <div className="grid gap-5 md:grid-cols-[72px_minmax(270px,420px)_minmax(0,1fr)] md:items-start md:gap-8">
-        <div className="inline-flex min-w-[72px] flex-col items-start">
-          <span className="text-[2rem] font-semibold uppercase leading-none tracking-[0.02em] text-[#5D5D5D]">
-            {dateParts.monthLabel}
-          </span>
-          <span className="mt-3 h-px w-9 bg-[rgba(17,17,17,0.35)]" />
-          <span className="mt-3 text-[3.2rem] font-black leading-none text-[#F37021]">{dateParts.dayLabel}</span>
+    <article className="py-9">
+      <div className="grid gap-6 md:grid-cols-[136px_minmax(270px,420px)_minmax(0,1fr)] md:items-start md:gap-8">
+        <div className="shrink-0">
+          <DayNumeral day={dateParts.dayLabel} month={dateParts.monthLabel} />
         </div>
 
-        <div className="relative aspect-video w-full overflow-hidden bg-[#D3D3D3]">
+        <button
+          type="button"
+          disabled={isDisabled}
+          onClick={onToggleExpanded}
+          className={`group relative block aspect-video w-full overflow-hidden rounded-[14px] border border-verox-line bg-verox-ink shadow-[0_8px_18px_rgba(17,17,17,0.10)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-verox-orange/55 ${
+            isDisabled ? "cursor-default opacity-70" : "hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(17,17,17,0.16)]"
+          }`}
+          aria-label={expanded ? "Skrýt video" : "Přehrát video"}
+        >
           <Image
             src={thumbnailSrc}
             alt={video.title}
             fill
             loading="lazy"
-            className="object-cover"
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
             sizes="(max-width: 1024px) 100vw, 430px"
             unoptimized={thumbnailSrc.startsWith("http")}
           />
-        </div>
+          <span className="absolute inset-0 grid place-items-center">
+            <span className="grid h-[58px] w-[58px] place-items-center rounded-full bg-verox-orange text-white shadow-[0_10px_24px_-8px_rgba(216,91,18,0.9)] transition-transform duration-300 group-hover:scale-110">
+              <PlayMark size={22} className="translate-x-[1px]" />
+            </span>
+          </span>
+        </button>
 
         <div className="flex min-h-full flex-col">
-          <h3 className="text-[clamp(1.45rem,2.9vw,2.15rem)] font-semibold leading-[1.1] text-[#4A4A4A]">{video.title}</h3>
-          <p className="mt-2 text-[clamp(1rem,1.8vw,1.35rem)] leading-tight text-[#4A4A4A]">{video.channel}</p>
-          {description ? <p className="mt-4 max-w-[70ch] text-[1.05rem] leading-relaxed text-[#3D3D3D]">{description}</p> : null}
+          <h3
+            className="vx-display text-verox-ink"
+            style={{ fontSize: "clamp(1.4rem, 2.6vw, 2rem)", lineHeight: 1.04 }}
+          >
+            {video.title}
+          </h3>
+          <span className="vx-meta mt-2 text-verox-orangeDeep">{video.channel}</span>
+          {description ? (
+            <p className="mt-3 max-w-[70ch] text-[0.98rem] leading-relaxed text-verox-charcoal">{description}</p>
+          ) : null}
 
-          <div className="mt-6 border-t border-[#111111] pt-4">
+          <div className="mt-5 border-t border-verox-line pt-4">
             <button
               type="button"
               disabled={isDisabled}
               onClick={onToggleExpanded}
-              className={`inline-flex items-center gap-4 text-left text-[clamp(1.15rem,1.9vw,2rem)] ${
-                isDisabled ? "cursor-default text-[#7A7A7A]" : "transition-opacity hover:opacity-80"
-              }`}
+              className={`vx-action ${isDisabled ? "cursor-default text-verox-gray" : "hover:text-verox-orange"}`}
             >
-              <span>{expanded ? "Skrýt" : "Zjistit více"}</span>
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#F37021] text-base leading-none text-white">
-                →
-              </span>
+              {expanded ? "Skrýt" : "Zjistit více"} <ArrowRight size={13} />
             </button>
           </div>
         </div>
       </div>
 
       {expanded ? (
-        <div className="mt-6 md:pl-[calc(72px+2rem)]">
+        <div className="mt-6 md:pl-[calc(136px+2rem)]">
           {videoId ? (
-            <div className="overflow-hidden bg-black">
+            <div className="overflow-hidden rounded-[14px] border border-verox-line bg-black shadow-[0_8px_18px_rgba(17,17,17,0.10)]">
               {!startedPlayback ? (
                 <button
                   type="button"
-                  className="flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(243, 112, 33,0.24),rgba(0,0,0,0.84))]"
+                  className="flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(243,112,33,0.24),rgba(0,0,0,0.84))]"
                   onClick={() => {
                     setEmbedBlocked(false);
                     setStartedPlayback(true);
                   }}
                 >
-                  <span className="rounded-full border border-[#F37021] bg-[rgba(255,255,255,0.12)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white">
-                    Přehrát video
-                  </span>
+                  <span className="vx-badge">Přehrát video</span>
                 </button>
               ) : embedBlocked ? (
-                <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 bg-[radial-gradient(circle_at_center,rgba(243, 112, 33,0.16),rgba(0,0,0,0.9))] px-4 text-center">
+                <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 bg-[radial-gradient(circle_at_center,rgba(243,112,33,0.16),rgba(0,0,0,0.9))] px-4 text-center">
                   <p className="text-sm text-white/90">Vlastník videa zakázal přehrávání na externích stránkách.</p>
                   {externalHref ? (
-                    <a
-                      href={externalHref}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex min-h-10 items-center rounded-full border border-[#F37021] bg-[#F37021] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#111111] hover:opacity-90"
-                    >
+                    <a href={externalHref} target="_blank" rel="noreferrer" className="vx-btn vx-btn--solid vx-btn--sm">
                       Přehrát na YouTube
                     </a>
                   ) : null}
@@ -1246,13 +1215,8 @@ function EditorialVideoListItem({ video, expanded, onToggleExpanded }: Editorial
               )}
             </div>
           ) : externalHref ? (
-            <a
-              href={externalHref}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.08em] text-[#F37021] hover:underline"
-            >
-              Otevřít video
+            <a href={externalHref} target="_blank" rel="noreferrer" className="vx-action hover:text-verox-orange">
+              Otevřít video <ArrowRight size={13} />
             </a>
           ) : null}
         </div>
@@ -1262,8 +1226,6 @@ function EditorialVideoListItem({ video, expanded, onToggleExpanded }: Editorial
 }
 
 function VideoGrid({ title, subtitle, videos, loading, emptyMessage, editorialMode = false }: VideoGridProps) {
-  const heroVideo = videos[0] ?? null;
-  const heroThumbnail = readString(heroVideo?.thumbnail) ?? "/placeholder-thumb.jpg";
   const [clockLabel, setClockLabel] = useState(() => getPragueTimeLabel(new Date()));
   const [expandedVideoKey, setExpandedVideoKey] = useState<string | null>(null);
 
@@ -1281,64 +1243,40 @@ function VideoGrid({ title, subtitle, videos, loading, emptyMessage, editorialMo
   }, [expandedVideoKey, videos]);
 
   return (
-    <section className={editorialMode ? "space-y-8 font-[Helvetica,Arial,sans-serif] text-[#111111]" : "space-y-4"}>
+    <section className={editorialMode ? "space-y-8 text-verox-ink" : "space-y-5"}>
       {editorialMode ? (
         <>
-          <div className="flex justify-end">
-            <p className="pointer-events-none text-[clamp(2.7rem,8vw,5.9rem)] font-black leading-[0.84] tracking-tight text-[#F37021]">
-              {clockLabel}
-            </p>
+          <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+            <span className="vx-kicker pb-2">Aktualizováno</span>
+            <p className="vx-clock pointer-events-none text-[clamp(2.4rem,7vw,4.6rem)]">{clockLabel}</p>
           </div>
 
-          <section className="relative overflow-hidden rounded-[20px] bg-[#717171]">
-            <div className="relative aspect-video w-full">
-              <Image
-                src={heroThumbnail}
-                alt={heroVideo?.title ?? title}
-                fill
-                priority
-                className="object-cover grayscale"
-                sizes="(max-width: 1320px) 100vw, 1320px"
-                unoptimized={heroThumbnail.startsWith("http")}
-              />
-              <div className="absolute inset-0 bg-[rgba(17,17,17,0.46)]" />
-              <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white">
-                <h2 className="text-[clamp(2rem,5vw,4.5rem)] font-black uppercase tracking-[0.02em]">NEJNOVĚJŠÍ VIDEA</h2>
-                <a
-                  href="#videa-editorial-feed"
-                  className="mt-8 inline-flex h-24 w-24 items-center justify-center rounded-full bg-[#F37021] text-center text-[0.9rem] font-bold uppercase tracking-[0.03em] text-[#111111] transition hover:opacity-90 sm:h-28 sm:w-28"
-                >
-                  Zjistit více
-                </a>
-              </div>
-            </div>
-          </section>
-
-          <div className="pt-3">
-            <h2 className="text-[clamp(1.7rem,3vw,3rem)] font-semibold leading-tight text-[#4A4A4A]">
-              Průběžně aktualizovaný přehled posledních videí
-            </h2>
-          </div>
+          <SectionLabel
+            index="(01)"
+            title="Nejnovější videa"
+            kicker="Den po dni"
+            id="videa-feed-header"
+          />
+          <p className="max-w-[70ch] text-[1rem] leading-relaxed text-verox-charcoal">
+            Průběžně aktualizovaný přehled posledních videí napříč sítí.
+          </p>
         </>
       ) : (
-        <div className="space-y-1">
-          <h2 className="text-xl font-semibold text-abj-text1">{title}</h2>
-          <p className="text-sm text-abj-text2">{subtitle}</p>
-        </div>
+        <SectionLabel index="(02)" title={title} kicker="Síť" right={<span className="vx-meta">{subtitle}</span>} />
       )}
 
       {videos.length === 0 && !loading ? (
         <div
           className={
             editorialMode
-              ? "border-y border-[#111111] py-5 text-[1.05rem] text-[#4A4A4A]"
-              : "rounded-xl border border-[var(--abj-gold-dim)] bg-white p-5 text-sm text-abj-text2"
+              ? "border-y-2 border-verox-line py-6 text-[1rem] text-verox-gray"
+              : "rounded-[14px] border border-verox-line bg-white p-5 text-sm text-verox-gray shadow-[0_8px_18px_rgba(17,17,17,0.10)]"
           }
         >
           {emptyMessage}
         </div>
       ) : editorialMode ? (
-        <div id="videa-editorial-feed" className="border-t border-[#111111]">
+        <div id="videa-editorial-feed" className="divide-y-2 divide-verox-line border-t-2 border-verox-line">
           {videos.length > 0
             ? videos.map((video) => {
                 const key = videoUniqKey(video);
@@ -1355,14 +1293,13 @@ function VideoGrid({ title, subtitle, videos, loading, emptyMessage, editorialMo
                 );
               })
             : [0, 1, 2].map((slot) => (
-                <div key={`editorial-skeleton-${slot}`} className="border-b border-[#111111] py-8">
-                  <div className="grid gap-5 md:grid-cols-[72px_minmax(270px,420px)_minmax(0,1fr)] md:gap-8">
+                <div key={`editorial-skeleton-${slot}`} className="py-9">
+                  <div className="grid gap-6 md:grid-cols-[136px_minmax(270px,420px)_minmax(0,1fr)] md:gap-8">
                     <div className="space-y-3">
-                      <div className="h-4 w-12 animate-pulse rounded bg-[rgba(17,17,17,0.1)]" />
-                      <div className="h-px w-9 bg-[rgba(17,17,17,0.25)]" />
-                      <div className="h-10 w-10 animate-pulse rounded bg-[rgba(243, 112, 33,0.28)]" />
+                      <div className="h-4 w-16 animate-pulse rounded bg-[rgba(17,17,17,0.1)]" />
+                      <div className="h-14 w-14 animate-pulse rounded bg-[rgba(243,112,33,0.28)]" />
                     </div>
-                    <div className="aspect-video animate-pulse bg-[rgba(17,17,17,0.1)]" />
+                    <div className="aspect-video animate-pulse rounded-[14px] bg-[rgba(17,17,17,0.1)]" />
                     <div className="space-y-3">
                       <div className="h-7 w-[75%] animate-pulse rounded bg-[rgba(17,17,17,0.1)]" />
                       <div className="h-5 w-[40%] animate-pulse rounded bg-[rgba(17,17,17,0.08)]" />
@@ -1374,7 +1311,7 @@ function VideoGrid({ title, subtitle, videos, loading, emptyMessage, editorialMo
               ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {videos.length > 0
             ? videos.map((video) => (
                 <ArchiveVideoCard key={`grid-${videoUniqKey(video)}`} video={video} variant="compact" accent={isAbjChannel(video.channel)} />
@@ -1396,8 +1333,8 @@ function ChannelVideoPlayer({ video }: { video: FeedVideoView }) {
 
   if (!embedUrl) {
     return (
-      <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-white p-4">
-        <p className="text-sm text-abj-text2">Video nelze vložit do přehrávače.</p>
+      <div className="rounded-[14px] border border-verox-line bg-white p-4 shadow-[0_8px_18px_rgba(17,17,17,0.10)]">
+        <p className="text-sm text-verox-gray">Video nelze vložit do přehrávače.</p>
       </div>
     );
   }
@@ -1405,7 +1342,7 @@ function ChannelVideoPlayer({ video }: { video: FeedVideoView }) {
   return (
     <div className="space-y-3">
       <div
-        className={`relative overflow-hidden rounded-xl border border-[var(--abj-gold-dim)] bg-black ${
+        className={`relative overflow-hidden rounded-[14px] border border-verox-line bg-black shadow-[0_8px_18px_rgba(17,17,17,0.10)] ${
           isPortrait ? "mx-auto aspect-[9/16] w-full max-w-[380px] max-h-[70vh]" : "aspect-video w-full"
         }`}
       >
@@ -1425,7 +1362,7 @@ function ChannelVideoPlayer({ video }: { video: FeedVideoView }) {
           />
         ) : null}
         {loading ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/55 text-xs uppercase tracking-[0.08em] text-white/85">
+          <div className="vx-meta absolute inset-0 flex items-center justify-center bg-black/55 text-white/85">
             Načítám přehrávač...
           </div>
         ) : null}
@@ -1437,8 +1374,10 @@ function ChannelVideoPlayer({ video }: { video: FeedVideoView }) {
       </div>
 
       <div className="space-y-1">
-        <p className="line-clamp-2 text-sm font-semibold text-abj-text1">{video.title}</p>
-        <p className="text-xs text-abj-text2">
+        <h3 className="vx-display line-clamp-2 text-verox-ink" style={{ fontSize: "1rem", lineHeight: 1.1 }}>
+          {video.title}
+        </h3>
+        <p className="vx-meta">
           {video.channel}
           {publishedLabel ? ` · ${publishedLabel}` : ""}
         </p>
@@ -1461,8 +1400,8 @@ function ChannelDetailPanel({ channel, selectedVideo, open, loading, onClose, on
 
   if (!channel) {
     return (
-      <section className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-5">
-        <p className="text-sm text-abj-text2">{loading ? "Načítám data kanálu..." : "Vyberte kanál pro zobrazení detailu."}</p>
+      <section className="rounded-[14px] border border-verox-line bg-white p-5 shadow-[0_8px_18px_rgba(17,17,17,0.10)]">
+        <p className="text-sm text-verox-gray">{loading ? "Načítám data kanálu..." : "Vyberte kanál pro zobrazení detailu."}</p>
       </section>
     );
   }
@@ -1472,29 +1411,25 @@ function ChannelDetailPanel({ channel, selectedVideo, open, loading, onClose, on
   const activeVideoKey = activeVideo ? videoUniqKey(activeVideo) : null;
 
   return (
-    <section className="space-y-4 rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-4 sm:p-5">
+    <section className="space-y-4 rounded-[14px] border border-verox-line bg-white p-4 shadow-[0_8px_18px_rgba(17,17,17,0.10)] sm:p-5">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <ChannelAvatar channelName={channel.name} logoUrl={channel.logoUrl} />
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold text-abj-text1">{channel.name}</h3>
+              <h3 className="vx-display text-verox-ink" style={{ fontSize: "1.2rem", lineHeight: 1.05 }}>{channel.name}</h3>
               <CountryBadge country={channel.country} />
             </div>
-            <p className="text-xs uppercase tracking-[0.08em] text-abj-text2">{channel.videos.length} načtených videí</p>
+            <p className="vx-meta mt-0.5">{channel.videos.length} načtených videí</p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-lg border border-[var(--abj-gold-dim)] px-3 py-1.5 text-xs uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F37021]/50"
-        >
+        <button type="button" onClick={onClose} className="vx-btn vx-btn--ghost-ink vx-btn--sm">
           Zavřít panel
         </button>
       </header>
 
       {videos.length === 0 ? (
-        <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-[rgba(17,17,17,0.03)] p-5 text-sm text-abj-text2">
+        <div className="rounded-[12px] border border-verox-line bg-verox-paper p-5 text-sm text-verox-gray">
           Pro tento kanál zatím nejsou dostupná poslední videa.
         </div>
       ) : (
@@ -1514,27 +1449,25 @@ function ChannelDetailPanel({ channel, selectedVideo, open, loading, onClose, on
                   key={`channel-video-${key}`}
                   type="button"
                   onClick={() => onSelectVideo(key)}
-                  className={`w-full rounded-xl border p-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F37021]/55 ${
+                  className={`w-full rounded-[12px] border p-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-verox-orange/55 ${
                     active
-                      ? "border-[#F37021]/55 bg-[rgba(243, 112, 33,0.08)]"
-                      : "border-[var(--abj-gold-dim)] bg-white hover:border-[rgba(17,17,17,0.26)]"
+                      ? "border-verox-orange/55 bg-verox-orangeSoft"
+                      : "border-verox-line bg-white hover:border-verox-orange/40"
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <div
-                      className={`relative shrink-0 overflow-hidden rounded-lg bg-[rgba(17,17,17,0.08)] ${
+                      className={`relative shrink-0 overflow-hidden rounded-[8px] bg-verox-ink ${
                         aspect === "portrait" ? "h-24 w-[54px]" : "h-16 w-28"
                       }`}
                     >
                       <Image src={thumbnail} alt={video.title} fill className="object-cover" unoptimized={thumbnail.startsWith("http")} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-sm font-medium text-abj-text1">{video.title}</p>
-                      <p className="mt-1 text-[11px] text-abj-text2">{publishedLabel ?? "Datum neuvedeno"}</p>
-                      {video.tldr ? <p className="mt-1 line-clamp-1 text-[11px] text-abj-text3">{video.tldr}</p> : null}
-                      {!canPlay ? (
-                        <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[#C14900]">Pouze odkaz</p>
-                      ) : null}
+                      <p className="vx-display line-clamp-2 text-verox-ink" style={{ fontSize: "0.92rem", lineHeight: 1.12 }}>{video.title}</p>
+                      <p className="vx-meta mt-1">{publishedLabel ?? "Datum neuvedeno"}</p>
+                      {video.tldr ? <p className="mt-1 line-clamp-1 text-[0.78rem] text-verox-gray">{video.tldr}</p> : null}
+                      {!canPlay ? <span className="vx-badge mt-1 inline-flex">Pouze odkaz</span> : null}
                     </div>
                   </div>
                 </button>
@@ -1715,15 +1648,16 @@ export function ArchivClient({ initialData, mode = "default" }: ArchivClientProp
 
   return (
     <section
-      className={`mx-auto w-full px-4 py-6 sm:px-6 ${
-        isVideaMode ? "max-w-[1320px] space-y-10 bg-white lg:space-y-12 lg:px-10" : "max-w-[1280px] space-y-10 lg:space-y-12"
+      className={`mx-auto w-full bg-verox-paper px-4 py-6 sm:px-6 ${
+        isVideaMode ? "max-w-[1320px] space-y-10 lg:space-y-12 lg:px-10" : "max-w-[1280px] space-y-10 lg:space-y-12"
       }`}
     >
       {!isVideaMode ? (
-        <header className="space-y-2">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-abj-text2">Videa</p>
-          <h1 className="font-[var(--font-serif)] text-3xl font-semibold leading-tight text-abj-text1 sm:text-4xl">Videa</h1>
-          <p className="max-w-3xl text-sm text-abj-text2 sm:text-base">Průběžně aktualizovaný přehled posledních videí napříč sítí.</p>
+        <header className="space-y-3">
+          <SectionLabel index="(01)" title="Videa" kicker="Archiv sítě" />
+          <p className="max-w-3xl text-[0.98rem] leading-relaxed text-verox-charcoal">
+            Průběžně aktualizovaný přehled posledních videí napříč sítí.
+          </p>
         </header>
       ) : null}
 
@@ -1776,16 +1710,13 @@ export function ArchivClient({ initialData, mode = "default" }: ArchivClientProp
         <div className="flex justify-center">
           <button
             type="button"
-            className={`rounded-full border bg-white px-5 py-2 text-xs font-semibold uppercase tracking-[0.1em] transition focus-visible:outline-none focus-visible:ring-2 ${
-              isVideaMode
-                ? "border-[#F37021]/40 text-[#F37021] hover:border-[#F37021] hover:bg-[rgba(243, 112, 33,0.07)] focus-visible:ring-[#F37021]/45"
-                : "border-[var(--abj-gold-dim)] text-abj-text2 hover:border-[#F37021]/45 hover:text-abj-text1 focus-visible:ring-[#F37021]/60"
-            }`}
+            className="vx-btn"
             onClick={() => {
               void loadMore();
             }}
           >
             {loading ? "Načítám..." : "Načíst další"}
+            <ArrowRight size={14} />
           </button>
         </div>
       ) : null}

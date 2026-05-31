@@ -69,7 +69,7 @@ export default async function EditionPage({
   } catch (error) {
     const message = error instanceof Error ? error.message : "Neznámá chyba";
     return (
-      <main className="mx-auto max-w-6xl px-4 py-12">
+      <main className="mx-auto max-w-6xl bg-[#FBF8F2] px-4 py-12">
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
           Nepodařilo se navázat připojení k datům Jasných zpráv: {message}
         </div>
@@ -81,7 +81,7 @@ export default async function EditionPage({
   const edition = editionRes.data as NewsEdition | null;
   if (editionRes.error) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-12">
+      <main className="mx-auto max-w-6xl bg-[#FBF8F2] px-4 py-12">
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
           Nepodařilo se načíst vydání: {editionRes.error.message}
         </div>
@@ -96,7 +96,7 @@ export default async function EditionPage({
   ]);
   if (itemsRes.error) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-12">
+      <main className="mx-auto max-w-6xl bg-[#FBF8F2] px-4 py-12">
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
           Nepodařilo se načíst zprávy vydání: {itemsRes.error.message}
         </div>
@@ -111,7 +111,7 @@ export default async function EditionPage({
   );
   if (sourcesRes.error) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-12">
+      <main className="mx-auto max-w-6xl bg-[#FBF8F2] px-4 py-12">
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
           Nepodařilo se načíst zdroje vydání: {sourcesRes.error.message}
         </div>
@@ -128,34 +128,34 @@ export default async function EditionPage({
     .slice(0, 5);
 
   return (
-    <main className="mx-auto w-full max-w-[1240px] px-4 py-8 text-[#111827] md:py-12">
-      <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm text-gray-500">
-        <Link href="/jasne-zpravy" className="font-semibold hover:text-gray-900">
+    <main className="mx-auto w-full max-w-[1240px] bg-[#FBF8F2] px-4 py-8 text-verox-ink md:py-12">
+      <nav className="mb-5 flex flex-wrap items-center gap-3">
+        <Link href="/jasne-zpravy" className="vx-action">
           ← Jasné zprávy
         </Link>
-        <span>/</span>
-        <Link href="/jasne-zpravy/archiv" className="hover:text-gray-900">
+        <span className="vx-meta">/</span>
+        <Link href="/jasne-zpravy/archiv" className="vx-meta hover:text-verox-ink">
           Archiv
         </Link>
       </nav>
 
-      <header className="mb-8 rounded-3xl border border-[#F37021]/20 bg-gradient-to-b from-[#fffaf3] via-[#fffdfa] to-white p-6 shadow-[0_12px_30px_rgba(17,17,17,0.06)] md:p-8">
+      <header className="mb-10 border-y-2 border-verox-ink bg-verox-card px-6 py-8 md:px-8 md:py-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="rounded-full bg-[#F37021] px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-white">
-            {getEditionTypeLabel(edition.edition_type)} vydání
-          </span>
-          <time className="text-sm text-gray-500">{formatPragueDateTime(getEditionTimestamp(edition))}</time>
+          <span className="vx-badge">{getEditionTypeLabel(edition.edition_type)} vydání</span>
+          <time className="vx-meta">{formatPragueDateTime(getEditionTimestamp(edition))}</time>
         </div>
-        <h1 className="jz-headline-display mt-3 text-3xl font-black text-gray-950 md:text-5xl">{edition.title}</h1>
-        {edition.subtitle ? <p className="jz-deck mt-3 text-lg">{edition.subtitle}</p> : null}
-        {edition.summary ? <p className="jz-deck mt-3 max-w-3xl text-base">{edition.summary}</p> : null}
-        <p className="mt-3 text-sm text-gray-600">{sortedItems.length} publikovaných zpráv</p>
+        <h1 className="vx-display mt-4 text-verox-ink" style={{ fontSize: "clamp(2.2rem, 5vw, 3.8rem)", lineHeight: 0.98 }}>
+          {edition.title}
+        </h1>
+        {edition.subtitle ? <p className="mt-3 text-lg leading-relaxed text-verox-charcoal">{edition.subtitle}</p> : null}
+        {edition.summary ? <p className="mt-3 max-w-3xl leading-relaxed text-verox-charcoal">{edition.summary}</p> : null}
+        <p className="vx-meta mt-4">{sortedItems.length} publikovaných zpráv</p>
       </header>
 
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
         <section className="min-w-0 space-y-6">
           {sortedItems.length === 0 ? (
-            <p className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-600">
+            <p className="border-2 border-verox-line bg-verox-card p-6 text-sm text-verox-charcoal">
               Toto vydání zatím neobsahuje publikované zprávy.
             </p>
           ) : (
@@ -171,57 +171,46 @@ export default async function EditionPage({
             ))
           )}
 
-          <footer className="border-t border-gray-200 pt-6">
+          <footer className="border-t-2 border-verox-line pt-6">
             <nav className="flex flex-wrap items-center justify-between gap-3">
               {adjacentRes.previous ? (
-                <Link
-                  href={`/jasne-zpravy/${adjacentRes.previous.slug}`}
-                  className="inline-flex min-h-10 items-center rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-[#F37021]/35 hover:text-[#F37021]"
-                >
+                <Link href={`/jasne-zpravy/${adjacentRes.previous.slug}`} className="vx-btn vx-btn--ghost-ink vx-btn--sm">
                   ← Předchozí vydání
                 </Link>
               ) : (
-                <span className="inline-flex min-h-10 items-center rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-400">
-                  ← Předchozí vydání
-                </span>
+                <span className="vx-btn vx-btn--ghost-ink vx-btn--sm opacity-40">← Předchozí vydání</span>
               )}
-              <Link
-                href="/jasne-zpravy"
-                className="inline-flex min-h-10 items-center rounded-xl border border-[#F37021]/25 bg-[#F37021]/10 px-3 py-2 text-sm font-semibold text-[#B04A00] hover:bg-[#F37021]/15"
-              >
+              <Link href="/jasne-zpravy" className="vx-btn vx-btn--solid vx-btn--sm">
                 Zpět na homepage
               </Link>
               {adjacentRes.next ? (
-                <Link
-                  href={`/jasne-zpravy/${adjacentRes.next.slug}`}
-                  className="inline-flex min-h-10 items-center rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-[#F37021]/35 hover:text-[#F37021]"
-                >
+                <Link href={`/jasne-zpravy/${adjacentRes.next.slug}`} className="vx-btn vx-btn--ghost-ink vx-btn--sm">
                   Další vydání →
                 </Link>
               ) : (
-                <span className="inline-flex min-h-10 items-center rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-400">
-                  Další vydání →
-                </span>
+                <span className="vx-btn vx-btn--ghost-ink vx-btn--sm opacity-40">Další vydání →</span>
               )}
             </nav>
             {adjacentRes.previousError || adjacentRes.nextError ? (
-              <p className="mt-3 text-sm text-amber-700">Navigace mezi vydáními je dočasně omezená.</p>
+              <p className="vx-meta mt-3 text-verox-orangeText">Navigace mezi vydáními je dočasně omezená.</p>
             ) : null}
           </footer>
         </section>
 
-        <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
-          <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500">Obsah vydání</h2>
+        <aside className="space-y-5 xl:sticky xl:top-24 xl:self-start">
+          <section className="border-2 border-verox-line bg-verox-card p-4">
+            <h2 className="vx-kicker text-verox-ink">Obsah vydání</h2>
             {sortedItems.length === 0 ? (
-              <p className="mt-3 text-sm text-gray-600">Bez položek.</p>
+              <p className="mt-3 text-sm text-verox-charcoal">Bez položek.</p>
             ) : (
               <ol className="mt-3 space-y-2">
                 {sortedItems.map((item, index) => (
                   <li key={item.id}>
-                    <a href={`#${getItemSlug(item)}`} className="block rounded-lg border border-gray-200 px-3 py-2 hover:border-[#F37021]/35">
-                      <p className="text-[11px] uppercase tracking-[0.12em] text-gray-500">#{item.rank ?? index + 1}</p>
-                      <p className="jz-headline mt-1 line-clamp-2 text-sm font-medium text-gray-900">{item.short_headline ?? item.headline}</p>
+                    <a href={`#${getItemSlug(item)}`} className="block border-2 border-verox-line px-3 py-2 hover:border-verox-orange">
+                      <p className="vx-meta">#{item.rank ?? index + 1}</p>
+                      <p className="vx-display mt-1 line-clamp-2 text-verox-ink" style={{ fontSize: "0.95rem", lineHeight: 1.2 }}>
+                        {item.short_headline ?? item.headline}
+                      </p>
                     </a>
                   </li>
                 ))}
@@ -229,20 +218,20 @@ export default async function EditionPage({
             )}
           </section>
 
-          <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500">Nejlépe ozdrojováno</h2>
+          <section className="border-2 border-verox-line bg-verox-card p-4">
+            <h2 className="vx-kicker text-verox-ink">Nejlépe ozdrojováno</h2>
             {sourceLeaders.length === 0 ? (
-              <p className="mt-3 text-sm text-gray-600">Zdrojová data nejsou dostupná.</p>
+              <p className="mt-3 text-sm text-verox-charcoal">Zdrojová data nejsou dostupná.</p>
             ) : (
               <ul className="mt-3 space-y-2">
                 {sourceLeaders.map((item) => (
                   <li key={item.id}>
                     <a
                       href={`#${getItemSlug(item)}`}
-                      className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-[#F37021]/35"
+                      className="flex items-center justify-between gap-2 border-2 border-verox-line px-3 py-2 hover:border-verox-orange"
                     >
-                      <span className="jz-headline line-clamp-2 text-sm font-medium text-gray-900">{item.short_headline ?? item.headline}</span>
-                      <span className="text-xs text-gray-500">{getItemSourceCount(item, sourcesByItem)}</span>
+                      <span className="line-clamp-2 text-sm font-medium text-verox-ink">{item.short_headline ?? item.headline}</span>
+                      <span className="vx-meta shrink-0">{getItemSourceCount(item, sourcesByItem)}</span>
                     </a>
                   </li>
                 ))}
@@ -250,9 +239,9 @@ export default async function EditionPage({
             )}
           </section>
 
-          <section className="rounded-2xl border border-gray-200 bg-[#fffaf3] p-4 shadow-sm">
-            <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-[#B04A00]">Redakční kontext</h2>
-            <p className="mt-3 text-sm leading-6 text-gray-700">
+          <section className="border-2 border-verox-ink bg-verox-paper p-4">
+            <h2 className="vx-kicker text-verox-orangeDeep">Redakční kontext</h2>
+            <p className="mt-3 text-sm leading-relaxed text-verox-charcoal">
               Vydání publikováno: {formatPragueDateAndTimeCompact(getEditionTimestamp(edition))}. Každá zpráva obsahuje
               kontext, zdroje a transparentní metriky.
             </p>

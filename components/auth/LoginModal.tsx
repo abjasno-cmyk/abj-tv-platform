@@ -58,18 +58,22 @@ export function LoginModal({
         aria-label="Zavřít přihlášení"
         onClick={onClose}
       />
-      <section className="relative z-[1] w-full max-w-md rounded-3xl border border-[#F37021]/30 bg-[#121316] p-5 text-white shadow-[0_24px_60px_rgba(0,0,0,0.45)] sm:p-6">
+      <section className="relative z-[1] w-full max-w-md rounded-[14px] border border-verox-line bg-white p-5 text-verox-ink shadow-[0_18px_40px_rgba(17,17,17,0.18)] sm:p-6">
         <header className="mb-4 space-y-2">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-[#FFB782]">Váš bezplatný divácký účet</p>
-          <h2 className="text-2xl font-extrabold leading-tight">Přihlásit zdarma</h2>
-          <p className="text-sm leading-relaxed text-[#D4D7DE]">
+          <p className="vx-kicker text-verox-orangeDeep">Váš bezplatný divácký účet</p>
+          <h2 className="vx-display text-verox-ink" style={{ fontSize: "1.7rem" }}>
+            Přihlásit zdarma
+          </h2>
+          <p className="text-sm leading-relaxed text-verox-charcoal">
             Přihlaste se zdarma a získejte svůj divácký účet. Budete moci komentovat, lajkovat, ukládat si oblíbené
             pořady a pokračovat ve sledování tam, kde jste skončili.
           </p>
-          <p className="text-xs text-[#B9BEC9]">
+          <p className="vx-meta">
             Účet je zdarma. Marketingové e-maily vám pošleme jen tehdy, pokud s tím zvlášť souhlasíte.
           </p>
-          {helperReason ? <p className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs">{helperReason}</p> : null}
+          {helperReason ? (
+            <p className="rounded-[10px] border border-verox-line bg-[#FBF8F2] px-3 py-2 text-xs text-verox-charcoal">{helperReason}</p>
+          ) : null}
         </header>
 
         <div className="space-y-2">
@@ -84,7 +88,7 @@ export function LoginModal({
               }
               void onOAuth("google", { termsAccepted, newsletterOptIn });
             }}
-            className="flex min-h-11 w-full items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold transition hover:border-[#F37021] hover:bg-[#F37021]/15 disabled:opacity-70"
+            className="vx-btn vx-btn--ghost-ink vx-btn--block min-h-11 disabled:opacity-70"
           >
             {busyProvider === "google" ? "Přesměrovávám..." : "Pokračovat přes Google"}
           </button>
@@ -100,25 +104,25 @@ export function LoginModal({
                 }
                 void onOAuth("facebook", { termsAccepted, newsletterOptIn });
               }}
-              className="flex min-h-11 w-full items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold transition hover:border-[#F37021] hover:bg-[#F37021]/15 disabled:opacity-70"
+              className="vx-btn vx-btn--ghost-ink vx-btn--block min-h-11 disabled:opacity-70"
             >
               {busyProvider === "facebook" ? "Přesměrovávám..." : "Pokračovat přes Facebook"}
             </button>
           ) : null}
         </div>
 
-        {enableEmail ? <div className="my-4 h-px w-full bg-white/10" /> : null}
+        {enableEmail ? <hr className="vx-rule-soft my-4" /> : null}
 
         {enableEmail ? (
           <div className="space-y-2">
             <label className="block space-y-1">
-              <span className="text-xs uppercase tracking-[0.1em] text-[#B9BEC9]">E-mail</span>
+              <span className="vx-kicker">E-mail</span>
               <input
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="vas@email.cz"
-                className="min-h-11 w-full rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-[#9BA2B2] focus:border-[#F37021]"
+                className="min-h-11 w-full rounded-[10px] border border-verox-line bg-[#FBF8F2] px-3 py-2 text-sm text-verox-ink outline-none placeholder:text-verox-gray focus:border-verox-orange"
               />
             </label>
             <button
@@ -137,44 +141,44 @@ export function LoginModal({
                 }
                 void onEmail(normalizedEmail, { termsAccepted, newsletterOptIn });
               }}
-              className="flex min-h-11 w-full items-center justify-center rounded-xl border border-[#F37021]/50 bg-[#F37021] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#e35f00] disabled:opacity-70"
+              className="vx-btn vx-btn--solid vx-btn--block min-h-11 disabled:opacity-70"
             >
               {busyProvider === "email" ? "Odesílám odkaz..." : "Pokračovat e-mailem"}
             </button>
           </div>
         ) : (
-          <p className="mt-4 text-xs text-[#B9BEC9]">Další způsoby přihlášení přidáme brzy.</p>
+          <p className="vx-meta mt-4">Další způsoby přihlášení přidáme brzy.</p>
         )}
 
-        <div className="mt-4 space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
-          <label className="flex items-start gap-2 text-xs text-[#D4D7DE]">
+        <div className="mt-4 space-y-2 rounded-[10px] border border-verox-line bg-[#FBF8F2] p-3">
+          <label className="flex items-start gap-2 text-xs text-verox-charcoal">
             <input
               type="checkbox"
               checked={termsAccepted}
               onChange={(event) => setTermsAccepted(event.target.checked)}
-              className="mt-[2px] h-4 w-4 rounded border-white/30 bg-transparent accent-[#F37021]"
+              className="mt-[2px] h-4 w-4 rounded border-verox-line accent-[#F37021]"
             />
             Souhlasím s podmínkami používání a zásadami ochrany osobních údajů.
           </label>
-          <label className="flex items-start gap-2 text-xs text-[#D4D7DE]">
+          <label className="flex items-start gap-2 text-xs text-verox-charcoal">
             <input
               type="checkbox"
               checked={newsletterOptIn}
               onChange={(event) => setNewsletterOptIn(event.target.checked)}
-              className="mt-[2px] h-4 w-4 rounded border-white/30 bg-transparent accent-[#F37021]"
+              className="mt-[2px] h-4 w-4 rounded border-verox-line accent-[#F37021]"
             />
             Chci dostávat e-mailové novinky a upozornění.
           </label>
-          <p className="text-[11px] text-[#B9BEC9]">Sledování obsahu zůstává zdarma.</p>
+          <p className="vx-meta">Sledování obsahu zůstává zdarma.</p>
         </div>
 
-        {effectiveError ? <p className="mt-3 text-sm text-[#FFB4A1]">{effectiveError}</p> : null}
+        {effectiveError ? <p className="mt-3 text-sm font-medium text-verox-orangeText">{effectiveError}</p> : null}
 
         <div className="mt-5 flex justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-white/20 px-3 py-1.5 text-xs uppercase tracking-[0.08em] text-[#D4D7DE] hover:border-white/40 hover:text-white"
+            className="vx-btn vx-btn--ghost-ink vx-btn--sm"
           >
             Zavřít
           </button>

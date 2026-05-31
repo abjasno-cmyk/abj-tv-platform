@@ -20,10 +20,11 @@ export function EditionSection({ title, category, items, editionSlug, sourcesByI
   if (sorted.length === 0) {
     return (
       <section>
-        <h3 className="border-b border-gray-200 pb-2 text-sm font-bold uppercase tracking-[0.16em] text-gray-600">
-          {title ?? getCategoryLabel(category)}
-        </h3>
-        <p className="mt-4 rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-600">
+        <div className="flex items-center gap-x-5 border-b-2 border-verox-line pb-2">
+          <h3 className="vx-kicker text-verox-ink">{title ?? getCategoryLabel(category)}</h3>
+          <hr className="vx-rule-soft mt-1 flex-1" />
+        </div>
+        <p className="mt-4 border-2 border-verox-line bg-verox-card p-4 text-sm text-verox-charcoal">
           V této sekci zatím nejsou publikované zprávy.
         </p>
       </section>
@@ -33,9 +34,10 @@ export function EditionSection({ title, category, items, editionSlug, sourcesByI
   if (category === "curiosity") {
     return (
       <section>
-        <h3 className="border-b border-gray-200 pb-2 text-sm font-bold uppercase tracking-[0.16em] text-gray-600">
-          {title ?? getCategoryLabel(category)}
-        </h3>
+        <div className="flex items-center gap-x-5 border-b-2 border-verox-line pb-2">
+          <h3 className="vx-kicker text-verox-ink">{title ?? getCategoryLabel(category)}</h3>
+          <hr className="vx-rule-soft mt-1 flex-1" />
+        </div>
         <div className="mt-4">
           <CuriosityCard item={sorted[0] ?? null} editionSlug={editionSlug} sourcesByItem={sourcesByItem} />
         </div>
@@ -48,9 +50,10 @@ export function EditionSection({ title, category, items, editionSlug, sourcesByI
 
   return (
     <section>
-      <h3 className="border-b border-gray-200 pb-2 text-sm font-bold uppercase tracking-[0.16em] text-gray-600">
-        {title ?? getCategoryLabel(category)}
-      </h3>
+      <div className="flex items-center gap-x-5 border-b-2 border-verox-line pb-2">
+        <h3 className="vx-kicker text-verox-ink">{title ?? getCategoryLabel(category)}</h3>
+        <hr className="vx-rule-soft mt-1 flex-1" />
+      </div>
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         {featured.map((item) => (
           <StoryCard key={item.id} item={item} editionSlug={editionSlug} sourcesByItem={sourcesByItem} />
@@ -58,7 +61,7 @@ export function EditionSection({ title, category, items, editionSlug, sourcesByI
       </div>
 
       {rest.length > 0 ? (
-        <ol className="mt-4 rounded-2xl border border-gray-200 bg-white px-4">
+        <ol className="mt-4 border-2 border-verox-line bg-verox-card px-4">
           {rest.map((item, index) => (
             <StoryListItem
               key={item.id}

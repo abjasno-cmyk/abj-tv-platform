@@ -19,27 +19,30 @@ type EditionTabsProps = {
 export function EditionTabs({ tabs, activeEditionSlug }: EditionTabsProps) {
   return (
     <section>
-      <h2 className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-gray-600">Dnešní vydání</h2>
-      <div className="flex gap-3 overflow-x-auto pb-1">
+      <div className="flex items-center gap-x-5">
+        <span className="vx-kicker text-verox-gray">Dnešní vydání</span>
+        <hr className="vx-rule h-[2px] flex-1" />
+      </div>
+      <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
         {tabs.map((tab) => {
           const isActive = tab.edition?.slug === activeEditionSlug;
           const label = getEditionTypeLabel(tab.editionType);
           const inner = (
             <article
-              className={`min-w-[220px] rounded-2xl border p-3 transition ${
+              className={`min-w-[220px] border-2 bg-verox-card p-4 transition ${
                 isActive
-                  ? "border-[#F37021] bg-[#fff7f0] shadow-[0_8px_20px_rgba(243, 112, 33,0.18)]"
-                  : "border-gray-200 bg-white hover:border-[#F37021]/35"
+                  ? "border-verox-orange shadow-[0_8px_20px_rgba(243,112,33,0.18)]"
+                  : "border-verox-line hover:border-verox-orange"
               }`}
             >
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">{label}</p>
-              <p className="mt-1 text-sm font-semibold text-gray-900">
+              <p className="vx-kicker text-verox-gray">{label}</p>
+              <p className="vx-display mt-2 text-verox-ink" style={{ fontSize: "1.1rem", lineHeight: 1.1 }}>
                 {tab.edition?.title ?? `${label} vydání`}
               </p>
-              <p className="mt-1 text-xs text-gray-600">
+              <p className="vx-meta mt-2 text-verox-orangeDeep">
                 {tab.edition ? formatPragueTime(getEditionTimestamp(tab.edition)) : "čeká se"}
               </p>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="vx-meta mt-1">
                 {tab.status === "published" ? "publikováno" : "čeká se"} • {tab.itemCount} zpráv
               </p>
             </article>

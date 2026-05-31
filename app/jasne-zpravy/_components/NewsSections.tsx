@@ -6,6 +6,7 @@ import {
   type NewsItem,
   type NewsSource,
 } from "@/lib/jasne-zpravy";
+import { ArrowRight } from "@/components/abj/verox-icons";
 
 type NewsSectionsProps = {
   items: NewsItem[];
@@ -134,14 +135,12 @@ export function NewsSections({
         if (sectionItems.length === 0) return null;
 
         return (
-          <section key={category} className="mb-12">
-            <SectionHeading className="mb-5 flex items-center justify-between text-sm font-bold uppercase tracking-[0.18em] text-gray-600">
-              <span>{getCategoryLabel(category)}</span>
-              <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] tracking-normal text-gray-600">
-                {sectionItems.length} zpráv
-              </span>
+          <section key={category} className="mb-14">
+            <SectionHeading className="mb-6 flex items-center justify-between gap-4 border-b-2 border-verox-line pb-2">
+              <span className="vx-kicker text-verox-ink">{getCategoryLabel(category)}</span>
+              <span className="vx-meta shrink-0">{sectionItems.length} zpráv</span>
             </SectionHeading>
-            <ol className="space-y-5">
+            <ol className="space-y-6">
               {sectionItems.map((item, idx) => {
                 const itemSources = sourcesByItem.get(item.id) ?? [];
                 const shownSourceCount = itemSources.length || item.source_count || 0;
@@ -162,56 +161,47 @@ export function NewsSections({
                   return (
                     <li
                       key={item.id}
-                      className={`group rounded-2xl border p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                      className={`group border-2 bg-verox-card p-5 transition duration-200 ${
                         isCuriosity
-                          ? "border-amber-200/80 bg-amber-50/45 hover:border-amber-300"
-                          : "border-gray-200 bg-white hover:border-[#F37021]/40"
+                          ? "border-verox-line bg-verox-paper hover:border-verox-orange"
+                          : "border-verox-line hover:border-verox-orange"
                       }`}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center rounded-full border border-[#F37021]/30 bg-[#F37021]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#B04A00]">
-                            {getCategoryLabel(category)}
-                          </span>
-                          <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-medium text-gray-600">
+                          <span className="vx-badge">{getCategoryLabel(category)}</span>
+                          <span className="vx-meta border border-verox-line px-2 py-1 text-verox-ink">
                             #{item.rank ?? nav.position}
                           </span>
                         </div>
-                        <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-medium text-gray-600">
-                          {sourceCountLabel(shownSourceCount)}
-                        </span>
+                        <span className="vx-meta">{sourceCountLabel(shownSourceCount)}</span>
                       </div>
 
-                      <h3 className="mt-3 text-xl font-black leading-tight text-gray-950">
+                      <h3 className="vx-display mt-3 text-verox-ink" style={{ fontSize: "1.35rem", lineHeight: 1.06 }}>
                         {item.short_headline ?? item.headline}
                       </h3>
 
-                      {preview ? <p className="mt-2 text-[15px] leading-6 text-gray-700">{preview}</p> : null}
+                      {preview ? <p className="mt-2 leading-relaxed text-verox-charcoal">{preview}</p> : null}
 
                       {item.why_it_matters ? (
-                        <div className="mt-3 rounded-xl border border-[#F37021]/20 bg-orange-50/60 px-3 py-2">
-                          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#B04A00]">
-                            Proč to řešíme
-                          </p>
-                          <p className="mt-1 text-sm leading-6 text-gray-700">
+                        <div className="mt-3 border-l-2 border-verox-orange bg-verox-paper px-3 py-2">
+                          <p className="vx-kicker text-verox-orangeDeep">Proč to řešíme</p>
+                          <p className="mt-1 text-sm leading-relaxed text-verox-charcoal">
                             {truncateText(item.why_it_matters, 180)}
                           </p>
                         </div>
                       ) : null}
 
-                      <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-3">
-                        <Link
-                          href={detailHref}
-                          className="text-sm font-bold uppercase tracking-[0.1em] text-[#F37021] hover:text-[#cc5500]"
-                        >
-                          Číst zprávu →
+                      <div className="mt-4 flex flex-wrap items-center gap-4 border-t-2 border-verox-line pt-3">
+                        <Link href={detailHref} className="vx-action">
+                          Číst zprávu <ArrowRight size={13} />
                         </Link>
                         {sourcePreview ? (
                           <a
                             href={sourcePreview.source_url ?? detailHref}
                             target={sourcePreview.source_url ? "_blank" : undefined}
                             rel={sourcePreview.source_url ? "noopener noreferrer" : undefined}
-                            className="text-xs font-medium text-gray-600 hover:text-gray-900"
+                            className="vx-meta hover:text-verox-ink"
                           >
                             Zdroje: {sourcePreview.source_name ?? sourcePreview.source_title ?? sourcePreviewDomain ?? "Otevřít"}
                             {shownSourceCount > 1 ? ` +${shownSourceCount - 1}` : ""}
@@ -226,42 +216,43 @@ export function NewsSections({
                 const bodyParagraphs = toParagraphs(item.body);
                 return (
                   <li id={`zprava-${item.id}`} key={item.id} className="scroll-mt-24">
-                    <article className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm ring-1 ring-black/[0.02] md:p-7">
-                      <header className="border-b border-gray-100 pb-4">
+                    <article className="border-2 border-verox-line bg-verox-card p-5 md:p-7">
+                      <header className="border-b-2 border-verox-line pb-4">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="inline-flex items-center rounded-full border border-[#F37021]/30 bg-[#F37021]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#B04A00]">
-                              {getCategoryLabel(category)}
-                            </span>
-                            <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-medium text-gray-600">
+                            <span className="vx-badge">{getCategoryLabel(category)}</span>
+                            <span className="vx-meta border border-verox-line px-2 py-1 text-verox-ink">
                               #{item.rank ?? nav.position}
                             </span>
-                            <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-medium text-gray-600">
+                            <span className="vx-meta border border-verox-line px-2 py-1 text-verox-ink">
                               {sourceCountLabel(shownSourceCount)}
                             </span>
                           </div>
-                          <Link href="#vydani-top" className="text-xs font-semibold text-gray-500 hover:text-gray-900">
+                          <Link href="#vydani-top" className="vx-meta hover:text-verox-ink">
                             ← Zpět na vydání
                           </Link>
                         </div>
-                        <h3 className="mt-3 text-2xl font-black leading-tight text-gray-950 md:text-[1.9rem]">
+                        <h3
+                          className="vx-display mt-3 text-verox-ink"
+                          style={{ fontSize: "clamp(1.6rem, 3vw, 2rem)", lineHeight: 1.04 }}
+                        >
                           {item.short_headline ?? item.headline}
                         </h3>
                         {itemPreviewLead(item) ? (
-                          <p className="mt-2 text-lg leading-7 text-gray-700">{itemPreviewLead(item)}</p>
+                          <p className="mt-2 text-lg leading-relaxed text-verox-charcoal">{itemPreviewLead(item)}</p>
                         ) : null}
                         {editionDateTimeLabel ? (
-                          <p className="mt-3 text-sm text-gray-500">Vydání publikováno: {editionDateTimeLabel}</p>
+                          <p className="vx-meta mt-3">Vydání publikováno: {editionDateTimeLabel}</p>
                         ) : null}
                       </header>
 
                       {detailBullets.length > 0 ? (
-                        <section className="mt-5 rounded-2xl border border-[#F37021]/20 bg-orange-50/55 p-4">
-                          <h4 className="text-xs font-bold uppercase tracking-[0.14em] text-[#B04A00]">Ve 3 bodech</h4>
+                        <section className="mt-5 border-l-2 border-verox-orange bg-verox-paper p-4">
+                          <h4 className="vx-kicker text-verox-orangeDeep">Ve 3 bodech</h4>
                           <ul className="mt-2 space-y-2">
                             {detailBullets.map((bullet) => (
-                              <li key={`${item.id}-${bullet}`} className="flex gap-2 text-sm leading-6 text-gray-800">
-                                <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-[#F37021]" />
+                              <li key={`${item.id}-${bullet}`} className="flex gap-2 text-sm leading-relaxed text-verox-charcoal">
+                                <span className="mt-[7px] h-1.5 w-1.5 shrink-0 bg-verox-orange" />
                                 <span>{bullet}</span>
                               </li>
                             ))}
@@ -272,40 +263,36 @@ export function NewsSections({
                       {(item.why_it_matters || item.what_to_watch) ? (
                         <dl className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
                           {item.why_it_matters ? (
-                            <div className="rounded-xl border border-gray-200 bg-gray-50/90 p-4">
-                              <dt className="text-xs font-bold uppercase tracking-[0.12em] text-gray-500">
-                                Proč to řešíme
-                              </dt>
-                              <dd className="mt-2 text-sm leading-6 text-gray-800">{item.why_it_matters}</dd>
+                            <div className="border-2 border-verox-line bg-verox-paper p-4">
+                              <dt className="vx-kicker text-verox-gray">Proč to řešíme</dt>
+                              <dd className="mt-2 text-sm leading-relaxed text-verox-charcoal">{item.why_it_matters}</dd>
                             </div>
                           ) : null}
                           {item.what_to_watch ? (
-                            <div className="rounded-xl border border-gray-200 bg-gray-50/90 p-4">
-                              <dt className="text-xs font-bold uppercase tracking-[0.12em] text-gray-500">Co sledovat</dt>
-                              <dd className="mt-2 text-sm leading-6 text-gray-800">{item.what_to_watch}</dd>
+                            <div className="border-2 border-verox-line bg-verox-paper p-4">
+                              <dt className="vx-kicker text-verox-gray">Co sledovat</dt>
+                              <dd className="mt-2 text-sm leading-relaxed text-verox-charcoal">{item.what_to_watch}</dd>
                             </div>
                           ) : null}
                         </dl>
                       ) : null}
 
                       {bodyParagraphs.length > 0 ? (
-                        <div className="mt-6 max-w-[74ch] space-y-4 text-[17px] leading-8 text-gray-900">
+                        <div className="mt-6 max-w-[74ch] space-y-4 text-[1.05rem] leading-8 text-verox-ink">
                           {bodyParagraphs.map((paragraph) => (
                             <p key={`${item.id}-${paragraph.slice(0, 24)}`}>{paragraph}</p>
                           ))}
                         </div>
                       ) : (
-                        <p className="mt-6 text-base leading-7 text-gray-700">
+                        <p className="mt-6 leading-relaxed text-verox-charcoal">
                           Detailní text zprávy zatím není dostupný. Vydání obsahuje jen stručný redakční přehled.
                         </p>
                       )}
 
-                      <section id={`sources-${item.id}`} className="mt-6 border-t border-gray-100 pt-4">
-                        <h4 className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500">
-                          Zdroje · {shownSourceCount}
-                        </h4>
+                      <section id={`sources-${item.id}`} className="mt-6 border-t-2 border-verox-line pt-4">
+                        <h4 className="vx-kicker text-verox-gray">Zdroje · {shownSourceCount}</h4>
                         {itemSources.length === 0 ? (
-                          <p className="mt-2 text-sm text-gray-600">U této zprávy zatím nejsou uvedeny zdroje.</p>
+                          <p className="mt-2 text-sm text-verox-charcoal">U této zprávy zatím nejsou uvedeny zdroje.</p>
                         ) : (
                           <ul className="mt-3 space-y-2">
                             {itemSources.map((source) => {
@@ -314,22 +301,22 @@ export function NewsSections({
                               return (
                                 <li
                                   key={source.id}
-                                  className="rounded-lg border border-gray-200 bg-gray-50/70 px-3 py-2 text-sm"
+                                  className="border-2 border-verox-line bg-verox-paper px-3 py-2 text-sm"
                                 >
                                   {source.source_url ? (
                                     <a
                                       href={source.source_url}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="font-medium text-[#1f4f9c] hover:underline"
+                                      className="font-medium text-verox-orangeText hover:underline"
                                     >
                                       {title}
                                     </a>
                                   ) : (
-                                    <span className="font-medium text-gray-800">{title}</span>
+                                    <span className="font-medium text-verox-ink">{title}</span>
                                   )}
                                   {(source.source_name || sourceDomain) ? (
-                                    <p className="mt-1 text-xs text-gray-500">{source.source_name ?? sourceDomain}</p>
+                                    <p className="vx-meta mt-1">{source.source_name ?? sourceDomain}</p>
                                   ) : null}
                                 </li>
                               );
@@ -338,38 +325,38 @@ export function NewsSections({
                         )}
                       </section>
 
-                      <footer className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4">
+                      <footer className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t-2 border-verox-line pt-4">
                         <div className="flex flex-wrap items-center gap-2">
                           {nav.previous ? (
                             <Link
                               href={`#zprava-${nav.previous.id}`}
-                              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-gray-700 hover:border-[#F37021]/35 hover:text-[#F37021]"
+                              className="vx-btn vx-btn--ghost-ink vx-btn--sm"
                             >
                               ← Předchozí zpráva
                             </Link>
                           ) : (
-                            <span className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs uppercase tracking-[0.08em] text-gray-400">
+                            <span className="vx-btn vx-btn--ghost-ink vx-btn--sm opacity-40">
                               ← Předchozí zpráva
                             </span>
                           )}
                           {nav.next ? (
                             <Link
                               href={`#zprava-${nav.next.id}`}
-                              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-gray-700 hover:border-[#F37021]/35 hover:text-[#F37021]"
+                              className="vx-btn vx-btn--ghost-ink vx-btn--sm"
                             >
                               Další zpráva →
                             </Link>
                           ) : (
-                            <span className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs uppercase tracking-[0.08em] text-gray-400">
+                            <span className="vx-btn vx-btn--ghost-ink vx-btn--sm opacity-40">
                               Další zpráva →
                             </span>
                           )}
                         </div>
                         <Link
                           href={editionSlug ? `/jasne-zpravy/${editionSlug}` : "#vydani-top"}
-                          className="text-xs font-semibold uppercase tracking-[0.08em] text-[#F37021] hover:text-[#cc5500]"
+                          className="vx-action"
                         >
-                          Zpět na celé vydání
+                          Zpět na celé vydání <ArrowRight size={13} />
                         </Link>
                       </footer>
                     </article>

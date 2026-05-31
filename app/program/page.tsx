@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useProgram } from "@/hooks/useProgram";
+import { SectionLabel } from "@/components/abj/SectionLabel";
 
 type Freshness = "breaking" | "today" | "week" | "evergreen";
 
@@ -39,10 +40,10 @@ const PRAGUE_TIMEZONE = "Europe/Prague";
 const REFRESH_EVERY_MS = 5 * 60 * 1000;
 
 const FRESHNESS_CLASS: Record<Freshness, string> = {
-  breaking: "border-[#F37021] bg-[rgba(243, 112, 33,0.2)] text-[#FFE5D1]",
-  today: "border-[#4F79B8] bg-[rgba(79,121,184,0.2)] text-[#D8E4F3]",
-  week: "border-[rgba(154,163,178,0.5)] bg-[rgba(154,163,178,0.14)] text-[#D2D8E2]",
-  evergreen: "border-[#4A7E61] bg-[rgba(74,126,97,0.2)] text-[#D5EBDD]",
+  breaking: "border-verox-orange bg-verox-orange/12 text-verox-orangeText",
+  today: "border-verox-line bg-verox-paperDeep text-verox-charcoal",
+  week: "border-verox-line bg-white text-verox-gray",
+  evergreen: "border-verox-line bg-verox-paper text-verox-gray",
 };
 
 function isObjectLike(value: unknown): value is Record<string, unknown> {
@@ -206,13 +207,13 @@ async function trackEditorialEvent(videoId: string, eventType: "expand" | "play"
 
 function ProgramRowSkeleton() {
   return (
-    <div className="animate-pulse rounded-2xl border border-[var(--abj-gold-dim)] bg-abj-panel p-3">
+    <div className="animate-pulse rounded-[14px] border border-verox-line bg-white p-3 shadow-[0_8px_18px_rgba(17,17,17,0.10)]">
       <div className="flex gap-3">
-        <div className="h-[72px] w-[128px] rounded-lg bg-[rgba(154,163,178,0.2)]" />
+        <div className="aspect-video h-[84px] w-[148px] flex-none rounded-[10px] bg-verox-paperDeep" />
         <div className="flex-1 space-y-2">
-          <div className="h-3 w-24 rounded bg-[rgba(154,163,178,0.2)]" />
-          <div className="h-5 w-[90%] rounded bg-[rgba(154,163,178,0.22)]" />
-          <div className="h-3 w-[70%] rounded bg-[rgba(154,163,178,0.2)]" />
+          <div className="h-3 w-24 rounded bg-verox-paperDeep" />
+          <div className="h-5 w-[90%] rounded bg-verox-paperDeep" />
+          <div className="h-3 w-[70%] rounded bg-verox-paperDeep" />
         </div>
       </div>
     </div>
@@ -307,30 +308,29 @@ export default function ProgramPage() {
   }, [scrollTargetBlockId]);
 
   return (
-    <section className="mx-auto w-full max-w-4xl px-3 pb-6 pt-4 sm:px-5">
-      <header className="sticky top-0 z-20 mb-4 rounded-xl border border-[var(--abj-gold-dim)] bg-[rgba(6,12,23,0.94)] px-4 py-3 backdrop-blur">
+    <section className="mx-auto w-full max-w-4xl bg-[#FBF8F2] px-3 pb-6 pt-4 text-verox-ink sm:px-5">
+      <header className="sticky top-0 z-20 mb-5 rounded-[14px] border border-verox-line bg-white/95 px-4 py-3.5 shadow-[0_8px_18px_rgba(17,17,17,0.10)] backdrop-blur">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="font-[var(--font-serif)] text-xl font-semibold tracking-[0.08em] text-abj-gold">ABJ TV</p>
-            <p className="mt-1 text-xs uppercase tracking-[0.14em] text-abj-text2">Program</p>
-            <p className="text-xs text-abj-text2">{formatCurrentDate(clockNow)}</p>
+            <SectionLabel index="(05)" title="Program" kicker="Vysílání" />
+            <p className="mt-2 vx-meta">{formatCurrentDate(clockNow)}</p>
           </div>
-          <div className="text-right">
-            <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">Praha</p>
-            <p className="font-mono text-2xl font-semibold leading-none text-abj-text1">{formatClock(clockNow)}</p>
+          <div className="shrink-0 text-right">
+            <p className="vx-kicker">Praha</p>
+            <p className="vx-clock mt-1 text-2xl leading-none">{formatClock(clockNow)}</p>
           </div>
         </div>
       </header>
       {showDebugBadge && debugInfo?.upstreamUrl ? (
-        <div className="mb-4 rounded-lg border border-[rgba(154,163,178,0.25)] bg-[rgba(6,12,23,0.76)] px-3 py-2 text-[10px] uppercase tracking-[0.06em] text-abj-text2">
+        <div className="mb-4 rounded-[10px] border border-verox-line bg-white px-3 py-2 vx-meta">
           <p className="truncate">
-            feed: <span className="text-abj-text1">{debugInfo.upstreamUrl}</span>
+            feed: <span className="text-verox-ink">{debugInfo.upstreamUrl}</span>
           </p>
           {debugInfo.upstreamTrace ? <p className="mt-1 truncate">{debugInfo.upstreamTrace}</p> : null}
         </div>
       ) : null}
       {stale ? (
-        <div className="mb-4 rounded-lg border border-[rgba(217,195,122,0.35)] bg-[rgba(65,55,19,0.35)] px-3 py-2 text-xs text-[#E9DBA8]">
+        <div className="mb-4 rounded-[10px] border-l-2 border-verox-orange bg-verox-paperDeep px-3 py-2 text-xs text-verox-charcoal">
           Feed je stale (po `stale_after`). Zvaž kontrolu Replit `/health`.
         </div>
       ) : null}
@@ -343,11 +343,11 @@ export default function ProgramPage() {
           <ProgramRowSkeleton />
         </div>
       ) : error ? (
-        <div className="rounded-2xl border border-[rgba(243, 112, 33,0.45)] bg-[rgba(40,20,10,0.56)] p-4">
-          <p className="text-sm text-[#FFD7BE]">Načtení programu selhalo: {error}</p>
+        <div className="rounded-[14px] border-l-2 border-verox-orange bg-white p-4 shadow-[0_8px_18px_rgba(17,17,17,0.10)]">
+          <p className="text-sm text-verox-charcoal">Načtení programu selhalo: {error}</p>
           <button
             type="button"
-            className="mt-3 rounded-lg border border-[rgba(198,168,91,0.4)] bg-[rgba(198,168,91,0.16)] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.08em] text-abj-text1"
+            className="vx-btn vx-btn--sm mt-3"
             onClick={() => {
               setManualReloadTick((prev) => prev + 1);
               window.location.reload();
@@ -357,13 +357,16 @@ export default function ProgramPage() {
           </button>
         </div>
       ) : rows.length === 0 ? (
-        <div className="rounded-2xl border border-[var(--abj-gold-dim)] bg-abj-panel p-4 text-sm text-abj-text2">
+        <div className="rounded-[14px] border border-verox-line bg-white p-4 text-sm text-verox-gray shadow-[0_8px_18px_rgba(17,17,17,0.10)]">
           Program je momentálně prázdný.
         </div>
       ) : (
         <div className="space-y-3">
           {isRefreshing ? (
-            <p className="text-right text-[11px] uppercase tracking-[0.08em] text-abj-text2">Aktualizuji…</p>
+            <p className="flex items-center justify-end gap-2 vx-meta">
+              <span className="vx-live-dot" />
+              Aktualizuji…
+            </p>
           ) : null}
 
           {rows.map((block) => {
@@ -389,10 +392,10 @@ export default function ProgramPage() {
                 ref={(node) => {
                   itemRefs.current[block.id] = node;
                 }}
-                className={`overflow-hidden rounded-2xl border bg-abj-panel transition-all duration-300 ${
+                className={`overflow-hidden rounded-[14px] border bg-white transition-all duration-300 ${
                   active
-                    ? "border-[#C6A85B] shadow-[0_0_0_1px_rgba(198,168,91,0.45),0_10px_24px_rgba(0,0,0,0.25)]"
-                    : "border-[var(--abj-gold-dim)]"
+                    ? "border-verox-orange shadow-[0_0_0_1px_rgba(243,112,33,0.45),0_16px_30px_rgba(17,17,17,0.16)]"
+                    : "border-verox-line shadow-[0_8px_18px_rgba(17,17,17,0.10)]"
                 }`}
               >
                 <button
@@ -407,35 +410,43 @@ export default function ProgramPage() {
                   }}
                 >
                   <div className="flex gap-4">
-                    <Image
-                      src={thumb}
-                      alt=""
-                      className="h-[84px] w-[148px] flex-none rounded-lg border border-[rgba(255,255,255,0.08)] object-cover"
-                      width={148}
-                      height={84}
-                      unoptimized
-                    />
+                    <div className="relative aspect-video h-[84px] w-[148px] flex-none overflow-hidden rounded-[10px] bg-verox-ink">
+                      <Image
+                        src={thumb}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        width={148}
+                        height={84}
+                        unoptimized
+                      />
+                      <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                      {active ? <span className="pointer-events-none absolute inset-0 bg-verox-orange/40" /> : null}
+                      <span className="absolute inset-0 grid place-items-center">
+                        <span className="grid h-9 w-9 place-items-center rounded-full bg-verox-orange text-white shadow-[0_8px_18px_-6px_rgba(216,91,18,0.9)]">
+                          <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="translate-x-[1px]">
+                            <path d="M8 5.5v13a1 1 0 001.52.85l10-6.5a1 1 0 000-1.7l-10-6.5A1 1 0 008 5.5z" />
+                          </svg>
+                        </span>
+                      </span>
+                    </div>
 
                     <div className="min-w-0 flex-1">
                       <div className="mb-1.5 flex flex-wrap items-center gap-2">
                         {active ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(243, 112, 33,0.25)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#FFE5D1]">
-                            <span className="relative flex h-2.5 w-2.5 items-center justify-center">
-                              <span className="absolute inline-flex h-2.5 w-2.5 animate-ping rounded-full bg-[#F37021]/70" />
-                              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#F37021]" />
-                            </span>
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-verox-orange/14 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-verox-orangeText">
+                            <span className="vx-live-dot" />
                             Teď běží
                           </span>
                         ) : null}
 
                         {urgency3 ? (
-                          <span className="rounded-full bg-[#F37021] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white">
+                          <span className="vx-badge" style={{ fontSize: "0.58rem", padding: "0.22rem 0.5rem" }}>
                             BREAKING
                           </span>
                         ) : null}
                         {urgency2 ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#E1B064]">
-                            <span className="h-2 w-2 rounded-full bg-[#E29A42]" />
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-verox-orangeText">
+                            <span className="h-2 w-2 rounded-full bg-verox-orange" />
                             Priorita
                           </span>
                         ) : null}
@@ -447,13 +458,13 @@ export default function ProgramPage() {
                         </span>
                       </div>
 
-                      <p className="line-clamp-2 font-[var(--font-serif)] text-[19px] leading-[1.15] text-abj-text1 sm:text-[20px]">
+                      <p className="vx-display line-clamp-2 text-verox-ink" style={{ fontSize: "1.18rem", lineHeight: 1.12 }}>
                         {block.title}
                       </p>
 
-                      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-abj-text2">
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 vx-meta">
                         <span>{dateTime.dateLabel}</span>
-                        <span className="font-semibold text-abj-gold">
+                        <span className="font-semibold text-verox-orangeText">
                           {dateTime.timeLabel} – {endTime}
                         </span>
                         <span>{formatDuration(block.durationMin)}</span>
@@ -461,7 +472,7 @@ export default function ProgramPage() {
                       </div>
 
                       {block.editorial.tldr ? (
-                        <p className="mt-2 line-clamp-2 text-[14px] leading-snug text-[rgba(230,233,239,0.9)]">
+                        <p className="mt-2 line-clamp-2 text-[14px] leading-snug text-verox-charcoal">
                           {block.editorial.tldr}
                         </p>
                       ) : null}
@@ -470,29 +481,31 @@ export default function ProgramPage() {
                 </button>
 
                 {active ? (
-                  <div className="h-1 w-full bg-[rgba(198,168,91,0.12)]">
+                  <div className="h-1 w-full bg-verox-orange/12">
                     <div
-                      className="h-full bg-[#C6A85B] transition-[width] duration-1000"
+                      className="h-full bg-verox-orange transition-[width] duration-1000"
                       style={{ width: `${progressPct}%` }}
                     />
                   </div>
                 ) : null}
 
                 {expanded ? (
-                  <div className="abj-expand-panel space-y-3 border-t border-[rgba(198,168,91,0.18)] bg-[rgba(7,17,30,0.8)] px-3 py-3 sm:px-4">
+                  <div className="abj-expand-panel space-y-3 border-t border-verox-line bg-verox-paper px-3 py-3 sm:px-4">
                     {block.videoId ? (
-                      <div className="overflow-hidden rounded-xl border border-[rgba(198,168,91,0.2)] bg-black">
+                      <div className="overflow-hidden rounded-[10px] border border-verox-line bg-verox-ink">
                         {!startedPlayback[block.id] ? (
                           <button
                             type="button"
-                            className="abj-play-button group flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(198,168,91,0.28),rgba(0,0,0,0.8))] text-sm font-semibold text-abj-text1"
+                            className="abj-play-button group flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(243,112,33,0.22),rgba(23,20,17,0.92))] text-sm font-semibold text-white"
                             onClick={() => {
                               setStartedPlayback((prev) => ({ ...prev, [block.id]: true }));
                               void trackEditorialEvent(block.videoId!, "play");
                             }}
                           >
-                            <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(198,168,91,0.38)] bg-[rgba(6,12,23,0.68)] px-4 py-2 transition-all duration-200 group-hover:border-[rgba(198,168,91,0.62)] group-hover:bg-[rgba(10,20,36,0.92)] group-active:scale-[0.98]">
-                              <span className="inline-block h-2 w-2 rounded-full bg-[#C6A85B]" />
+                            <span className="inline-flex items-center gap-2 rounded-full bg-verox-orange px-4 py-2 text-white shadow-[0_10px_24px_-8px_rgba(216,91,18,0.9)] transition-all duration-200 group-hover:bg-verox-orangeDeep group-active:scale-[0.98]">
+                              <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="translate-x-[1px]">
+                                <path d="M8 5.5v13a1 1 0 001.52.85l10-6.5a1 1 0 000-1.7l-10-6.5A1 1 0 008 5.5z" />
+                              </svg>
                               Přehrát video
                             </span>
                           </button>
@@ -510,13 +523,13 @@ export default function ProgramPage() {
                       </div>
                     ) : null}
 
-                    {context ? <p className="text-sm leading-relaxed text-abj-text2">{context}</p> : null}
-                    {impact ? <p className="text-sm font-semibold text-abj-gold">{impact}</p> : null}
+                    {context ? <p className="text-sm leading-relaxed text-verox-charcoal">{context}</p> : null}
+                    {impact ? <p className="text-sm font-semibold text-verox-orangeText">{impact}</p> : null}
 
                     <div className="pt-1">
                       <button
                         type="button"
-                        className="rounded-lg border border-[var(--abj-gold-dim)] px-3 py-1.5 text-xs uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1"
+                        className="vx-btn vx-btn--sm vx-btn--ghost-ink"
                         onClick={() => setExpandedId(null)}
                       >
                         Zavřít

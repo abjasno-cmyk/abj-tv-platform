@@ -1,4 +1,5 @@
 import { EditionSection } from "./EditionSection";
+import { SectionLabel } from "@/components/abj/SectionLabel";
 import type { NewsItem, NewsSource } from "@/lib/jasne-zpravy";
 
 type CurrentEditionViewProps = {
@@ -19,13 +20,11 @@ export function CurrentEditionView({ items, editionSlug, sourcesByItem }: Curren
 
   return (
     <section>
-      <header className="mb-5 border-b border-gray-200 pb-4">
-        <h2 className="text-2xl font-black leading-tight text-gray-950">Aktuální vydání</h2>
-        <p className="mt-2 text-sm text-gray-600">
-          Redakční struktura: Domácí, Zahraničí a jedna vybraná kuriozita.
-        </p>
-      </header>
-      <div className="space-y-8">
+      <SectionLabel index="(03)" title="Aktuální vydání" kicker="Den po dni" />
+      <p className="vx-meta mt-3 text-verox-charcoal">
+        Redakční struktura: Domácí, Zahraničí a jedna vybraná kuriozita.
+      </p>
+      <div className="mt-6 space-y-10">
         <EditionSection
           category="domestic"
           title="Domácí"

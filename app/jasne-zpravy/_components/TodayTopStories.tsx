@@ -11,6 +11,8 @@ import {
   type NewsItem,
   type NewsSource,
 } from "@/lib/jasne-zpravy";
+import { SectionLabel } from "@/components/abj/SectionLabel";
+import { ArrowRight } from "@/components/abj/verox-icons";
 
 type TodayTopStoriesProps = {
   items: NewsItem[];
@@ -60,83 +62,73 @@ export function TodayTopStories({ items, editionSlug, sourcesByItem }: TodayTopS
 
   return (
     <section>
-      <header className="mb-4 border-b border-gray-200 pb-3">
-        <h2 className="jz-headline text-2xl font-black text-gray-950">Hlavní zprávy dne</h2>
-        <p className="jz-deck mt-2 text-sm">Co je hlavní, co sledovat a kde je největší relevance.</p>
-      </header>
+      <SectionLabel index="(02)" title="Hlavní zprávy dne" kicker="Co je podstatné" />
+      <p className="vx-meta mt-3 text-verox-charcoal">Co je hlavní, co sledovat a kde je největší relevance.</p>
 
       {!topStory ? (
-        <p className="rounded-2xl border border-gray-200 bg-white p-5 text-sm text-gray-600">
+        <p className="mt-5 border-2 border-verox-line bg-verox-card p-5 text-sm text-verox-charcoal">
           Hlavní zpráva zatím není dostupná.
         </p>
       ) : (
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <article className="rounded-3xl border border-[#F37021]/25 bg-white p-6 shadow-[0_10px_26px_rgba(17,17,17,0.08)]">
-            <p className="jz-meta font-bold text-[#B04A00]">
-              {getCategoryLabel(topStory.category)}
-            </p>
-            <h3 className="jz-headline mt-2 text-3xl font-black text-gray-950">
+        <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <article className="border-2 border-verox-ink bg-verox-card p-6 md:p-7">
+            <p className="vx-kicker text-verox-orangeDeep">{getCategoryLabel(topStory.category)}</p>
+            <h3 className="vx-display mt-2 text-verox-ink" style={{ fontSize: "clamp(1.7rem, 3.6vw, 2.6rem)", lineHeight: 1.02 }}>
               {topStory.short_headline ?? topStory.headline}
             </h3>
-            <p className="jz-deck mt-3 text-base">{oneLineLead(topStory)}</p>
+            <p className="mt-3 max-w-[60ch] text-[1.02rem] leading-relaxed text-verox-charcoal">{oneLineLead(topStory)}</p>
             {topStory.why_it_matters ? (
-              <div className="mt-4 border-l-2 border-[#F37021] bg-[#fff7f1] px-3 py-2">
-                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#B04A00]">Proč je to důležité</p>
-                <p className="mt-1 text-sm leading-6 text-gray-700">{topStory.why_it_matters}</p>
+              <div className="mt-4 border-l-2 border-verox-orange bg-verox-paper px-4 py-3">
+                <p className="vx-kicker text-verox-orangeDeep">Proč je to důležité</p>
+                <p className="mt-1 text-sm leading-relaxed text-verox-charcoal">{topStory.why_it_matters}</p>
               </div>
             ) : null}
-            <div className="mt-4 h-1 w-full overflow-hidden rounded bg-gray-100">
+            <div className="mt-4 h-1 w-full overflow-hidden bg-verox-paperDeep">
               <div
-                className="h-full rounded bg-[#F37021]"
+                className="h-full bg-verox-orange"
                 style={{ width: `${Math.max(8, confidencePercent(topStory.confidence_score))}%` }}
               />
             </div>
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs text-gray-600">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t-2 border-verox-line pt-4">
+              <p className="vx-meta">
                 {sourceCountLabel(getItemSourceCount(topStory, sourcesByItem))} • {itemReadMinutes(topStory)} min •
                 důvěra {confidencePercent(topStory.confidence_score)}%
               </p>
-              <Link
-                href={`/jasne-zpravy/${editionSlug}/${getItemSlug(topStory)}`}
-                className="text-sm font-bold uppercase tracking-[0.08em] text-[#F37021] hover:text-[#cc5500]"
-              >
-                Číst zprávu
+              <Link href={`/jasne-zpravy/${editionSlug}/${getItemSlug(topStory)}`} className="vx-action">
+                Číst zprávu <ArrowRight size={13} />
               </Link>
             </div>
           </article>
 
-          <div className="space-y-3">
-            <article className="rounded-2xl border border-gray-200 bg-white p-4">
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">Co sledovat</p>
-              <p className="jz-deck mt-2 text-sm text-gray-800">
+          <div className="space-y-4">
+            <article className="border-2 border-verox-line bg-verox-card p-4">
+              <p className="vx-kicker text-verox-gray">Co sledovat</p>
+              <p className="mt-2 text-sm leading-relaxed text-verox-charcoal">
                 {watchItem?.what_to_watch ?? "Redakce zatím neoznačila konkrétní bod ke sledování."}
               </p>
             </article>
-            <article className="rounded-2xl border border-gray-200 bg-white p-4">
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">Číslo dne</p>
-              <p className="jz-headline mt-2 text-sm font-semibold text-gray-900">
+            <article className="border-2 border-verox-line bg-verox-card p-4">
+              <p className="vx-kicker text-verox-gray">Číslo dne</p>
+              <p className="vx-display mt-2 text-verox-ink" style={{ fontSize: "1.05rem", lineHeight: 1.15 }}>
                 {numberOfDay?.short_headline ?? numberOfDay?.headline ?? "Dnes není dostupná položka s rámcem čísla."}
               </p>
               {numberOfDay ? (
-                <p className="mt-1 text-xs text-gray-500">Rámec: {neuroFrameLabel(numberOfDay.metadata?.neuro_frame)}</p>
+                <p className="vx-meta mt-1">Rámec: {neuroFrameLabel(numberOfDay.metadata?.neuro_frame)}</p>
               ) : null}
             </article>
-            <article className="rounded-2xl border border-gray-200 bg-white p-4">
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">Kuriozita dne</p>
+            <article className="border-2 border-verox-line bg-verox-card p-4">
+              <p className="vx-kicker text-verox-gray">Kuriozita dne</p>
               {curiosity ? (
                 <>
-                  <p className="jz-headline mt-2 text-sm font-semibold text-gray-900">
+                  <p className="vx-display mt-2 text-verox-ink" style={{ fontSize: "1.05rem", lineHeight: 1.15 }}>
                     {curiosity.short_headline ?? curiosity.headline}
                   </p>
-                  <Link
-                    href={`/jasne-zpravy/${editionSlug}/${getItemSlug(curiosity)}`}
-                    className="mt-2 inline-flex text-xs font-bold uppercase tracking-[0.08em] text-[#F37021]"
-                  >
-                    Otevřít
+                  <Link href={`/jasne-zpravy/${editionSlug}/${getItemSlug(curiosity)}`} className="vx-action mt-3">
+                    Otevřít <ArrowRight size={13} />
                   </Link>
                 </>
               ) : (
-                <p className="jz-deck mt-2 text-sm">Kuriozita zatím není publikována.</p>
+                <p className="mt-2 text-sm leading-relaxed text-verox-charcoal">Kuriozita zatím není publikována.</p>
               )}
             </article>
           </div>

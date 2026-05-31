@@ -116,19 +116,19 @@ export function CommentsSection({ entityType, entityId, heading = "Diskuse divá
   };
 
   return (
-    <section className="rounded-[30px] border border-[rgba(17,17,17,0.12)] bg-white p-4 shadow-[0_16px_35px_rgba(17,17,17,0.08)] sm:p-5">
+    <section className="rounded-[14px] border border-verox-line bg-white p-4 shadow-[0_16px_35px_rgba(17,17,17,0.08)] sm:p-5">
       <header className="mb-3 flex items-center justify-between gap-3">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-abj-text2">Reakce diváků</p>
-          <h3 className="mt-1 text-lg font-black tracking-tight text-abj-text1">{heading}</h3>
+          <p className="vx-kicker text-verox-orangeDeep">Reakce diváků</p>
+          <h3 className="vx-display mt-1 text-verox-ink" style={{ fontSize: "1.25rem" }}>
+            {heading}
+          </h3>
         </div>
-        <span className="rounded-full border border-[#F37021]/35 bg-[rgba(243, 112, 33,0.1)] px-3 py-1 text-xs font-semibold text-[#A5491D]">
-          {comments.length} komentářů
-        </span>
+        <span className="vx-badge vx-badge--ink">{comments.length} komentářů</span>
       </header>
 
       {!isAuthenticated ? (
-        <div className="mb-4 rounded-2xl border border-[rgba(243, 112, 33,0.3)] bg-[rgba(243, 112, 33,0.1)] px-4 py-3 text-sm text-abj-text1">
+        <div className="mb-4 rounded-[12px] border border-verox-orange/40 bg-[#FBF8F2] px-4 py-3 text-sm text-verox-ink">
           <p>Zapojte se do diskuse. Přihlášení je zdarma.</p>
           <button
             type="button"
@@ -142,7 +142,7 @@ export function CommentsSection({ entityType, entityId, heading = "Diskuse divá
                 }
               )
             }
-            className="mt-2 inline-flex min-h-10 items-center rounded-full border border-[#F37021] bg-[#F37021] px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white hover:bg-[#d86625]"
+            className="vx-btn vx-btn--solid vx-btn--sm mt-2"
           >
             Přihlásit zdarma
           </button>
@@ -150,24 +150,24 @@ export function CommentsSection({ entityType, entityId, heading = "Diskuse divá
       ) : null}
 
       {isAuthenticated ? (
-        <div className="mb-4 rounded-2xl border border-[rgba(17,17,17,0.12)] bg-[#FCFAF7] p-3">
+        <div className="mb-4 rounded-[12px] border border-verox-line bg-[#FBF8F2] p-3">
           <textarea
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             rows={3}
             maxLength={2000}
             placeholder="Napište komentář..."
-            className="w-full resize-y rounded-xl border border-[rgba(17,17,17,0.14)] bg-white px-3 py-2 text-sm text-abj-text1 outline-none focus:border-[#F37021]"
+            className="w-full resize-y rounded-[10px] border border-verox-line bg-white px-3 py-2 text-sm text-verox-ink outline-none focus:border-verox-orange"
           />
           <div className="mt-2 flex items-center justify-between gap-3">
-            <span className="text-xs text-abj-text2">{draft.trim().length}/2000</span>
+            <span className="vx-meta">{draft.trim().length}/2000</span>
             <button
               type="button"
               disabled={!canSubmit || saving}
               onClick={() => {
                 void addComment();
               }}
-              className="inline-flex min-h-10 items-center rounded-full border border-[#F37021] bg-[#F37021] px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white disabled:opacity-60"
+              className="vx-btn vx-btn--solid vx-btn--sm disabled:opacity-60"
             >
               {saving ? "Ukládám..." : "Přidat komentář"}
             </button>
@@ -175,25 +175,25 @@ export function CommentsSection({ entityType, entityId, heading = "Diskuse divá
         </div>
       ) : null}
 
-      {error ? <p className="mb-2 text-sm text-[#D14A2A]">{error}</p> : null}
+      {error ? <p className="mb-2 text-sm font-medium text-verox-orangeText">{error}</p> : null}
 
       {loading ? (
-        <p className="text-sm text-abj-text2">Načítám komentáře...</p>
+        <p className="vx-meta">Načítám komentáře...</p>
       ) : comments.length === 0 ? (
-        <p className="text-sm text-abj-text2">Diskuse je zatím prázdná.</p>
+        <p className="vx-meta">Diskuse je zatím prázdná.</p>
       ) : (
         <div className="space-y-3">
           {comments.map((comment) => (
-            <article key={comment.id} className="rounded-2xl border border-[rgba(17,17,17,0.12)] bg-[#FCFAF7] p-3">
+            <article key={comment.id} className="rounded-[12px] border border-verox-line bg-[#FBF8F2] p-3">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-abj-text1">{comment.authorName}</p>
-                <p className="text-xs text-abj-text2">{formatCommentDate(comment.createdAt)}</p>
+                <p className="text-sm font-semibold text-verox-ink">{comment.authorName}</p>
+                <p className="vx-meta">{formatCommentDate(comment.createdAt)}</p>
               </div>
-              <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-abj-text1">{comment.body}</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-verox-charcoal">{comment.body}</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  className="rounded-md border border-[var(--abj-gold-dim)] px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-abj-text2 opacity-70"
+                  className="vx-btn vx-btn--ghost-ink vx-btn--sm opacity-60"
                   disabled
                   title="Moderace reportingu bude doplněna v další iteraci."
                 >
@@ -202,7 +202,7 @@ export function CommentsSection({ entityType, entityId, heading = "Diskuse divá
                 {user?.id === comment.userId ? (
                   <button
                     type="button"
-                    className="rounded-md border border-[var(--abj-gold-dim)] px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1"
+                    className="vx-btn vx-btn--ghost-ink vx-btn--sm"
                     onClick={() => {
                       void deleteComment(comment.id);
                     }}

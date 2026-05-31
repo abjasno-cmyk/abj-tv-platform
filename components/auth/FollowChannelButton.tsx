@@ -67,10 +67,10 @@ export function FollowChannelButton({ channelId, channelName, className }: Follo
         className ??
         `inline-flex min-h-9 items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] transition ${
           !isAuthenticated
-            ? "border-[rgba(17,17,17,0.16)] bg-[rgba(17,17,17,0.04)] text-abj-text2"
+            ? "border-verox-line bg-[#FBF8F2] text-verox-gray"
             : effectiveFollowed
-            ? "border-[#F37021] bg-[rgba(243, 112, 33,0.15)] text-[#B04A00]"
-            : "border-[rgba(17,17,17,0.2)] bg-white text-abj-text2 hover:border-[#F37021]/45 hover:text-abj-text1"
+            ? "border-verox-orange bg-verox-orange/15 text-verox-orangeText"
+            : "border-verox-line bg-white text-verox-charcoal hover:border-verox-orange/45 hover:text-verox-ink"
         }`
       }
       disabled={loading || !channelId}

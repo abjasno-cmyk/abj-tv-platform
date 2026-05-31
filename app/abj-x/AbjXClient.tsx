@@ -16,6 +16,8 @@ import {
   type FeedPost,
 } from "@/lib/api";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { SectionLabel } from "@/components/abj/SectionLabel";
+import { PlayMark, ArrowRight, HeartMark } from "@/components/abj/verox-icons";
 
 type FeedItem = {
   id: string;
@@ -87,10 +89,10 @@ function toItems(posts: FeedPost[]): FeedItem[] {
 }
 
 function freshnessClass(value: FeedItem["freshness"]): string {
-  if (value === "breaking") return "border-[#F37021] bg-[rgba(243, 112, 33,0.2)] text-[#FFE6D1]";
-  if (value === "today") return "border-[#4F79B8] bg-[rgba(79,121,184,0.2)] text-[#D8E4F3]";
-  if (value === "week") return "border-[rgba(154,163,178,0.5)] bg-[rgba(154,163,178,0.14)] text-[#D2D8E2]";
-  return "border-[#4A7E61] bg-[rgba(74,126,97,0.2)] text-[#D5EBDD]";
+  if (value === "breaking") return "border-verox-orange bg-[rgba(243,112,33,0.12)] text-verox-orangeText";
+  if (value === "today") return "border-verox-ink/30 bg-[rgba(23,20,17,0.06)] text-verox-ink";
+  if (value === "week") return "border-verox-line bg-[rgba(23,20,17,0.04)] text-verox-charcoal";
+  return "border-verox-line bg-[rgba(23,20,17,0.03)] text-verox-gray";
 }
 
 function formatCreatedAt(value: string): string {
@@ -438,19 +440,20 @@ export function AbjXClient() {
   };
 
   return (
-    <section className="mx-auto w-full max-w-4xl space-y-6 px-3 py-6 sm:px-5">
-      <header className="space-y-2">
-        <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">V kostce</p>
-        <h1 className="font-[var(--font-serif)] text-3xl font-semibold text-abj-text1">V kostce</h1>
-        <p className="text-sm text-abj-text2">Krátce: co zaznělo v nejnovějších videích.</p>
+    <section className="mx-auto w-full max-w-4xl space-y-8 bg-[#FBF8F2] px-3 py-8 sm:px-5">
+      <header className="space-y-3">
+        <SectionLabel index="(00)" title="V kostce" kicker="Den po dni" />
+        <p className="max-w-[60ch] text-[0.98rem] leading-relaxed text-verox-charcoal">
+          Krátce: co zaznělo v nejnovějších videích.
+        </p>
       </header>
 
       {items.length === 0 && !loading ? (
-        <div className="rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel p-6 text-sm text-abj-text2">
+        <div className="rounded-[14px] border border-verox-line bg-white p-6 text-sm text-verox-charcoal shadow-[0_8px_18px_rgba(17,17,17,0.10)]">
           Zatím tu nejsou žádné příspěvky.
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-5">
           {items.map((item) => {
             const social = socialByPost[item.id] ?? EMPTY_STATS;
             const reacted = social.reactedByMe;
@@ -471,8 +474,8 @@ export function AbjXClient() {
             return (
               <article
                 key={item.id}
-                className={`rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel p-3 transition-colors sm:p-4 ${
-                  videoAvailable ? "cursor-pointer hover:border-abj-gold" : "cursor-default"
+                className={`rounded-[14px] border border-verox-line bg-white p-4 shadow-[0_8px_18px_rgba(17,17,17,0.10)] transition sm:p-5 ${
+                  videoAvailable ? "cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(17,17,17,0.16)]" : "cursor-default"
                 }`}
                 role="button"
                 tabIndex={0}
@@ -483,49 +486,49 @@ export function AbjXClient() {
                   toggleExpanded(item);
                 }}
               >
-                <div className="mb-2 flex flex-wrap items-center gap-2">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
                   {item.urgency >= 3 ? (
-                    <span className="rounded-full bg-[#F37021] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white">
-                      BREAKING
-                    </span>
+                    <span className="vx-badge">BREAKING</span>
                   ) : null}
                   <span
-                    className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] ${freshnessClass(item.freshness)}`}
+                    className={`rounded-full border px-2.5 py-0.5 font-[var(--vx-mono)] text-[10px] uppercase tracking-[0.14em] ${freshnessClass(item.freshness)}`}
                   >
                     {item.freshness}
                   </span>
-                  <span className="text-[11px] uppercase tracking-[0.08em] text-abj-text2">{item.channel}</span>
-                  <span className="text-[11px] text-abj-text2">{formatCreatedAt(item.displayAt)}</span>
+                  <span className="vx-kicker text-verox-orangeDeep">{item.channel}</span>
+                  <span className="vx-meta">{formatCreatedAt(item.displayAt)}</span>
                   {videoAvailable ? (
-                    <span className="ml-auto text-[11px] font-semibold uppercase tracking-[0.08em] text-abj-gold">
-                      {isExpanded ? "Skrýt video" : "Rozkliknout video"}
+                    <span className="vx-action ml-auto">
+                      {isExpanded ? "Skrýt video" : "Rozkliknout video"} <ArrowRight size={13} />
                     </span>
                   ) : null}
                 </div>
 
-                <h2 className="text-base font-semibold text-abj-text1 sm:text-lg">{item.headline}</h2>
-                <p className="mt-1 text-sm text-abj-text1">{item.what}</p>
-                {item.why ? <p className="mt-1 text-sm text-abj-text2">{item.why}</p> : null}
-                {item.impact ? <p className="mt-1 text-sm font-medium text-abj-gold">{item.impact}</p> : null}
+                <h2 className="vx-display text-verox-ink" style={{ fontSize: "clamp(1.15rem, 2.2vw, 1.5rem)", lineHeight: 1.08 }}>
+                  {item.headline}
+                </h2>
+                <p className="mt-2 text-[0.98rem] leading-relaxed text-verox-ink">{item.what}</p>
+                {item.why ? <p className="mt-1.5 text-[0.95rem] leading-relaxed text-verox-charcoal">{item.why}</p> : null}
+                {item.impact ? <p className="mt-1.5 text-[0.95rem] font-medium text-verox-orangeText">{item.impact}</p> : null}
 
                 {isExpanded ? (
                   <div
-                    className="mt-3 space-y-2 border-t border-[var(--abj-gold-dim)] pt-3"
+                    className="mt-4 space-y-2 border-t border-verox-line pt-4"
                     onClick={(event) => event.stopPropagation()}
                     onKeyDown={(event) => event.stopPropagation()}
                   >
                     {item.videoId ? (
-                      <div className="overflow-hidden rounded-lg border border-[var(--abj-gold-dim)] bg-black">
+                      <div className="overflow-hidden rounded-[14px] border border-verox-line bg-verox-ink shadow-[0_8px_18px_rgba(17,17,17,0.16)]">
                         {!playbackStarted ? (
                           <button
                             type="button"
-                            className="flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(198,168,91,0.24),rgba(0,0,0,0.85))]"
+                            className="group flex aspect-video w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(243,112,33,0.28),rgba(23,20,17,0.92))]"
                             onClick={() => {
                               setStartedPlaybackByPost((prev) => ({ ...prev, [item.id]: true }));
                             }}
                           >
-                            <span className="rounded-full border border-[var(--abj-gold-dim)] bg-[rgba(6,12,23,0.72)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-abj-text1">
-                              Přehrát video
+                            <span className="grid h-[58px] w-[58px] place-items-center rounded-full bg-verox-orange text-white shadow-[0_10px_24px_-8px_rgba(216,91,18,0.9)] transition-transform duration-300 group-hover:scale-110">
+                              <PlayMark size={22} className="translate-x-[1px]" />
                             </span>
                           </button>
                         ) : (
@@ -541,33 +544,30 @@ export function AbjXClient() {
                         )}
                       </div>
                     ) : (
-                      <p className="text-sm text-abj-text2">Video k této zprávě není dostupné.</p>
+                      <p className="text-sm text-verox-charcoal">Video k této zprávě není dostupné.</p>
                     )}
                   </div>
                 ) : null}
 
                 <div
-                  className="mt-3 flex flex-wrap items-center gap-2 border-t border-[var(--abj-gold-dim)] pt-3"
+                  className="mt-4 flex flex-wrap items-center gap-2 border-t border-verox-line pt-4"
                   onClick={(event) => event.stopPropagation()}
                   onKeyDown={(event) => event.stopPropagation()}
                 >
                   <button
                     type="button"
-                    className={`rounded-lg border px-2.5 py-1 text-xs uppercase tracking-[0.08em] ${
-                      reacted
-                        ? "border-abj-gold bg-[rgba(198,168,91,0.17)] text-abj-gold"
-                        : "border-[var(--abj-gold-dim)] text-abj-text2 hover:text-abj-text1"
-                    }`}
+                    className={`vx-btn vx-btn--sm ${reacted ? "vx-btn--solid" : "vx-btn--ghost-ink"}`}
                     disabled={reacted || isReacting}
                     onClick={() => {
                       void handleReact(item);
                     }}
                   >
+                    <HeartMark size={13} />
                     {reacted ? `Reagováno (${shownReactionCount})` : isReacting ? "Ukládám..." : `Reagovat (${shownReactionCount})`}
                   </button>
                   <button
                     type="button"
-                    className="rounded-lg border border-[var(--abj-gold-dim)] px-2.5 py-1 text-xs uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1"
+                    className="vx-btn vx-btn--ghost-ink vx-btn--sm"
                     onClick={() => {
                       if (!isAuthenticated) {
                         requestAuth(
@@ -594,7 +594,7 @@ export function AbjXClient() {
                   </button>
                   <button
                     type="button"
-                    className="rounded-lg border border-[var(--abj-gold-dim)] px-2.5 py-1 text-xs uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1"
+                    className="vx-btn vx-btn--ghost-ink vx-btn--sm"
                     onClick={() => {
                       void handleShare(item);
                     }}
@@ -604,45 +604,45 @@ export function AbjXClient() {
                   {videoAvailable ? (
                     <a
                       href={`/komunita?video_id=${encodeURIComponent(item.videoId)}&video_title=${encodeURIComponent(item.headline)}`}
-                      className="rounded-lg border border-[var(--abj-gold-dim)] px-2.5 py-1 text-xs uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1"
+                      className="vx-btn vx-btn--ghost-ink vx-btn--sm"
                     >
                       Do komunity
                     </a>
                   ) : (
-                    <span className="rounded-lg border border-[var(--abj-gold-dim)] px-2.5 py-1 text-xs uppercase tracking-[0.08em] text-abj-text3">
+                    <span className="vx-btn vx-btn--ghost-ink vx-btn--sm opacity-50">
                       Do komunity
                     </span>
                   )}
-                  {shareHint ? <span className="text-xs text-abj-text2">{shareHint}</span> : null}
+                  {shareHint ? <span className="vx-meta">{shareHint}</span> : null}
                 </div>
                 {!isAuthenticated ? (
-                  <p className="mt-2 text-xs text-abj-text2">Zapojte se do diskuse. Přihlášení je zdarma.</p>
+                  <p className="mt-2 vx-meta">Zapojte se do diskuse. Přihlášení je zdarma.</p>
                 ) : null}
 
                 {wallOpen ? (
                   <div
-                    className="mt-3 rounded-lg border border-[var(--abj-gold-dim)] bg-[rgba(9,17,28,0.35)] p-3"
+                    className="mt-4 rounded-[14px] border border-verox-line bg-[#FBF8F2] p-4"
                     onClick={(event) => event.stopPropagation()}
                     onKeyDown={(event) => event.stopPropagation()}
                   >
-                    <h3 className="text-xs uppercase tracking-[0.1em] text-abj-text2">Komentáře komunity</h3>
-                    <div className="mt-2 max-h-52 space-y-2 overflow-y-auto pr-1">
-                      {commentsLoading ? <p className="text-sm text-abj-text2">Načítám komentáře…</p> : null}
+                    <h3 className="vx-kicker text-verox-orangeDeep">Komentáře komunity</h3>
+                    <div className="mt-3 max-h-52 space-y-2 overflow-y-auto pr-1">
+                      {commentsLoading ? <p className="text-sm text-verox-charcoal">Načítám komentáře…</p> : null}
                       {!commentsLoading && wallComments.length === 0 ? (
-                        <p className="text-sm text-abj-text2">Zatím bez komentářů. Napište první.</p>
+                        <p className="text-sm text-verox-charcoal">Zatím bez komentářů. Napište první.</p>
                       ) : (
                         wallComments.map((comment) => (
-                          <article key={comment.id} className="rounded-md border border-white/10 bg-abj-panel px-2.5 py-2">
+                          <article key={comment.id} className="rounded-[10px] border border-verox-line bg-white px-3 py-2 shadow-[0_4px_10px_rgba(17,17,17,0.06)]">
                             <div className="flex items-center justify-between gap-2">
-                              <span className="text-xs font-semibold text-abj-gold">{comment.authorName}</span>
-                              <span className="text-[11px] text-abj-text2">{formatWallCommentAt(comment.createdAt)}</span>
+                              <span className="vx-kicker text-verox-orangeDeep">{comment.authorName}</span>
+                              <span className="vx-meta">{formatWallCommentAt(comment.createdAt)}</span>
                             </div>
-                            <p className="mt-1 text-sm text-abj-text1">{comment.body}</p>
+                            <p className="mt-1 text-sm text-verox-ink">{comment.body}</p>
                           </article>
                         ))
                       )}
                     </div>
-                    {wallError ? <p className="mt-2 text-xs text-abj-text2">{wallError}</p> : null}
+                    {wallError ? <p className="mt-2 vx-meta">{wallError}</p> : null}
 
                     <div className="mt-3 flex items-end gap-2">
                       <textarea
@@ -653,12 +653,12 @@ export function AbjXClient() {
                         }}
                         rows={2}
                         placeholder="Napište komentář..."
-                        className="min-h-[56px] flex-1 resize-y rounded-md border border-[var(--abj-gold-dim)] bg-abj-panel px-2 py-1.5 text-sm text-abj-text1 outline-none placeholder:text-abj-text2"
+                        className="min-h-[56px] flex-1 resize-y rounded-[10px] border border-verox-line bg-white px-3 py-2 text-sm text-verox-ink outline-none placeholder:text-verox-gray focus:border-verox-orange"
                       />
                       <button
                         type="button"
                         disabled={commentsSubmitting}
-                        className="rounded-md border border-[var(--abj-gold-dim)] px-3 py-1.5 text-xs uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1"
+                        className="vx-btn vx-btn--solid vx-btn--sm"
                         onClick={() => {
                           void addWallComment(item);
                         }}
@@ -678,7 +678,7 @@ export function AbjXClient() {
         <div className="flex justify-center">
           <button
             type="button"
-            className="rounded-lg border border-[var(--abj-gold-dim)] bg-abj-panel px-4 py-2 text-xs uppercase tracking-[0.08em] text-abj-text2 hover:text-abj-text1"
+            className="vx-btn"
             onClick={() => {
               void loadMore();
             }}

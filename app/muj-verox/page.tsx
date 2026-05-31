@@ -48,22 +48,20 @@ export default async function MujVeroxPage() {
   if (!user) {
     return (
       <main className="mx-auto w-full max-w-4xl px-4 py-8">
-        <section className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-6 shadow-[0_10px_24px_rgba(17,17,17,0.08)]">
-          <p className="text-xs uppercase tracking-[0.14em] text-abj-text2">Můj Verox</p>
-          <h1 className="mt-2 text-3xl font-extrabold text-abj-text1">Váš bezplatný divácký účet</h1>
-          <p className="mt-3 max-w-2xl text-sm text-abj-text2">
+        <section className="rounded-[14px] border border-verox-line bg-white p-6 shadow-[0_8px_18px_rgba(17,17,17,0.10)]">
+          <p className="vx-kicker text-verox-orangeDeep">Můj Verox</p>
+          <h1 className="vx-display mt-3 text-verox-ink" style={{ fontSize: "clamp(1.7rem, 4vw, 2.4rem)" }}>
+            Váš bezplatný divácký účet
+          </h1>
+          <hr className="vx-rule mt-4 h-[2px]" />
+          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-verox-charcoal">
             Přihlaste se zdarma a získejte sekce Rozkoukáno, Zhlédnuto, oblíbené kanály i osobní diskusi.
           </p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Link
-              href="/live"
-              className="inline-flex min-h-10 items-center rounded-full border border-[#F37021] bg-[#F37021] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white"
-            >
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <Link href="/live" className="vx-btn vx-btn--solid">
               Přihlásit zdarma
             </Link>
-            <span className="inline-flex min-h-10 items-center rounded-full border border-[var(--abj-gold-dim)] px-4 py-2 text-xs text-abj-text2">
-              Sledování obsahu zůstává zdarma.
-            </span>
+            <span className="vx-meta">Sledování obsahu zůstává zdarma.</span>
           </div>
         </section>
       </main>
@@ -158,29 +156,34 @@ export default async function MujVeroxPage() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
-      <section className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-5 shadow-[0_10px_24px_rgba(17,17,17,0.08)]">
-        <p className="text-xs uppercase tracking-[0.14em] text-abj-text2">Můj Verox</p>
-        <h1 className="mt-2 text-3xl font-extrabold text-abj-text1">
+    <main className="mx-auto w-full max-w-5xl space-y-8 px-4 py-8">
+      <section className="overflow-hidden bg-verox-orange p-6 text-white">
+        <p className="text-[0.62rem] uppercase tracking-[0.18em]" style={{ fontFamily: "var(--vx-mono)" }}>
+          Můj Verox
+        </p>
+        <h1 className="vx-display mt-3 text-white" style={{ fontSize: "clamp(1.7rem, 4vw, 2.4rem)" }}>
           Vítejte{profile?.display_name ? `, ${profile.display_name}` : ""} 👋
         </h1>
-        <p className="mt-2 text-sm text-abj-text2">Komentujte, lajkujte a pokračujte tam, kde jste skončili.</p>
+        <p className="mt-3 max-w-[52ch] text-[1rem] leading-relaxed text-white/95">
+          Komentujte, lajkujte a pokračujte tam, kde jste skončili.
+        </p>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <section className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-4">
-          <h2 className="text-lg font-extrabold text-abj-text1">Rozkoukáno</h2>
+      <div className="grid gap-5 md:grid-cols-2">
+        <section className="rounded-[14px] border border-verox-line bg-white p-5 shadow-[0_8px_18px_rgba(17,17,17,0.10)]">
+          <h2 className="vx-display text-[1.4rem] leading-none text-verox-ink">Rozkoukáno</h2>
+          <hr className="vx-rule mt-3 h-[2px]" />
           {inProgress.length === 0 ? (
-            <p className="mt-2 text-sm text-abj-text2">Zatím tu nic není. Stačí začít sledovat video.</p>
+            <p className="mt-3 text-sm text-verox-gray">Zatím tu nic není. Stačí začít sledovat video.</p>
           ) : (
-            <ul className="mt-2 space-y-2">
+            <ul className="mt-3 space-y-3">
               {inProgress.map((row) => (
-                <li key={`in-progress-${row.video_id}`} className="rounded-lg border border-[var(--abj-gold-dim)] bg-abj-panel p-3">
+                <li key={`in-progress-${row.video_id}`} className="rounded-[10px] border border-verox-line bg-verox-paper p-3">
                   {(() => {
                     const videoMeta = getVideoMeta(row.video_id);
                     return (
                       <div className="flex items-start gap-3">
-                        <div className="h-14 w-24 shrink-0 overflow-hidden rounded-md border border-[var(--abj-gold-dim)] bg-[rgba(17,17,17,0.08)]">
+                        <div className="h-14 w-24 shrink-0 overflow-hidden rounded-md border border-verox-line bg-[rgba(17,17,17,0.08)]">
                           <div
                             role="img"
                             aria-label={
@@ -193,14 +196,14 @@ export default async function MujVeroxPage() {
                           />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-[11px] uppercase tracking-[0.08em] text-abj-text2">{videoMeta.channelName}</p>
-                          {videoMeta.title ? <p className="mt-0.5 text-sm font-semibold text-abj-text1">{videoMeta.title}</p> : null}
-                          <p className="mt-1 text-xs text-abj-text2">
+                          <p className="vx-kicker text-verox-gray">{videoMeta.channelName}</p>
+                          {videoMeta.title ? <p className="mt-1 text-sm font-semibold text-verox-ink">{videoMeta.title}</p> : null}
+                          <p className="vx-meta mt-1.5">
                             Pokračovat od {formatDurationLabel(row.position_seconds)} · {Math.round(row.progress_percent ?? 0)} %
                           </p>
                           <Link
                             href={`/live?videoId=${encodeURIComponent(row.video_id)}`}
-                            className="mt-2 inline-flex text-xs font-semibold uppercase tracking-[0.08em] text-[#B04A00]"
+                            className="vx-action mt-2"
                           >
                             Otevřít video →
                           </Link>
@@ -214,19 +217,20 @@ export default async function MujVeroxPage() {
           )}
         </section>
 
-        <section className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-4">
-          <h2 className="text-lg font-extrabold text-abj-text1">Zhlédnuto</h2>
+        <section className="rounded-[14px] border border-verox-line bg-white p-5 shadow-[0_8px_18px_rgba(17,17,17,0.10)]">
+          <h2 className="vx-display text-[1.4rem] leading-none text-verox-ink">Zhlédnuto</h2>
+          <hr className="vx-rule mt-3 h-[2px]" />
           {completed.length === 0 ? (
-            <p className="mt-2 text-sm text-abj-text2">Zatím žádná dokončená videa.</p>
+            <p className="mt-3 text-sm text-verox-gray">Zatím žádná dokončená videa.</p>
           ) : (
-            <ul className="mt-2 space-y-2">
+            <ul className="mt-3 space-y-3">
               {completed.map((row) => (
-                <li key={`completed-${row.video_id}`} className="rounded-lg border border-[var(--abj-gold-dim)] bg-abj-panel p-3">
+                <li key={`completed-${row.video_id}`} className="rounded-[10px] border border-verox-line bg-verox-paper p-3">
                   {(() => {
                     const videoMeta = getVideoMeta(row.video_id);
                     return (
                       <div className="flex items-start gap-3">
-                        <div className="h-14 w-24 shrink-0 overflow-hidden rounded-md border border-[var(--abj-gold-dim)] bg-[rgba(17,17,17,0.08)]">
+                        <div className="h-14 w-24 shrink-0 overflow-hidden rounded-md border border-verox-line bg-[rgba(17,17,17,0.08)]">
                           <div
                             role="img"
                             aria-label={
@@ -239,9 +243,9 @@ export default async function MujVeroxPage() {
                           />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-[11px] uppercase tracking-[0.08em] text-abj-text2">{videoMeta.channelName}</p>
-                          {videoMeta.title ? <p className="mt-0.5 text-sm font-semibold text-abj-text1">{videoMeta.title}</p> : null}
-                          <p className="mt-1 text-xs text-abj-text2">Dokončeno · {Math.round(row.progress_percent ?? 100)} %</p>
+                          <p className="vx-kicker text-verox-gray">{videoMeta.channelName}</p>
+                          {videoMeta.title ? <p className="mt-1 text-sm font-semibold text-verox-ink">{videoMeta.title}</p> : null}
+                          <p className="vx-meta mt-1.5">Dokončeno · {Math.round(row.progress_percent ?? 100)} %</p>
                         </div>
                       </div>
                     );
@@ -253,37 +257,39 @@ export default async function MujVeroxPage() {
         </section>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-4">
-          <h2 className="text-lg font-extrabold text-abj-text1">Oblíbené kanály</h2>
+      <div className="grid gap-5 lg:grid-cols-2">
+        <section className="rounded-[14px] border border-verox-line bg-white p-5 shadow-[0_8px_18px_rgba(17,17,17,0.10)]">
+          <h2 className="vx-display text-[1.4rem] leading-none text-verox-ink">Oblíbené kanály</h2>
+          <hr className="vx-rule mt-3 h-[2px]" />
           {followedChannels.length === 0 ? (
-            <p className="mt-2 text-sm text-abj-text2">Ještě nemáte žádné oblíbené kanály.</p>
+            <p className="mt-3 text-sm text-verox-gray">Ještě nemáte žádné oblíbené kanály.</p>
           ) : (
-            <ul className="mt-2 space-y-2">
+            <ul className="mt-3 space-y-3">
               {followedChannels.map((row) => (
-                <li key={row.channel_id} className="rounded-lg border border-[var(--abj-gold-dim)] bg-abj-panel p-3">
-                  <p className="text-sm font-semibold text-abj-text1">
+                <li key={row.channel_id} className="rounded-[10px] border border-verox-line bg-verox-paper p-3">
+                  <p className="text-sm font-semibold text-verox-ink">
                     {sourceNameByChannelId.get(row.channel_id) ?? row.channel_id}
                   </p>
-                  <p className="mt-1 text-xs text-abj-text2">{row.channel_id}</p>
+                  <p className="vx-meta mt-1">{row.channel_id}</p>
                 </li>
               ))}
             </ul>
           )}
         </section>
 
-        <section className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-4">
-          <h2 className="text-lg font-extrabold text-abj-text1">Moje komentáře</h2>
+        <section className="rounded-[14px] border border-verox-line bg-white p-5 shadow-[0_8px_18px_rgba(17,17,17,0.10)]">
+          <h2 className="vx-display text-[1.4rem] leading-none text-verox-ink">Moje komentáře</h2>
+          <hr className="vx-rule mt-3 h-[2px]" />
           {myComments.length === 0 ? (
-            <p className="mt-2 text-sm text-abj-text2">Zatím žádné komentáře.</p>
+            <p className="mt-3 text-sm text-verox-gray">Zatím žádné komentáře.</p>
           ) : (
-            <ul className="mt-2 space-y-2">
+            <ul className="mt-3 space-y-3">
               {myComments.map((row) => (
-                <li key={row.id} className="rounded-lg border border-[var(--abj-gold-dim)] bg-abj-panel p-3">
-                  <p className="text-xs uppercase tracking-[0.1em] text-abj-text2">
+                <li key={row.id} className="rounded-[10px] border border-verox-line bg-verox-paper p-3">
+                  <p className="vx-kicker text-verox-gray">
                     {row.entity_type}: {row.entity_id}
                   </p>
-                  <p className="mt-1 text-sm text-abj-text1">{row.body}</p>
+                  <p className="mt-1.5 text-sm text-verox-ink">{row.body}</p>
                 </li>
               ))}
             </ul>

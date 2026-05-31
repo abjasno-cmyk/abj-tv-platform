@@ -60,7 +60,7 @@ export default async function JasneZpravyArchivePage({
   } catch (error) {
     const message = error instanceof Error ? error.message : "Neznámá chyba";
     return (
-      <main className="mx-auto max-w-6xl px-4 py-12">
+      <main className="mx-auto max-w-6xl bg-[#FBF8F2] px-4 py-12">
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
           Nepodařilo se navázat připojení k datům Jasných zpráv: {message}
         </div>
@@ -77,7 +77,7 @@ export default async function JasneZpravyArchivePage({
 
   if (editionsRes.error) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-12">
+      <main className="mx-auto max-w-6xl bg-[#FBF8F2] px-4 py-12">
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
           Nepodařilo se načíst archiv vydání: {editionsRes.error.message}
         </div>
@@ -106,11 +106,14 @@ export default async function JasneZpravyArchivePage({
   const dayKeys = Array.from(groupedByDay.keys()).sort((a, b) => b.localeCompare(a));
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10 md:py-12">
+    <main className="mx-auto max-w-6xl bg-[#FBF8F2] px-4 py-10 text-verox-ink md:py-12">
       <header className="mb-8">
-        <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-[#B04A00]">ABJ NEWSROOM</p>
-        <h1 className="mt-2 text-3xl font-black text-gray-950">Archiv Jasných zpráv</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <p className="vx-kicker text-verox-orangeDeep">ABJ Newsroom</p>
+        <h1 className="vx-display mt-3 text-verox-ink" style={{ fontSize: "clamp(2rem, 4.5vw, 3.4rem)", lineHeight: 1 }}>
+          Archiv Jasných zpráv
+        </h1>
+        <hr className="vx-rule mt-4 h-[2px]" />
+        <p className="vx-meta mt-4 text-verox-charcoal">
           Publikovaná vydání, řazená od nejnovějšího. Stránka {Math.min(page, totalPages)} z {totalPages}.
         </p>
       </header>
@@ -136,11 +139,7 @@ export default async function JasneZpravyArchivePage({
             <Link
               key={label}
               href={href}
-              className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
-                isActive
-                  ? "border-[#F37021] bg-[#F37021] text-white"
-                  : "border-gray-200 bg-white text-gray-700 hover:border-[#F37021]/40 hover:text-[#F37021]"
-              }`}
+              className={`vx-btn vx-btn--sm ${isActive ? "vx-btn--solid" : "vx-btn--ghost-ink"}`}
             >
               {label}
             </Link>
@@ -149,19 +148,19 @@ export default async function JasneZpravyArchivePage({
       </div>
 
       {(fromDate || toDate) && (
-        <p className="mb-6 text-sm text-gray-600">
+        <p className="vx-meta mb-6 text-verox-charcoal">
           Filtr data: {fromDate ?? "od začátku"} až {toDate ?? "dnes"}.
         </p>
       )}
 
       {countRes.error && (
-        <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="mb-6 border-l-2 border-verox-orange bg-verox-paperDeep px-4 py-3 text-sm text-verox-charcoal">
           Počty zpráv se nepodařilo načíst pro všechna vydání.
         </div>
       )}
 
       {editions.length === 0 ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 text-gray-700">
+        <div className="border-2 border-verox-line bg-verox-card p-6 text-verox-charcoal">
           Pro zadané filtry nebyla nalezena žádná publikovaná vydání.
         </div>
       ) : (
@@ -170,21 +169,24 @@ export default async function JasneZpravyArchivePage({
             const dayEditions = groupedByDay.get(dayKey) ?? [];
             const dayTitle = formatPragueDateWithWeekday(getEditionTimestamp(dayEditions[0]));
             return (
-              <section key={dayKey} className="rounded-2xl border border-gray-200 bg-white p-4 md:p-5">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-gray-600">{dayTitle}</h2>
-                <ul className="mt-3 divide-y divide-gray-100">
+              <section key={dayKey} className="border-2 border-verox-line bg-verox-card p-4 md:p-5">
+                <div className="flex items-center gap-x-5 border-b-2 border-verox-line pb-2">
+                  <h2 className="vx-kicker text-verox-ink">{dayTitle}</h2>
+                  <hr className="vx-rule-soft mt-1 flex-1" />
+                </div>
+                <ul className="mt-3 divide-y-2 divide-verox-line">
                   {dayEditions.map((edition) => (
                     <li key={edition.id}>
                       <Link
                         href={`/jasne-zpravy/${edition.slug}`}
-                        className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm transition hover:text-[#F37021]"
+                        className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm transition hover:text-verox-orangeText"
                       >
                         <span>
                           {formatPragueTime(getEditionTimestamp(edition))} ·{" "}
                           {getEditionTypeLabel(edition.edition_type)} vydání · {itemCounts.get(edition.id) ?? 0}{" "}
                           zpráv
                         </span>
-                        <span className="font-semibold">otevřít →</span>
+                        <span className="vx-action">otevřít →</span>
                       </Link>
                     </li>
                   ))}
@@ -195,7 +197,7 @@ export default async function JasneZpravyArchivePage({
         </div>
       )}
 
-      <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 pt-5">
+      <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t-2 border-verox-line pt-5">
         {page > 1 ? (
           <Link
             href={buildArchiveHref({
@@ -204,17 +206,15 @@ export default async function JasneZpravyArchivePage({
               fromDate,
               toDate,
             })}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-[#F37021]/35 hover:text-[#F37021]"
+            className="vx-btn vx-btn--ghost-ink vx-btn--sm"
           >
             ← Předchozí stránka
           </Link>
         ) : (
-          <span className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-400">
-            ← Předchozí stránka
-          </span>
+          <span className="vx-btn vx-btn--ghost-ink vx-btn--sm opacity-40">← Předchozí stránka</span>
         )}
 
-        <p className="text-sm text-gray-600">
+        <p className="vx-meta text-verox-charcoal">
           {totalCount} vydání celkem · {PAGE_SIZE} na stránku
         </p>
 
@@ -226,14 +226,12 @@ export default async function JasneZpravyArchivePage({
               fromDate,
               toDate,
             })}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-[#F37021]/35 hover:text-[#F37021]"
+            className="vx-btn vx-btn--ghost-ink vx-btn--sm"
           >
             Další stránka →
           </Link>
         ) : (
-          <span className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-400">
-            Další stránka →
-          </span>
+          <span className="vx-btn vx-btn--ghost-ink vx-btn--sm opacity-40">Další stránka →</span>
         )}
       </footer>
     </main>

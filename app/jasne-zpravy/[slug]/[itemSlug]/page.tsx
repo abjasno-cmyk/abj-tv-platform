@@ -66,7 +66,7 @@ export default async function ItemDetailPage({
   } catch (error) {
     const message = error instanceof Error ? error.message : "Neznámá chyba";
     return (
-      <main className="mx-auto max-w-6xl px-4 py-12">
+      <main className="mx-auto max-w-6xl bg-[#FBF8F2] px-4 py-12">
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
           Nepodařilo se navázat připojení k datům Jasných zpráv: {message}
         </div>
@@ -78,7 +78,7 @@ export default async function ItemDetailPage({
   const edition = editionRes.data as NewsEdition | null;
   if (editionRes.error) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-12">
+      <main className="mx-auto max-w-6xl bg-[#FBF8F2] px-4 py-12">
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
           Nepodařilo se načíst vydání: {editionRes.error.message}
         </div>
@@ -90,7 +90,7 @@ export default async function ItemDetailPage({
   const itemsRes = await fetchPublishedItemsForEdition(supabase, edition.id);
   if (itemsRes.error) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-12">
+      <main className="mx-auto max-w-6xl bg-[#FBF8F2] px-4 py-12">
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
           Nepodařilo se načíst zprávy vydání: {itemsRes.error.message}
         </div>
@@ -105,7 +105,7 @@ export default async function ItemDetailPage({
   const sourcesRes = await fetchSourcesForItemIds(supabase, [item.id]);
   if (sourcesRes.error) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-12">
+      <main className="mx-auto max-w-6xl bg-[#FBF8F2] px-4 py-12">
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
           Nepodařilo se načíst zdroje zprávy: {sourcesRes.error.message}
         </div>
@@ -116,13 +116,13 @@ export default async function ItemDetailPage({
   const sourcesByItem = groupSourcesByItemId(sourcesRes.data ?? []);
 
   return (
-    <main className="mx-auto w-full max-w-[980px] px-4 py-8 text-[#111827] md:py-12">
-      <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm text-gray-500">
-        <Link href={`/jasne-zpravy/${edition.slug}`} className="font-semibold hover:text-gray-900">
+    <main className="mx-auto w-full max-w-[980px] bg-[#FBF8F2] px-4 py-8 text-verox-ink md:py-12">
+      <nav className="mb-5 flex flex-wrap items-center gap-3">
+        <Link href={`/jasne-zpravy/${edition.slug}`} className="vx-action">
           ← Zpět na vydání
         </Link>
-        <span>/</span>
-        <span>{formatPragueDateAndTimeCompact(edition.published_at ?? edition.generated_at)}</span>
+        <span className="vx-meta">/</span>
+        <span className="vx-meta">{formatPragueDateAndTimeCompact(edition.published_at ?? edition.generated_at)}</span>
       </nav>
 
       <StoryDetail

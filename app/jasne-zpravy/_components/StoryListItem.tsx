@@ -8,6 +8,7 @@ import {
   type NewsItem,
   type NewsSource,
 } from "@/lib/jasne-zpravy";
+import { ArrowRight } from "@/components/abj/verox-icons";
 
 type StoryListItemProps = {
   item: NewsItem;
@@ -21,21 +22,20 @@ export function StoryListItem({ item, editionSlug, order, sourcesByItem }: Story
   const sourceCount = getItemSourceCount(item, sourcesByItem);
 
   return (
-    <li className="border-b border-gray-100 py-3 last:border-b-0">
-      <div className="grid gap-2 sm:grid-cols-[32px_minmax(0,1fr)_auto] sm:items-start sm:gap-3">
-        <span className="text-sm font-bold text-gray-400">{item.rank ?? order}</span>
+    <li className="border-b-2 border-verox-line py-3 last:border-b-0">
+      <div className="grid gap-2 sm:grid-cols-[36px_minmax(0,1fr)_auto] sm:items-start sm:gap-3">
+        <span className="vx-numeral" style={{ fontSize: "1.6rem" }}>{item.rank ?? order}</span>
         <div className="min-w-0">
-          <h4 className="jz-headline text-base font-semibold text-gray-900">{item.short_headline ?? item.headline}</h4>
-          <p className="jz-deck mt-1 line-clamp-1 text-sm">{oneLineLead(item)}</p>
-          <p className="mt-1 text-xs text-gray-500">
+          <h4 className="vx-display text-verox-ink" style={{ fontSize: "1.05rem", lineHeight: 1.2 }}>
+            {item.short_headline ?? item.headline}
+          </h4>
+          <p className="mt-1 line-clamp-1 text-sm text-verox-charcoal">{oneLineLead(item)}</p>
+          <p className="vx-meta mt-1">
             {sourceCountLabel(sourceCount)} • {itemReadMinutes(item)} min
           </p>
         </div>
-        <Link
-          href={href}
-          className="inline-flex items-center text-xs font-bold uppercase tracking-[0.08em] text-[#F37021] hover:text-[#cc5500]"
-        >
-          Číst
+        <Link href={href} className="vx-action">
+          Číst <ArrowRight size={12} />
         </Link>
       </div>
     </li>
