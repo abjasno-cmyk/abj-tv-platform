@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Anton, Montserrat, Source_Sans_3 } from "next/font/google";
+import { Montserrat, Roboto_Condensed } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import "./live/verox.css";
@@ -17,19 +17,12 @@ type RootLayoutProps = {
   children: React.ReactNode;
 };
 
-// Client template fonts: Source Sans 3 (~Myriad Pro) for body/UI, Anton
-// (~Impact) for display headings. Latin Extended carries Czech/Slovak diacritics.
-const sourceSans = Source_Sans_3({
+// Final approved design (verox-html-handoff): Roboto Condensed for everything,
+// incl. heavy display headings (weight 900). Latin Extended carries Czech/Slovak.
+const robotoCondensed = Roboto_Condensed({
   subsets: ["latin", "latin-ext"],
   variable: "--font-sans",
-  weight: ["400", "600", "700"],
-  display: "swap",
-});
-
-const anton = Anton({
-  subsets: ["latin", "latin-ext"],
-  variable: "--font-anton",
-  weight: ["400"],
+  weight: ["400", "500", "700", "900"],
   display: "swap",
 });
 
@@ -47,7 +40,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   // visual changes can be reviewed before merging to main.
   const isProductionDeployment = process.env.VERCEL_ENV === "production";
   return (
-    <html lang="cs" className={`${montserrat.variable} ${sourceSans.variable} ${anton.variable}`}>
+    <html lang="cs" className={`${montserrat.variable} ${robotoCondensed.variable}`}>
       <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
         {isProductionDeployment ? (
           <Script id="verox-canonical-host-guard" strategy="beforeInteractive">

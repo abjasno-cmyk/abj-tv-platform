@@ -7,13 +7,14 @@
    ========================================================================== */
 
 :root {
-  --vx-orange: #f37021;
+  /* Finální schválený design (verox-html-handoff) */
+  --vx-orange: #ff6600;
   --vx-gray-dark: #303030;
-  --vx-gray-light: #717171;
+  --vx-gray-light: #707070;
   --vx-white: #ffffff;
-  --vx-black: #000000;
-  --vx-myriad: var(--font-sans), "Source Sans 3", Arial, sans-serif;
-  --vx-impact: var(--font-anton), "Anton", Impact, sans-serif;
+  --vx-black: #111111;
+  --vx-myriad: var(--font-sans), "Roboto Condensed", "Arial Narrow", Arial, sans-serif;
+  --vx-impact: var(--font-sans), "Roboto Condensed", Impact, "Arial Narrow", sans-serif;
   /* proporční poměry lišty (datum 1 : hodiny 4.583 : nav 1.25) */
   --u: clamp(0.62rem, 3.05cqw, 0.9rem);
   --fz-date: var(--u);
