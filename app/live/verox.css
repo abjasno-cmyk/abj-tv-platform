@@ -191,6 +191,10 @@
   -webkit-font-smoothing: antialiased;
   padding-bottom: 10cqw;
 }
+/* podstránky (VIDEA / V KOSTCE / MŮJ VEROX) — trochu místa nahoře pod lištou */
+.vx-live.vx-sub {
+  padding-top: clamp(14px, 4cqw, 40px);
+}
 
 /* oddělovací dvojčára */
 .vx-strip {
@@ -588,6 +592,313 @@
   font-size: clamp(0.78rem, 2.3cqw, 1.05rem);
   letter-spacing: 0.05em;
   margin-top: 4cqw;
+}
+
+/* ============ VIDEA (karty) ============ */
+.vx-card {
+  display: grid;
+  grid-template-columns: 21.3% 1.8% 47% auto;
+  gap: 0 2cqw;
+  padding: 0 var(--L1);
+}
+.vx-card .date {
+  text-align: left;
+}
+.vx-card .month {
+  font-weight: 700;
+  font-size: clamp(0.95rem, 3.2cqw, 1.4rem);
+  color: var(--vx-gray-light);
+  letter-spacing: 0.05em;
+}
+.vx-card .day {
+  font-family: var(--vx-myriad);
+  font-weight: 700;
+  font-size: clamp(2.5rem, 13cqw, 4.5rem);
+  color: var(--vx-orange);
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+.vx-card .thumb {
+  grid-column: 3;
+  aspect-ratio: 16/9;
+  background: #111;
+  align-self: start;
+  margin-top: 1cqw;
+  overflow: hidden;
+  display: block;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.vx-card .thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.vx-card .thumb.portrait {
+  aspect-ratio: 9/16;
+  background: var(--vx-black);
+  max-height: 60cqw;
+  margin-inline: auto;
+}
+.vx-card .body {
+  grid-column: 4;
+}
+.vx-card .body h3 {
+  font-weight: 700;
+  font-size: clamp(1rem, 2.6cqw, 1.25rem);
+  color: var(--vx-gray-dark);
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+}
+.vx-card .body .by {
+  font-weight: 700;
+  font-size: clamp(0.85rem, 2cqw, 1.05rem);
+  color: var(--vx-gray-light);
+  letter-spacing: 0.05em;
+  margin: 0.6em 0;
+}
+.vx-card .body p {
+  font-weight: 400;
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+  color: var(--vx-gray-light);
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+  margin-bottom: 1em;
+}
+
+/* ============ V KOSTCE ============ */
+.kostka {
+  display: grid;
+  grid-template-columns: 21.3% 1.8% 48% auto;
+  gap: 0 2cqw;
+  padding: 0 var(--L1);
+}
+.kostka .date {
+  text-align: left;
+}
+.kostka .month {
+  font-weight: 700;
+  font-size: clamp(0.95rem, 3.2cqw, 1.4rem);
+  color: var(--vx-gray-light);
+  letter-spacing: 0.05em;
+}
+.kostka .day {
+  font-family: var(--vx-myriad);
+  font-weight: 700;
+  font-size: clamp(2.5rem, 13cqw, 4.5rem);
+  color: var(--vx-orange);
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+.kostka .body {
+  grid-column: 3;
+}
+.kostka .body h3 {
+  font-weight: 700;
+  font-size: clamp(1rem, 2.6cqw, 1.4rem);
+  color: var(--vx-gray-dark);
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+}
+.kostka .body .src {
+  font-weight: 700;
+  font-size: clamp(0.85rem, 2cqw, 1.05rem);
+  color: var(--vx-gray-light);
+  letter-spacing: 0.05em;
+  margin: 0.5em 0;
+}
+.kostka .body p {
+  font-weight: 400;
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+  color: var(--vx-gray-light);
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+  margin-bottom: 1em;
+}
+.kostka .actions {
+  grid-column: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 2cqw;
+}
+.kostka .actions button,
+.kostka .actions a {
+  display: block;
+  text-align: left;
+  padding: 2cqw;
+  background: var(--vx-white);
+  border: 2px solid var(--vx-orange);
+  font-family: var(--vx-myriad);
+  font-weight: 700;
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+  letter-spacing: 0.05em;
+  color: var(--vx-gray-dark);
+  cursor: pointer;
+  text-decoration: none;
+}
+.kostka .actions button.neutral,
+.kostka .actions a.neutral {
+  border-color: var(--vx-gray-light);
+}
+
+/* ============ MŮJ VEROX ============ */
+.mv {
+  padding: 0 var(--L1);
+  text-align: center;
+}
+.mv h1 {
+  font-weight: 400;
+  font-family: var(--vx-impact);
+  font-size: clamp(1.5rem, 4.8cqw, 2.6rem);
+  color: var(--vx-orange);
+  letter-spacing: 0.05em;
+  margin: 4cqw 0 3cqw;
+}
+.mv h2 {
+  font-weight: 700;
+  font-size: clamp(0.9rem, 2cqw, 1.2rem);
+  color: var(--vx-gray-dark);
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+.mv .sub {
+  font-weight: 400;
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+  color: var(--vx-gray-light);
+  margin: 1cqw 0 4cqw;
+}
+.mv .info {
+  font-weight: 400;
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+  color: var(--vx-gray-dark);
+  margin-bottom: 5cqw;
+}
+.mv .cta {
+  display: inline-block;
+  min-width: 220px;
+  margin: 0 auto 5cqw;
+  padding: 3cqw 5cqw;
+  background: var(--vx-orange);
+  color: #fff;
+  border: 0;
+  font-family: var(--vx-myriad);
+  font-weight: 400;
+  font-size: clamp(0.9rem, 2cqw, 1.1rem);
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  text-decoration: none;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 32.9% 0.9% auto;
+  gap: 0 2cqw;
+  align-items: start;
+  margin-bottom: 3cqw;
+  padding: 0 var(--L1);
+}
+.form-row label {
+  grid-column: 1;
+  text-align: right;
+  font-weight: 700;
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+  color: var(--vx-gray-dark);
+  letter-spacing: 0.05em;
+  padding-top: 1.5cqw;
+}
+.form-row label small {
+  display: block;
+  font-weight: 700;
+}
+.form-row .field {
+  grid-column: 3;
+}
+.form-row input,
+.form-row textarea {
+  width: 100%;
+  border: 2px solid var(--vx-orange);
+  background: var(--vx-white);
+  padding: 2cqw;
+  font-family: var(--vx-myriad);
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+  color: var(--vx-gray-dark);
+}
+.form-row textarea {
+  min-height: 30cqw;
+  max-height: 320px;
+  resize: vertical;
+}
+.submit-row {
+  display: grid;
+  grid-template-columns: 32.9% 0.9% auto;
+  gap: 0 2cqw;
+  padding: 0 var(--L1);
+  align-items: center;
+}
+.submit-row .submit {
+  grid-column: 3;
+  display: flex;
+  align-items: center;
+  gap: 3cqw;
+}
+.submit-row button {
+  background: var(--vx-orange);
+  color: #fff;
+  border: 0;
+  padding: 3cqw 6cqw;
+  font-family: var(--vx-myriad);
+  font-weight: 400;
+  font-size: clamp(0.9rem, 2cqw, 1.1rem);
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+.submit-row .count {
+  color: var(--vx-gray-light);
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+}
+.pinned {
+  display: grid;
+  grid-template-columns: 30% auto;
+  gap: 0 3cqw;
+  padding: 0 var(--L1);
+  margin-top: 2cqw;
+}
+.pinned .filters {
+  display: flex;
+  flex-direction: column;
+  gap: 2cqw;
+}
+.pinned .filters button {
+  padding: 2cqw;
+  font-family: var(--vx-myriad);
+  font-weight: 400;
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+  letter-spacing: 0.05em;
+  border: 2px solid var(--vx-orange);
+  cursor: pointer;
+}
+.pinned .filters .inactive {
+  background: var(--vx-white);
+  color: var(--vx-gray-dark);
+}
+.pinned .filters .active {
+  background: var(--vx-orange);
+  color: #fff;
+}
+.pinned .col h2 {
+  color: var(--vx-orange);
+  font-weight: 400;
+  font-family: var(--vx-impact);
+  font-size: clamp(1.1rem, 3.2cqw, 1.5rem);
+  letter-spacing: 0.05em;
+}
+.pinned .empty {
+  border: 2px solid var(--vx-orange);
+  padding: 3cqw;
+  margin-top: 2cqw;
+  color: var(--vx-gray-light);
+  font-weight: 400;
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
 }
 
 /* Na širších kartách (tablet) zvětši poměry karet/náhledů */
