@@ -72,7 +72,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <AuthProvider>
           {/* Single global nav only — prevents duplicate legacy header stacks. */}
           <ABJNav />
-          <main className="min-h-[calc(100vh-68px-46px)] pt-[var(--verox-mobile-header-height,112px)] min-[481px]:pt-[68px]">
+          <main className="min-h-[calc(100vh-68px-46px)] pt-[var(--vx-mobile-header-height)] min-[481px]:pt-[68px]">
             {children}
           </main>
           <LegalFooter />

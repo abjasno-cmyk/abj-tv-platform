@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { VeroxDoubleDivider } from "@/components/abj/VeroxDoubleDivider";
-import { VeroxPageHeader } from "@/components/abj/VeroxPageHeader";
 import { VideaVideoCard } from "@/components/videa/VideaVideoCard";
 import { dedupeVideaVideos, mapPostToVideaVideo, parsePublishedMs } from "@/components/videa/videa-feed-utils";
 import { useFeed } from "@/hooks/useFeed";
@@ -40,8 +39,7 @@ export function VideaMobileFeed() {
   const showLoadMore = hasMore && !hasOlderOutsideWindow;
 
   return (
-    <div className="verox-videa-mobile-only bg-[#FFFFFF] px-3 pb-8 pt-3 text-[#303030]">
-      <VeroxPageHeader />
+    <div className="verox-videa-mobile-only verox-videa-mobile-shell bg-[var(--vx-white,#FFFFFF)] pb-8 pt-2 text-[#303030]">
 
       {videos.length === 0 && !loading ? (
         <p className="verox-font-myriad-regular py-6 text-[clamp(0.85rem,1.5vw,0.95rem)] tracking-[0.05em] text-[#717171]">{EMPTY_MESSAGE}</p>

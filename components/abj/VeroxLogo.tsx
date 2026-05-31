@@ -1,22 +1,22 @@
-import Image from "next/image";
 import Link from "next/link";
 
-const LOGO_SRC = "/brand/verox-logo.png";
+const LOGO_SRC = "/brand/verox-logo.svg";
 
 type VeroxLogoProps = {
   href?: string;
   className?: string;
-  priority?: boolean;
 };
 
-export function VeroxLogo({ href = "/live", className = "", priority = true }: VeroxLogoProps) {
+/** Oficiální logotyp VEROX (SVG z master PDF). */
+export function VeroxLogo({ href = "/live", className = "" }: VeroxLogoProps) {
   const image = (
-    <Image
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
       src={LOGO_SRC}
       alt="VEROX"
-      width={496}
-      height={331}
-      priority={priority}
+      width={400}
+      height={120}
+      decoding="async"
       className={`verox-logo-img block h-auto w-auto max-w-full object-contain object-left ${className}`.trim()}
     />
   );

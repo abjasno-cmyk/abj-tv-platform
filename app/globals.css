@@ -241,7 +241,7 @@ a {
   display: block;
   height: 1.5px;
   width: 100%;
-  background-color: #f37021;
+  background-color: var(--vx-orange, #f37021);
 }
 
 @media (max-width: 480px) {
@@ -402,20 +402,17 @@ a {
 }
 
 .verox-live-community-title {
-  font-size: clamp(1rem, 3vw, 1.3rem);
+  font-size: clamp(0.95rem, 2.26vw, 1.5rem);
+  line-height: 1.15;
 }
 
 .verox-live-community-hint {
-  font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+  font-size: clamp(0.7rem, 1.18vw, 0.95rem);
 }
 
 .verox-live-live-btn {
-  width: 9.8vw;
-  height: 9.8vw;
-  max-width: 46px;
-  max-height: 46px;
-  min-width: 36px;
-  min-height: 36px;
+  width: clamp(36px, 9.8vw, 46px);
+  height: clamp(36px, 9.8vw, 46px);
   font-size: clamp(0.5rem, 1.65vw, 0.65rem);
   line-height: 1.05;
 }

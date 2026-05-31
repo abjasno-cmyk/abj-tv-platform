@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 
 import { VeroxDoubleDivider } from "@/components/abj/VeroxDoubleDivider";
-import { VeroxPageHeader } from "@/components/abj/VeroxPageHeader";
 import { useVKostceInteractions } from "@/components/v-kostce/useVKostceInteractions";
 import { mapPostToVKostceItem, sortVKostceItems } from "@/components/v-kostce/v-kostce-feed-utils";
 import { VKostceCard } from "@/components/v-kostce/VKostceCard";
@@ -28,9 +27,8 @@ export function VKostceMobileFeed() {
   const interactions = useVKostceInteractions(items);
 
   return (
-    <div className="verox-vkostce-mobile-only bg-[#FFFFFF] px-0 pb-8 pt-3 text-[#303030]">
+    <div className="verox-vkostce-mobile-only verox-vkostce-mobile-shell bg-[var(--vx-white,#FFFFFF)] px-0 pb-8 pt-3 text-[#303030]">
       <div className="px-3">
-        <VeroxPageHeader />
       </div>
 
       {items.length === 0 && !loading ? (

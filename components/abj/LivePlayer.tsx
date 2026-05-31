@@ -6,7 +6,6 @@ import YouTube, { type YouTubeProps } from "react-youtube";
 
 import { LiveCommunityStrip } from "@/components/abj/LiveCommunityStrip";
 import { VeroxDoubleDivider } from "@/components/abj/VeroxDoubleDivider";
-import { VeroxPageHeader } from "@/components/abj/VeroxPageHeader";
 
 type LivePlayerProps = {
   videoId: string | null;
@@ -422,8 +421,6 @@ export function LivePlayer({
     <div className="relative mb-12 pt-12 font-[Helvetica,Arial,sans-serif] text-[#111111] max-[480px]:mb-6 max-[480px]:pt-3">
       {/* Mobile — VEROX visual refresh */}
       <div className="verox-live-mobile-only verox-live-mobile-shell">
-        <VeroxPageHeader />
-
         <div className="verox-live-hero">
           <LiveVideoViewport
             {...videoViewportProps}

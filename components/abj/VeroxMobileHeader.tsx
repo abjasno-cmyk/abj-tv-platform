@@ -47,9 +47,9 @@ export function VeroxMobileHeader() {
   }, [openLoginModal]);
 
   return (
-    <header className="verox-mobile-header fixed inset-x-0 top-0 z-50 bg-[#FFFFFF] font-[Helvetica,Arial,sans-serif] text-[#303030]">
+    <header className="verox-mobile-header sticky top-0 z-50 bg-[var(--vx-white,#FFFFFF)] font-[Helvetica,Arial,sans-serif] text-[#303030]">
       <div className="verox-mobile-header-top flex items-start justify-between gap-2 pb-1 pt-2">
-        <div className="verox-mobile-header-brand min-w-0 pl-[3.55%]">
+        <div className="verox-mobile-header-brand min-w-0 pl-[var(--L1,3.55%)]">
           <div className="inline-flex max-w-[58vw] flex-col">
             <VeroxLogo className="verox-logo-img--mobile-header" />
             <span className="verox-mobile-tagline verox-font-myriad-regular mt-0.5 uppercase tracking-[0.05em] text-[#000000]">
@@ -58,7 +58,7 @@ export function VeroxMobileHeader() {
           </div>
         </div>
 
-        <div className="verox-mobile-header-meta flex shrink-0 flex-col items-end pr-[3.55%] text-right">
+        <div className="verox-mobile-header-meta flex shrink-0 flex-col items-end pr-[var(--L1,3.55%)] text-right">
           <p className="verox-mobile-header-date verox-font-myriad-bold uppercase leading-tight tracking-normal text-[#303030]">
             {dateLabel}
           </p>
