@@ -743,3 +743,18 @@ a {
     display: none !important;
   }
 }
+
+.verox-logo-img {
+  height: auto;
+  width: auto;
+}
+
+.verox-logo-img--mobile-header {
+  height: clamp(26px, 7.2vw, 36px);
+  max-width: min(52vw, 200px);
+}
+
+.verox-logo-img--desktop-header {
+  height: 36px;
+  max-width: 200px;
+}

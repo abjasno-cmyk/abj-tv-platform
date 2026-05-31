@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 248 56" fill="none" role="img" aria-label="VEROX">
+  <text
+    x="0"
+    y="44"
+    fill="#303030"
+    font-family="Impact, 'Arial Black', sans-serif"
+    font-size="48"
+    font-weight="400"
+    letter-spacing="-0.02em"
+  >
+    VEROX
+  </text>
+  <circle cx="234" cy="14" r="9" fill="#F37021" />
+</svg>

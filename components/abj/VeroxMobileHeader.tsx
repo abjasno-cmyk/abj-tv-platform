@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 
+import { VeroxLogo } from "@/components/abj/VeroxLogo";
 import { getPragueDateHeader, getPragueTimeLabel } from "@/components/abj/verox-header-utils";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -49,14 +50,12 @@ export function VeroxMobileHeader() {
     <header className="verox-mobile-header fixed inset-x-0 top-0 z-50 bg-[#FFFFFF] font-[Helvetica,Arial,sans-serif] text-[#303030]">
       <div className="verox-mobile-header-top flex items-start justify-between gap-2 pb-1 pt-2">
         <div className="verox-mobile-header-brand min-w-0 pl-[3.55%]">
-          <Link href="/live" className="inline-flex flex-col" aria-label="Přejít na stránku Živě">
-            <span className="text-[clamp(1.35rem,5.5vw,1.75rem)] font-black leading-none tracking-[0.02em] text-[#000000]">
-              VEROX
-            </span>
+          <div className="inline-flex max-w-[58vw] flex-col">
+            <VeroxLogo className="verox-logo-img--mobile-header" />
             <span className="verox-mobile-tagline verox-font-myriad-regular mt-0.5 uppercase tracking-[0.05em] text-[#000000]">
               MAINSTREAMOVÝ DETOX
             </span>
-          </Link>
+          </div>
         </div>
 
         <div className="verox-mobile-header-meta flex shrink-0 flex-col items-end pr-[3.55%] text-right">
