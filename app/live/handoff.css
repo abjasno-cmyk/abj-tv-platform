@@ -1,0 +1,453 @@
+/* ============================================================================
+   VEROX landing podle finálního handoffu (verox-html-handoff) — věrná fluidní
+   rekreace schváleného 1240px artboardu. Proporce (logo, odsazení 27%, šířky
+   dvojčar, pozice hodin/nav) odpovídají handoffu; napojené na reálná data.
+   Scope: .hf
+   ========================================================================== */
+
+.hf {
+  --hf-indent: 27.4%; /* 340/1240 — odsazení textového obsahu */
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  background: #fff;
+  font-family: var(--vx-myriad);
+  color: var(--vx-gray-dark);
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: clamp(34px, 5vw, 80px);
+}
+.hf * {
+  box-sizing: border-box;
+}
+.hf img {
+  display: block;
+  max-width: 100%;
+}
+
+/* ---------- HLAVIČKA (velké logo, hodiny pod ním, nav vpravo) ---------- */
+.hf-header {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1240 / 351;
+}
+.hf-logo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 61.5%;
+  height: auto;
+}
+.hf-tagline {
+  position: absolute;
+  top: 61.5%;
+  left: 3.1%;
+  margin: 0;
+  color: var(--vx-gray-dark);
+  font-size: clamp(0.7rem, 1.93vw, 24px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.hf-clock {
+  position: absolute;
+  top: 55%;
+  left: 39.4%;
+  margin: 0;
+  color: var(--vx-orange);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(2.4rem, 7vw, 87px);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: 2px;
+}
+.hf-date {
+  position: absolute;
+  top: 84%;
+  left: 42%;
+  margin: 0;
+  color: var(--vx-gray-dark);
+  font-size: clamp(0.62rem, 1.85vw, 23px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.hf-nav {
+  position: absolute;
+  top: 14%;
+  left: 65%;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 2.5vw, 31px);
+}
+.hf-nav a {
+  color: var(--vx-nav-gray, #707070);
+  font-size: clamp(0.85rem, 2.34vw, 29px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.hf-nav a.is-active,
+.hf-nav a.login-link {
+  color: var(--vx-orange);
+  font-weight: 800;
+}
+
+/* ---------- Oranžová dvojčára ---------- */
+.hf .double-rule {
+  position: relative;
+  height: 10px;
+  margin: clamp(10px, 1.4vw, 20px) 0;
+}
+.hf .double-rule::before,
+.hf .double-rule::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--vx-orange);
+}
+.hf .double-rule::before {
+  top: 0;
+}
+.hf .double-rule::after {
+  top: 7px;
+}
+.hf .header-rule {
+  width: 58.6%;
+}
+.hf .feature-rule {
+  width: 76%;
+}
+.hf .channels-rule {
+  width: 74.6%;
+}
+
+/* ---------- HERO ---------- */
+.hf .hero {
+  position: relative;
+}
+.hf .hero-media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1240 / 695;
+  background: #111;
+  overflow: hidden;
+}
+.hf .hero-media > div:not(.hero-ctrls),
+.hf .hero-media iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.hf .live-badge {
+  position: absolute;
+  left: 27.4%;
+  bottom: clamp(-30px, -3.4vw, -43px);
+  width: clamp(58px, 7vw, 86px);
+  height: auto;
+  aspect-ratio: 1;
+  z-index: 3;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.hf .hero-ctrls {
+  position: absolute;
+  right: clamp(8px, 1.4vw, 16px);
+  left: auto;
+  top: clamp(8px, 1.4vw, 16px);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hf .hero-ctrls button {
+  width: clamp(34px, 4vw, 48px);
+  aspect-ratio: 1;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* ---------- FEATURE SUMMARY (titulek pořadu) — text odsazený, ikona v okraji ---------- */
+.hf .feature-summary {
+  position: relative;
+  padding: clamp(40px, 5vw, 62px) 4% 0 0;
+}
+.hf .comment-icon {
+  position: absolute;
+  left: 18%;
+  top: clamp(46px, 5.2vw, 65px);
+  width: clamp(40px, 5.2vw, 65px);
+}
+.hf .feature-copy {
+  margin-left: var(--hf-indent);
+  max-width: 60%;
+}
+.hf .feature-copy h1 {
+  margin: 0;
+  font-family: var(--vx-impact);
+  font-weight: 900;
+  font-size: clamp(1.2rem, 3vw, 37.5px);
+  line-height: 1.19;
+  color: var(--vx-gray-dark);
+}
+.hf .feature-copy p {
+  margin: clamp(8px, 1vw, 14px) 0 0;
+  font-size: clamp(0.95rem, 1.77vw, 22px);
+  color: var(--vx-gray-dark);
+}
+
+/* ---------- PRÁVĚ HRAJE ---------- */
+.hf .playing-now h2,
+.hf .channels h2 {
+  margin: clamp(18px, 2vw, 26px) 0 clamp(12px, 1.4vw, 18px) var(--hf-indent);
+  color: var(--vx-orange);
+  font-family: var(--vx-impact);
+  font-weight: 400;
+  font-size: clamp(1.5rem, 3.06vw, 38px);
+  letter-spacing: 1.6px;
+  line-height: 1;
+}
+.hf .playing-stage {
+  display: flex;
+  gap: 0.9%;
+  width: 100%;
+}
+.hf .playing-image {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #ccc;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+}
+.hf .playing-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hf .playing-image-left {
+  flex: 0 0 26.5%;
+}
+.hf .playing-image-main {
+  flex: 0 0 40.9%;
+}
+.hf .playing-image-right {
+  flex: 0 0 26.9%;
+}
+.hf .dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: clamp(12px, 1.4vw, 20px) 0;
+}
+.hf .dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #979797;
+}
+.hf .dots span.active {
+  width: 10px;
+  height: 10px;
+  background: var(--vx-orange);
+}
+.hf .status-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 0 var(--hf-indent);
+  color: var(--vx-orange);
+  font-weight: 900;
+  font-size: clamp(0.78rem, 1.21vw, 15px);
+}
+.hf .status-label span {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--vx-orange);
+}
+.hf .playing-now h3 {
+  margin: clamp(8px, 1vw, 14px) 0 6px var(--hf-indent);
+  max-width: 45%;
+  font-family: var(--vx-impact);
+  font-weight: 900;
+  font-size: clamp(1.1rem, 2.14vw, 26.5px);
+  line-height: 1.05;
+  color: var(--vx-gray-dark);
+}
+.hf .source-label {
+  margin: 0 0 0 var(--hf-indent);
+  font-size: clamp(0.78rem, 1.21vw, 15px);
+  color: var(--vx-gray-dark);
+}
+
+/* ---------- KANÁLY ---------- */
+.hf .channels > p {
+  margin: clamp(8px, 1vw, 14px) 0 clamp(14px, 1.8vw, 24px) var(--hf-indent);
+  font-size: clamp(0.85rem, 1.53vw, 19px);
+  color: var(--vx-gray-dark);
+  letter-spacing: 0.5px;
+}
+.hf .channel-track {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 0.7vw, 9px);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 4px 0 6px;
+  width: 100%;
+}
+.hf .channel-track::-webkit-scrollbar {
+  display: none;
+}
+.hf .channel-card {
+  flex: 0 0 auto;
+  width: clamp(130px, 13.95vw, 173px);
+  aspect-ratio: 173 / 99;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 10px;
+  background: #fff;
+  border: 2px solid #737373;
+  cursor: pointer;
+}
+.hf .channel-card.channel-card-active {
+  border: 3px solid var(--vx-orange);
+  width: clamp(146px, 15.24vw, 189px);
+  aspect-ratio: 189 / 121;
+}
+.hf .channel-card img {
+  max-height: 64%;
+  width: auto;
+}
+.hf .channel-card .ch-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+.hf .channel-card .ch-name {
+  font-weight: 700;
+  font-size: clamp(0.78rem, 1.2vw, 1rem);
+  color: var(--vx-gray-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- MOBILE: hlavička se přeskládá, menší odsazení ---------- */
+@media (max-width: 760px) {
+  .hf {
+    --hf-indent: 7%;
+  }
+
+  /* hlavička: logo + hodiny v řádku, tagline, nav vodorovně */
+  .hf-header {
+    position: relative;
+    aspect-ratio: auto;
+    height: auto;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: end;
+    column-gap: 12px;
+    row-gap: 4px;
+    padding: 12px 4% 8px;
+  }
+  .hf-logo {
+    position: static;
+    width: min(52vw, 240px);
+  }
+  .hf-tagline {
+    position: static;
+    grid-column: 1;
+    grid-row: 2;
+    font-size: clamp(9px, 2.6vw, 13px);
+  }
+  .hf-clock {
+    position: static;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    font-size: clamp(2rem, 11vw, 3rem);
+    letter-spacing: 1px;
+  }
+  .hf-date {
+    position: static;
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+    font-size: clamp(9px, 2.6vw, 13px);
+  }
+  .hf-nav {
+    position: static;
+    grid-column: 1 / -1;
+    grid-row: 3;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    margin-top: 6px;
+  }
+  .hf-nav a {
+    font-size: clamp(0.8rem, 3.6vw, 1rem);
+  }
+
+  /* feature-summary: ikona inline před textem */
+  .hf .feature-summary {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 26px 4% 0;
+  }
+  .hf .comment-icon {
+    position: static;
+    width: clamp(34px, 9vw, 48px);
+    flex: 0 0 auto;
+  }
+  .hf .feature-copy {
+    margin-left: 0;
+    max-width: none;
+  }
+  .hf .live-badge {
+    left: 7%;
+  }
+
+  .hf .playing-now h3 {
+    max-width: 80%;
+  }
+  .hf .playing-stage {
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 6px;
+  }
+  .hf .playing-stage::-webkit-scrollbar {
+    display: none;
+  }
+  .hf .playing-image-left {
+    flex: 0 0 58%;
+  }
+  .hf .playing-image-main {
+    flex: 0 0 76%;
+  }
+  .hf .playing-image-right {
+    flex: 0 0 58%;
+  }
+  .hf-clock {
+    letter-spacing: 1px;
+  }
+}

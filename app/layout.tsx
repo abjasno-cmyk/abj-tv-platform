@@ -3,6 +3,7 @@ import { Montserrat, Roboto_Condensed } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import "./live/verox.css";
+import "./live/handoff.css";
 import { ABJNav } from "@/components/abj/Nav";
 import { LegalFooter } from "@/components/abj/LegalFooter";
 import { AuthProvider } from "@/components/auth/AuthProvider";

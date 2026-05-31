@@ -59,6 +59,12 @@ export function ABJNav() {
     return "zive";
   }, [pathname]);
 
+  // Landing /live má vlastní hlavičku dle handoffu (viz HomePage), globální
+  // lišta tam ustoupí.
+  if (pathname.startsWith("/live")) {
+    return null;
+  }
+
   return (
     <header className="vx-hdr">
       <div className="vx-hdr-inner">

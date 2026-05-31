@@ -2,10 +2,22 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import YouTube, { type YouTubeProps } from "react-youtube";
 
+import { useAuth } from "@/components/auth/AuthProvider";
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import type { DayProgram, ProgramItem } from "@/lib/epg-types";
+
+const DAYS = ["NEDĚLE", "PONDĚLÍ", "ÚTERÝ", "STŘEDA", "ČTVRTEK", "PÁTEK", "SOBOTA"];
+const MONTHS_GEN = [
+  "LEDNA", "ÚNORA", "BŘEZNA", "DUBNA", "KVĚTNA", "ČERVNA",
+  "ČERVENCE", "SRPNA", "ZÁŘÍ", "ŘÍJNA", "LISTOPADU", "PROSINCE",
+];
+
+function pad(n: number): string {
+  return n.toString().padStart(2, "0");
+}
 
 type HomePageProps = {
   days: DayProgram[];
@@ -41,37 +53,36 @@ function thumbFor(item: ProgramItem): string {
   return "/placeholder-thumb.jpg";
 }
 
-function initials(name: string): string {
-  const parts = name.split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "CH";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-}
-
+// Landing dle finálního handoffu: hero + odznak, feature-summary, PRÁVĚ HRAJE
+// (3 náhledy) + PRÁVĚ BĚŽÍ, KANÁLY. Vše napojené na reálná data.
 export function HomePage({
   days,
   channels,
   videoId,
   title,
   channelName,
-  isLive,
   startSeconds = 0,
-  remainingLabel,
   onSelect,
   onReturnToLive,
   onPlaybackSample,
   onSelectChannelVideo,
 }: HomePageProps) {
+  const { isAuthenticated, openLoginModal } = useAuth();
   const heroRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<PlayerHandle | null>(null);
-  const trackRef = useRef<HTMLDivElement | null>(null);
-  const chRef = useRef<HTMLDivElement | null>(null);
   const [muted, setMuted] = useState(true);
+  const [now, setNow] = useState<Date>(() => new Date());
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const programItems = useMemo(
-    () => days.flatMap((day) => day.items).filter((item) => Boolean(item.videoId)).slice(0, 14),
+    () => days.flatMap((day) => day.items).filter((item) => Boolean(item.videoId)),
     [days],
   );
+  const stage = programItems.slice(0, 3);
   const offset = Math.max(0, Math.floor(startSeconds));
 
   const opts = useMemo<YouTubeProps["opts"]>(
@@ -92,7 +103,6 @@ export function HomePage({
     [muted, offset],
   );
 
-  // Periodically report playback position (continue-watching / analytics).
   useEffect(() => {
     if (!videoId || !onPlaybackSample) return;
     const id = window.setInterval(() => {
@@ -126,170 +136,168 @@ export function HomePage({
     else el.webkitRequestFullscreen?.();
   };
 
-  const nudge = (ref: React.RefObject<HTMLDivElement | null>, dir: 1 | -1) => {
-    const el = ref.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * Math.min(el.clientWidth * 0.8, 420), behavior: "smooth" });
-  };
-
-  const dotCount = Math.min(7, Math.max(1, programItems.length));
+  const stagePos = ["playing-image-left", "playing-image-main", "playing-image-right"];
 
   return (
-    <div className="vx-live">
-      {/* ŽIVĚ — hero */}
-      <div className="hero" ref={heroRef}>
-        {videoId ? (
-          <YouTube
-            key={`${videoId}-${muted ? "m" : "u"}-${offset}`}
-            videoId={videoId}
-            title={title}
-            iframeClassName=""
-            opts={opts}
-            onReady={(e) => {
-              playerRef.current = e.target as unknown as PlayerHandle;
-              if (muted) playerRef.current.mute?.();
+    <div className="hf">
+      {/* HLAVIČKA dle handoffu */}
+      <header className="hf-header" aria-label="VEROX">
+        <Link href="/live" aria-label="VEROX — Mainstreamový detox">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="hf-logo" src="/handoff/assets/verox-logo.webp" alt="VEROX" />
+        </Link>
+        <p className="hf-tagline">MAINSTREAMOVÝ DETOX</p>
+        <p className="hf-clock" suppressHydrationWarning>
+          {pad(now.getHours())}:{pad(now.getMinutes())}
+        </p>
+        <p className="hf-date" suppressHydrationWarning>
+          {DAYS[now.getDay()]} {now.getDate()}. {MONTHS_GEN[now.getMonth()]}
+        </p>
+        <nav className="hf-nav" aria-label="Hlavní navigace">
+          <Link className="is-active" href="/live" aria-current="page">ŽIVĚ</Link>
+          <Link href="/videa">VIDEA</Link>
+          <Link href="/v-kostce">V KOSTCE</Link>
+          <Link href="/muj-verox">MŮJ VEROX</Link>
+          <a
+            className="login-link"
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              if (!isAuthenticated) openLoginModal({ reason: "Přihlaste se zdarma." });
             }}
-          />
-        ) : null}
-        <div className="hero-ctrls">
-          <button type="button" onClick={toggleFullscreen} aria-label="Celá obrazovka">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/ikona_to_full_scren.svg" alt="" />
-          </button>
-          <button type="button" onClick={toggleMute} aria-label={muted ? "Zapnout zvuk" : "Vypnout zvuk"} style={{ opacity: muted ? 0.55 : 1 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/ikona_sound_on.svg" alt="" />
-          </button>
-        </div>
-      </div>
+          >
+            PŘIHLÁSIT ZDARMA
+          </a>
+        </nav>
+      </header>
+      <div className="double-rule header-rule" aria-hidden="true" />
 
-      <div className="live-block">
-        <div className="live-meta">
-          <div className="komunita">
-            <h3>KOMUNITA</h3>
-            <p>ZDE NAPIŠTE ZPRÁVU</p>
-            <input aria-label="Napsat zprávu do komunity" />
-          </div>
-          <div className="show-title">
-            <h2>{title}</h2>
-            <div className="author">{channelName}</div>
-          </div>
-          <div className="live-right">
-            <button type="button" className="circle" onClick={onReturnToLive} aria-label="Přepnout na živé vysílání">
+      {/* HERO */}
+      <section className="hero" aria-label="Živé vysílání">
+        <div className="hero-media" ref={heroRef}>
+          {videoId ? (
+            <YouTube
+              key={`${videoId}-${muted ? "m" : "u"}-${offset}`}
+              videoId={videoId}
+              title={title}
+              opts={opts}
+              onReady={(e) => {
+                playerRef.current = e.target as unknown as PlayerHandle;
+                if (muted) playerRef.current.mute?.();
+              }}
+            />
+          ) : null}
+          <div className="hero-ctrls">
+            <button type="button" onClick={toggleFullscreen} aria-label="Celá obrazovka">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icons/ikona_zive_vysilani.svg" alt="ŽIVĚ VYSÍLÁNÍ" />
+              <img src="/icons/ikona_to_full_scren.svg" alt="" />
             </button>
-            <div className="countdown">
-              DO KONCE ZBÝVÁ : <b>{remainingLabel}</b>
-            </div>
+            <button
+              type="button"
+              onClick={toggleMute}
+              aria-label={muted ? "Zapnout zvuk" : "Vypnout zvuk"}
+              style={{ opacity: muted ? 0.6 : 1 }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/icons/ikona_sound_on.svg" alt="" />
+            </button>
           </div>
         </div>
+        <button type="button" className="live-badge" onClick={onReturnToLive} aria-label="Přepnout na živé vysílání">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/handoff/assets/live-badge.webp" alt="Živé vysílání" />
+        </button>
+      </section>
 
-        <div className="vx-strip w75">
-          <span />
-          <span />
+      {/* FEATURE SUMMARY */}
+      <section className="feature-summary" aria-labelledby="hf-featured">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="comment-icon" src="/handoff/assets/comment-icon.webp" alt="" />
+        <div className="feature-copy">
+          <h1 id="hf-featured">{title}</h1>
+          <p>{channelName}</p>
         </div>
+      </section>
 
-        <h3 className="section-h">PRÁVĚ HRAJE</h3>
-        <div className="carousel">
-          <button type="button" className="chev left" onClick={() => nudge(trackRef, -1)} aria-label="Předchozí">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/ikona_sipka.svg" alt="" />
-          </button>
-          <div className="track" ref={trackRef}>
-            {programItems.length === 0 ? (
-              <div className="thumb" />
-            ) : (
-              programItems.map((item, idx) => (
-                <button type="button" className="thumb" key={`${item.videoId}-${idx}`} onClick={() => onSelect(item)} aria-label={item.title}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={thumbFor(item)} alt={item.title} loading="lazy" />
-                </button>
-              ))
-            )}
-          </div>
-          <button type="button" className="chev" onClick={() => nudge(trackRef, 1)} aria-label="Další">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/ikona_sipka.svg" alt="" />
-          </button>
+      <div className="double-rule feature-rule" aria-hidden="true" />
+
+      {/* PRÁVĚ HRAJE */}
+      <section className="playing-now" aria-labelledby="hf-playing">
+        <h2 id="hf-playing">PRÁVĚ HRAJE</h2>
+        <div className="playing-stage" aria-label="Program">
+          {stage.length === 0 ? (
+            <>
+              <div className="playing-image playing-image-left" />
+              <div className="playing-image playing-image-main" />
+              <div className="playing-image playing-image-right" />
+            </>
+          ) : (
+            stage.map((item, i) => (
+              <button
+                type="button"
+                key={`${item.videoId}-${i}`}
+                className={`playing-image ${stagePos[i] ?? "playing-image-right"}`}
+                onClick={() => onSelect(item)}
+                aria-label={item.title}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={thumbFor(item)} alt={item.title} loading="lazy" />
+              </button>
+            ))
+          )}
         </div>
-        <div className="dots">
-          {Array.from({ length: dotCount }).map((_, i) => (
-            <i key={i} className={i === 0 ? "on" : undefined} />
+        <div className="dots" aria-hidden="true">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <span key={i} className={i === 3 ? "active" : undefined} />
           ))}
         </div>
-
-        <section className="running">
-          <div className="tag">PRÁVĚ BĚŽÍ</div>
-          <h4>{title}</h4>
-          <div className="src">{channelName}</div>
-        </section>
-
-        <div className="vx-strip">
+        <p className="status-label">
           <span />
-          <span />
-        </div>
-      </div>
+          PRÁVĚ BĚŽÍ
+        </p>
+        <h3>{title}</h3>
+        <p className="source-label">{channelName}</p>
+      </section>
+
+      <div className="double-rule channels-rule" aria-hidden="true" />
 
       {/* KANÁLY */}
-      <h3 className="section-h">KANÁLY</h3>
-      <section className="channels">
-        <div className="ch-track">
-          <button type="button" className="chev left" onClick={() => nudge(chRef, -1)} aria-label="Předchozí kanály">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/ikona_sipka.svg" alt="" />
-          </button>
-          <div className="ch-list" ref={chRef}>
-            {channels.length === 0 ? (
-              <div className="ch-card">
-                <span className="logo" />
-                <span className="name">Připravujeme…</span>
-              </div>
-            ) : (
-              channels.map((ch) => {
-                const active = ch.channelName === channelName;
-                const firstVideo = ch.videos[0];
-                return (
-                  <button
-                    type="button"
-                    key={ch.channelName}
-                    className={`ch-card${active ? " active" : ""}`}
-                    onClick={() => {
-                      if (firstVideo) onSelectChannelVideo({ channelName: ch.channelName, video: firstVideo });
-                    }}
-                  >
-                    <span className="logo">
-                      {ch.avatarUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={ch.avatarUrl} alt="" />
-                      ) : (
-                        <span
-                          style={{
-                            color: "#fff",
-                            fontSize: "0.7rem",
-                            fontWeight: 700,
-                            display: "grid",
-                            placeItems: "center",
-                            width: "100%",
-                            height: "100%",
-                          }}
-                        >
-                          {initials(ch.channelName)}
-                        </span>
-                      )}
-                    </span>
-                    <span className="name">{ch.channelName}</span>
-                  </button>
-                );
-              })
-            )}
-          </div>
-          <button type="button" className="chev" onClick={() => nudge(chRef, 1)} aria-label="Další kanály">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/ikona_sipka.svg" alt="" />
-          </button>
+      <section className="channels" aria-labelledby="hf-channels">
+        <h2 id="hf-channels">KANÁLY</h2>
+        <p>KLIKNĚTE NA VYBRANÝ KANÁL PRO ZOBRAZENÍ DETAILU.</p>
+        <div className="channel-track" aria-label="Kanály">
+          {channels.length === 0 ? (
+            <article className="channel-card">
+              <span className="ch-name">Připravujeme…</span>
+            </article>
+          ) : (
+            channels.map((ch) => {
+              const active = ch.channelName === channelName;
+              const firstVideo = ch.videos[0];
+              return (
+                <button
+                  type="button"
+                  key={ch.channelName}
+                  className={`channel-card${active ? " channel-card-active" : ""}`}
+                  onClick={() => {
+                    if (firstVideo) onSelectChannelVideo({ channelName: ch.channelName, video: firstVideo });
+                  }}
+                >
+                  {ch.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img className="ch-avatar" src={ch.avatarUrl} alt="" />
+                  ) : null}
+                  <span className="ch-name">{ch.channelName}</span>
+                </button>
+              );
+            })
+          )}
         </div>
-        <p className="hint">KLIKNĚTE NA VYBRANÝ KANÁL PRO ZOBRAZENÍ DETAILU.</p>
+        <div className="dots" aria-hidden="true">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <span key={i} className={i === 3 ? "active" : undefined} />
+          ))}
+        </div>
       </section>
     </div>
   );
