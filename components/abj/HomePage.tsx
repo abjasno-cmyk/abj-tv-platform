@@ -39,6 +39,8 @@ type PlayerHandle = {
   seekTo?: (seconds: number, allowSeekAhead?: boolean) => void;
 };
 
+const DOT_COUNT = 7;
+
 function thumbFor(item: ProgramItem): string {
   if (item.thumbnail && item.thumbnail.trim()) return item.thumbnail.trim();
   if (item.videoId) return `https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`;
@@ -62,8 +64,12 @@ export function HomePage({
   const heroRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<PlayerHandle | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
+  const channelTrackRef = useRef<HTMLDivElement | null>(null);
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(true);
+  const [stageDot, setStageDot] = useState(0);
+  const [channelDot, setChannelDot] = useState(0);
+  const [pendingChannel, setPendingChannel] = useState<string | null>(null);
 
   const programItems = useMemo(
     () => days.flatMap((day) => day.items).filter((item) => Boolean(item.videoId)),
@@ -101,6 +107,81 @@ export function HomePage({
     const el = stageRef.current;
     if (!el) return;
     el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" });
+  };
+
+  const scrollChannels = (dir: -1 | 1) => {
+    const el = channelTrackRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" });
+  };
+
+  // Aktivní tečka = pozice scrollu napříč DOT_COUNT tečkami (carousel posun).
+  useEffect(() => {
+    const stageEl = stageRef.current;
+    const trackEl = channelTrackRef.current;
+    const dotFor = (el: HTMLDivElement | null): number => {
+      if (!el) return 0;
+      const max = el.scrollWidth - el.clientWidth;
+      if (max <= 1) return 0;
+      const progress = Math.min(1, Math.max(0, el.scrollLeft / max));
+      return Math.round(progress * (DOT_COUNT - 1));
+    };
+    const onStageScroll = () => setStageDot(dotFor(stageEl));
+    const onTrackScroll = () => setChannelDot(dotFor(trackEl));
+    onStageScroll();
+    onTrackScroll();
+    stageEl?.addEventListener("scroll", onStageScroll, { passive: true });
+    trackEl?.addEventListener("scroll", onTrackScroll, { passive: true });
+    window.addEventListener("resize", onStageScroll);
+    window.addEventListener("resize", onTrackScroll);
+    return () => {
+      stageEl?.removeEventListener("scroll", onStageScroll);
+      trackEl?.removeEventListener("scroll", onTrackScroll);
+      window.removeEventListener("resize", onStageScroll);
+      window.removeEventListener("resize", onTrackScroll);
+    };
+  }, [stageItems.length, channels.length]);
+
+  // Výběr kanálu: pokud kanál nemá přednačtené video, doptáme se na nejnovější
+  // přes /api/channel-latest, ať jdou spustit i kanály bez položek ve feedu.
+  const selectChannel = async (ch: LiveChannelGroup) => {
+    const firstVideo = ch.videos[0];
+    if (firstVideo) {
+      onSelectChannelVideo({ channelName: ch.channelName, video: firstVideo });
+      return;
+    }
+    if (pendingChannel) return;
+    if (!ch.channelId && !ch.channelUrl && !ch.channelName.trim()) return;
+
+    setPendingChannel(ch.channelName);
+    try {
+      const params = new URLSearchParams();
+      if (ch.channelId) params.set("channelId", ch.channelId);
+      if (ch.channelUrl) params.set("channelUrl", ch.channelUrl);
+      params.set("channelName", ch.channelName);
+      params.set("limit", "1");
+
+      const response = await fetch(`/api/channel-latest?${params.toString()}`, { cache: "no-store" });
+      const payload = (await response.json().catch(() => ({}))) as {
+        videos?: Array<{ videoId?: string; title?: string; thumbnail?: string; publishedAt?: string }>;
+      };
+      const latest = payload.videos?.find((video) => video.videoId?.trim() && video.title?.trim());
+      if (latest?.videoId && latest.title) {
+        onSelectChannelVideo({
+          channelName: ch.channelName,
+          video: {
+            videoId: latest.videoId.trim(),
+            title: latest.title.trim(),
+            thumbnail: latest.thumbnail?.trim() || null,
+            publishedAt: latest.publishedAt?.trim() || new Date(0).toISOString(),
+          },
+        });
+      }
+    } catch {
+      // Tiché selhání — kanál bez dostupných videí prostě nespustíme.
+    } finally {
+      setPendingChannel(null);
+    }
   };
 
   // STABILNÍ opts (zachytíme jen počáteční hodnoty). Kdyby se opts měnily,
@@ -310,8 +391,8 @@ export function HomePage({
           </button>
         </div>
         <div className="dots" aria-hidden="true">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <span key={i} className={i === 3 ? "active" : undefined} />
+          {Array.from({ length: DOT_COUNT }).map((_, i) => (
+            <span key={i} className={i === stageDot ? "active" : undefined} />
           ))}
         </div>
         <p className="status-label">
@@ -328,37 +409,59 @@ export function HomePage({
       <section className="channels" aria-labelledby="hf-channels">
         <h2 id="hf-channels">KANÁLY</h2>
         <p>KLIKNĚTE NA VYBRANÝ KANÁL PRO ZOBRAZENÍ DETAILU.</p>
-        <div className="channel-track" aria-label="Kanály">
-          {channels.length === 0 ? (
-            <article className="channel-card">
-              <span className="ch-name">Připravujeme…</span>
-            </article>
-          ) : (
-            channels.map((ch) => {
-              const active = ch.channelName === channelName;
-              const firstVideo = ch.videos[0];
-              return (
-                <button
-                  type="button"
-                  key={ch.channelName}
-                  className={`channel-card${active ? " channel-card-active" : ""}`}
-                  onClick={() => {
-                    if (firstVideo) onSelectChannelVideo({ channelName: ch.channelName, video: firstVideo });
-                  }}
-                >
-                  {ch.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img className="ch-avatar" src={ch.avatarUrl} alt="" />
-                  ) : null}
-                  <span className="ch-name">{ch.channelName}</span>
-                </button>
-              );
-            })
-          )}
+        <div className="stage-wrap">
+          <button
+            type="button"
+            className="stage-nav stage-prev"
+            onClick={() => scrollChannels(-1)}
+            aria-label="Předchozí kanály"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <div className="channel-track" ref={channelTrackRef} aria-label="Kanály">
+            {channels.length === 0 ? (
+              <article className="channel-card">
+                <span className="ch-name">Připravujeme…</span>
+              </article>
+            ) : (
+              channels.map((ch) => {
+                const active = ch.channelName === channelName || ch.channelName === pendingChannel;
+                const isPending = ch.channelName === pendingChannel;
+                return (
+                  <button
+                    type="button"
+                    key={ch.channelName}
+                    className={`channel-card${active ? " channel-card-active" : ""}`}
+                    onClick={() => void selectChannel(ch)}
+                    aria-busy={isPending}
+                    style={isPending ? { opacity: 0.65 } : undefined}
+                  >
+                    {ch.avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img className="ch-avatar" src={ch.avatarUrl} alt="" />
+                    ) : null}
+                    <span className="ch-name">{ch.channelName}</span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+          <button
+            type="button"
+            className="stage-nav stage-next"
+            onClick={() => scrollChannels(1)}
+            aria-label="Další kanály"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         </div>
         <div className="dots" aria-hidden="true">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <span key={i} className={i === 3 ? "active" : undefined} />
+          {Array.from({ length: DOT_COUNT }).map((_, i) => (
+            <span key={i} className={i === channelDot ? "active" : undefined} />
           ))}
         </div>
       </section>

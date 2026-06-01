@@ -693,6 +693,10 @@ export default async function LivePageServer(
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const rawVideoId = resolvedSearchParams?.videoId;
   const requestedVideoId = Array.isArray(rawVideoId) ? rawVideoId[0] : rawVideoId;
+  const rawTitle = resolvedSearchParams?.title;
+  const requestedTitleParam = (Array.isArray(rawTitle) ? rawTitle[0] : rawTitle)?.trim() || null;
+  const rawChannel = resolvedSearchParams?.channel;
+  const requestedChannelParam = (Array.isArray(rawChannel) ? rawChannel[0] : rawChannel)?.trim() || null;
   const liveChannelsPromise = loadLiveChannels();
 
   try {
@@ -756,8 +760,11 @@ export default async function LivePageServer(
       initialFromNowPlaying?.videoId ??
       initialItem?.videoId ??
       null;
+  // U explicitního videoId preferujeme titulek/kanál předaný v URL (např. z
+  // „V kostce"), aby seděly s přehrávaným videem, i když není v EPG programu.
   const initialTitle = hasRequestedVideoId
     ? requestedItem?.title ??
+      requestedTitleParam ??
       initialFromNowPlaying?.title ??
       initialItem?.title ??
       "Dnes není plánované vysílání"
@@ -766,7 +773,11 @@ export default async function LivePageServer(
       initialItem?.title ??
       "Dnes není plánované vysílání";
   const initialChannelName = hasRequestedVideoId
-    ? requestedItem?.channelName ?? initialFromNowPlaying?.channelName ?? initialItem?.channelName ?? ""
+    ? requestedItem?.channelName ??
+      requestedChannelParam ??
+      initialFromNowPlaying?.channelName ??
+      initialItem?.channelName ??
+      ""
     : requestedItem?.channelName ??
       initialFromNowPlaying?.channelName ??
       initialItem?.channelName ??

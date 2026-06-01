@@ -15,10 +15,6 @@ export function LegalFooter() {
         <Link href="/data-deletion" className="hover:text-abj-text1">
           Smazání účtu
         </Link>
-        <span aria-hidden="true">·</span>
-        <Link href="/studio" className="hover:text-abj-text1">
-          Studio
-        </Link>
       </div>
     </footer>
   );

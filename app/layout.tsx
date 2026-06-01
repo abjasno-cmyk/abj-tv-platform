@@ -17,17 +17,17 @@ const SITE_DESCRIPTION =
 // a app/twitter-image.png (rozlišené přes metadataBase).
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "VEROX — Mainstreamový detox",
+  title: "VEROX • Mainstreamový detox",
   description: SITE_DESCRIPTION,
   openGraph: {
     type: "website",
     siteName: "VEROX",
-    title: "VEROX — Mainstreamový detox",
+    title: "VEROX • Mainstreamový detox",
     description: SITE_DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: "VEROX — Mainstreamový detox",
+    title: "VEROX • Mainstreamový detox",
     description: SITE_DESCRIPTION,
   },
 };

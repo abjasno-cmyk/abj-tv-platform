@@ -19,6 +19,9 @@ export function MujVeroxTemplate() {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [likesById, setLikesById] = useState<Record<string, number>>({});
+  const [reactedIds, setReactedIds] = useState<Record<string, boolean>>({});
+  const [reactingId, setReactingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile?.display_name && !nick) setNick(profile.display_name);
@@ -77,6 +80,36 @@ export function MujVeroxTemplate() {
       }
     },
     [message, nick, email, loadPosts],
+  );
+
+  const react = useCallback(
+    async (postId: string) => {
+      if (reactingId || reactedIds[postId]) return;
+      setReactingId(postId);
+      try {
+        const res = await fetch(`/api/wall/posts/${encodeURIComponent(postId)}/react`, {
+          method: "POST",
+        });
+        const data = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          likesCount?: number;
+          error?: string;
+        };
+        if (!res.ok || !data.ok) {
+          setNotice(data.error ?? "Reakci se nepodařilo uložit.");
+          return;
+        }
+        if (typeof data.likesCount === "number") {
+          setLikesById((prev) => ({ ...prev, [postId]: data.likesCount! }));
+        }
+        setReactedIds((prev) => ({ ...prev, [postId]: true }));
+      } catch {
+        setNotice("Reakci se nepodařilo uložit.");
+      } finally {
+        setReactingId(null);
+      }
+    },
+    [reactingId, reactedIds],
   );
 
   const counter = useMemo(() => `${message.length}/${MAX_LEN}`, [message.length]);
@@ -207,11 +240,36 @@ export function MujVeroxTemplate() {
                     {post.author_name}
                   </div>
                   <p style={{ color: "var(--vx-gray-dark)", margin: "0.4em 0 0", lineHeight: 1.4 }}>{post.body}</p>
-                  {post.likes_count > 0 ? (
-                    <div style={{ color: "var(--vx-orange)", fontSize: "0.85rem", marginTop: "0.5em" }}>
-                      ♥ {post.likes_count}
-                    </div>
-                  ) : null}
+                  {(() => {
+                    const likes = likesById[post.id] ?? post.likes_count;
+                    const hasReacted = Boolean(reactedIds[post.id]);
+                    const isReacting = reactingId === post.id;
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => void react(post.id)}
+                        disabled={hasReacted || isReacting}
+                        aria-pressed={hasReacted}
+                        aria-label={hasReacted ? "Reakce odeslána" : "Reagovat na vzkaz"}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.35em",
+                          marginTop: "0.6em",
+                          padding: "0.3em 0.7em",
+                          border: "1px solid var(--vx-orange)",
+                          background: hasReacted ? "var(--vx-orange)" : "transparent",
+                          color: hasReacted ? "#fff" : "var(--vx-orange)",
+                          fontSize: "0.85rem",
+                          fontWeight: 700,
+                          borderRadius: 3,
+                          cursor: hasReacted || isReacting ? "default" : "pointer",
+                        }}
+                      >
+                        ♥ {likes > 0 ? likes : ""} {hasReacted ? "Líbí se" : "Reagovat"}
+                      </button>
+                    );
+                  })()}
                 </li>
               ))}
             </ul>

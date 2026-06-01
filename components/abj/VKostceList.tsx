@@ -54,9 +54,14 @@ export function VKostceList() {
     <>
       {items.map((post, i) => {
         const { month, day } = dateParts(displayIso(post));
-        const href = `/live?videoId=${encodeURIComponent(post.video_id)}`;
         const headline = post.headline?.trim();
         const title = headline || post.what?.trim() || "Bez titulku";
+        // Předáme titulek + kanál do přehrávače, aby seděly s přehrávaným
+        // videem i u souhrnů, které nejsou v lineárním EPG programu.
+        const href =
+          `/live?videoId=${encodeURIComponent(post.video_id)}` +
+          `&title=${encodeURIComponent(title)}` +
+          `&channel=${encodeURIComponent(post.channel_name ?? "")}`;
         // Pokud headline existuje, ukážeme „what" jako hlavní AI shrnutí níže;
         // jinak je „what" už použité jako titulek (neopakujeme).
         const aiSummary = headline ? post.what?.trim() : null;
@@ -78,12 +83,6 @@ export function VKostceList() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/icons/ikona_sipka.svg" alt="" />
                 </Link>
-              </div>
-              <div className="actions">
-                <Link href={href} className="neutral">Reagovat</Link>
-                <Link href={href}>Komentáře</Link>
-                <Link href={href}>Přihlásit pro sdílení</Link>
-                <Link href={href}>Můj Verox</Link>
               </div>
             </article>
             {i < items.length - 1 ? (
