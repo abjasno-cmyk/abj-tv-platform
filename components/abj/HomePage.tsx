@@ -175,7 +175,6 @@ export function HomePage({
         <div className="hero-media" ref={heroRef}>
           {videoId ? (
             <YouTube
-              key={`${videoId}-${muted ? "m" : "u"}-${offset}`}
               videoId={videoId}
               title={title}
               opts={opts}
@@ -260,9 +259,9 @@ export function HomePage({
           <div className="playing-stage" ref={stageRef} aria-label="Program">
             {stageItems.length === 0 ? (
               <>
-                <div className="playing-image" />
-                <div className="playing-image" />
-                <div className="playing-image" />
+                <div className="playing-image"><span className="playing-thumb" /></div>
+                <div className="playing-image"><span className="playing-thumb" /></div>
+                <div className="playing-image"><span className="playing-thumb" /></div>
               </>
             ) : (
               stageItems.map((it) => {
@@ -275,8 +274,11 @@ export function HomePage({
                     onClick={it.onClick}
                     aria-label={it.title}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={it.thumb} alt={it.title} loading="lazy" />
+                    <span className="playing-thumb">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={it.thumb} alt="" loading="lazy" />
+                    </span>
+                    <span className="playing-title">{it.title}</span>
                   </button>
                 );
               })
