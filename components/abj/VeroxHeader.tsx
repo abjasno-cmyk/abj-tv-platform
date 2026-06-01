@@ -21,8 +21,39 @@ const MONTHS_NOM = [
   "ČERVENEC", "SRPEN", "ZÁŘÍ", "ŘÍJEN", "LISTOPAD", "PROSINEC",
 ];
 
-function pad(n: number): string {
-  return n.toString().padStart(2, "0");
+const EN_WEEKDAY_INDEX: Record<string, number> = {
+  Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+};
+
+// Vždy pražský čas (Europe/Prague) nezávisle na časové zóně serveru/prohlížeče.
+// Tím zmizí počáteční posun (UTC vs. Praha) i hydration mismatch.
+function pragueParts(d: Date): {
+  hour: string;
+  minute: string;
+  weekday: string;
+  day: number;
+  monthIndex: number;
+  year: string;
+} {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Prague",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    weekday: "short",
+  }).formatToParts(d);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return {
+    hour: get("hour"),
+    minute: get("minute"),
+    weekday: DAYS[EN_WEEKDAY_INDEX[get("weekday")] ?? 0],
+    day: Number(get("day")),
+    monthIndex: Number(get("month")) - 1,
+    year: get("year"),
+  };
 }
 
 interface VeroxHeaderProps {
@@ -38,6 +69,8 @@ export function VeroxHeader({ active = "zive" }: VeroxHeaderProps) {
     return () => window.clearInterval(id);
   }, []);
 
+  const t = pragueParts(now);
+
   return (
     <header className="hf-header" aria-label="VEROX">
       <Link className="hf-logo-link" href="/live" aria-label="VEROX — Mainstreamový detox">
@@ -48,14 +81,14 @@ export function VeroxHeader({ active = "zive" }: VeroxHeaderProps) {
         <p className="hf-tagline">MAINSTREAMOVÝ DETOX</p>
         <div className="hf-timeblock">
           <p className="hf-clock" suppressHydrationWarning>
-            {pad(now.getHours())}:{pad(now.getMinutes())}
+            {t.hour}:{t.minute}
           </p>
           <p className="hf-date" suppressHydrationWarning>
             <span className="hf-date-m">
-              {DAYS[now.getDay()]} {now.getDate()}.{MONTHS_GEN[now.getMonth()]}
+              {t.weekday} {t.day}.{MONTHS_GEN[t.monthIndex]}
             </span>
             <span className="hf-date-d">
-              {now.getDate()}.{MONTHS_NOM[now.getMonth()]} {now.getFullYear()}
+              {t.day}.{MONTHS_NOM[t.monthIndex]} {t.year}
             </span>
           </p>
         </div>
