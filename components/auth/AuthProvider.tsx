@@ -5,9 +5,9 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { LoginModal } from "@/components/auth/LoginModal";
+import { CANONICAL_HOST, LEGACY_VERCEL_HOST_PATTERN } from "@/lib/site";
 
 const PENDING_CONSENTS_KEY = "verox_pending_consents_v1";
-const CANONICAL_VERCEL_HOST = "abj-tv-platform-n7e8.vercel.app";
 // Preview deployments must stay on their own host (visual review before
 // merge). Only the production deployment canonicalizes the host.
 const IS_PREVIEW_DEPLOYMENT = process.env.NEXT_PUBLIC_VERCEL_ENV === "preview";
@@ -83,20 +83,23 @@ function clearPendingConsentsStorage() {
   }
 }
 
-function resolvePreferredAuthOrigin(): string | null {
+function resolvePreferredAuthOrigin(isPreview: boolean): string | null {
   if (typeof window === "undefined") return null;
   const protocol = window.location.protocol || "https:";
   const host = window.location.host;
-  if (/^abj-tv-platform-n7e8(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(host) && host !== CANONICAL_VERCEL_HOST) {
-    return `${protocol}//${CANONICAL_VERCEL_HOST}`;
+  // Na preview deploymentu zůstaň na aktuálním (preview) hostu — nepřesměrovávej
+  // login na produkci.
+  if (isPreview) return `${protocol}//${host}`;
+  if (LEGACY_VERCEL_HOST_PATTERN.test(host) && host.toLowerCase() !== CANONICAL_HOST) {
+    return `${protocol}//${CANONICAL_HOST}`;
   }
   return `${protocol}//${host}`;
 }
 
-function redirectToPreferredAuthOriginIfNeeded(): boolean {
+function redirectToPreferredAuthOriginIfNeeded(isPreview: boolean): boolean {
   if (typeof window === "undefined") return false;
-  if (IS_PREVIEW_DEPLOYMENT) return false;
-  const preferredOrigin = resolvePreferredAuthOrigin();
+  if (isPreview) return false;
+  const preferredOrigin = resolvePreferredAuthOrigin(isPreview);
   if (!preferredOrigin) return false;
   const currentOrigin = `${window.location.protocol}//${window.location.host}`;
   if (preferredOrigin === currentOrigin) return false;
@@ -104,7 +107,16 @@ function redirectToPreferredAuthOriginIfNeeded(): boolean {
   return true;
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({
+  children,
+  vercelEnv,
+}: {
+  children: React.ReactNode;
+  vercelEnv?: string;
+}) {
+  // Spolehlivá detekce preview: VERCEL_ENV se předává ze serverového layoutu
+  // (NEXT_PUBLIC_VERCEL_ENV se do klientského bundle nedostane).
+  const isPreviewDeployment = vercelEnv === "preview" || IS_PREVIEW_DEPLOYMENT;
   const supabase = useMemo<SupabaseClient | null>(() => {
     try {
       return createSupabaseBrowserClient();
@@ -124,8 +136,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const lastSyncedAccessTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
-    redirectToPreferredAuthOriginIfNeeded();
-  }, []);
+    redirectToPreferredAuthOriginIfNeeded(isPreviewDeployment);
+  }, [isPreviewDeployment]);
 
   const syncServerSession = useCallback(async (accessToken: string, refreshToken?: string | null) => {
     if (!accessToken) return;
@@ -297,7 +309,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setModalError("Přihlášení není dostupné: chybí konfigurace Supabase.");
         return;
       }
-      if (redirectToPreferredAuthOriginIfNeeded()) {
+      if (redirectToPreferredAuthOriginIfNeeded(isPreviewDeployment)) {
         return;
       }
       setBusyProvider(provider);
@@ -311,7 +323,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         typeof window !== "undefined"
           ? `${window.location.pathname}${window.location.search}${window.location.hash}`
           : "/live";
-      const preferredOrigin = resolvePreferredAuthOrigin();
+      const preferredOrigin = resolvePreferredAuthOrigin(isPreviewDeployment);
       const redirectTo =
         preferredOrigin
           ? `${preferredOrigin}/auth/callback?next=${encodeURIComponent(nextPath)}`
@@ -329,7 +341,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setModalError(result.error.message);
       }
     },
-    [supabase]
+    [supabase, isPreviewDeployment]
   );
 
   const handleEmail = useCallback(
@@ -338,7 +350,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setModalError("Přihlášení není dostupné: chybí konfigurace Supabase.");
         return;
       }
-      if (redirectToPreferredAuthOriginIfNeeded()) {
+      if (redirectToPreferredAuthOriginIfNeeded(isPreviewDeployment)) {
         return;
       }
       setBusyProvider("email");
@@ -353,7 +365,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         typeof window !== "undefined"
           ? `${window.location.pathname}${window.location.search}${window.location.hash}`
           : "/live";
-      const preferredOrigin = resolvePreferredAuthOrigin();
+      const preferredOrigin = resolvePreferredAuthOrigin(isPreviewDeployment);
       const redirectTo =
         preferredOrigin
           ? `${preferredOrigin}/auth/callback?next=${encodeURIComponent(nextPath)}`
@@ -373,7 +385,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setModalError("Na e-mail jsme poslali bezpečný odkaz pro přihlášení.");
     },
-    [supabase]
+    [supabase, isPreviewDeployment]
   );
 
   const value = useMemo<AuthContextValue>(

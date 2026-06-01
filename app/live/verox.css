@@ -1,0 +1,1110 @@
+/* ============================================================================
+   VEROX — homepage podle klientské šablony (zasilka VH8GJ2ZEGTRX3GX5).
+   Věrný port mobilní šablony grafičky, převedený na responzivní layout:
+   obsah běží v container-query kontejneru, takže původní proporce (psané ve
+   `vw`) jsou tu `cqw` = relativní k šířce sloupce. Na mobilu plná šířka,
+   na desktopu vycentrovaný a zvětšený sloupec (max 760px).
+   ========================================================================== */
+
+:root {
+  /* Finální schválený design (verox-html-handoff) */
+  --vx-orange: #ff6600;
+  --vx-gray-dark: #303030;
+  --vx-gray-light: #707070;
+  --vx-white: #ffffff;
+  --vx-black: #111111;
+  --vx-myriad: var(--font-sans), "Roboto Condensed", "Arial Narrow", Arial, sans-serif;
+  --vx-impact: var(--font-sans), "Roboto Condensed", Impact, "Arial Narrow", sans-serif;
+  /* proporční poměry lišty (datum 1 : hodiny 4.583 : nav 1.25) */
+  --u: clamp(0.62rem, 3.05cqw, 0.9rem);
+  --fz-date: var(--u);
+  --fz-nav: calc(var(--u) * 1.25);
+  --fz-clock: calc(var(--u) * 4.583);
+  --track: 0.05em;
+  --L1: 3.55%;
+  --L2: 21.35%;
+  --L3: 23.1%;
+  --L4: 26.8%;
+  --L9: 75%;
+  --R1: 96.4%;
+}
+
+.vx-live *,
+.vx-hdr * {
+  box-sizing: border-box;
+}
+.vx-live img,
+.vx-hdr img {
+  display: block;
+  max-width: 100%;
+}
+.vx-live .upper {
+  text-transform: uppercase;
+}
+
+/* ============ LIŠTA / HEADER ============ */
+.vx-hdr {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--vx-white);
+  border-bottom: 1px solid #f0f0f0;
+}
+.vx-hdr-inner {
+  container-type: inline-size;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 3cqw var(--L1) 0;
+  font-family: var(--vx-myriad);
+  color: var(--vx-gray-dark);
+}
+/* mobil: logo+hodiny v řádku, nav pod tím */
+.vx-hdr-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 3cqw;
+}
+.vx-hdr-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.vx-logo {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.vx-logo .logo-img {
+  height: clamp(26px, 7.2cqw, 40px);
+  width: auto;
+  max-width: min(52cqw, 220px);
+  display: block;
+}
+.vx-logo small {
+  display: block;
+  font-weight: 400;
+  font-size: clamp(0.55rem, 1.4cqw, 0.74rem);
+  letter-spacing: var(--track);
+  color: var(--vx-black);
+  margin-top: 0.35em;
+  white-space: nowrap;
+}
+.vx-hdr-right {
+  text-align: right;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.vx-date {
+  font-weight: 700;
+  font-size: var(--fz-date);
+  color: var(--vx-gray-dark);
+  letter-spacing: var(--track);
+  white-space: nowrap;
+  line-height: 1.1;
+}
+.vx-clock {
+  font-weight: 700;
+  font-size: var(--fz-clock);
+  color: var(--vx-orange);
+  letter-spacing: 0.02em;
+  line-height: 0.95;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.vx-nav {
+  display: flex;
+  justify-content: flex-start;
+  gap: clamp(7px, 3.4cqw, 30px);
+  padding: 2.5cqw 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.vx-nav::-webkit-scrollbar {
+  display: none;
+}
+.vx-nav a {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-weight: 400;
+  font-size: var(--fz-nav);
+  letter-spacing: var(--track);
+  color: var(--vx-gray-dark);
+  text-decoration: none;
+  padding-bottom: 0.2em;
+  cursor: pointer;
+}
+.vx-nav a.active {
+  color: var(--vx-orange);
+  border-bottom: 2px solid var(--vx-orange);
+}
+.vx-nav a.login {
+  font-weight: 700;
+  color: var(--vx-orange);
+}
+
+/* desktop hlavička: logo + hodiny vlevo (sloupec), nav vpravo (stacked) */
+@media (min-width: 760px) {
+  .vx-hdr-inner {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 28px;
+    padding-top: 18px;
+  }
+  .vx-hdr-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    flex: 0 1 auto;
+  }
+  .vx-hdr-clock {
+    align-items: flex-start;
+  }
+  .vx-nav {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 7px;
+    padding: 0 0 12px;
+    overflow: visible;
+    flex: 0 0 auto;
+  }
+  .vx-nav a {
+    padding-bottom: 0;
+  }
+  .vx-nav a.active {
+    border-bottom: 0;
+  }
+}
+
+/* ============ STRÁNKA (container) ============ */
+.vx-live {
+  container-type: inline-size;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  background: var(--vx-white);
+  color: var(--vx-gray-dark);
+  font-family: var(--vx-myriad);
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: 10cqw;
+}
+/* podstránky (VIDEA / V KOSTCE / MŮJ VEROX) — sdílí šířku s lištou .hf-chrome
+   (mobil = plná šířka jako návrh „…vyska"; desktop = plná šířka jako homepage) */
+.vx-live.vx-sub {
+  max-width: 1240px;
+  padding-top: clamp(14px, 4cqw, 40px);
+}
+
+/* oddělovací dvojčára */
+.vx-strip {
+  margin: 3.5cqw 0;
+  margin-right: 11%;
+}
+.vx-strip span {
+  display: block;
+  height: max(1px, 0.25cqw);
+  background: var(--vx-orange);
+}
+.vx-strip span + span {
+  margin-top: max(3px, 0.85cqw);
+}
+.vx-strip.w75 {
+  margin-right: 0;
+  margin-top: 2.1cqw;
+}
+.vx-strip.w75 span {
+  width: 89%;
+}
+
+/* CTA šipka */
+.vx-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 2cqw;
+  margin-top: 1.5cqw;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--vx-myriad);
+}
+.vx-arrow b {
+  font-weight: 700;
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+  letter-spacing: 0.05em;
+  color: var(--vx-gray-dark);
+}
+.vx-arrow img {
+  height: clamp(14px, 3cqw, 22px);
+  width: auto;
+}
+
+/* ============ ŽIVĚ / hero ============ */
+.vx-live .hero {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #111;
+  overflow: hidden;
+}
+.vx-live .hero > div,
+.vx-live .hero iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.vx-live .hero-ctrls {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  left: auto;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.vx-live .hero-ctrls button {
+  width: clamp(34px, 9cqw, 50px);
+  height: auto;
+  aspect-ratio: 1;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.vx-live .hero-ctrls img {
+  width: 100%;
+  height: auto;
+}
+
+.live-block {
+  position: relative;
+}
+.live-block::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--L2);
+  background: linear-gradient(to bottom, var(--vx-orange) 0%, var(--vx-orange) 30%, #fff 100%);
+  z-index: 0;
+  pointer-events: none;
+}
+.live-block > * {
+  position: relative;
+  z-index: 1;
+}
+
+.live-meta {
+  display: grid;
+  grid-template-columns:
+    var(--L2)
+    calc(var(--L4) - var(--L2))
+    calc(var(--L9) - var(--L4))
+    calc(var(--R1) - var(--L9));
+  align-items: start;
+  column-gap: 0;
+}
+.komunita {
+  grid-column: 1;
+  padding: 3cqw 1.8cqw 0;
+  text-align: center;
+  overflow: hidden;
+  min-width: 0;
+}
+.komunita h3 {
+  font-weight: 700;
+  font-size: 3.42cqw;
+  color: var(--vx-gray-dark);
+  letter-spacing: 0.05em;
+  line-height: 0.83;
+  white-space: nowrap;
+}
+.komunita p {
+  font-weight: 400;
+  font-size: 2.9cqw;
+  color: var(--vx-gray-dark);
+  letter-spacing: 0.02em;
+  margin: 0.5em 0 0.9em;
+  line-height: 1.15;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  hyphens: none;
+}
+.komunita input {
+  display: block;
+  width: 84%;
+  margin: 0 auto;
+  border: 0;
+  height: 7cqw;
+  max-height: 32px;
+  min-height: 22px;
+  background: var(--vx-white);
+}
+.show-title {
+  grid-column: 3;
+  min-width: 0;
+  padding: 2.1cqw 2cqw 0 0;
+}
+.show-title h2 {
+  font-family: var(--vx-impact);
+  font-weight: 400;
+  font-size: clamp(1.1rem, 4.6cqw, 2rem);
+  line-height: 1.04;
+  color: var(--vx-gray-dark);
+  letter-spacing: 0;
+  margin: 0;
+}
+.show-title .author {
+  font-family: var(--vx-myriad);
+  font-weight: 400;
+  font-size: clamp(0.8rem, 2.3cqw, 1.05rem);
+  color: var(--vx-gray-dark);
+  letter-spacing: 0;
+  margin-top: 1.1cqw;
+}
+.live-right {
+  grid-column: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1.5cqw;
+  min-width: 0;
+  padding-top: 2cqw;
+}
+.live-right .circle {
+  width: clamp(40px, 10cqw, 64px);
+  height: auto;
+  aspect-ratio: 1;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.countdown {
+  font-weight: 400;
+  font-size: clamp(0.65rem, 1.9cqw, 1rem);
+  color: var(--vx-gray-dark);
+  letter-spacing: 0.05em;
+  text-align: right;
+  line-height: 1.2;
+}
+.countdown b {
+  font-weight: 400;
+}
+
+/* nadpis sekce */
+.section-h {
+  text-align: center;
+  color: var(--vx-orange);
+  font-weight: 400;
+  font-family: var(--vx-impact);
+  font-size: clamp(1.15rem, 5.4cqw, 2.2rem);
+  letter-spacing: 0.05em;
+  margin: 4.5cqw 0 3.5cqw;
+  white-space: nowrap;
+}
+.carousel {
+  display: flex;
+  align-items: center;
+  gap: 2cqw;
+  padding: 0 var(--L1);
+}
+.carousel .chev {
+  flex: 0 0 auto;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+.carousel .chev img {
+  height: clamp(20px, 5cqw, 34px);
+  width: auto;
+}
+.carousel .chev.left img {
+  transform: scaleX(-1);
+}
+.carousel .track {
+  display: flex;
+  gap: 2cqw;
+  overflow-x: auto;
+  flex: 1;
+  scrollbar-width: none;
+}
+.carousel .track::-webkit-scrollbar {
+  display: none;
+}
+.carousel .track .thumb {
+  flex: 0 0 46%;
+  aspect-ratio: 16/9;
+  background: #ccc;
+  border-radius: 2px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  border: 0;
+  padding: 0;
+}
+.carousel .track .thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 1.4cqw;
+  margin: 2cqw 0;
+}
+.dots i {
+  width: 1.6cqw;
+  height: 1.6cqw;
+  border-radius: 50%;
+  background: var(--vx-gray-light);
+  max-width: 9px;
+  max-height: 9px;
+  min-width: 5px;
+  min-height: 5px;
+}
+.dots i.on {
+  background: var(--vx-orange);
+}
+.running {
+  padding-left: var(--L3);
+  padding-right: var(--L1);
+}
+.running .tag {
+  display: flex;
+  align-items: center;
+  gap: 1.5cqw;
+  color: var(--vx-orange);
+  font-weight: 700;
+  font-size: clamp(0.8rem, 2.3cqw, 1.05rem);
+  letter-spacing: 0.025em;
+}
+.running .tag::before {
+  content: "";
+  width: 2cqw;
+  height: 2cqw;
+  max-width: 11px;
+  max-height: 11px;
+  min-width: 7px;
+  min-height: 7px;
+  border-radius: 50%;
+  background: var(--vx-orange);
+  flex: 0 0 auto;
+}
+.running h4 {
+  font-weight: 700;
+  font-size: clamp(1.05rem, 3.8cqw, 1.5rem);
+  line-height: 1.05;
+  letter-spacing: 0.025em;
+  color: var(--vx-gray-dark);
+  margin: 0.55em 0 0.35em;
+  overflow-wrap: break-word;
+}
+.running .src {
+  font-weight: 400;
+  font-size: clamp(0.8rem, 2.3cqw, 1.05rem);
+  color: var(--vx-gray-light);
+  letter-spacing: 0.025em;
+}
+
+/* ============ KANÁLY ============ */
+.channels {
+  padding: 0 var(--L1);
+}
+.ch-track {
+  display: flex;
+  align-items: center;
+  gap: 2cqw;
+}
+.ch-track .chev {
+  flex: 0 0 auto;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+.ch-track .chev img {
+  height: clamp(20px, 5cqw, 34px);
+  width: auto;
+}
+.ch-track .chev.left img {
+  transform: scaleX(-1);
+}
+.ch-list {
+  display: flex;
+  gap: 3cqw;
+  overflow-x: auto;
+  flex: 1;
+  scrollbar-width: none;
+  padding: 2px;
+}
+.ch-list::-webkit-scrollbar {
+  display: none;
+}
+.ch-card {
+  flex: 0 0 60%;
+  display: flex;
+  align-items: center;
+  gap: 3.5%;
+  border: 1.5px solid var(--vx-gray-light);
+  padding: 3.5% 4%;
+  border-radius: 3px;
+  background: var(--vx-white);
+  cursor: pointer;
+  min-width: 0;
+}
+.ch-card.active {
+  border: max(2px, 0.5cqw) solid var(--vx-orange);
+}
+.ch-card .logo {
+  width: 25%;
+  max-width: 52px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--vx-black);
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+.ch-card .logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ch-card span.name {
+  font-weight: 700;
+  font-size: clamp(0.72rem, 2.6cqw, 1.05rem);
+  letter-spacing: 0.03em;
+  color: var(--vx-gray-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.channels .hint {
+  text-align: center;
+  color: var(--vx-gray-dark);
+  font-weight: 400;
+  font-size: clamp(0.78rem, 2.3cqw, 1.05rem);
+  letter-spacing: 0.05em;
+  margin-top: 4cqw;
+}
+
+/* ============ VIDEA (karty) ============ */
+.vx-card {
+  display: grid;
+  grid-template-columns: 21.3% 1.8% 47% auto;
+  gap: 0 2cqw;
+  padding: 0 var(--L1);
+}
+.vx-card .date {
+  text-align: left;
+}
+.vx-card .month {
+  font-weight: 700;
+  font-size: clamp(0.95rem, 3.2cqw, 1.4rem);
+  color: var(--vx-gray-light);
+  letter-spacing: 0.05em;
+}
+.vx-card .day {
+  font-family: var(--vx-myriad);
+  font-weight: 700;
+  font-size: clamp(2.5rem, 13cqw, 4.5rem);
+  color: var(--vx-gray-light); /* VIDEA: šedé datum (návrh L. Robinson) */
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+.vx-card .thumb {
+  grid-column: 3;
+  aspect-ratio: 16/9;
+  background: #111;
+  align-self: start;
+  margin-top: 1cqw;
+  overflow: hidden;
+  display: block;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.vx-card .thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.vx-card .thumb.portrait {
+  aspect-ratio: 9/16;
+  background: var(--vx-black);
+  max-height: 60cqw;
+  margin-inline: auto;
+}
+.vx-card .body {
+  grid-column: 4;
+}
+.vx-card .body h3 {
+  font-weight: 700;
+  font-size: clamp(1rem, 2.6cqw, 1.25rem);
+  color: var(--vx-gray-dark);
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+}
+.vx-card .body .by {
+  font-weight: 700;
+  font-size: clamp(0.85rem, 2cqw, 1.05rem);
+  color: var(--vx-gray-light);
+  letter-spacing: 0.05em;
+  margin: 0.6em 0;
+}
+.vx-card .body p {
+  font-weight: 400;
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+  color: var(--vx-gray-light);
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+  margin-bottom: 1em;
+}
+
+/* ============ V KOSTCE ============ */
+.kostka {
+  display: grid;
+  grid-template-columns: 21.3% 1.8% 48% auto;
+  gap: 0 2cqw;
+  padding: 0 var(--L1);
+}
+.kostka .date {
+  text-align: left;
+}
+.kostka .month {
+  font-weight: 700;
+  font-size: clamp(0.95rem, 3.2cqw, 1.4rem);
+  color: var(--vx-gray-light);
+  letter-spacing: 0.05em;
+}
+.kostka .day {
+  font-family: var(--vx-myriad);
+  font-weight: 700;
+  font-size: clamp(2.5rem, 13cqw, 4.5rem);
+  color: var(--vx-orange);
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+.kostka .body {
+  grid-column: 3;
+}
+.kostka .body h3 {
+  font-weight: 700;
+  font-size: clamp(1rem, 2.6cqw, 1.4rem);
+  color: var(--vx-gray-dark);
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+}
+.kostka .body .src {
+  font-weight: 700;
+  font-size: clamp(0.85rem, 2cqw, 1.05rem);
+  color: var(--vx-gray-light);
+  letter-spacing: 0.05em;
+  margin: 0.5em 0;
+}
+.kostka .body p {
+  font-weight: 400;
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+  color: var(--vx-gray-light);
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+  margin-bottom: 0.7em;
+}
+/* AI dopad — jemně zvýrazněný (tmavší, polotučný) */
+.kostka .body p.impact {
+  color: var(--vx-gray-dark);
+  font-weight: 600;
+}
+.kostka .actions {
+  grid-column: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 2cqw;
+}
+.kostka .actions button,
+.kostka .actions a {
+  display: block;
+  text-align: left;
+  padding: 2cqw;
+  background: var(--vx-white);
+  border: 2px solid var(--vx-orange);
+  font-family: var(--vx-myriad);
+  font-weight: 700;
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+  letter-spacing: 0.05em;
+  color: var(--vx-gray-dark);
+  cursor: pointer;
+  text-decoration: none;
+}
+.kostka .actions button.neutral,
+.kostka .actions a.neutral {
+  border-color: var(--vx-gray-light);
+}
+
+/* ============ MŮJ VEROX ============ */
+.mv {
+  padding: 0 var(--L1);
+  text-align: center;
+}
+.mv h1 {
+  font-weight: 400;
+  font-family: var(--vx-impact);
+  font-size: clamp(1.5rem, 4.8cqw, 2.6rem);
+  color: var(--vx-orange);
+  letter-spacing: 0.05em;
+  margin: 4cqw 0 3cqw;
+}
+.mv h2 {
+  font-weight: 700;
+  font-size: clamp(0.9rem, 2cqw, 1.2rem);
+  color: var(--vx-gray-dark);
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+.mv .sub {
+  font-weight: 400;
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+  color: var(--vx-gray-light);
+  margin: 1cqw 0 4cqw;
+}
+.mv .info {
+  font-weight: 400;
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+  color: var(--vx-gray-dark);
+  margin-bottom: 5cqw;
+}
+.mv .cta {
+  display: inline-block;
+  min-width: 220px;
+  margin: 0 auto 5cqw;
+  padding: 3cqw 5cqw;
+  background: var(--vx-orange);
+  color: #fff;
+  border: 0;
+  font-family: var(--vx-myriad);
+  font-weight: 400;
+  font-size: clamp(0.9rem, 2cqw, 1.1rem);
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  text-decoration: none;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 32.9% 0.9% auto;
+  gap: 0 2cqw;
+  align-items: start;
+  margin-bottom: 3cqw;
+  padding: 0 var(--L1);
+}
+.form-row label {
+  grid-column: 1;
+  text-align: right;
+  font-weight: 700;
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+  color: var(--vx-gray-dark);
+  letter-spacing: 0.05em;
+  padding-top: 1.5cqw;
+}
+.form-row label small {
+  display: block;
+  font-weight: 700;
+}
+.form-row .field {
+  grid-column: 3;
+}
+.form-row input,
+.form-row textarea {
+  width: 100%;
+  border: 2px solid var(--vx-orange);
+  background: var(--vx-white);
+  padding: 2cqw;
+  font-family: var(--vx-myriad);
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+  color: var(--vx-gray-dark);
+}
+.form-row textarea {
+  min-height: 30cqw;
+  max-height: 320px;
+  resize: vertical;
+}
+.submit-row {
+  display: grid;
+  grid-template-columns: 32.9% 0.9% auto;
+  gap: 0 2cqw;
+  padding: 0 var(--L1);
+  align-items: center;
+}
+.submit-row .submit {
+  grid-column: 3;
+  display: flex;
+  align-items: center;
+  gap: 3cqw;
+}
+.submit-row button {
+  background: var(--vx-orange);
+  color: #fff;
+  border: 0;
+  padding: 3cqw 6cqw;
+  font-family: var(--vx-myriad);
+  font-weight: 400;
+  font-size: clamp(0.9rem, 2cqw, 1.1rem);
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+.submit-row .count {
+  color: var(--vx-gray-light);
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+}
+.pinned {
+  display: grid;
+  grid-template-columns: 30% auto;
+  gap: 0 3cqw;
+  padding: 0 var(--L1);
+  margin-top: 2cqw;
+}
+.pinned .filters {
+  display: flex;
+  flex-direction: column;
+  gap: 2cqw;
+}
+.pinned .filters button {
+  padding: 2cqw;
+  font-family: var(--vx-myriad);
+  font-weight: 400;
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+  letter-spacing: 0.05em;
+  border: 2px solid var(--vx-orange);
+  cursor: pointer;
+}
+.pinned .filters .inactive {
+  background: var(--vx-white);
+  color: var(--vx-gray-dark);
+}
+.pinned .filters .active {
+  background: var(--vx-orange);
+  color: #fff;
+}
+.pinned .col h2 {
+  color: var(--vx-orange);
+  font-weight: 400;
+  font-family: var(--vx-impact);
+  font-size: clamp(1.1rem, 3.2cqw, 1.5rem);
+  letter-spacing: 0.05em;
+}
+.pinned .empty {
+  border: 2px solid var(--vx-orange);
+  padding: 3cqw;
+  margin-top: 2cqw;
+  color: var(--vx-gray-light);
+  font-weight: 400;
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+}
+
+/* Na širších kartách (tablet) zvětši poměry karet/náhledů */
+@container (min-width: 620px) {
+  .carousel .track .thumb {
+    flex: 0 0 31%;
+  }
+  .ch-card {
+    flex: 0 0 31%;
+  }
+}
+
+/* ====================================================================
+   DESKTOP — plná šířka („fullscreen"), pevné rem/px velikosti místo cqw,
+   velký immersivní hero a obsah přes celou šířku obrazovky.
+   ==================================================================== */
+@media (min-width: 900px) {
+  .vx-live {
+    max-width: 1600px;
+    padding: 0 clamp(24px, 3.2vw, 80px) 72px;
+  }
+
+  /* velký hero přes celou šířku obsahu */
+  .vx-live .hero-ctrls {
+    right: 18px;
+    top: 18px;
+    gap: 12px;
+  }
+  .vx-live .hero-ctrls button {
+    width: 50px;
+  }
+
+  /* live-block s pevnými proporcemi */
+  .live-meta {
+    grid-template-columns: 260px 52px 1fr 240px;
+    margin-top: 0;
+  }
+  .live-block::before {
+    width: 260px;
+  }
+  .komunita {
+    padding: 26px 22px 0;
+  }
+  .komunita h3 {
+    font-size: 1.55rem;
+    line-height: 1;
+  }
+  .komunita p {
+    font-size: 1.02rem;
+    margin: 12px 0 16px;
+  }
+  .komunita input {
+    height: 38px;
+    max-height: none;
+    border: 1px solid #e6e6e6;
+  }
+  .show-title {
+    padding: 16px 28px 0 0;
+  }
+  .show-title h2 {
+    font-size: clamp(1.9rem, 2.9vw, 3.1rem);
+    line-height: 1.02;
+  }
+  .show-title .author {
+    font-size: 1.15rem;
+    margin-top: 12px;
+  }
+  .live-right {
+    padding-top: 16px;
+    gap: 14px;
+  }
+  .live-right .circle {
+    width: 78px;
+  }
+  .countdown {
+    font-size: 1.02rem;
+  }
+
+  .section-h {
+    font-size: clamp(2rem, 3.1vw, 2.8rem);
+    margin: 44px 0 30px;
+  }
+
+  /* karusely: víc náhledů přes šířku */
+  .carousel {
+    gap: 18px;
+    padding: 0;
+  }
+  .carousel .track {
+    gap: 18px;
+  }
+  .carousel .track .thumb {
+    flex: 0 0 22.4%;
+  }
+  .carousel .chev img,
+  .ch-track .chev img {
+    height: 36px;
+  }
+  .dots {
+    gap: 10px;
+    margin: 18px 0;
+  }
+
+  .running {
+    padding-left: 260px;
+    padding-right: 0;
+  }
+  .running h4 {
+    font-size: 1.65rem;
+  }
+
+  .vx-strip {
+    margin: 30px 0;
+    margin-right: 11%;
+  }
+  .vx-strip span {
+    height: 2px;
+  }
+  .vx-strip span + span {
+    margin-top: 6px;
+  }
+  .vx-strip.w75 {
+    margin-top: 18px;
+  }
+
+  .channels {
+    padding: 0;
+  }
+  .ch-list {
+    gap: 20px;
+  }
+  .ch-card {
+    flex: 0 0 22.4%;
+    padding: 16px 18px;
+    border-radius: 4px;
+  }
+  .ch-card .logo {
+    width: 58px;
+  }
+  .ch-card span.name {
+    font-size: 1.02rem;
+  }
+  .channels .hint {
+    font-size: 1.02rem;
+    margin-top: 30px;
+  }
+}
+
+/* ============================================================================
+   DESKTOP subpages (dle „v_kostce_sirka") — plná šířka jako homepage; JEDEN
+   oranžový gradient přes celý levý sloupec (silný vlevo nahoře, slábne doprava
+   i dolů), tmavé velké datum, široké tělo, akce vpravo.
+   ========================================================================== */
+@media (min-width: 961px) {
+  .vx-live.vx-sub {
+    max-width: 1440px;
+    /* jeden SVISLÝ gradient v levém pásu: nahoře nejsytější oranžová → dolů
+       průhledná (žádný horizontální fade), až k dolnímu okraji obsahu */
+    background-image: linear-gradient(
+      180deg,
+      var(--vx-orange) 0%,
+      rgba(255, 102, 0, 0.55) 26%,
+      rgba(255, 102, 0, 0.2) 55%,
+      rgba(255, 102, 0, 0) 100%
+    );
+    background-repeat: no-repeat;
+    background-position: left top;
+    background-size: 15% 100%;
+  }
+
+  /* velké tmavé datum (sedí na gradientu) */
+  .vx-card .day,
+  .kostka .day {
+    color: var(--vx-gray-dark);
+  }
+
+  /* širší rozložení: užší datum, široké tělo */
+  .vx-card {
+    grid-template-columns: 13% 1.5% 30% auto;
+  }
+  .kostka {
+    grid-template-columns: 13% 1.5% 66% auto;
+  }
+  /* titulky V KOSTCE jsou podtržené */
+  .kostka .body h3 {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-thickness: 2px;
+  }
+
+  /* akční tlačítka V KOSTCE — kompaktní sloupec vpravo */
+  .kostka .actions {
+    gap: 10px;
+  }
+  .kostka .actions a,
+  .kostka .actions button {
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+}

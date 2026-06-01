@@ -1,0 +1,637 @@
+/* ============================================================================
+   VEROX landing podle finálního handoffu (verox-html-handoff) — věrná fluidní
+   rekreace schváleného 1240px artboardu. Proporce (logo, odsazení 27%, šířky
+   dvojčar, pozice hodin/nav) odpovídají handoffu; napojené na reálná data.
+   Scope: .hf
+   ========================================================================== */
+
+.hf {
+  --hf-indent: 27.4%; /* 340/1240 — odsazení textového obsahu */
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  background: #fff;
+  font-family: var(--vx-myriad);
+  color: var(--vx-gray-dark);
+  -webkit-font-smoothing: antialiased;
+  padding-inline: clamp(12px, 3.5vw, 26px);
+  padding-bottom: clamp(34px, 5vw, 80px);
+}
+.hf * {
+  box-sizing: border-box;
+}
+.hf img {
+  display: block;
+  max-width: 100%;
+}
+
+/* ---------- HLAVIČKA — mobil-first dle „homepage_vyska":
+   logo velké vlevo nahoře, nav vpravo svisle (rozprostřený přes výšku),
+   hodiny pod logem (konec ~62 %), datum pod hodinami, tagline vlevo dole.
+   Desktop override viz @media (min-width: 961px). ---------- */
+.hf-header {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: min(62vw, 290px) 1fr;
+  grid-template-areas:
+    "logo nav"
+    "meta nav";
+  column-gap: 3%;
+  align-items: start;
+  padding: 12px 0 8px;
+}
+.hf-logo-link {
+  grid-area: logo;
+  display: block;
+}
+.hf-logo {
+  width: 100%;
+  height: auto;
+}
+.hf-meta {
+  grid-area: meta;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+.hf-tagline {
+  margin: 0;
+  color: var(--vx-gray-dark);
+  font-size: clamp(8px, 2.4vw, 15px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  align-self: flex-end;
+}
+.hf-timeblock {
+  text-align: right;
+  line-height: 1;
+}
+.hf-clock {
+  margin: 0;
+  color: var(--vx-orange);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(1.9rem, 9.5vw, 3.1rem);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: 1px;
+}
+.hf-date {
+  margin: 3px 0 0;
+  color: var(--vx-gray-dark);
+  font-size: clamp(8px, 2.3vw, 14px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+/* mobil: „NEDĚLE 31.KVĚTNA"; desktop: „31.KVĚTEN 2026" */
+.hf-date .hf-date-d {
+  display: none;
+}
+.hf-nav {
+  grid-area: nav;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  align-self: stretch;
+  gap: clamp(6px, 2vw, 14px);
+}
+.hf-nav a {
+  color: var(--vx-nav-gray, #707070);
+  font-size: clamp(0.8rem, 3vw, 1.05rem);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.hf-nav a.is-active,
+.hf-nav a.login-link {
+  color: var(--vx-orange);
+  font-weight: 800;
+}
+
+/* ---------- Sdílený kontejner lišty na subpages (mimo .hf landing) ---------- */
+.hf-chrome {
+  width: 100%;
+  max-width: 1240px; /* stejná šířka jako homepage .hf → lišta je všude stejná */
+  margin: 0 auto;
+  background: #fff;
+  font-family: var(--vx-myriad);
+  color: var(--vx-gray-dark);
+  -webkit-font-smoothing: antialiased;
+  padding-inline: clamp(12px, 3.5vw, 26px);
+}
+.hf-chrome * {
+  box-sizing: border-box;
+}
+.hf-chrome img {
+  display: block;
+  max-width: 100%;
+}
+
+/* ---------- Oranžová dvojčára ---------- */
+.hf .double-rule,
+.hf-chrome .double-rule {
+  position: relative;
+  height: 10px;
+  margin: clamp(10px, 1.4vw, 20px) 0;
+}
+.hf .double-rule::before,
+.hf .double-rule::after,
+.hf-chrome .double-rule::before,
+.hf-chrome .double-rule::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--vx-orange);
+}
+.hf .double-rule::before,
+.hf-chrome .double-rule::before {
+  top: 0;
+}
+.hf .double-rule::after,
+.hf-chrome .double-rule::after {
+  top: 7px;
+}
+.hf .header-rule,
+.hf-chrome .header-rule {
+  width: 58.6%;
+}
+.hf .feature-rule {
+  width: 76%;
+}
+.hf .channels-rule {
+  width: 74.6%;
+}
+
+/* ---------- HERO ---------- */
+.hf .hero {
+  position: relative;
+}
+.hf .hero-media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1240 / 695;
+  background: #111;
+  overflow: hidden;
+}
+.hf .hero-media > div:not(.hero-ctrls),
+.hf .hero-media iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.hf .live-badge {
+  position: absolute;
+  left: 27.4%;
+  bottom: clamp(-22px, -2.6vw, -32px);
+  width: clamp(64px, 7vw, 92px);
+  height: auto;
+  aspect-ratio: 1;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--vx-orange);
+  color: #fff;
+  font-family: var(--vx-myriad);
+  font-weight: 800;
+  font-size: clamp(0.58rem, 1.05vw, 0.82rem);
+  line-height: 1.12;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.35);
+}
+.hf .hero-ctrls {
+  position: absolute;
+  right: clamp(8px, 1.4vw, 16px);
+  left: auto;
+  top: clamp(8px, 1.4vw, 16px);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hf .hero-ctrls button {
+  width: clamp(34px, 4vw, 48px);
+  aspect-ratio: 1;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+/* play/pause patří mezi oranžová kolečka vpravo — plně oranžové, bez ztlumení */
+.hf .hero-ctrls .ctrl-play {
+  border-radius: 50%;
+  background: var(--vx-orange);
+  display: grid;
+  place-items: center;
+  transition: background 0.15s ease;
+}
+.hf .hero-ctrls .ctrl-play:hover {
+  background: #e65c00;
+}
+.hf .hero-ctrls .ctrl-play svg {
+  width: 48%;
+  height: 48%;
+  fill: #fff;
+}
+
+/* ---------- FEATURE SUMMARY (titulek pořadu) — ikona vlevo, text vedle (mobil) ---------- */
+.hf .feature-summary {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(10px, 3vw, 22px);
+  /* horní mezera musí přesáhnout přesah odznaku „ŽIVĚ VYSÍLÁNÍ" pod videem */
+  padding: clamp(46px, 12vw, 66px) 5% 0 16%;
+}
+.hf .comment-icon {
+  flex: 0 0 auto;
+  width: clamp(30px, 8vw, 52px);
+  margin-top: 2px;
+}
+.hf .feature-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.hf .feature-copy h1 {
+  margin: 0;
+  font-family: var(--vx-impact);
+  font-weight: 900;
+  font-size: clamp(1.2rem, 3vw, 37.5px);
+  line-height: 1.19;
+  color: var(--vx-gray-dark);
+}
+.hf .feature-copy p {
+  margin: clamp(8px, 1vw, 14px) 0 0;
+  font-size: clamp(0.95rem, 1.77vw, 22px);
+  color: var(--vx-gray-dark);
+}
+
+/* ---------- PRÁVĚ HRAJE ---------- */
+.hf .playing-now h2,
+.hf .channels h2 {
+  margin: clamp(18px, 2vw, 26px) 0 clamp(12px, 1.4vw, 18px) var(--hf-indent);
+  color: var(--vx-orange);
+  font-family: var(--vx-impact);
+  font-weight: 400;
+  font-size: clamp(1.5rem, 3.06vw, 38px);
+  letter-spacing: 1.6px;
+  line-height: 1;
+}
+/* „PRÁVĚ HRAJE" je dle návrhu vycentrované, „KANÁLY" odsazené */
+.hf .playing-now h2 {
+  margin-left: 0;
+  margin-right: 0;
+  text-align: center;
+}
+/* PRÁVĚ HRAJE carousel — vodorovný scroll + šipky (aby bylo jasné, že se posouvá) */
+.hf .stage-wrap {
+  position: relative;
+}
+.hf .playing-stage {
+  display: flex;
+  gap: 1%;
+  width: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.hf .playing-stage::-webkit-scrollbar {
+  display: none;
+}
+.hf .playing-image {
+  flex: 0 0 clamp(150px, 31%, 360px);
+  scroll-snap-align: start;
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 0.8vw, 10px);
+}
+.hf .playing-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #ccc;
+  overflow: hidden;
+}
+.hf .playing-image.is-current .playing-thumb {
+  outline: 3px solid var(--vx-orange);
+  outline-offset: -3px;
+}
+.hf .playing-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hf .playing-title {
+  font-family: var(--vx-myriad);
+  font-weight: 700;
+  font-size: clamp(0.8rem, 1.05vw, 0.98rem);
+  line-height: 1.2;
+  color: var(--vx-gray-dark);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* navigační šipky (oranžová kolečka na okrajích stripu) */
+.hf .stage-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  width: clamp(34px, 3.2vw, 46px);
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 50%;
+  background: var(--vx-orange);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 4px 14px -4px rgba(0, 0, 0, 0.45);
+  transition: background 0.15s ease;
+}
+.hf .stage-nav:hover {
+  background: #e65c00;
+}
+.hf .stage-nav svg {
+  width: 54%;
+  height: 54%;
+}
+.hf .stage-prev {
+  left: clamp(2px, 0.5vw, 8px);
+}
+.hf .stage-next {
+  right: clamp(2px, 0.5vw, 8px);
+}
+.hf .dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: clamp(12px, 1.4vw, 20px) 0;
+}
+.hf .dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #979797;
+}
+.hf .dots span.active {
+  width: 10px;
+  height: 10px;
+  background: var(--vx-orange);
+}
+.hf .status-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 0 var(--hf-indent);
+  color: var(--vx-orange);
+  font-weight: 900;
+  font-size: clamp(0.78rem, 1.21vw, 15px);
+}
+.hf .status-label span {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--vx-orange);
+}
+.hf .playing-now h3 {
+  margin: clamp(8px, 1vw, 14px) 0 6px var(--hf-indent);
+  max-width: 45%;
+  font-family: var(--vx-impact);
+  font-weight: 900;
+  font-size: clamp(1.1rem, 2.14vw, 26.5px);
+  line-height: 1.05;
+  color: var(--vx-gray-dark);
+}
+.hf .source-label {
+  margin: 0 0 0 var(--hf-indent);
+  font-size: clamp(0.78rem, 1.21vw, 15px);
+  color: var(--vx-gray-dark);
+}
+
+/* ---------- KANÁLY ---------- */
+.hf .channels > p {
+  margin: clamp(8px, 1vw, 14px) 0 clamp(14px, 1.8vw, 24px) var(--hf-indent);
+  font-size: clamp(0.85rem, 1.53vw, 19px);
+  color: var(--vx-gray-dark);
+  letter-spacing: 0.5px;
+}
+.hf .channel-track {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 0.7vw, 9px);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 4px 0 6px;
+  width: 100%;
+}
+.hf .channel-track::-webkit-scrollbar {
+  display: none;
+}
+.hf .channel-card {
+  flex: 0 0 auto;
+  width: clamp(130px, 13.95vw, 173px);
+  aspect-ratio: 173 / 99;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 10px;
+  background: #fff;
+  border: 2px solid #737373;
+  cursor: pointer;
+}
+.hf .channel-card.channel-card-active {
+  border: 3px solid var(--vx-orange);
+  width: clamp(146px, 15.24vw, 189px);
+  aspect-ratio: 189 / 121;
+}
+.hf .channel-card img {
+  max-height: 64%;
+  width: auto;
+}
+.hf .channel-card .ch-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+.hf .channel-card .ch-name {
+  font-weight: 700;
+  font-size: clamp(0.78rem, 1.2vw, 1rem);
+  color: var(--vx-gray-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================================================
+   DESKTOP (návrh Lucie Robinson, „cely_nahled_sirka") — široká lišta s hodinami
+   vpravo a dvousloupcový hero (oranžový feature panel vlevo, video vpravo).
+   ========================================================================== */
+@media (min-width: 961px) {
+  .hf,
+  .hf-chrome {
+    max-width: 1440px;
+    padding-inline: clamp(16px, 2vw, 32px);
+  }
+
+  /* HLAVIČKA — logo vlevo, nav uprostřed, hodiny + datum vpravo.
+     hf-meta jen „rozpustíme" (display:contents), ať tagline + timeblock
+     vstoupí přímo do gridu hlavičky. */
+  .hf-header {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      "logo nav time"
+      "tag  nav time";
+    align-items: start;
+    column-gap: 4%;
+    padding: 26px 0 14px;
+  }
+  .hf-meta {
+    display: contents;
+  }
+  .hf-logo-link {
+    grid-area: logo;
+  }
+  .hf-logo {
+    width: clamp(340px, 33vw, 540px);
+  }
+  .hf-tagline {
+    grid-area: tag;
+    align-self: start;
+    margin-top: 8px;
+    font-size: clamp(13px, 1.05vw, 20px);
+  }
+  .hf-nav {
+    grid-area: nav;
+    align-self: start;
+    justify-content: flex-start;
+    gap: clamp(7px, 0.8vw, 15px);
+    padding-top: 6px;
+  }
+  .hf-nav a {
+    font-size: clamp(14px, 1.25vw, 22px);
+  }
+  .hf-timeblock {
+    grid-area: time;
+    align-self: start;
+    justify-self: end;
+    text-align: right;
+  }
+  .hf-clock {
+    font-size: clamp(52px, 5.3vw, 100px);
+    letter-spacing: 2px;
+  }
+  .hf-date {
+    margin-top: 4px;
+    font-size: clamp(13px, 1.05vw, 22px);
+  }
+  .hf-date .hf-date-m {
+    display: none;
+  }
+  .hf-date .hf-date-d {
+    display: inline;
+  }
+
+  /* STAGE — dvousloupec: feature panel (oranžový) vlevo, video vpravo */
+  .hf-stage {
+    display: grid;
+    grid-template-columns: 0.4fr 0.6fr;
+    align-items: stretch;
+  }
+  .hf .hero {
+    order: 2;
+    height: 100%;
+  }
+  .hf .hero-media {
+    aspect-ratio: auto;
+    height: 100%;
+    min-height: clamp(360px, 30vw, 520px);
+  }
+  /* text zarovnaný vpravo, ikona komentáře dole — dle „cely_nahled_sirka".
+     Oranžovou na pozadí teď řeší jeden gradient na .hf-body (viz níže). */
+  .hf .feature-summary {
+    order: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: clamp(28px, 3vw, 52px) clamp(48px, 5vw, 96px) clamp(20px, 2vw, 36px) clamp(20px, 4vw, 80px);
+    background: none;
+  }
+  .hf .feature-copy {
+    order: 1;
+    margin-left: 0;
+    max-width: none;
+    text-align: right;
+  }
+  .hf .feature-copy h1 {
+    font-size: clamp(20px, 2.05vw, 34px);
+    line-height: 1.16;
+  }
+  .hf .feature-copy p {
+    font-size: clamp(15px, 1.2vw, 20px);
+  }
+  .hf .feature-summary .comment-icon {
+    order: 2;
+    position: static;
+    width: clamp(40px, 3vw, 58px);
+    margin: auto 0 0;
+    align-self: flex-end;
+  }
+  /* ŽIVĚ VYSÍLÁNÍ odznak u levého horního okraje videa (rozhraní sloupců) */
+  .hf .live-badge {
+    left: 0;
+    right: auto;
+    bottom: auto;
+    top: clamp(14px, 4%, 42px);
+    transform: translateX(-50%);
+    width: clamp(72px, 5vw, 104px);
+  }
+
+  /* sekce pod hero: text odsazený ~16 % (mimo vycentrované „PRÁVĚ HRAJE") */
+  .hf {
+    --hf-indent: 16%;
+  }
+
+  /* JEDEN svislý oranžový gradient vlevo přes celý obsah pod hlavičkou
+     (nejsytější nahoře u hero, slábne dolů až k dolnímu okraji) */
+  .hf-body {
+    background-image: linear-gradient(
+      180deg,
+      var(--vx-orange) 0%,
+      rgba(255, 102, 0, 0.5) 24%,
+      rgba(255, 102, 0, 0.16) 52%,
+      rgba(255, 102, 0, 0) 100%
+    );
+    background-repeat: no-repeat;
+    background-position: left top;
+    background-size: 17% 100%;
+  }
+}
