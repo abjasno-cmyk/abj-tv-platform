@@ -46,6 +46,25 @@ function isValidYouTubeChannelId(value: string): boolean {
   return /^UC[0-9A-Za-z_-]{20,}$/.test(value.trim());
 }
 
+// SSRF guard: server-side fetch smí cílit jen na YouTube/Google hosty. Uživatel
+// posílá channelUrl, takže bez allowlistu by šlo donutit server stahovat interní
+// adresy (cloud metadata, localhost, interní služby).
+const ALLOWED_FETCH_HOSTS = new Set([
+  "www.youtube.com",
+  "youtube.com",
+  "m.youtube.com",
+  "www.googleapis.com",
+]);
+
+function isAllowedUpstreamUrl(rawUrl: string): boolean {
+  try {
+    const { protocol, hostname } = new URL(rawUrl);
+    return protocol === "https:" && ALLOWED_FETCH_HOSTS.has(hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
 function sanitizeEnvValue(value?: string): string | undefined {
   if (!value) return undefined;
   const trimmed = value.trim();
@@ -267,7 +286,8 @@ async function resolveChannelIdFromPage(parsed: {
     candidates.push(`https://www.youtube.com/c/${parsed.username}`);
   }
 
-  const uniqueCandidates = [...new Set(candidates)];
+  // Jen povolené hosty — channelUrl je od uživatele (ochrana proti SSRF).
+  const uniqueCandidates = [...new Set(candidates)].filter(isAllowedUpstreamUrl);
   for (const candidate of uniqueCandidates) {
     try {
       const response = await fetchWithTimeout(candidate, 9000);
@@ -428,11 +448,11 @@ export async function GET(request: Request) {
 
     return Response.json({ videos: feedResult.videos, resolvedChannelId: channelId });
   } catch (error) {
+    // Detail jen do server logu; klientovi generická hláška (chybové hlášky
+    // fetch() mohou prozradit interní hostname/port).
+    console.error("channel-latest-fetch-error", error);
     return Response.json(
-      {
-        videos: [],
-        error: error instanceof Error ? error.message : "Unknown channel fetch error",
-      },
+      { videos: [], error: "Videa kanálu se teď nepodařilo načíst." },
       { status: 500 }
     );
   }

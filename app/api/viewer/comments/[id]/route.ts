@@ -8,7 +8,6 @@ type RouteContext = {
 
 type UpdateCommentPayload = {
   body?: unknown;
-  status?: unknown;
 };
 
 function normalize(value: unknown): string {
@@ -21,8 +20,9 @@ export async function PATCH(request: Request, context: RouteContext) {
     const { supabase, user } = await requireAuthenticatedUser();
     const payload = (await request.json().catch(() => ({}))) as UpdateCommentPayload;
     const body = normalize(payload.body);
-    const status = normalize(payload.status);
 
+    // Pozn.: `status` (moderace) zde záměrně NENÍ editovatelný uživatelem —
+    // měnit ho smí jen admin route. Jinak by si divák mohl schválit komentář.
     const updatePayload: Record<string, unknown> = {};
     if (body) {
       if (body.length > 2000) {
@@ -30,18 +30,18 @@ export async function PATCH(request: Request, context: RouteContext) {
       }
       updatePayload.body = body;
     }
-    if (status) {
-      updatePayload.status = status.slice(0, 30);
-    }
 
     if (Object.keys(updatePayload).length === 0) {
       return Response.json({ error: "Není co aktualizovat." }, { status: 400 });
     }
 
+    // Vlastnictví vynucené i v aplikaci (ne jen RLS): uživatel smí upravit
+    // pouze vlastní komentář.
     const updateResult = await supabase
       .from("comments")
       .update(updatePayload)
       .eq("id", id)
+      .eq("user_id", user.id)
       .select("id, user_id, entity_type, entity_id, parent_id, body, status, created_at, updated_at")
       .single();
 
@@ -75,7 +75,13 @@ export async function DELETE(_request: Request, context: RouteContext) {
     const { id } = await Promise.resolve(context.params);
     const { supabase, user } = await requireAuthenticatedUser();
 
-    const lookup = await supabase.from("comments").select("id, entity_type, entity_id").eq("id", id).maybeSingle();
+    // Vlastnictví: hledáme i mažeme jen komentář patřící přihlášenému uživateli.
+    const lookup = await supabase
+      .from("comments")
+      .select("id, entity_type, entity_id")
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .maybeSingle();
     if (lookup.error) {
       return Response.json({ error: "Nepodařilo se načíst komentář.", details: lookup.error.message }, { status: 500 });
     }
@@ -83,7 +89,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
       return Response.json({ error: "Komentář nebyl nalezen." }, { status: 404 });
     }
 
-    const removal = await supabase.from("comments").delete().eq("id", id);
+    const removal = await supabase.from("comments").delete().eq("id", id).eq("user_id", user.id);
     if (removal.error) {
       const message = removal.error.message.toLowerCase();
       const statusCode = message.includes("row-level security") ? 403 : 500;

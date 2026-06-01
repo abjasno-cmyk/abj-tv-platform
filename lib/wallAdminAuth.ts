@@ -1,3 +1,11 @@
+import crypto from "node:crypto";
+
+function secretsMatch(provided: string, configured: string): boolean {
+  const a = Buffer.from(provided);
+  const b = Buffer.from(configured);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
 type AdminAuthResult =
   | {
       ok: true;
@@ -40,7 +48,7 @@ export function requireWallAdmin(request: Request): AdminAuthResult {
   const direct = request.headers.get("x-admin-secret")?.trim() ?? null;
   const urlSecret = new URL(request.url).searchParams.get("secret");
   const provided = bearer ?? direct ?? urlSecret;
-  if (!provided || provided !== configured) {
+  if (!provided || !secretsMatch(provided, configured)) {
     return {
       ok: false,
       status: 401,
