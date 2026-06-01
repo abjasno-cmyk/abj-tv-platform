@@ -2,22 +2,11 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import YouTube, { type YouTubeProps } from "react-youtube";
 
-import { useAuth } from "@/components/auth/AuthProvider";
+import { VeroxHeader } from "@/components/abj/VeroxHeader";
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import type { DayProgram, ProgramItem } from "@/lib/epg-types";
-
-const DAYS = ["NEDĚLE", "PONDĚLÍ", "ÚTERÝ", "STŘEDA", "ČTVRTEK", "PÁTEK", "SOBOTA"];
-const MONTHS_GEN = [
-  "LEDNA", "ÚNORA", "BŘEZNA", "DUBNA", "KVĚTNA", "ČERVNA",
-  "ČERVENCE", "SRPNA", "ZÁŘÍ", "ŘÍJNA", "LISTOPADU", "PROSINCE",
-];
-
-function pad(n: number): string {
-  return n.toString().padStart(2, "0");
-}
 
 type HomePageProps = {
   days: DayProgram[];
@@ -45,6 +34,8 @@ type PlayerHandle = {
   getDuration: () => number;
   mute?: () => void;
   unMute?: () => void;
+  playVideo?: () => void;
+  pauseVideo?: () => void;
 };
 
 function thumbFor(item: ProgramItem): string {
@@ -67,16 +58,10 @@ export function HomePage({
   onPlaybackSample,
   onSelectChannelVideo,
 }: HomePageProps) {
-  const { isAuthenticated, openLoginModal } = useAuth();
   const heroRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<PlayerHandle | null>(null);
   const [muted, setMuted] = useState(true);
-  const [now, setNow] = useState<Date>(() => new Date());
-
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
+  const [playing, setPlaying] = useState(true);
 
   const programItems = useMemo(
     () => days.flatMap((day) => day.items).filter((item) => Boolean(item.videoId)),
@@ -116,6 +101,14 @@ export function HomePage({
     return () => window.clearInterval(id);
   }, [onPlaybackSample, videoId]);
 
+  const togglePlay = () => {
+    const p = playerRef.current;
+    if (!p) return;
+    if (playing) p.pauseVideo?.();
+    else p.playVideo?.();
+    setPlaying(!playing);
+  };
+
   const toggleMute = () => {
     const next = !muted;
     setMuted(next);
@@ -140,38 +133,11 @@ export function HomePage({
 
   return (
     <div className="hf">
-      {/* HLAVIČKA dle handoffu */}
-      <header className="hf-header" aria-label="VEROX">
-        <Link href="/live" aria-label="VEROX — Mainstreamový detox">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="hf-logo" src="/handoff/assets/verox-logo.webp" alt="VEROX" />
-        </Link>
-        <p className="hf-tagline">MAINSTREAMOVÝ DETOX</p>
-        <p className="hf-clock" suppressHydrationWarning>
-          {pad(now.getHours())}:{pad(now.getMinutes())}
-        </p>
-        <p className="hf-date" suppressHydrationWarning>
-          {DAYS[now.getDay()]} {now.getDate()}. {MONTHS_GEN[now.getMonth()]}
-        </p>
-        <nav className="hf-nav" aria-label="Hlavní navigace">
-          <Link className="is-active" href="/live" aria-current="page">ŽIVĚ</Link>
-          <Link href="/videa">VIDEA</Link>
-          <Link href="/v-kostce">V KOSTCE</Link>
-          <Link href="/muj-verox">MŮJ VEROX</Link>
-          <a
-            className="login-link"
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              if (!isAuthenticated) openLoginModal({ reason: "Přihlaste se zdarma." });
-            }}
-          >
-            PŘIHLÁSIT ZDARMA
-          </a>
-        </nav>
-      </header>
+      <VeroxHeader active="zive" />
       <div className="double-rule header-rule" aria-hidden="true" />
 
+      {/* STAGE: na desktopu dvousloupec (feature vlevo, video vpravo) */}
+      <div className="hf-stage">
       {/* HERO */}
       <section className="hero" aria-label="Živé vysílání">
         <div className="hero-media" ref={heroRef}>
@@ -185,8 +151,30 @@ export function HomePage({
                 playerRef.current = e.target as unknown as PlayerHandle;
                 if (muted) playerRef.current.mute?.();
               }}
+              onStateChange={(e) => {
+                // YT.PlayerState: 1 = playing, 2 = paused
+                if (e.data === 1) setPlaying(true);
+                else if (e.data === 2) setPlaying(false);
+              }}
             />
           ) : null}
+          <button
+            type="button"
+            className="hero-play"
+            onClick={togglePlay}
+            aria-label={playing ? "Pozastavit" : "Přehrát"}
+          >
+            {playing ? (
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="6" y="5" width="4" height="14" rx="1" />
+                <rect x="14" y="5" width="4" height="14" rx="1" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            )}
+          </button>
           <div className="hero-ctrls">
             <button type="button" onClick={toggleFullscreen} aria-label="Celá obrazovka">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -213,12 +201,14 @@ export function HomePage({
       {/* FEATURE SUMMARY */}
       <section className="feature-summary" aria-labelledby="hf-featured">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="comment-icon" src="/handoff/assets/comment-icon.webp" alt="" />
+        <img className="comment-icon" src="/design/icons/ikona_komentovat.png" alt="" />
         <div className="feature-copy">
           <h1 id="hf-featured">{title}</h1>
           <p>{channelName}</p>
         </div>
       </section>
+      </div>
+      {/* /STAGE */}
 
       <div className="double-rule feature-rule" aria-hidden="true" />
 

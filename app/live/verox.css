@@ -192,8 +192,10 @@
   -webkit-font-smoothing: antialiased;
   padding-bottom: 10cqw;
 }
-/* podstránky (VIDEA / V KOSTCE / MŮJ VEROX) — trochu místa nahoře pod lištou */
+/* podstránky (VIDEA / V KOSTCE / MŮJ VEROX) — sdílí šířku s lištou .hf-chrome
+   (mobil = plná šířka jako návrh „…vyska"; desktop = širší, ne úzký sloupec) */
 .vx-live.vx-sub {
+  max-width: 1080px;
   padding-top: clamp(14px, 4cqw, 40px);
 }
 
@@ -615,7 +617,7 @@
   font-family: var(--vx-myriad);
   font-weight: 700;
   font-size: clamp(2.5rem, 13cqw, 4.5rem);
-  color: var(--vx-orange);
+  color: var(--vx-gray-light); /* VIDEA: šedé datum (návrh L. Robinson) */
   letter-spacing: 0.05em;
   line-height: 1;
 }
