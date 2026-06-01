@@ -60,6 +60,7 @@ export function HomePage({
 }: HomePageProps) {
   const heroRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<PlayerHandle | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(true);
 
@@ -67,8 +68,14 @@ export function HomePage({
     () => days.flatMap((day) => day.items).filter((item) => Boolean(item.videoId)),
     [days],
   );
-  const stage = programItems.slice(0, 3);
+  const stage = programItems.slice(0, 12);
   const offset = Math.max(0, Math.floor(startSeconds));
+
+  const scrollStage = (dir: -1 | 1) => {
+    const el = stageRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" });
+  };
 
   const opts = useMemo<YouTubeProps["opts"]>(
     () => ({
@@ -128,8 +135,6 @@ export function HomePage({
     if (el.requestFullscreen) void el.requestFullscreen();
     else el.webkitRequestFullscreen?.();
   };
-
-  const stagePos = ["playing-image-left", "playing-image-main", "playing-image-right"];
 
   return (
     <div className="hf">
@@ -215,27 +220,52 @@ export function HomePage({
       {/* PRÁVĚ HRAJE */}
       <section className="playing-now" aria-labelledby="hf-playing">
         <h2 id="hf-playing">PRÁVĚ HRAJE</h2>
-        <div className="playing-stage" aria-label="Program">
-          {stage.length === 0 ? (
-            <>
-              <div className="playing-image playing-image-left" />
-              <div className="playing-image playing-image-main" />
-              <div className="playing-image playing-image-right" />
-            </>
-          ) : (
-            stage.map((item, i) => (
-              <button
-                type="button"
-                key={`${item.videoId}-${i}`}
-                className={`playing-image ${stagePos[i] ?? "playing-image-right"}`}
-                onClick={() => onSelect(item)}
-                aria-label={item.title}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={thumbFor(item)} alt={item.title} loading="lazy" />
-              </button>
-            ))
-          )}
+        <div className="stage-wrap">
+          <button
+            type="button"
+            className="stage-nav stage-prev"
+            onClick={() => scrollStage(-1)}
+            aria-label="Předchozí pořady"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <div className="playing-stage" ref={stageRef} aria-label="Program">
+            {stage.length === 0 ? (
+              <>
+                <div className="playing-image" />
+                <div className="playing-image" />
+                <div className="playing-image" />
+              </>
+            ) : (
+              stage.map((item, i) => {
+                const isCurrent = Boolean(videoId) && item.videoId === videoId;
+                return (
+                  <button
+                    type="button"
+                    key={`${item.videoId}-${i}`}
+                    className={`playing-image${isCurrent ? " is-current" : ""}`}
+                    onClick={() => onSelect(item)}
+                    aria-label={item.title}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={thumbFor(item)} alt={item.title} loading="lazy" />
+                  </button>
+                );
+              })
+            )}
+          </div>
+          <button
+            type="button"
+            className="stage-nav stage-next"
+            onClick={() => scrollStage(1)}
+            aria-label="Další pořady"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         </div>
         <div className="dots" aria-hidden="true">
           {Array.from({ length: 7 }).map((_, i) => (
