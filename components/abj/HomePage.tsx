@@ -36,6 +36,7 @@ type PlayerHandle = {
   unMute?: () => void;
   playVideo?: () => void;
   pauseVideo?: () => void;
+  seekTo?: (seconds: number, allowSeekAhead?: boolean) => void;
 };
 
 function thumbFor(item: ProgramItem): string {
@@ -102,14 +103,18 @@ export function HomePage({
     el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" });
   };
 
+  // STABILNÍ opts (zachytíme jen počáteční hodnoty). Kdyby se opts měnily,
+  // react-youtube při každé změně videa/offsetu zničí a postaví iframe znovu
+  // (pomalé/nespolehlivé). Takhle se video přepíná přes loadVideoById.
+  const initialOptsRef = useRef({ muted, offset });
   const opts = useMemo<YouTubeProps["opts"]>(
     () => ({
       width: "100%",
       height: "100%",
       playerVars: {
         autoplay: 1,
-        mute: muted ? 1 : 0,
-        start: offset,
+        mute: initialOptsRef.current.muted ? 1 : 0,
+        start: initialOptsRef.current.offset,
         rel: 0,
         modestbranding: 1,
         controls: 0,
@@ -117,8 +122,17 @@ export function HomePage({
         iv_load_policy: 3,
       },
     }),
-    [muted, offset],
+    [],
   );
+
+  // Live-resume: pro offset > 0 doseekujeme po načtení nového videa.
+  useEffect(() => {
+    if (offset <= 0) return;
+    const id = window.setTimeout(() => {
+      playerRef.current?.seekTo?.(offset, true);
+    }, 400);
+    return () => window.clearTimeout(id);
+  }, [videoId, offset]);
 
   useEffect(() => {
     if (!videoId || !onPlaybackSample) return;
