@@ -1,8 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 
+import { CANONICAL_HOST, LEGACY_VERCEL_HOST_PATTERN } from "@/lib/site";
+
 export const dynamic = "force-dynamic";
-const CANONICAL_VERCEL_HOST = "abj-tv-platform-n7e8.vercel.app";
 
 function safeNextPath(value: string | null): string {
   if (!value) return "/live";
@@ -34,9 +35,8 @@ export async function GET(request: NextRequest) {
   const next = safeNextPath(url.searchParams.get("next"));
   const requestHost = url.host.toLowerCase();
   const shouldCanonicalizeHost =
-    /^abj-tv-platform-n7e8(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(requestHost) &&
-    requestHost !== CANONICAL_VERCEL_HOST;
-  const origin = `${url.protocol}//${shouldCanonicalizeHost ? CANONICAL_VERCEL_HOST : url.host}`;
+    LEGACY_VERCEL_HOST_PATTERN.test(requestHost) && requestHost !== CANONICAL_HOST;
+  const origin = `${url.protocol}//${shouldCanonicalizeHost ? CANONICAL_HOST : url.host}`;
   const cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }> = [];
 
   if (code) {

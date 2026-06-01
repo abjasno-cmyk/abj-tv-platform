@@ -1,4 +1,5 @@
 import { createSupabaseNewsClient, type NewsEdition } from "@/lib/jasne-zpravy";
+import { SITE_URL } from "@/lib/site";
 
 export const revalidate = 300;
 
@@ -17,10 +18,7 @@ function escapeXml(s: string | null | undefined): string {
 }
 
 function siteOrigin(): string {
-  const env =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
-  return env ?? "https://abj-tv-platform.vercel.app";
+  return SITE_URL;
 }
 
 export async function GET() {

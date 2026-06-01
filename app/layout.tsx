@@ -8,10 +8,28 @@ import { ABJNav } from "@/components/abj/Nav";
 import { LegalFooter } from "@/components/abj/LegalFooter";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { EditorialEventDebugPanel } from "@/components/dev/EditorialEventDebugPanel";
+import { CANONICAL_HOST, SITE_URL } from "@/lib/site";
 
+const SITE_DESCRIPTION =
+  "Mainstreamový detox — živé vysílání, videa a souhrny v kostce z alternativních kanálů.";
+
+// Next.js automaticky doplní og:image / twitter:image z app/opengraph-image.png
+// a app/twitter-image.png (rozlišené přes metadataBase).
 export const metadata: Metadata = {
-  title: "ABJ TV Platform",
-  description: "Lehká live TV platforma nad YouTube playlistem",
+  metadataBase: new URL(SITE_URL),
+  title: "VEROX — Mainstreamový detox",
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    type: "website",
+    siteName: "VEROX",
+    title: "VEROX — Mainstreamový detox",
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "VEROX — Mainstreamový detox",
+    description: SITE_DESCRIPTION,
+  },
 };
 
 type RootLayoutProps = {
@@ -48,7 +66,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
             {`
             (function () {
               try {
-                var canonicalHost = "abj-tv-platform-n7e8.vercel.app";
+                var canonicalHost = "${CANONICAL_HOST}";
                 var host = window.location.host.toLowerCase();
                 var hostPattern = /^abj-tv-platform-n7e8(?:-[a-z0-9-]+)?\\.vercel\\.app$/i;
                 if (hostPattern.test(host) && host !== canonicalHost) {

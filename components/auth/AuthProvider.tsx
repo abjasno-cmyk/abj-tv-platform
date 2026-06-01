@@ -5,9 +5,9 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { LoginModal } from "@/components/auth/LoginModal";
+import { CANONICAL_HOST, LEGACY_VERCEL_HOST_PATTERN } from "@/lib/site";
 
 const PENDING_CONSENTS_KEY = "verox_pending_consents_v1";
-const CANONICAL_VERCEL_HOST = "abj-tv-platform-n7e8.vercel.app";
 // Preview deployments must stay on their own host (visual review before
 // merge). Only the production deployment canonicalizes the host.
 const IS_PREVIEW_DEPLOYMENT = process.env.NEXT_PUBLIC_VERCEL_ENV === "preview";
@@ -90,8 +90,8 @@ function resolvePreferredAuthOrigin(isPreview: boolean): string | null {
   // Na preview deploymentu zůstaň na aktuálním (preview) hostu — nepřesměrovávej
   // login na produkci.
   if (isPreview) return `${protocol}//${host}`;
-  if (/^abj-tv-platform-n7e8(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(host) && host !== CANONICAL_VERCEL_HOST) {
-    return `${protocol}//${CANONICAL_VERCEL_HOST}`;
+  if (LEGACY_VERCEL_HOST_PATTERN.test(host) && host.toLowerCase() !== CANONICAL_HOST) {
+    return `${protocol}//${CANONICAL_HOST}`;
   }
   return `${protocol}//${host}`;
 }
