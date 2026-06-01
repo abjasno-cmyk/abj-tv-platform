@@ -166,6 +166,8 @@ export function HomePage({
       <VeroxHeader active="zive" />
       <div className="double-rule header-rule" aria-hidden="true" />
 
+      {/* Obsah pod hlavičkou — nosič oranžového gradientu vlevo (po dolní okraj) */}
+      <div className="hf-body">
       {/* STAGE: na desktopu dvousloupec (feature vlevo, video vpravo) */}
       <div className="hf-stage">
       {/* HERO */}
@@ -344,6 +346,8 @@ export function HomePage({
           ))}
         </div>
       </section>
+      </div>
+      {/* /hf-body */}
     </div>
   );
 }

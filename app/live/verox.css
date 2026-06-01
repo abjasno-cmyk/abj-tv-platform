@@ -1064,17 +1064,17 @@
   .vx-live.vx-sub {
     max-width: 1440px;
     /* jeden SVISLÝ gradient v levém pásu: nahoře nejsytější oranžová → dolů
-       průhledná (žádný horizontální fade) */
+       průhledná (žádný horizontální fade), až k dolnímu okraji obsahu */
     background-image: linear-gradient(
       180deg,
       var(--vx-orange) 0%,
-      rgba(255, 102, 0, 0.6) 32%,
-      rgba(255, 102, 0, 0.16) 64%,
-      rgba(255, 102, 0, 0) 92%
+      rgba(255, 102, 0, 0.55) 26%,
+      rgba(255, 102, 0, 0.2) 55%,
+      rgba(255, 102, 0, 0) 100%
     );
     background-repeat: no-repeat;
     background-position: left top;
-    background-size: 14% 1500px;
+    background-size: 15% 100%;
   }
 
   /* velké tmavé datum (sedí na gradientu) */

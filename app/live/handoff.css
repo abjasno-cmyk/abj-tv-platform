@@ -556,22 +556,15 @@
     height: 100%;
     min-height: clamp(360px, 30vw, 520px);
   }
-  /* oranžový pruh u levého okraje (fade vpravo), text zarovnaný vpravo,
-     ikona komentáře dole — dle „cely_nahled_sirka" */
+  /* text zarovnaný vpravo, ikona komentáře dole — dle „cely_nahled_sirka".
+     Oranžovou na pozadí teď řeší jeden gradient na .hf-body (viz níže). */
   .hf .feature-summary {
     order: 1;
     position: relative;
     display: flex;
     flex-direction: column;
     padding: clamp(28px, 3vw, 52px) clamp(48px, 5vw, 96px) clamp(20px, 2vw, 36px) clamp(20px, 4vw, 80px);
-    background: linear-gradient(
-      90deg,
-      var(--vx-orange) 0%,
-      rgba(255, 102, 0, 0.82) 9%,
-      rgba(255, 102, 0, 0.28) 34%,
-      rgba(255, 102, 0, 0.06) 64%,
-      #fff 100%
-    );
+    background: none;
   }
   .hf .feature-copy {
     order: 1;
@@ -606,5 +599,20 @@
   /* sekce pod hero: text odsazený ~16 % (mimo vycentrované „PRÁVĚ HRAJE") */
   .hf {
     --hf-indent: 16%;
+  }
+
+  /* JEDEN svislý oranžový gradient vlevo přes celý obsah pod hlavičkou
+     (nejsytější nahoře u hero, slábne dolů až k dolnímu okraji) */
+  .hf-body {
+    background-image: linear-gradient(
+      180deg,
+      var(--vx-orange) 0%,
+      rgba(255, 102, 0, 0.5) 24%,
+      rgba(255, 102, 0, 0.16) 52%,
+      rgba(255, 102, 0, 0) 100%
+    );
+    background-repeat: no-repeat;
+    background-position: left top;
+    background-size: 17% 100%;
   }
 }
