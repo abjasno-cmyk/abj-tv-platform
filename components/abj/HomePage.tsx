@@ -228,6 +228,23 @@ export function HomePage({
     return () => window.clearInterval(id);
   }, [onPlaybackSample, videoId]);
 
+  // Po přepnutí videa znovu aplikuj zvolený stav zvuku. loadVideoById jinak
+  // nové video spustí ztlumené, takže by se „zapomněl" odmutovaný stav.
+  const mutedRef = useRef(muted);
+  useEffect(() => {
+    mutedRef.current = muted;
+  }, [muted]);
+  useEffect(() => {
+    if (!videoId) return;
+    const id = window.setTimeout(() => {
+      const p = playerRef.current;
+      if (!p) return;
+      if (mutedRef.current) p.mute?.();
+      else p.unMute?.();
+    }, 350);
+    return () => window.clearTimeout(id);
+  }, [videoId]);
+
   const togglePlay = () => {
     const p = playerRef.current;
     if (!p) return;
@@ -308,8 +325,10 @@ export function HomePage({
             </button>
             <button
               type="button"
+              className={`ctrl-sound${muted ? " is-muted" : ""}`}
               onClick={toggleMute}
               aria-label={muted ? "Zapnout zvuk" : "Vypnout zvuk"}
+              aria-pressed={muted}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/icons/ikona_sound_on.svg" alt="" />
