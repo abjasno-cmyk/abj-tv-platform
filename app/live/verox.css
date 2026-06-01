@@ -193,9 +193,9 @@
   padding-bottom: 10cqw;
 }
 /* podstránky (VIDEA / V KOSTCE / MŮJ VEROX) — sdílí šířku s lištou .hf-chrome
-   (mobil = plná šířka jako návrh „…vyska"; desktop = širší, ne úzký sloupec) */
+   (mobil = plná šířka jako návrh „…vyska"; desktop = plná šířka jako homepage) */
 .vx-live.vx-sub {
-  max-width: 1080px;
+  max-width: 1240px;
   padding-top: clamp(14px, 4cqw, 40px);
 }
 
@@ -717,7 +717,12 @@
   color: var(--vx-gray-light);
   letter-spacing: 0.05em;
   line-height: 1.4;
-  margin-bottom: 1em;
+  margin-bottom: 0.7em;
+}
+/* AI dopad — jemně zvýrazněný (tmavší, polotučný) */
+.kostka .body p.impact {
+  color: var(--vx-gray-dark);
+  font-weight: 600;
 }
 .kostka .actions {
   grid-column: 4;
@@ -1047,5 +1052,59 @@
   .channels .hint {
     font-size: 1.02rem;
     margin-top: 30px;
+  }
+}
+
+/* ============================================================================
+   DESKTOP subpages (dle „v_kostce_sirka") — plná šířka jako homepage; JEDEN
+   oranžový gradient přes celý levý sloupec (silný vlevo nahoře, slábne doprava
+   i dolů), tmavé velké datum, široké tělo, akce vpravo.
+   ========================================================================== */
+@media (min-width: 961px) {
+  .vx-live.vx-sub {
+    max-width: 1440px;
+    /* jeden SVISLÝ gradient v levém pásu: nahoře nejsytější oranžová → dolů
+       průhledná (žádný horizontální fade) */
+    background-image: linear-gradient(
+      180deg,
+      var(--vx-orange) 0%,
+      rgba(255, 102, 0, 0.6) 32%,
+      rgba(255, 102, 0, 0.16) 64%,
+      rgba(255, 102, 0, 0) 92%
+    );
+    background-repeat: no-repeat;
+    background-position: left top;
+    background-size: 14% 1500px;
+  }
+
+  /* velké tmavé datum (sedí na gradientu) */
+  .vx-card .day,
+  .kostka .day {
+    color: var(--vx-gray-dark);
+  }
+
+  /* širší rozložení: užší datum, široké tělo */
+  .vx-card {
+    grid-template-columns: 13% 1.5% 30% auto;
+  }
+  .kostka {
+    grid-template-columns: 13% 1.5% 66% auto;
+  }
+  /* titulky V KOSTCE jsou podtržené */
+  .kostka .body h3 {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-thickness: 2px;
+  }
+
+  /* akční tlačítka V KOSTCE — kompaktní sloupec vpravo */
+  .kostka .actions {
+    gap: 10px;
+  }
+  .kostka .actions a,
+  .kostka .actions button {
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    white-space: nowrap;
   }
 }

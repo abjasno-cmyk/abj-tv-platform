@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, createSupabaseServiceClient } from "@/lib/supabase/server";
 import { moderateWallPost } from "@/lib/wallModerationService";
 import { sanitizeWallText } from "@/lib/wallSecurity";
 import type {
@@ -12,6 +12,17 @@ import type {
   WallSort,
   WallStatus,
 } from "@/lib/wallTypes";
+
+// Zeď běží přes service_role klíč (obchází RLS server-side; veškerá validace a
+// moderace je v této vrstvě). Když klíč není k dispozici, gracefully spadne na
+// běžný server klient (čtení dál funguje, zápis bude blokovaný RLS jako dřív).
+async function getWallClient() {
+  try {
+    return createSupabaseServiceClient();
+  } catch {
+    return await createSupabaseServerClient();
+  }
+}
 
 type WallPostRow = {
   id: string;
@@ -184,7 +195,7 @@ function mapToPublicPost(row: WallPostRow, videoTitleById: Map<string, string>):
 
 async function loadVideoTitleMap(videoIds: string[]): Promise<Map<string, string>> {
   if (videoIds.length === 0) return new Map<string, string>();
-  const supabase = await createSupabaseServerClient();
+  const supabase = await getWallClient();
   const { data, error } = await supabase
     .from("videos")
     .select("video_id, title")
@@ -204,7 +215,7 @@ async function addModerationLog(params: {
   reason?: string | null;
   moderator?: string | null;
 }) {
-  const supabase = await createSupabaseServerClient();
+  const supabase = await getWallClient();
   await supabase.from("wall_moderation_log").insert({
     post_id: params.postId,
     action: params.action,
@@ -214,7 +225,7 @@ async function addModerationLog(params: {
 }
 
 async function enforceCreateRateLimit(meta: WallIdentityMeta) {
-  const supabase = await createSupabaseServerClient();
+  const supabase = await getWallClient();
   const sinceIso = new Date(Date.now() - 10 * 60 * 1000).toISOString();
 
   if (meta.ipHash) {
@@ -240,7 +251,7 @@ async function enforceCreateRateLimit(meta: WallIdentityMeta) {
 }
 
 export async function listPublicWallPosts(params: ListPublicWallParams = {}): Promise<WallPostListResult> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = await getWallClient();
   const limit = normalizeLimit(params.limit, DEFAULT_LIMIT);
   const offset = normalizeOffset(params.offset);
   const sort = normalizeSort(params.sort);
@@ -304,7 +315,7 @@ export async function createWallPost(
     throw new WallServiceError(400, "E-mail nemá validní formát.");
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = await getWallClient();
   let parentRow: WallPostRow | null = null;
   if (parentId) {
     const parentLookup = await supabase
@@ -383,7 +394,7 @@ export async function createWallPost(
 }
 
 async function requirePublicPost(postId: string): Promise<WallPostRow> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = await getWallClient();
   const { data, error } = await supabase
     .from("wall_posts")
     .select(
@@ -401,7 +412,7 @@ async function requirePublicPost(postId: string): Promise<WallPostRow> {
 }
 
 export async function addWallReaction(postId: string, sessionHash: string): Promise<AddReactionResult> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = await getWallClient();
   const post = await requirePublicPost(postId);
   if (post.status !== "approved") {
     throw new WallServiceError(403, "Na tento příspěvek nelze reagovat.");
@@ -444,7 +455,7 @@ export async function reportWallPost(
   sessionHash: string,
   reason?: string | null
 ): Promise<ReportPostResult> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = await getWallClient();
   const post = await requirePublicPost(postId);
   const normalizedReason = reason ? sanitizeWallText(reason).slice(0, 500) : null;
 
@@ -506,7 +517,7 @@ export async function reportWallPost(
 
 async function getModerationLogsByPostIds(postIds: string[]): Promise<Map<string, WallModerationLogRow[]>> {
   if (postIds.length === 0) return new Map<string, WallModerationLogRow[]>();
-  const supabase = await createSupabaseServerClient();
+  const supabase = await getWallClient();
   const { data } = await supabase
     .from("wall_moderation_log")
     .select("id, post_id, action, reason, moderator, created_at")
@@ -526,7 +537,7 @@ export async function listAdminWallPosts(params: ListAdminWallParams = {}): Prom
   offset: number;
   hasMore: boolean;
 }> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = await getWallClient();
   const status = params.status ?? null;
   const limit = normalizeLimit(params.limit, DEFAULT_ADMIN_LIMIT);
   const offset = normalizeOffset(params.offset);
@@ -582,7 +593,7 @@ export async function updateWallPostStatusByAdmin(params: {
   moderator: string;
   reason?: string | null;
 }): Promise<AdminWallPost> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = await getWallClient();
   const existing = await requirePublicPost(params.postId);
   const nowIso = new Date().toISOString();
   const reason = params.reason ? sanitizeWallText(params.reason).slice(0, 500) : null;

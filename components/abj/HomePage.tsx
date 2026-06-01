@@ -68,7 +68,32 @@ export function HomePage({
     () => days.flatMap((day) => day.items).filter((item) => Boolean(item.videoId)),
     [days],
   );
-  const stage = programItems.slice(0, 12);
+
+  // PRÁVĚ HRAJE: pokud je vybraný kanál (běží jeho video), ukaž videa z toho
+  // kanálu; jinak default EPG program.
+  const activeChannel = useMemo(
+    () => channels.find((ch) => ch.channelName === channelName && ch.videos.length > 0) ?? null,
+    [channels, channelName],
+  );
+  const stageItems = useMemo(() => {
+    if (activeChannel) {
+      return activeChannel.videos.slice(0, 12).map((video) => ({
+        key: video.videoId,
+        videoId: video.videoId,
+        title: video.title,
+        thumb: video.thumbnail || `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`,
+        onClick: () => onSelectChannelVideo({ channelName: activeChannel.channelName, video }),
+      }));
+    }
+    return programItems.slice(0, 12).map((item, index) => ({
+      key: `${item.videoId}-${index}`,
+      videoId: item.videoId,
+      title: item.title,
+      thumb: thumbFor(item),
+      onClick: () => onSelect(item),
+    }));
+  }, [activeChannel, programItems, onSelect, onSelectChannelVideo]);
+
   const offset = Math.max(0, Math.floor(startSeconds));
 
   const scrollStage = (dir: -1 | 1) => {
@@ -163,24 +188,24 @@ export function HomePage({
               }}
             />
           ) : null}
-          <button
-            type="button"
-            className="hero-play"
-            onClick={togglePlay}
-            aria-label={playing ? "Pozastavit" : "Přehrát"}
-          >
-            {playing ? (
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="6" y="5" width="4" height="14" rx="1" />
-                <rect x="14" y="5" width="4" height="14" rx="1" />
-              </svg>
-            ) : (
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            )}
-          </button>
           <div className="hero-ctrls">
+            <button
+              type="button"
+              className="ctrl-play"
+              onClick={togglePlay}
+              aria-label={playing ? "Pozastavit" : "Přehrát"}
+            >
+              {playing ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="7" y="5" width="3.6" height="14" rx="1" />
+                  <rect x="13.4" y="5" width="3.6" height="14" rx="1" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              )}
+            </button>
             <button type="button" onClick={toggleFullscreen} aria-label="Celá obrazovka">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/icons/ikona_to_full_scren.svg" alt="" />
@@ -189,7 +214,6 @@ export function HomePage({
               type="button"
               onClick={toggleMute}
               aria-label={muted ? "Zapnout zvuk" : "Vypnout zvuk"}
-              style={{ opacity: muted ? 0.6 : 1 }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/icons/ikona_sound_on.svg" alt="" />
@@ -232,25 +256,25 @@ export function HomePage({
             </svg>
           </button>
           <div className="playing-stage" ref={stageRef} aria-label="Program">
-            {stage.length === 0 ? (
+            {stageItems.length === 0 ? (
               <>
                 <div className="playing-image" />
                 <div className="playing-image" />
                 <div className="playing-image" />
               </>
             ) : (
-              stage.map((item, i) => {
-                const isCurrent = Boolean(videoId) && item.videoId === videoId;
+              stageItems.map((it) => {
+                const isCurrent = Boolean(videoId) && it.videoId === videoId;
                 return (
                   <button
                     type="button"
-                    key={`${item.videoId}-${i}`}
+                    key={it.key}
                     className={`playing-image${isCurrent ? " is-current" : ""}`}
-                    onClick={() => onSelect(item)}
-                    aria-label={item.title}
+                    onClick={it.onClick}
+                    aria-label={it.title}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={thumbFor(item)} alt={item.title} loading="lazy" />
+                    <img src={it.thumb} alt={it.title} loading="lazy" />
                   </button>
                 );
               })

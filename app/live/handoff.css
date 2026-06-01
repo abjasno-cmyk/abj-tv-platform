@@ -121,7 +121,7 @@
 /* ---------- Sdílený kontejner lišty na subpages (mimo .hf landing) ---------- */
 .hf-chrome {
   width: 100%;
-  max-width: 1080px; /* sdílí šířku s obsahem subpage (.vx-live.vx-sub) */
+  max-width: 1240px; /* stejná šířka jako homepage .hf → lišta je všude stejná */
   margin: 0 auto;
   background: #fff;
   font-family: var(--vx-myriad);
@@ -216,31 +216,6 @@
   cursor: pointer;
   box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.35);
 }
-/* středové play/pause kolečko (dle návrhu i stávajícího webu) */
-.hf .hero-play {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 3;
-  width: clamp(56px, 6vw, 88px);
-  aspect-ratio: 1;
-  border: 0;
-  border-radius: 50%;
-  background: rgba(17, 17, 17, 0.45);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: background 0.15s ease, opacity 0.15s ease;
-}
-.hf .hero-play:hover {
-  background: rgba(17, 17, 17, 0.68);
-}
-.hf .hero-play svg {
-  width: 46%;
-  height: 46%;
-  fill: #fff;
-}
 .hf .hero-ctrls {
   position: absolute;
   right: clamp(8px, 1.4vw, 16px);
@@ -258,6 +233,22 @@
   border: 0;
   padding: 0;
   cursor: pointer;
+}
+/* play/pause patří mezi oranžová kolečka vpravo — plně oranžové, bez ztlumení */
+.hf .hero-ctrls .ctrl-play {
+  border-radius: 50%;
+  background: var(--vx-orange);
+  display: grid;
+  place-items: center;
+  transition: background 0.15s ease;
+}
+.hf .hero-ctrls .ctrl-play:hover {
+  background: #e65c00;
+}
+.hf .hero-ctrls .ctrl-play svg {
+  width: 48%;
+  height: 48%;
+  fill: #fff;
 }
 
 /* ---------- FEATURE SUMMARY (titulek pořadu) — ikona vlevo, text vedle (mobil) ---------- */
@@ -486,7 +477,8 @@
    vpravo a dvousloupcový hero (oranžový feature panel vlevo, video vpravo).
    ========================================================================== */
 @media (min-width: 961px) {
-  .hf {
+  .hf,
+  .hf-chrome {
     max-width: 1440px;
     padding-inline: clamp(16px, 2vw, 32px);
   }

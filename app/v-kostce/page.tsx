@@ -54,7 +54,8 @@ export default async function VKostcePage() {
         items.map((item, i) => {
           const { month, day } = dateParts(item.published_at);
           const href = `/live?videoId=${encodeURIComponent(item.video_id)}`;
-          const summary = item.tldr ?? item.context ?? item.impact ?? "";
+          // V KOSTCE = AI shrnutí: ukážeme AI souhrn (tldr), perex z videa
+          // (context) i dopad (impact) jako samostatné odstavce.
           return (
             <Fragment key={item.video_id}>
               <article className="kostka">
@@ -65,7 +66,9 @@ export default async function VKostcePage() {
                 <div className="body">
                   <h3>{item.title}</h3>
                   <div className="src">{sourceLabel(item)}</div>
-                  {summary ? <p>{summary}</p> : null}
+                  {item.tldr ? <p>{item.tldr}</p> : null}
+                  {item.context ? <p>{item.context}</p> : null}
+                  {item.impact ? <p className="impact">{item.impact}</p> : null}
                   <Link href={href} className="vx-arrow">
                     <b>Spustit video</b>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -76,7 +79,7 @@ export default async function VKostcePage() {
                   <Link href={href} className="neutral">Reagovat</Link>
                   <Link href={href}>Komentáře</Link>
                   <Link href={href}>Přihlásit pro sdílení</Link>
-                  <Link href={href}>Do komunity</Link>
+                  <Link href={href}>Můj Verox</Link>
                 </div>
               </article>
               {i < items.length - 1 ? (
