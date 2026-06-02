@@ -1,3 +1,4 @@
+import { enforceWriteRateLimit } from "@/lib/rateLimit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -66,6 +67,9 @@ function pickProgressValue(properties: Record<string, unknown>): number | null {
 }
 
 export async function POST(request: Request) {
+  const limited = enforceWriteRateLimit(request, "analytics");
+  if (limited) return limited;
+
   const supabase = await createSupabaseServerClient();
   const payload = (await request.json().catch(() => ({}))) as AnalyticsPayload;
 
@@ -120,7 +124,7 @@ export async function POST(request: Request) {
   });
 
   if (insert.error) {
-    return Response.json({ error: "Event se nepodařilo uložit.", details: insert.error.message }, { status: 500 });
+    return Response.json({ error: "Event se nepodařilo uložit." }, { status: 500 });
   }
 
   return Response.json({ ok: true });

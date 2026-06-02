@@ -22,7 +22,7 @@ export async function GET() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (result.error) {
-      return Response.json({ error: "Souhlasy se nepodařilo načíst.", details: result.error.message }, { status: 500 });
+      return Response.json({ error: "Souhlasy se nepodařilo načíst." }, { status: 500 });
     }
 
     const latestByType = new Map<string, { granted: boolean; createdAt: string; source: string | null }>();
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
       source,
     });
     if (insert.error) {
-      return Response.json({ error: "Souhlas se nepodařilo uložit.", details: insert.error.message }, { status: 500 });
+      return Response.json({ error: "Souhlas se nepodařilo uložit." }, { status: 500 });
     }
 
     await supabase.from("viewer_activity").insert({

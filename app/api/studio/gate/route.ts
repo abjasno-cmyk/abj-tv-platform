@@ -70,13 +70,16 @@ export async function POST(request: Request) {
 
   const credential = asString(payload.credential);
   const password = asString(payload.password);
-  if (!validateStudioGateInput(credential, password)) {
+  const gateToken = validateStudioGateInput(credential, password) ? createStudioGateToken() : null;
+  if (!gateToken) {
+    // Either the credentials were wrong or the gate is not configured
+    // (missing STUDIO_GATE_* env). Fail closed without distinguishing the two.
     redirectUrl.searchParams.set("studio_login_error", "1");
     response.headers.set("Location", redirectUrl.toString());
     return response;
   }
 
-  response.cookies.set(getStudioGateCookieName(), encodeURIComponent(createStudioGateToken()), {
+  response.cookies.set(getStudioGateCookieName(), encodeURIComponent(gateToken), {
     path: "/",
     maxAge: getStudioGateMaxAgeSeconds(),
     sameSite: "lax",

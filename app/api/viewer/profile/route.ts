@@ -21,7 +21,7 @@ export async function GET() {
       .single();
 
     if (profile.error || !profile.data) {
-      return Response.json({ error: "Profil se nepodařilo načíst.", details: profile.error?.message }, { status: 500 });
+      return Response.json({ error: "Profil se nepodařilo načíst." }, { status: 500 });
     }
 
     return Response.json({ profile: profile.data });
@@ -53,7 +53,7 @@ export async function PATCH(request: Request) {
       .single();
 
     if (update.error || !update.data) {
-      return Response.json({ error: "Profil se nepodařilo uložit.", details: update.error?.message }, { status: 500 });
+      return Response.json({ error: "Profil se nepodařilo uložit." }, { status: 500 });
     }
 
     await supabase.from("viewer_activity").insert({

@@ -54,8 +54,7 @@ export async function GET(request: Request) {
   if (reactionsRes.error || commentsRes.error || sharesRes.error) {
     return Response.json(
       {
-        error: "Failed to load social stats",
-        details: reactionsRes.error?.message ?? commentsRes.error?.message ?? sharesRes.error?.message,
+        error: "Failed to load social stats"
       },
       { status: 500 },
     );

@@ -44,7 +44,7 @@ export async function GET(request: Request) {
     .limit(1);
 
   if (lookup.error) {
-    return Response.json({ error: "Nepodařilo se načíst stav lajku.", details: lookup.error.message }, { status: 500 });
+    return Response.json({ error: "Nepodařilo se načíst stav lajku." }, { status: 500 });
   }
 
   return Response.json({ liked: (lookup.data?.length ?? 0) > 0 });
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     });
 
     if (insert.error && insert.error.code !== "23505") {
-      return Response.json({ error: "Uložení lajku selhalo.", details: insert.error.message }, { status: 500 });
+      return Response.json({ error: "Uložení lajku selhalo." }, { status: 500 });
     }
 
     await supabase.from("viewer_activity").insert({
@@ -104,7 +104,7 @@ export async function DELETE(request: Request) {
       .eq("entity_id", entityId);
 
     if (remove.error) {
-      return Response.json({ error: "Odebrání lajku selhalo.", details: remove.error.message }, { status: 500 });
+      return Response.json({ error: "Odebrání lajku selhalo." }, { status: 500 });
     }
 
     await supabase.from("viewer_activity").insert({

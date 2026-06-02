@@ -40,7 +40,7 @@ export async function GET(request: Request) {
     .limit(limit);
 
   if (query.error) {
-    return Response.json({ error: "Načtení komentářů selhalo.", details: query.error.message }, { status: 500 });
+    return Response.json({ error: "Načtení komentářů selhalo." }, { status: 500 });
   }
 
   const rows = query.data ?? [];
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
       .single();
 
     if (insert.error || !insert.data) {
-      return Response.json({ error: "Vytvoření komentáře selhalo.", details: insert.error?.message }, { status: 500 });
+      return Response.json({ error: "Vytvoření komentáře selhalo." }, { status: 500 });
     }
 
     await supabase.from("viewer_activity").insert({

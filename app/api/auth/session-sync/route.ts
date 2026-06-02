@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 
+import { enforceWriteRateLimit } from "@/lib/rateLimit";
+
 export const dynamic = "force-dynamic";
 
 type SessionSyncPayload = {
@@ -62,6 +64,9 @@ function createRouteSupabaseClient(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const limited = enforceWriteRateLimit(request, "session-sync");
+  if (limited) return limited;
+
   const { supabase, applyCookies } = createRouteSupabaseClient(request);
   const payload = (await request.json().catch(() => ({}))) as SessionSyncPayload;
   const accessToken = asString(payload.accessToken);

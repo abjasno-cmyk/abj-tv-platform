@@ -48,7 +48,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (updateResult.error || !updateResult.data) {
       const message = updateResult.error?.message?.toLowerCase() ?? "";
       const statusCode = message.includes("row-level security") ? 403 : 500;
-      return Response.json({ error: "Komentář se nepodařilo upravit.", details: updateResult.error?.message }, { status: statusCode });
+      return Response.json({ error: "Komentář se nepodařilo upravit." }, { status: statusCode });
     }
 
     await supabase.from("viewer_activity").insert({
@@ -83,7 +83,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
       .eq("user_id", user.id)
       .maybeSingle();
     if (lookup.error) {
-      return Response.json({ error: "Nepodařilo se načíst komentář.", details: lookup.error.message }, { status: 500 });
+      return Response.json({ error: "Nepodařilo se načíst komentář." }, { status: 500 });
     }
     if (!lookup.data) {
       return Response.json({ error: "Komentář nebyl nalezen." }, { status: 404 });
@@ -93,7 +93,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     if (removal.error) {
       const message = removal.error.message.toLowerCase();
       const statusCode = message.includes("row-level security") ? 403 : 500;
-      return Response.json({ error: "Komentář se nepodařilo smazat.", details: removal.error.message }, { status: statusCode });
+      return Response.json({ error: "Komentář se nepodařilo smazat." }, { status: statusCode });
     }
 
     await supabase.from("viewer_activity").insert({

@@ -49,7 +49,7 @@ export async function POST(request: Request) {
 
     if (profileUpsert.error) {
       return Response.json(
-        { error: "Nepodařilo se vytvořit nebo aktualizovat profil.", details: profileUpsert.error.message },
+        { error: "Nepodařilo se vytvořit nebo aktualizovat profil." },
         { status: 500 }
       );
     }
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
 
     if (profileResult.error || !profileResult.data) {
       return Response.json(
-        { error: "Profil byl vytvořen, ale nepodařilo se ho načíst.", details: profileResult.error?.message },
+        { error: "Profil byl vytvořen, ale nepodařilo se ho načíst." },
         { status: 500 }
       );
     }

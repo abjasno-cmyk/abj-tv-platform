@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     session_id: sessionId,
   });
   if (insertError) {
-    return Response.json({ error: "Failed to persist share", details: insertError.message }, { status: 500 });
+    return Response.json({ error: "Failed to persist share" }, { status: 500 });
   }
 
   const { count, error: countError } = await supabase
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     .select("id", { head: true, count: "exact" })
     .eq("post_id", postId);
   if (countError) {
-    return Response.json({ error: "Failed to load share count", details: countError.message }, { status: 500 });
+    return Response.json({ error: "Failed to load share count" }, { status: 500 });
   }
 
   return Response.json({ shareCount: count ?? 0 });

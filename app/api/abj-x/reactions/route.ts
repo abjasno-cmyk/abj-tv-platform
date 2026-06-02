@@ -57,7 +57,7 @@ export async function POST(request: Request) {
   if (!insertError) {
     reactedNow = true;
   } else if (!isUniqueViolation(insertError.code)) {
-    return Response.json({ error: "Failed to persist reaction", details: insertError.message }, { status: 500 });
+    return Response.json({ error: "Failed to persist reaction" }, { status: 500 });
   }
 
   const { count, error: countError } = await supabase
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     .select("id", { head: true, count: "exact" })
     .eq("post_id", postId);
   if (countError) {
-    return Response.json({ error: "Failed to load reaction count", details: countError.message }, { status: 500 });
+    return Response.json({ error: "Failed to load reaction count" }, { status: 500 });
   }
 
   return Response.json({

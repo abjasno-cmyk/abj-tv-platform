@@ -43,7 +43,7 @@ export async function GET(request: Request) {
       .maybeSingle();
 
     if (row.error) {
-      return Response.json({ error: "Nepodařilo se načíst progres videa.", details: row.error.message }, { status: 500 });
+      return Response.json({ error: "Nepodařilo se načíst progres videa." }, { status: 500 });
     }
 
     return Response.json({ progress: row.data ?? null });
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
       .single();
 
     if (upsert.error || !upsert.data) {
-      return Response.json({ error: "Uložení progresu selhalo.", details: upsert.error?.message }, { status: 500 });
+      return Response.json({ error: "Uložení progresu selhalo." }, { status: 500 });
     }
 
     await supabase.from("viewer_activity").insert({

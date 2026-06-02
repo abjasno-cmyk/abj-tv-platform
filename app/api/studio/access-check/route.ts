@@ -1,23 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { resolveStudioAccessContext, STUDIO_ALLOWED_EMAILS } from "@/lib/studio/access";
+import { resolveStudioAccessContext } from "@/lib/studio/access";
 import { getStudioGateCookieName, isStudioGateTokenValid, readCookieValueFromHeader } from "@/lib/studio/gate";
 
 export const dynamic = "force-dynamic";
 
-function parseCookieNames(cookieHeader: string | null): string[] {
-  if (!cookieHeader) return [];
-  return cookieHeader
-    .split(";")
-    .map((chunk) => chunk.trim().split("=")[0]?.trim())
-    .filter((name): name is string => Boolean(name));
-}
-
 export async function GET(request: Request) {
   const access = await resolveStudioAccessContext();
-  const url = new URL(request.url);
   const cookieHeader = request.headers.get("cookie");
-  const cookieNames = parseCookieNames(cookieHeader);
   const gateCookieValue = readCookieValueFromHeader(cookieHeader, getStudioGateCookieName());
   const gateUnlocked = isStudioGateTokenValid(gateCookieValue);
 
@@ -27,12 +17,6 @@ export async function GET(request: Request) {
         ok: false,
         reason: "studio_gate_required",
         message: "Studio vyžaduje přihlašovací údaj a heslo.",
-        debug: {
-          host: request.headers.get("host"),
-          origin: request.headers.get("origin"),
-          urlHost: url.host,
-          cookieNames,
-        },
       },
       { status: 401 },
     );
@@ -43,12 +27,6 @@ export async function GET(request: Request) {
       ok: true,
       reason: "gate_only",
       message: "Studio je odemčeno přes údaj/heslo.",
-      debug: {
-        host: request.headers.get("host"),
-        origin: request.headers.get("origin"),
-        urlHost: url.host,
-        cookieNames,
-      },
     });
   }
 
@@ -66,13 +44,6 @@ export async function GET(request: Request) {
       effectiveRoles: access.effectiveRoles,
       isAllowlisted: access.isAllowlisted,
       canAccessStudio: access.canAccessStudio,
-    },
-    allowlist: Array.from(STUDIO_ALLOWED_EMAILS).sort(),
-    debug: {
-      host: request.headers.get("host"),
-      origin: request.headers.get("origin"),
-      urlHost: url.host,
-      cookieNames,
     },
   });
 }

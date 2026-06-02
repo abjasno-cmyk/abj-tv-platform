@@ -20,7 +20,7 @@ export async function GET() {
       .order("created_at", { ascending: false });
 
     if (follows.error) {
-      return Response.json({ error: "Nepodařilo se načíst oblíbené kanály.", details: follows.error.message }, { status: 500 });
+      return Response.json({ error: "Nepodařilo se načíst oblíbené kanály." }, { status: 500 });
     }
 
     return Response.json({
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       channel_id: channelId,
     });
     if (insert.error && insert.error.code !== "23505") {
-      return Response.json({ error: "Uložení oblíbeného kanálu selhalo.", details: insert.error.message }, { status: 500 });
+      return Response.json({ error: "Uložení oblíbeného kanálu selhalo." }, { status: 500 });
     }
 
     await supabase.from("viewer_activity").insert({
@@ -82,7 +82,7 @@ export async function DELETE(request: Request) {
 
     const remove = await supabase.from("follows").delete().eq("user_id", user.id).eq("channel_id", channelId);
     if (remove.error) {
-      return Response.json({ error: "Odebrání kanálu selhalo.", details: remove.error.message }, { status: 500 });
+      return Response.json({ error: "Odebrání kanálu selhalo." }, { status: 500 });
     }
 
     await supabase.from("viewer_activity").insert({

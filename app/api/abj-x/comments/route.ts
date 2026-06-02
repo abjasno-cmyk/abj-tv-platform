@@ -70,7 +70,7 @@ export async function GET(request: Request) {
     .limit(limit);
 
   if (error) {
-    return Response.json({ error: "Failed to load comments", details: error.message }, { status: 500 });
+    return Response.json({ error: "Failed to load comments" }, { status: 500 });
   }
 
   const comments = ((data ?? []) as CommentRow[]).map(toPublicComment);
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
     .single();
 
   if (error || !data) {
-    return Response.json({ error: "Failed to create comment", details: error?.message }, { status: 500 });
+    return Response.json({ error: "Failed to create comment" }, { status: 500 });
   }
 
   const { count, error: countError } = await supabase
