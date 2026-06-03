@@ -288,9 +288,17 @@ export function HomePage({
                 </svg>
               )}
             </button>
-            <button type="button" onClick={toggleFullscreen} aria-label="Celá obrazovka">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icons/ikona_to_full_scren.svg" alt="" />
+            <button type="button" className="ctrl-fs" onClick={toggleFullscreen} aria-label="Celá obrazovka">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </button>
             <button
               type="button"
@@ -299,8 +307,17 @@ export function HomePage({
               aria-label={muted ? "Zapnout zvuk" : "Vypnout zvuk"}
               aria-pressed={muted}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icons/ikona_sound_on.svg" alt="" />
+              {muted ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+                  <path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+                  <path d="M16 8.6a4 4 0 0 1 0 6.8M18.6 6a7 7 0 0 1 0 12" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                </svg>
+              )}
             </button>
           </div>
         </div>

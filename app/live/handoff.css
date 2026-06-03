@@ -278,41 +278,28 @@
   padding: 0;
   cursor: pointer;
 }
-/* play/pause patří mezi oranžová kolečka vpravo — plně oranžové, bez ztlumení */
-.hf .hero-ctrls .ctrl-play {
+/* Všechna 3 tlačítka jednotně: plný oranžový kroužek + bílý glyph (jako play). */
+.hf .hero-ctrls .ctrl-play,
+.hf .hero-ctrls .ctrl-fs,
+.hf .hero-ctrls .ctrl-sound {
   border-radius: 50%;
   background: var(--vx-orange);
+  color: #fff;
   display: grid;
   place-items: center;
   transition: background 0.15s ease;
 }
-.hf .hero-ctrls .ctrl-play:hover {
+.hf .hero-ctrls .ctrl-play:hover,
+.hf .hero-ctrls .ctrl-fs:hover,
+.hf .hero-ctrls .ctrl-sound:hover {
   background: #e65c00;
 }
-.hf .hero-ctrls .ctrl-play svg {
+.hf .hero-ctrls .ctrl-play svg,
+.hf .hero-ctrls .ctrl-fs svg,
+.hf .hero-ctrls .ctrl-sound svg {
   width: 48%;
   height: 48%;
-  fill: #fff;
-}
-/* Ztlumeno: ikonu ztmavíme a přeškrtneme, ať je „zapamatovaný" stav vidět */
-.hf .hero-ctrls .ctrl-sound {
-  position: relative;
-}
-.hf .hero-ctrls .ctrl-sound.is-muted img {
-  opacity: 0.45;
-}
-.hf .hero-ctrls .ctrl-sound.is-muted::after {
-  content: "";
-  position: absolute;
-  left: 6%;
-  top: 50%;
-  width: 88%;
-  height: 11%;
-  max-height: 4px;
-  background: var(--vx-orange);
-  border-radius: 999px;
-  transform: translateY(-50%) rotate(-45deg);
-  pointer-events: none;
+  fill: currentColor;
 }
 
 /* ---------- FEATURE SUMMARY (titulek pořadu) — ikona vlevo, text vedle (mobil) ---------- */
