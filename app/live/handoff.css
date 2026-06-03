@@ -193,24 +193,15 @@
   height: 100%;
   border: 0;
 }
-/* Záchytné pruhy nad iframe (pod ovládáním z-index:3) — blokují proklik na
-   klikatelnou lištu YouTube nahoře (titulek/kanál) a dole (sdílení / Watch on
-   YouTube). Průhledné, jen zachytávají kliky. */
+/* Záchytný overlay přes CELÉ video (pod ovládáním z-index:3, nad iframe).
+   Pohltí všechny myší události → YouTube hover ovládání se nezobrazí a žádný
+   proklik neodvede diváka pryč. Ovládání jen přes naše 3 tlačítka. */
 .hf .hero-media .hero-guard {
   position: absolute;
-  left: 0;
-  right: 0;
+  inset: 0;
   z-index: 2;
   background: transparent;
   pointer-events: auto;
-}
-.hf .hero-media .hero-guard-top {
-  top: 0;
-  height: 16%;
-}
-.hf .hero-media .hero-guard-bottom {
-  bottom: 0;
-  height: 16%;
 }
 /* NONSTOP PLAYOUT — přechodové „bridge" plochy (nikdy černá obrazovka).
    ident = logo na bílém s jemným fade in/out; embed = panorama; weather = panel. */

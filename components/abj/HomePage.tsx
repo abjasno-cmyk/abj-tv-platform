@@ -265,11 +265,11 @@ export function HomePage({
             onPlayerReady={registerPlayer}
             onPlayingChange={setPlaying}
           />
-          {/* Záchytné pruhy: překryjí klikatelnou lištu YouTube (titulek nahoře,
-              „Watch on YouTube"/sdílení dole), aby neodváděly diváky pryč.
-              Vlastní ovládání (.hero-ctrls) je nad nimi. */}
-          <span className="hero-guard hero-guard-top" aria-hidden="true" />
-          <span className="hero-guard hero-guard-bottom" aria-hidden="true" />
+          {/* Záchytný overlay přes celé video: pohltí VŠECHNY myší události, takže
+              se hover ovládání YouTube (titulek, sdílení, „More videos", logo)
+              vůbec nezobrazí a nic neodvede diváka pryč. Jediný ovladač jsou naše
+              3 tlačítka v .hero-ctrls (z-index nad guardem). */}
+          <span className="hero-guard" aria-hidden="true" />
           <div className="hero-ctrls">
             <button
               type="button"
