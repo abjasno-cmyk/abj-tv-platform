@@ -21,7 +21,10 @@ import { NewsroomHeader } from "./_components/NewsroomHeader";
 import { NewsroomSidebar } from "./_components/NewsroomSidebar";
 import { TodayTopStories } from "./_components/TodayTopStories";
 
-export const revalidate = 60;
+// force-dynamic (ne ISR): stránka se nesmí pre-renderovat při buildu — jinak
+// build visí na datovém fetchi, když je upstream pomalý/nedostupný (Vercel 45min
+// timeout). Renderuje se až za běhu, kde mají loadery fallbacky.
+export const dynamic = "force-dynamic";
 
 const RECENT_EDITIONS_LIMIT = 220;
 

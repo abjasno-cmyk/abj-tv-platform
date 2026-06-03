@@ -14,7 +14,9 @@ import {
   type NewsEdition,
 } from "@/lib/jasne-zpravy";
 
-export const revalidate = 300;
+// force-dynamic (ne ISR): nepre-renderovat při buildu, ať build nevisí na fetchi
+// (Vercel 45min timeout). Render až za běhu.
+export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 30;
 
