@@ -197,6 +197,9 @@
 .vx-live.vx-sub {
   max-width: 1240px;
   padding-top: clamp(14px, 4cqw, 40px);
+  /* Stejné horizontální odsazení jako lišta .hf-chrome, aby levá hrana
+     oranžového pruhu i obsahu seděla s dvojlinkou v hlavičce (bug: posun). */
+  padding-inline: clamp(12px, 3.5vw, 26px);
 }
 
 /* oddělovací dvojčára */
@@ -1063,6 +1066,8 @@
 @media (min-width: 961px) {
   .vx-live.vx-sub {
     max-width: 1440px;
+    /* desktop: shodné odsazení s .hf-chrome → pruh i obsah lícují s dvojlinkou */
+    padding-inline: clamp(16px, 2vw, 32px);
     /* jeden SVISLÝ gradient v levém pásu: nahoře nejsytější oranžová → dolů
        průhledná (žádný horizontální fade), až k dolnímu okraji obsahu */
     background-image: linear-gradient(

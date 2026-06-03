@@ -301,6 +301,11 @@ export function HomePage({
               }}
             />
           ) : null}
+          {/* Záchytné pruhy: překryjí klikatelnou lištu YouTube (titulek nahoře,
+              „Watch on YouTube"/sdílení dole), aby neodváděly diváky pryč.
+              Vlastní ovládání (.hero-ctrls) je nad nimi. */}
+          <span className="hero-guard hero-guard-top" aria-hidden="true" />
+          <span className="hero-guard hero-guard-bottom" aria-hidden="true" />
           <div className="hero-ctrls">
             <button
               type="button"

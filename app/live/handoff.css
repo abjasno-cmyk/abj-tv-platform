@@ -193,6 +193,25 @@
   height: 100%;
   border: 0;
 }
+/* Záchytné pruhy nad iframe (pod ovládáním z-index:3) — blokují proklik na
+   klikatelnou lištu YouTube nahoře (titulek/kanál) a dole (sdílení / Watch on
+   YouTube). Průhledné, jen zachytávají kliky. */
+.hf .hero-media .hero-guard {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  background: transparent;
+  pointer-events: auto;
+}
+.hf .hero-media .hero-guard-top {
+  top: 0;
+  height: 16%;
+}
+.hf .hero-media .hero-guard-bottom {
+  bottom: 0;
+  height: 16%;
+}
 .hf .live-badge {
   position: absolute;
   left: 27.4%;
