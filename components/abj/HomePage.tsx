@@ -58,6 +58,7 @@ export function HomePage({
   const playerRef = useRef<PlayerHandle | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const channelTrackRef = useRef<HTMLDivElement | null>(null);
+  const currentItemRef = useRef<HTMLButtonElement | null>(null);
   // Zvuk: autoplay MUSÍ startovat muted (jinak ho prohlížeč zablokuje / video pauzne).
   // Po prvním odmutování (gesto uživatele) zvuk drží napříč všemi dalšími videi
   // (onReady aplikuje `muted` stav). Auto-odmutovat hned po načtení nelze — browser
@@ -172,6 +173,20 @@ export function HomePage({
       window.removeEventListener("resize", onTrackScroll);
     };
   }, [stageItems.length, channels.length]);
+
+  // Vycentruj PRÁVĚ HRAJE na aktuálně hrané video (při startu i při každém přepnutí bloku).
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      const el = currentItemRef.current;
+      const container = stageRef.current;
+      if (!el || !container) return;
+      const elRect = el.getBoundingClientRect();
+      const contRect = container.getBoundingClientRect();
+      const delta = elRect.left - contRect.left - (contRect.width - elRect.width) / 2;
+      container.scrollBy({ left: delta, behavior: "smooth" });
+    }, 120);
+    return () => window.clearTimeout(id);
+  }, [currentVideoId, stageItems.length]);
 
   // Klik na kanál: otevři DETAIL PANEL a načti ~4 poslední videa kanálu (nepřehrává
   // se rovnou — klik na konkrétní video v panelu pak otevře HeroScreen). Kanály bez
@@ -398,6 +413,7 @@ export function HomePage({
                   <button
                     type="button"
                     key={it.key}
+                    ref={isCurrent ? currentItemRef : undefined}
                     className={`playing-image${isCurrent ? " is-current" : ""}`}
                     onClick={it.onClick}
                     aria-label={it.title}
