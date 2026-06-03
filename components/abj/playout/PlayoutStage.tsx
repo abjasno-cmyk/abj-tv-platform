@@ -55,7 +55,9 @@ export function PlayoutStage({ surface, muted, onEnded, onPlayerReady, onPlaying
       height: "100%",
       playerVars: {
         autoplay: 1,
-        mute: muted ? 1 : 0,
+        // Autoplay vždy startuje muted (politika prohlížeče), preferenci zvuku
+        // aplikujeme hned po onReady — tím odmutování drží napříč videi.
+        mute: 1,
         rel: 0,
         modestbranding: 1,
         controls: 0,
@@ -63,7 +65,6 @@ export function PlayoutStage({ surface, muted, onEnded, onPlayerReady, onPlaying
         iv_load_policy: 3,
       },
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
@@ -167,7 +168,9 @@ export function PlayoutStage({ surface, muted, onEnded, onPlayerReady, onPlaying
         const player = event.target as unknown as PlayerHandle;
         playerRef.current = player;
         onPlayerReady?.(player);
+        // Aplikuj preferenci zvuku na každé nové video (odmutování drží napříč přepnutími).
         if (muted) player.mute?.();
+        else player.unMute?.();
         if (startSeconds > 0) {
           window.setTimeout(() => player.seekTo?.(startSeconds, true), 300);
         }

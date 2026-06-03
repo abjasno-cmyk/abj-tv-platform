@@ -17,6 +17,8 @@ import {
 // Reklama, která spolkne ENDED, tím přehrávač nezasekne — časovač pokračuje tak jako tak.
 
 const IDENT_TITLE = "ABJ — pokračujeme";
+// Hybrid: krátká VEROX znělka (lokální ident) na začátku každé mezery, pak panorama.
+const VEROX_IDENT_SEC = 4;
 
 export interface PlayoutInitialBlock {
   videoId: string;
@@ -157,7 +159,8 @@ export function usePlayoutLoop({ enabled, initialBlock }: UsePlayoutLoopOptions)
         kind: "youtube",
         videoId: block.video_id,
         startSeconds: Math.max(0, Math.floor(offsetSec || 0)),
-        title: block.type,
+        title: block.title,
+        channel: block.channel,
         fallbacks: mapMediaSourcesToFallbacks(block.media_sources, block.video_id),
       });
       // ZÁKLAD: časovač podle reálného konce videa; ENDED bereme jako bonus (early end).
@@ -174,7 +177,15 @@ export function usePlayoutLoop({ enabled, initialBlock }: UsePlayoutLoopOptions)
       const gapSec = slotEndMs ? Math.max(0, Math.floor((slotEndMs - Date.now()) / 1000)) : 0;
       if (gapSec <= 5) return; // žádná mezera → rovnou další pevný blok (loop tickne)
 
-      const fill = await fetchFillGap({ seconds: gapSec, currentBlockId: block.block_id });
+      // HYBRID: nejdřív krátká VEROX znělka (lokální ident), souběžně doptáme fill-gap.
+      const fillPromise = fetchFillGap({
+        seconds: Math.max(0, gapSec - VEROX_IDENT_SEC),
+        currentBlockId: block.block_id,
+      });
+      await playFiller({ type: "boundary", duration_sec: VEROX_IDENT_SEC, title: IDENT_TITLE });
+      if (token.cancelled) return;
+
+      const fill = await fillPromise;
       if (token.cancelled) return;
       if (!fill || !Array.isArray(fill.fillers) || fill.fillers.length === 0) {
         await playSafetyBridge();

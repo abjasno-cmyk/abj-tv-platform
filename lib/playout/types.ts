@@ -42,6 +42,9 @@ export interface PlayoutBlock {
   video_duration_sec?: number | null;
   video_id: string;
   type?: string;
+  // Volitelný zobrazitelný titulek/kanál (pokud je engine posílá; jinak doplníme z EPG).
+  title?: string;
+  channel?: string;
   media_sources?: PlayoutMediaSource[];
 }
 
@@ -78,6 +81,7 @@ export type PlayoutSurface =
       videoId: string;
       startSeconds: number;
       title?: string;
+      channel?: string;
       // Fallbacky z media_sources — Stage je zkusí po řadě, když YouTube embed selže.
       fallbacks?: PlayoutSourceCandidate[];
     }

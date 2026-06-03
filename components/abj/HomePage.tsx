@@ -68,8 +68,19 @@ export function HomePage({
   const playerRef = useRef<PlayerHandle | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const channelTrackRef = useRef<HTMLDivElement | null>(null);
-  const [muted, setMuted] = useState(true);
+  // Preference: videa jsou defaultně UNMUTED (viz uživatelská preference). Autoplay
+  // sám startuje muted (politika prohlížeče), zvuk se zapne hned po onReady.
+  const [muted, setMuted] = useState(false);
   const [playing, setPlaying] = useState(true);
+
+  // Obnov uloženou preferenci zvuku (kdyby si divák naopak vypnul zvuk).
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem("verox_muted") === "1") setMuted(true);
+    } catch {
+      // localStorage nedostupné — ignoruj.
+    }
+  }, []);
   const [stageDot, setStageDot] = useState(0);
   const [channelDot, setChannelDot] = useState(0);
   const [pendingChannel, setPendingChannel] = useState<string | null>(null);
@@ -127,6 +138,24 @@ export function HomePage({
     if (isLive) playout.signalEnded();
     else onReturnToLive();
   }, [isLive, playout, onReturnToLive]);
+
+  // Titulek/kanál pod hero sledují PRÁVĚ HRANÉ video (jinak by držely SSR úvodní).
+  // Zdroj: titulek z bloku (engine) → dohledání podle video_id v EPG → SSR fallback.
+  const epgInfoById = useMemo(() => {
+    const map = new Map<string, { title: string; channelName: string }>();
+    for (const day of days) {
+      for (const item of day.items) {
+        if (item.videoId) map.set(item.videoId, { title: item.title, channelName: item.channelName });
+      }
+    }
+    return map;
+  }, [days]);
+  const currentVideoId = heroSurface?.kind === "youtube" ? heroSurface.videoId : null;
+  const currentEpg = currentVideoId ? epgInfoById.get(currentVideoId) : null;
+  const displayTitle =
+    (heroSurface?.kind === "youtube" ? heroSurface.title : undefined) ?? currentEpg?.title ?? title;
+  const displayChannel =
+    (heroSurface?.kind === "youtube" ? heroSurface.channel : undefined) ?? currentEpg?.channelName ?? channelName;
 
   const scrollStage = (dir: -1 | 1) => {
     const el = stageRef.current;
@@ -235,6 +264,11 @@ export function HomePage({
   const toggleMute = () => {
     const next = !muted;
     setMuted(next);
+    try {
+      window.localStorage.setItem("verox_muted", next ? "1" : "0");
+    } catch {
+      // localStorage nedostupné — ignoruj.
+    }
     const p = playerRef.current;
     if (!p) return;
     if (next) p.mute?.();
@@ -339,8 +373,8 @@ export function HomePage({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="comment-icon" src="/design/icons/ikona_komentovat.png" alt="" />
         <div className="feature-copy">
-          <h1 id="hf-featured">{title}</h1>
-          <p>{channelName}</p>
+          <h1 id="hf-featured">{displayTitle}</h1>
+          <p>{displayChannel}</p>
         </div>
       </section>
       </div>
@@ -410,8 +444,8 @@ export function HomePage({
           <span />
           PRÁVĚ BĚŽÍ
         </p>
-        <h3>{title}</h3>
-        <p className="source-label">{channelName}</p>
+        <h3>{displayTitle}</h3>
+        <p className="source-label">{displayChannel}</p>
       </section>
 
       <div className="double-rule channels-rule" aria-hidden="true" />
