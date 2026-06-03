@@ -1,12 +1,14 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import YouTube, { type YouTubeProps } from "react-youtube";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { VeroxHeader } from "@/components/abj/VeroxHeader";
+import { PlayoutStage } from "@/components/abj/playout/PlayoutStage";
+import { usePlayoutLoop } from "@/components/abj/playout/usePlayoutLoop";
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import type { DayProgram, ProgramItem } from "@/lib/epg-types";
+import type { PlayoutSurface } from "@/lib/playout/types";
 
 type HomePageProps = {
   days: DayProgram[];
@@ -55,6 +57,7 @@ export function HomePage({
   videoId,
   title,
   channelName,
+  isLive,
   startSeconds = 0,
   onSelect,
   onReturnToLive,
@@ -102,6 +105,22 @@ export function HomePage({
   }, [activeChannel, programItems, onSelect, onSelectChannelVideo]);
 
   const offset = Math.max(0, Math.floor(startSeconds));
+
+  // NONSTOP PLAYOUT: v živém (lineárním) režimu řídí přehrávání časovaná smyčka
+  // (přepíná podle času, ne podle YouTube ENDED). Při vybraném VOD (isLive=false)
+  // smyčka stojí a hrajeme zvolené video napřímo.
+  const playout = usePlayoutLoop({
+    enabled: isLive,
+    initialBlock: isLive && videoId ? { videoId, title, offsetSeconds: offset } : null,
+  });
+  const heroSurface: PlayoutSurface | null = isLive
+    ? playout.surface
+    : videoId
+      ? { kind: "youtube", videoId, startSeconds: offset, title }
+      : null;
+  const registerPlayer = useCallback((player: PlayerHandle | null) => {
+    playerRef.current = player;
+  }, []);
 
   const scrollStage = (dir: -1 | 1) => {
     const el = stageRef.current;
@@ -184,39 +203,10 @@ export function HomePage({
     }
   };
 
-  // STABILNÍ opts (zachytíme jen počáteční hodnoty). Kdyby se opts měnily,
-  // react-youtube při každé změně videa/offsetu zničí a postaví iframe znovu
-  // (pomalé/nespolehlivé). Takhle se video přepíná přes loadVideoById.
-  const initialOptsRef = useRef({ muted, offset });
-  const opts = useMemo<YouTubeProps["opts"]>(
-    () => ({
-      width: "100%",
-      height: "100%",
-      playerVars: {
-        autoplay: 1,
-        mute: initialOptsRef.current.muted ? 1 : 0,
-        start: initialOptsRef.current.offset,
-        rel: 0,
-        modestbranding: 1,
-        controls: 0,
-        playsinline: 1,
-        iv_load_policy: 3,
-      },
-    }),
-    [],
-  );
-
-  // Live-resume: pro offset > 0 doseekujeme po načtení nového videa.
+  // Sledování pozice pro „pokračovat ve sledování" — jen u VOD (ne v živé smyčce,
+  // kde se přehrávaný blok mění sám a videoId prop neodpovídá běžícímu videu).
   useEffect(() => {
-    if (offset <= 0) return;
-    const id = window.setTimeout(() => {
-      playerRef.current?.seekTo?.(offset, true);
-    }, 400);
-    return () => window.clearTimeout(id);
-  }, [videoId, offset]);
-
-  useEffect(() => {
-    if (!videoId || !onPlaybackSample) return;
+    if (isLive || !videoId || !onPlaybackSample) return;
     const id = window.setInterval(() => {
       const p = playerRef.current;
       if (!p) return;
@@ -226,24 +216,7 @@ export function HomePage({
       onPlaybackSample({ videoId, positionSeconds, durationSeconds });
     }, 4000);
     return () => window.clearInterval(id);
-  }, [onPlaybackSample, videoId]);
-
-  // Po přepnutí videa znovu aplikuj zvolený stav zvuku. loadVideoById jinak
-  // nové video spustí ztlumené, takže by se „zapomněl" odmutovaný stav.
-  const mutedRef = useRef(muted);
-  useEffect(() => {
-    mutedRef.current = muted;
-  }, [muted]);
-  useEffect(() => {
-    if (!videoId) return;
-    const id = window.setTimeout(() => {
-      const p = playerRef.current;
-      if (!p) return;
-      if (mutedRef.current) p.mute?.();
-      else p.unMute?.();
-    }, 350);
-    return () => window.clearTimeout(id);
-  }, [videoId]);
+  }, [isLive, onPlaybackSample, videoId]);
 
   const togglePlay = () => {
     const p = playerRef.current;
@@ -285,22 +258,13 @@ export function HomePage({
       {/* HERO */}
       <section className="hero" aria-label="Živé vysílání">
         <div className="hero-media" ref={heroRef}>
-          {videoId ? (
-            <YouTube
-              videoId={videoId}
-              title={title}
-              opts={opts}
-              onReady={(e) => {
-                playerRef.current = e.target as unknown as PlayerHandle;
-                if (muted) playerRef.current.mute?.();
-              }}
-              onStateChange={(e) => {
-                // YT.PlayerState: 1 = playing, 2 = paused
-                if (e.data === 1) setPlaying(true);
-                else if (e.data === 2) setPlaying(false);
-              }}
-            />
-          ) : null}
+          <PlayoutStage
+            surface={heroSurface}
+            muted={muted}
+            onEnded={playout.signalEnded}
+            onPlayerReady={registerPlayer}
+            onPlayingChange={setPlaying}
+          />
           {/* Záchytné pruhy: překryjí klikatelnou lištu YouTube (titulek nahoře,
               „Watch on YouTube"/sdílení dole), aby neodváděly diváky pryč.
               Vlastní ovládání (.hero-ctrls) je nad nimi. */}

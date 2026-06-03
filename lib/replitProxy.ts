@@ -6,6 +6,10 @@ const ALLOWED_REPLIT_PATH_PATTERNS: ReadonlyArray<RegExp> = [
   /^\/health(?:\/[^/]+)?$/,
   /^\/program$/,
   /^\/program\/tomorrow$/,
+  // NONSTOP PLAYOUT engine endpoints (timer-based playout loop).
+  /^\/program\/now$/,
+  /^\/program\/fill-gap$/,
+  /^\/program\/safety-bridge$/,
   /^\/feed$/,
   /^\/feed\/stream$/,
   /^\/feed\/[^/]+\/(?:like|view)$/,
