@@ -15,10 +15,6 @@ concurrency:
   group: tests-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-defaults:
-  run:
-    working-directory: abj-tv-platform
-
 jobs:
   # ── Fast, hermetic. Runs on every PR to main and push to main. ──────────────
   unit:
@@ -30,7 +26,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: abj-tv-platform/package-lock.json
+          cache-dependency-path: package-lock.json
       - run: npm ci
       - name: Vitest with coverage
         run: npm run test:coverage
@@ -38,7 +34,7 @@ jobs:
         if: always()
         with:
           name: coverage
-          path: abj-tv-platform/coverage
+          path: coverage
           retention-days: 14
 
   # ── Smoke E2E. Builds the PR's own code; data-driven specs auto-skip. ───────
@@ -56,7 +52,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: abj-tv-platform/package-lock.json
+          cache-dependency-path: package-lock.json
       - run: npm ci
       - name: Install Playwright (chromium)
         run: npx playwright install --with-deps chromium
@@ -66,7 +62,7 @@ jobs:
         if: always()
         with:
           name: playwright-report-smoke
-          path: abj-tv-platform/playwright-report
+          path: playwright-report
           retention-days: 14
 
   # ── Queue + playback gate on PRs to main. Builds the PR with real data so the
@@ -93,7 +89,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: abj-tv-platform/package-lock.json
+          cache-dependency-path: package-lock.json
       - run: npm ci
       - name: Install Playwright (chromium)
         run: npx playwright install --with-deps chromium
@@ -103,7 +99,7 @@ jobs:
         if: always()
         with:
           name: playwright-report-playback
-          path: abj-tv-platform/playwright-report
+          path: playwright-report
           retention-days: 14
 
   # ── Backend behavior + playout continuity gate on PRs to main. Hits the live
@@ -124,7 +120,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: abj-tv-platform/package-lock.json
+          cache-dependency-path: package-lock.json
       - run: npm ci
       - name: Run live backend + continuity tests
         run: npm run test:live
@@ -145,7 +141,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: abj-tv-platform/package-lock.json
+          cache-dependency-path: package-lock.json
       - run: npm ci
       - name: Install Playwright (chromium)
         run: npx playwright install --with-deps chromium
@@ -157,5 +153,5 @@ jobs:
         if: always()
         with:
           name: playwright-report-monitor
-          path: abj-tv-platform/playwright-report
+          path: playwright-report
           retention-days: 14
