@@ -8,7 +8,7 @@ import { PlayoutStage } from "@/components/abj/playout/PlayoutStage";
 import { usePlayoutLoop } from "@/components/abj/playout/usePlayoutLoop";
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import type { DayProgram, ProgramItem } from "@/lib/epg-types";
-import type { PlayoutSurface } from "@/lib/playout/types";
+import type { PlayerHandle, PlayoutSurface } from "@/lib/playout/types";
 
 type HomePageProps = {
   days: DayProgram[];
@@ -29,16 +29,6 @@ type HomePageProps = {
   onSelectChannelVideo: (payload: { channelName: string; video: LiveChannelVideo }) => void;
   engagementSlot?: ReactNode;
   reactionsSlot?: ReactNode;
-};
-
-type PlayerHandle = {
-  getCurrentTime: () => number;
-  getDuration: () => number;
-  mute?: () => void;
-  unMute?: () => void;
-  playVideo?: () => void;
-  pauseVideo?: () => void;
-  seekTo?: (seconds: number, allowSeekAhead?: boolean) => void;
 };
 
 const DOT_COUNT = 7;
@@ -113,12 +103,14 @@ export function HomePage({
   // NONSTOP PLAYOUT: v živém (lineárním) režimu řídí přehrávání časovaná smyčka
   // (přepíná podle času, ne podle YouTube ENDED). Při vybraném VOD (isLive=false)
   // smyčka stojí a hrajeme zvolené video napřímo.
-  const playout = usePlayoutLoop({
+  // Destructure stabilní `signalEnded` (useCallback v hooku) — jinak by se
+  // `handleStageEnded` invalidoval každý render kvůli novému `playout` objektu.
+  const { surface: playoutSurface, signalEnded: playoutSignalEnded } = usePlayoutLoop({
     enabled: isLive,
     initialBlock: isLive && videoId ? { videoId, title, offsetSeconds: offset } : null,
   });
   const heroSurface: PlayoutSurface | null = isLive
-    ? playout.surface
+    ? playoutSurface
     : videoId
       ? { kind: "youtube", videoId, startSeconds: offset, title }
       : null;
@@ -128,9 +120,9 @@ export function HomePage({
   // Konec videa: v živém režimu je to bonusový dřívější trigger pro smyčku;
   // u VOD (vybrané video) dohrálo → vrať se na živý kanál (žádná slepá ulička).
   const handleStageEnded = useCallback(() => {
-    if (isLive) playout.signalEnded();
+    if (isLive) playoutSignalEnded();
     else onReturnToLive();
-  }, [isLive, playout, onReturnToLive]);
+  }, [isLive, playoutSignalEnded, onReturnToLive]);
 
   // Titulek/kanál pod hero sledují PRÁVĚ HRANÉ video (jinak by držely SSR úvodní).
   // Zdroj: titulek z bloku (engine) → dohledání podle video_id v EPG → SSR fallback.

@@ -1,6 +1,17 @@
 // Typy odpovědí NONSTOP PLAYOUT enginu (Replit). Viz klientská specifikace:
 // /program/now, /program/fill-gap, /program/safety-bridge.
 
+// Minimální rozhraní YouTube IFrame přehrávače, které potřebujeme ovládat.
+export type PlayerHandle = {
+  getCurrentTime: () => number;
+  getDuration: () => number;
+  mute?: () => void;
+  unMute?: () => void;
+  playVideo?: () => void;
+  pauseVideo?: () => void;
+  seekTo?: (seconds: number, allowSeekAhead?: boolean) => void;
+};
+
 export type PlayoutFillerType = "panorama" | "weather" | "short" | "boundary" | string;
 
 export interface PlayoutPanorama {

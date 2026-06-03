@@ -3,17 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import YouTube, { type YouTubeProps } from "react-youtube";
 
-import type { PlayoutSourceCandidate, PlayoutSurface } from "@/lib/playout/types";
-
-type PlayerHandle = {
-  getCurrentTime: () => number;
-  getDuration: () => number;
-  mute?: () => void;
-  unMute?: () => void;
-  playVideo?: () => void;
-  pauseVideo?: () => void;
-  seekTo?: (seconds: number, allowSeekAhead?: boolean) => void;
-};
+import type { PlayerHandle, PlayoutSourceCandidate, PlayoutSurface } from "@/lib/playout/types";
 
 interface PlayoutStageProps {
   surface: PlayoutSurface | null;
@@ -35,7 +25,7 @@ export function PlayoutStage({ surface, muted, onEnded, onPlayerReady, onPlaying
 
   // Multi-source: index do fallbacků + případný embed-url fallback + krajní ident.
   const [activeVideoId, setActiveVideoId] = useState(primaryVideoId);
-  const [fallbackIndex, setFallbackIndex] = useState(0);
+  const [, setFallbackIndex] = useState(0);
   const [fallbackEmbedUrl, setFallbackEmbedUrl] = useState<string | null>(null);
   const [sourcesExhausted, setSourcesExhausted] = useState(false);
 
@@ -120,20 +110,24 @@ export function PlayoutStage({ surface, muted, onEnded, onPlayerReady, onPlaying
   }, [isYouTube, activeVideoId]);
 
   const advanceFallback = () => {
-    const next = fallbacks[fallbackIndex];
-    setFallbackIndex((index) => index + 1);
-    if (!next) {
-      setSourcesExhausted(true); // nic dalšího → krajní ident (smyčka jede dál na časovači)
-      return;
-    }
-    if (next.videoId) {
-      setActiveVideoId(next.videoId);
-      setFallbackEmbedUrl(null);
-    } else if (next.url) {
-      setFallbackEmbedUrl(next.url);
-    } else {
-      setSourcesExhausted(true);
-    }
+    // Index čteme z funkčního updateru, ať dva rychlé onError za sebou nepřeskočí
+    // jeden zdroj (stale closure by jinak vzal stejný index dvakrát).
+    setFallbackIndex((currentIndex) => {
+      const next = fallbacks[currentIndex];
+      if (!next) {
+        setSourcesExhausted(true); // nic dalšího → krajní ident (smyčka jede dál na časovači)
+        return currentIndex;
+      }
+      if (next.videoId) {
+        setActiveVideoId(next.videoId);
+        setFallbackEmbedUrl(null);
+      } else if (next.url) {
+        setFallbackEmbedUrl(next.url);
+      } else {
+        setSourcesExhausted(true);
+      }
+      return currentIndex + 1;
+    });
   };
 
   // ---- render dle surface ----

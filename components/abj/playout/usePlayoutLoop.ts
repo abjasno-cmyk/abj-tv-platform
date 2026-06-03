@@ -19,6 +19,9 @@ import {
 const IDENT_TITLE = "ABJ — pokračujeme";
 // Hybrid: krátká VEROX znělka (lokální ident) na začátku každé mezery, pak panorama.
 const VEROX_IDENT_SEC = 4;
+// Minimální délka jedné iterace smyčky — back-pressure proti rychlému spinu na
+// hranici bloku, když engine ještě nepřepnul stav (expirovaný blok → msLeft=0).
+const MIN_ITERATION_MS = 1500;
 
 export interface PlayoutInitialBlock {
   videoId: string;
@@ -215,6 +218,7 @@ export function usePlayoutLoop({ enabled, initialBlock }: UsePlayoutLoopOptions)
       }
 
       while (!token.cancelled && enabled) {
+        const iterationStart = Date.now();
         const now = await fetchProgramNow();
         if (token.cancelled) return;
         if (!now || !now.block) {
@@ -226,6 +230,14 @@ export function usePlayoutLoop({ enabled, initialBlock }: UsePlayoutLoopOptions)
         await playBlock(now.block, now.offset_sec);
         if (token.cancelled) return;
         await handleBlockEnd(now.block, now.next_block?.block_id ?? null);
+
+        // Throttle: na hranici bloku (expirovaný blok, mezera ≤5 s) by se smyčka
+        // jinak točila bez prodlevy a hamerovala /program/now. Dorovnáme iteraci
+        // na MIN_ITERATION_MS (běžné delší bloky tím nejsou dotčené).
+        const elapsed = Date.now() - iterationStart;
+        if (elapsed < MIN_ITERATION_MS) {
+          await waitInterruptible(MIN_ITERATION_MS - elapsed, token, false);
+        }
       }
     };
 
