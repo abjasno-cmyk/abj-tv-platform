@@ -1,12 +1,14 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import YouTube, { type YouTubeProps } from "react-youtube";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { VeroxHeader } from "@/components/abj/VeroxHeader";
+import { PlayoutStage } from "@/components/abj/playout/PlayoutStage";
+import { usePlayoutLoop } from "@/components/abj/playout/usePlayoutLoop";
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import type { DayProgram, ProgramItem } from "@/lib/epg-types";
+import type { PlayerHandle, PlayoutSurface } from "@/lib/playout/types";
 
 type HomePageProps = {
   days: DayProgram[];
@@ -29,16 +31,6 @@ type HomePageProps = {
   reactionsSlot?: ReactNode;
 };
 
-type PlayerHandle = {
-  getCurrentTime: () => number;
-  getDuration: () => number;
-  mute?: () => void;
-  unMute?: () => void;
-  playVideo?: () => void;
-  pauseVideo?: () => void;
-  seekTo?: (seconds: number, allowSeekAhead?: boolean) => void;
-};
-
 const DOT_COUNT = 7;
 
 function thumbFor(item: ProgramItem): string {
@@ -55,6 +47,7 @@ export function HomePage({
   videoId,
   title,
   channelName,
+  isLive,
   startSeconds = 0,
   onSelect,
   onReturnToLive,
@@ -65,43 +58,82 @@ export function HomePage({
   const playerRef = useRef<PlayerHandle | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const channelTrackRef = useRef<HTMLDivElement | null>(null);
+  const currentItemRef = useRef<HTMLButtonElement | null>(null);
+  // Zvuk: autoplay MUSÍ startovat muted (jinak ho prohlížeč zablokuje / video pauzne).
+  // Po prvním odmutování (gesto uživatele) zvuk drží napříč všemi dalšími videi
+  // (onReady aplikuje `muted` stav). Auto-odmutovat hned po načtení nelze — browser
+  // to bez gesta zablokuje. Viz preference [[verox-videos-always-unmuted]].
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(true);
   const [stageDot, setStageDot] = useState(0);
   const [channelDot, setChannelDot] = useState(0);
-  const [pendingChannel, setPendingChannel] = useState<string | null>(null);
+  // Sekce KANÁLY: otevřený kanál + jeho posledních ~4 videí (detail panel pod lištou).
+  const [openChannelName, setOpenChannelName] = useState<string | null>(null);
+  const [channelVideosByName, setChannelVideosByName] = useState<Record<string, LiveChannelVideo[]>>({});
+  const [channelLoading, setChannelLoading] = useState<string | null>(null);
+  const [channelError, setChannelError] = useState<Record<string, string>>({});
 
   const programItems = useMemo(
     () => days.flatMap((day) => day.items).filter((item) => Boolean(item.videoId)),
     [days],
   );
 
-  // PRÁVĚ HRAJE: pokud je vybraný kanál (běží jeho video), ukaž videa z toho
-  // kanálu; jinak default EPG program.
-  const activeChannel = useMemo(
-    () => channels.find((ch) => ch.channelName === channelName && ch.videos.length > 0) ?? null,
-    [channels, channelName],
-  );
+  // PRÁVĚ HRAJE = vždy PROGRAM (Bloky z Replitu / EPG), ne videa kanálu z hera.
+  // Ukazujeme celý program dne (Replit jich servíruje ~50+), ne jen prvních pár —
+  // strop 100 jen bezpečně omezí degradovaný 7denní buildEPG fallback.
   const stageItems = useMemo(() => {
-    if (activeChannel) {
-      return activeChannel.videos.slice(0, 12).map((video) => ({
-        key: video.videoId,
-        videoId: video.videoId,
-        title: video.title,
-        thumb: video.thumbnail || `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`,
-        onClick: () => onSelectChannelVideo({ channelName: activeChannel.channelName, video }),
-      }));
-    }
-    return programItems.slice(0, 12).map((item, index) => ({
+    return programItems.slice(0, 100).map((item, index) => ({
       key: `${item.videoId}-${index}`,
       videoId: item.videoId,
       title: item.title,
       thumb: thumbFor(item),
       onClick: () => onSelect(item),
     }));
-  }, [activeChannel, programItems, onSelect, onSelectChannelVideo]);
+  }, [programItems, onSelect]);
 
   const offset = Math.max(0, Math.floor(startSeconds));
+
+  // NONSTOP PLAYOUT: v živém (lineárním) režimu řídí přehrávání časovaná smyčka
+  // (přepíná podle času, ne podle YouTube ENDED). Při vybraném VOD (isLive=false)
+  // smyčka stojí a hrajeme zvolené video napřímo.
+  // Destructure stabilní `signalEnded` (useCallback v hooku) — jinak by se
+  // `handleStageEnded` invalidoval každý render kvůli novému `playout` objektu.
+  const { surface: playoutSurface, signalEnded: playoutSignalEnded } = usePlayoutLoop({
+    enabled: isLive,
+    initialBlock: isLive && videoId ? { videoId, title, offsetSeconds: offset } : null,
+  });
+  const heroSurface: PlayoutSurface | null = isLive
+    ? playoutSurface
+    : videoId
+      ? { kind: "youtube", videoId, startSeconds: offset, title }
+      : null;
+  const registerPlayer = useCallback((player: PlayerHandle | null) => {
+    playerRef.current = player;
+  }, []);
+  // Konec videa: v živém režimu je to bonusový dřívější trigger pro smyčku;
+  // u VOD (vybrané video) dohrálo → vrať se na živý kanál (žádná slepá ulička).
+  const handleStageEnded = useCallback(() => {
+    if (isLive) playoutSignalEnded();
+    else onReturnToLive();
+  }, [isLive, playoutSignalEnded, onReturnToLive]);
+
+  // Titulek/kanál pod hero sledují PRÁVĚ HRANÉ video (jinak by držely SSR úvodní).
+  // Zdroj: titulek z bloku (engine) → dohledání podle video_id v EPG → SSR fallback.
+  const epgInfoById = useMemo(() => {
+    const map = new Map<string, { title: string; channelName: string }>();
+    for (const day of days) {
+      for (const item of day.items) {
+        if (item.videoId) map.set(item.videoId, { title: item.title, channelName: item.channelName });
+      }
+    }
+    return map;
+  }, [days]);
+  const currentVideoId = heroSurface?.kind === "youtube" ? heroSurface.videoId : null;
+  const currentEpg = currentVideoId ? epgInfoById.get(currentVideoId) : null;
+  const displayTitle =
+    (heroSurface?.kind === "youtube" ? heroSurface.title : undefined) ?? currentEpg?.title ?? title;
+  const displayChannel =
+    (heroSurface?.kind === "youtube" ? heroSurface.channel : undefined) ?? currentEpg?.channelName ?? channelName;
 
   const scrollStage = (dir: -1 | 1) => {
     const el = stageRef.current;
@@ -142,81 +174,81 @@ export function HomePage({
     };
   }, [stageItems.length, channels.length]);
 
-  // Výběr kanálu: pokud kanál nemá přednačtené video, doptáme se na nejnovější
-  // přes /api/channel-latest, ať jdou spustit i kanály bez položek ve feedu.
+  // Vycentruj PRÁVĚ HRAJE na aktuálně hrané video (při startu i při každém přepnutí bloku).
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      const el = currentItemRef.current;
+      const container = stageRef.current;
+      if (!el || !container) return;
+      const elRect = el.getBoundingClientRect();
+      const contRect = container.getBoundingClientRect();
+      const delta = elRect.left - contRect.left - (contRect.width - elRect.width) / 2;
+      container.scrollBy({ left: delta, behavior: "smooth" });
+    }, 120);
+    return () => window.clearTimeout(id);
+  }, [currentVideoId, stageItems.length]);
+
+  // Klik na kanál: otevři DETAIL PANEL a načti ~4 poslední videa kanálu (nepřehrává
+  // se rovnou — klik na konkrétní video v panelu pak otevře HeroScreen). Kanály bez
+  // přednačtených videí (např. Datarun) si je doptají přímo přes /api/channel-latest
+  // (YouTube), ať jdou taky zobrazit.
   const selectChannel = async (ch: LiveChannelGroup) => {
-    const firstVideo = ch.videos[0];
-    if (firstVideo) {
-      onSelectChannelVideo({ channelName: ch.channelName, video: firstVideo });
+    // Toggle: druhý klik na otevřený kanál panel zavře.
+    if (openChannelName === ch.channelName) {
+      setOpenChannelName(null);
       return;
     }
-    if (pendingChannel) return;
+    setOpenChannelName(ch.channelName);
+
+    if (ch.videos.length > 0) {
+      setChannelVideosByName((prev) => ({ ...prev, [ch.channelName]: ch.videos.slice(0, 4) }));
+      return;
+    }
+    if (channelVideosByName[ch.channelName]) return; // už načteno
     if (!ch.channelId && !ch.channelUrl && !ch.channelName.trim()) return;
 
-    setPendingChannel(ch.channelName);
+    setChannelLoading(ch.channelName);
+    setChannelError((prev) => ({ ...prev, [ch.channelName]: "" }));
     try {
       const params = new URLSearchParams();
       if (ch.channelId) params.set("channelId", ch.channelId);
       if (ch.channelUrl) params.set("channelUrl", ch.channelUrl);
       params.set("channelName", ch.channelName);
-      params.set("limit", "1");
+      params.set("limit", "4");
 
       const response = await fetch(`/api/channel-latest?${params.toString()}`, { cache: "no-store" });
       const payload = (await response.json().catch(() => ({}))) as {
         videos?: Array<{ videoId?: string; title?: string; thumbnail?: string; publishedAt?: string }>;
       };
-      const latest = payload.videos?.find((video) => video.videoId?.trim() && video.title?.trim());
-      if (latest?.videoId && latest.title) {
-        onSelectChannelVideo({
-          channelName: ch.channelName,
-          video: {
-            videoId: latest.videoId.trim(),
-            title: latest.title.trim(),
-            thumbnail: latest.thumbnail?.trim() || null,
-            publishedAt: latest.publishedAt?.trim() || new Date(0).toISOString(),
-          },
-        });
+      const videos = (payload.videos ?? [])
+        .map((video): LiveChannelVideo | null => {
+          const videoId = video.videoId?.trim();
+          const title = video.title?.trim();
+          if (!videoId || !title) return null;
+          return {
+            videoId,
+            title,
+            thumbnail: video.thumbnail?.trim() || null,
+            publishedAt: video.publishedAt?.trim() || new Date(0).toISOString(),
+          };
+        })
+        .filter((video): video is LiveChannelVideo => Boolean(video))
+        .slice(0, 4);
+      setChannelVideosByName((prev) => ({ ...prev, [ch.channelName]: videos }));
+      if (videos.length === 0) {
+        setChannelError((prev) => ({ ...prev, [ch.channelName]: "Kanál teď nemá dostupná videa." }));
       }
     } catch {
-      // Tiché selhání — kanál bez dostupných videí prostě nespustíme.
+      setChannelError((prev) => ({ ...prev, [ch.channelName]: "Videa kanálu se nepodařilo načíst." }));
     } finally {
-      setPendingChannel(null);
+      setChannelLoading(null);
     }
   };
 
-  // STABILNÍ opts (zachytíme jen počáteční hodnoty). Kdyby se opts měnily,
-  // react-youtube při každé změně videa/offsetu zničí a postaví iframe znovu
-  // (pomalé/nespolehlivé). Takhle se video přepíná přes loadVideoById.
-  const initialOptsRef = useRef({ muted, offset });
-  const opts = useMemo<YouTubeProps["opts"]>(
-    () => ({
-      width: "100%",
-      height: "100%",
-      playerVars: {
-        autoplay: 1,
-        mute: initialOptsRef.current.muted ? 1 : 0,
-        start: initialOptsRef.current.offset,
-        rel: 0,
-        modestbranding: 1,
-        controls: 0,
-        playsinline: 1,
-        iv_load_policy: 3,
-      },
-    }),
-    [],
-  );
-
-  // Live-resume: pro offset > 0 doseekujeme po načtení nového videa.
+  // Sledování pozice pro „pokračovat ve sledování" — jen u VOD (ne v živé smyčce,
+  // kde se přehrávaný blok mění sám a videoId prop neodpovídá běžícímu videu).
   useEffect(() => {
-    if (offset <= 0) return;
-    const id = window.setTimeout(() => {
-      playerRef.current?.seekTo?.(offset, true);
-    }, 400);
-    return () => window.clearTimeout(id);
-  }, [videoId, offset]);
-
-  useEffect(() => {
-    if (!videoId || !onPlaybackSample) return;
+    if (isLive || !videoId || !onPlaybackSample) return;
     const id = window.setInterval(() => {
       const p = playerRef.current;
       if (!p) return;
@@ -226,24 +258,7 @@ export function HomePage({
       onPlaybackSample({ videoId, positionSeconds, durationSeconds });
     }, 4000);
     return () => window.clearInterval(id);
-  }, [onPlaybackSample, videoId]);
-
-  // Po přepnutí videa znovu aplikuj zvolený stav zvuku. loadVideoById jinak
-  // nové video spustí ztlumené, takže by se „zapomněl" odmutovaný stav.
-  const mutedRef = useRef(muted);
-  useEffect(() => {
-    mutedRef.current = muted;
-  }, [muted]);
-  useEffect(() => {
-    if (!videoId) return;
-    const id = window.setTimeout(() => {
-      const p = playerRef.current;
-      if (!p) return;
-      if (mutedRef.current) p.mute?.();
-      else p.unMute?.();
-    }, 350);
-    return () => window.clearTimeout(id);
-  }, [videoId]);
+  }, [isLive, onPlaybackSample, videoId]);
 
   const togglePlay = () => {
     const p = playerRef.current;
@@ -285,27 +300,18 @@ export function HomePage({
       {/* HERO */}
       <section className="hero" aria-label="Živé vysílání">
         <div className="hero-media" ref={heroRef}>
-          {videoId ? (
-            <YouTube
-              videoId={videoId}
-              title={title}
-              opts={opts}
-              onReady={(e) => {
-                playerRef.current = e.target as unknown as PlayerHandle;
-                if (muted) playerRef.current.mute?.();
-              }}
-              onStateChange={(e) => {
-                // YT.PlayerState: 1 = playing, 2 = paused
-                if (e.data === 1) setPlaying(true);
-                else if (e.data === 2) setPlaying(false);
-              }}
-            />
-          ) : null}
-          {/* Záchytné pruhy: překryjí klikatelnou lištu YouTube (titulek nahoře,
-              „Watch on YouTube"/sdílení dole), aby neodváděly diváky pryč.
-              Vlastní ovládání (.hero-ctrls) je nad nimi. */}
-          <span className="hero-guard hero-guard-top" aria-hidden="true" />
-          <span className="hero-guard hero-guard-bottom" aria-hidden="true" />
+          <PlayoutStage
+            surface={heroSurface}
+            muted={muted}
+            onEnded={handleStageEnded}
+            onPlayerReady={registerPlayer}
+            onPlayingChange={setPlaying}
+          />
+          {/* Záchytný overlay přes celé video: pohltí VŠECHNY myší události, takže
+              se hover ovládání YouTube (titulek, sdílení, „More videos", logo)
+              vůbec nezobrazí a nic neodvede diváka pryč. Jediný ovladač jsou naše
+              3 tlačítka v .hero-ctrls (z-index nad guardem). */}
+          <span className="hero-guard" aria-hidden="true" />
           <div className="hero-ctrls">
             <button
               type="button"
@@ -324,9 +330,17 @@ export function HomePage({
                 </svg>
               )}
             </button>
-            <button type="button" onClick={toggleFullscreen} aria-label="Celá obrazovka">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icons/ikona_to_full_scren.svg" alt="" />
+            <button type="button" className="ctrl-fs" onClick={toggleFullscreen} aria-label="Celá obrazovka">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </button>
             <button
               type="button"
@@ -335,8 +349,17 @@ export function HomePage({
               aria-label={muted ? "Zapnout zvuk" : "Vypnout zvuk"}
               aria-pressed={muted}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icons/ikona_sound_on.svg" alt="" />
+              {muted ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+                  <path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+                  <path d="M16 8.6a4 4 0 0 1 0 6.8M18.6 6a7 7 0 0 1 0 12" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                </svg>
+              )}
             </button>
           </div>
         </div>
@@ -352,8 +375,8 @@ export function HomePage({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="comment-icon" src="/design/icons/ikona_komentovat.png" alt="" />
         <div className="feature-copy">
-          <h1 id="hf-featured">{title}</h1>
-          <p>{channelName}</p>
+          <h1 id="hf-featured">{displayTitle}</h1>
+          <p>{displayChannel}</p>
         </div>
       </section>
       </div>
@@ -384,11 +407,13 @@ export function HomePage({
               </>
             ) : (
               stageItems.map((it) => {
-                const isCurrent = Boolean(videoId) && it.videoId === videoId;
+                // „Právě hrané" = blok, který reálně běží v hero (sleduje playout smyčku).
+                const isCurrent = Boolean(currentVideoId) && it.videoId === currentVideoId;
                 return (
                   <button
                     type="button"
                     key={it.key}
+                    ref={isCurrent ? currentItemRef : undefined}
                     className={`playing-image${isCurrent ? " is-current" : ""}`}
                     onClick={it.onClick}
                     aria-label={it.title}
@@ -423,8 +448,8 @@ export function HomePage({
           <span />
           PRÁVĚ BĚŽÍ
         </p>
-        <h3>{title}</h3>
-        <p className="source-label">{channelName}</p>
+        <h3>{displayTitle}</h3>
+        <p className="source-label">{displayChannel}</p>
       </section>
 
       <div className="double-rule channels-rule" aria-hidden="true" />
@@ -451,16 +476,17 @@ export function HomePage({
               </article>
             ) : (
               channels.map((ch) => {
-                const active = ch.channelName === channelName || ch.channelName === pendingChannel;
-                const isPending = ch.channelName === pendingChannel;
+                const active = ch.channelName === openChannelName;
+                const isLoading = ch.channelName === channelLoading;
                 return (
                   <button
                     type="button"
                     key={ch.channelName}
                     className={`channel-card${active ? " channel-card-active" : ""}`}
                     onClick={() => void selectChannel(ch)}
-                    aria-busy={isPending}
-                    style={isPending ? { opacity: 0.65 } : undefined}
+                    aria-busy={isLoading}
+                    aria-expanded={active}
+                    style={isLoading ? { opacity: 0.65 } : undefined}
                   >
                     {ch.avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -483,6 +509,41 @@ export function HomePage({
             </svg>
           </button>
         </div>
+
+        {/* DETAIL PANEL vybraného kanálu — ~4 poslední videa, klik otevře v HeroScreen. */}
+        {openChannelName ? (
+          <div className="channel-detail" aria-live="polite">
+            {channelLoading === openChannelName ? (
+              <p className="channel-detail-info">Načítám nejnovější videa…</p>
+            ) : (channelVideosByName[openChannelName]?.length ?? 0) > 0 ? (
+              <div className="channel-videos">
+                {channelVideosByName[openChannelName]!.map((video) => (
+                  <button
+                    type="button"
+                    key={video.videoId}
+                    className="channel-video"
+                    onClick={() => onSelectChannelVideo({ channelName: openChannelName, video })}
+                  >
+                    <span className="cv-thumb">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={video.thumbnail || `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`}
+                        alt=""
+                        loading="lazy"
+                      />
+                    </span>
+                    <span className="cv-title">{video.title}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="channel-detail-info">
+                {channelError[openChannelName] || "Tento kanál teď nemá dostupná videa."}
+              </p>
+            )}
+          </div>
+        ) : null}
+
         <div className="dots" aria-hidden="true">
           {Array.from({ length: DOT_COUNT }).map((_, i) => (
             <span key={i} className={i === channelDot ? "active" : undefined} />

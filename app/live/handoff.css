@@ -193,24 +193,52 @@
   height: 100%;
   border: 0;
 }
-/* Záchytné pruhy nad iframe (pod ovládáním z-index:3) — blokují proklik na
-   klikatelnou lištu YouTube nahoře (titulek/kanál) a dole (sdílení / Watch on
-   YouTube). Průhledné, jen zachytávají kliky. */
+/* Záchytný overlay přes CELÉ video (pod ovládáním z-index:3, nad iframe).
+   Pohltí všechny myší události → YouTube hover ovládání se nezobrazí a žádný
+   proklik neodvede diváka pryč. Ovládání jen přes naše 3 tlačítka. */
 .hf .hero-media .hero-guard {
   position: absolute;
-  left: 0;
-  right: 0;
+  inset: 0;
   z-index: 2;
   background: transparent;
   pointer-events: auto;
 }
-.hf .hero-media .hero-guard-top {
-  top: 0;
-  height: 16%;
+/* NONSTOP PLAYOUT — přechodové „bridge" plochy (nikdy černá obrazovka).
+   ident = logo na bílém s jemným fade in/out; embed = panorama; weather = panel. */
+.hf .hero-media .playout-ident {
+  background: #fff;
+  display: grid;
+  place-items: center;
 }
-.hf .hero-media .hero-guard-bottom {
-  bottom: 0;
-  height: 16%;
+.hf .hero-media .playout-ident-logo {
+  width: auto;
+  height: auto;
+  max-width: min(46%, 360px);
+  max-height: 42%;
+  object-fit: contain;
+  animation: playout-ident-fade 2.8s ease-in-out infinite;
+}
+@keyframes playout-ident-fade {
+  0%,
+  100% {
+    opacity: 0.18;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.hf .hero-media .playout-embed {
+  border: 0;
+}
+.hf .hero-media .playout-weather {
+  background: #fff;
+  display: grid;
+  place-items: center;
+  color: var(--vx-gray-dark);
+  font-family: var(--vx-myriad);
+  font-weight: 700;
+  font-size: clamp(1rem, 2.4vw, 1.6rem);
+  letter-spacing: 0.04em;
 }
 .hf .live-badge {
   position: absolute;
@@ -253,41 +281,28 @@
   padding: 0;
   cursor: pointer;
 }
-/* play/pause patří mezi oranžová kolečka vpravo — plně oranžové, bez ztlumení */
-.hf .hero-ctrls .ctrl-play {
+/* Všechna 3 tlačítka jednotně: plný oranžový kroužek + bílý glyph (jako play). */
+.hf .hero-ctrls .ctrl-play,
+.hf .hero-ctrls .ctrl-fs,
+.hf .hero-ctrls .ctrl-sound {
   border-radius: 50%;
   background: var(--vx-orange);
+  color: #fff;
   display: grid;
   place-items: center;
   transition: background 0.15s ease;
 }
-.hf .hero-ctrls .ctrl-play:hover {
+.hf .hero-ctrls .ctrl-play:hover,
+.hf .hero-ctrls .ctrl-fs:hover,
+.hf .hero-ctrls .ctrl-sound:hover {
   background: #e65c00;
 }
-.hf .hero-ctrls .ctrl-play svg {
+.hf .hero-ctrls .ctrl-play svg,
+.hf .hero-ctrls .ctrl-fs svg,
+.hf .hero-ctrls .ctrl-sound svg {
   width: 48%;
   height: 48%;
-  fill: #fff;
-}
-/* Ztlumeno: ikonu ztmavíme a přeškrtneme, ať je „zapamatovaný" stav vidět */
-.hf .hero-ctrls .ctrl-sound {
-  position: relative;
-}
-.hf .hero-ctrls .ctrl-sound.is-muted img {
-  opacity: 0.45;
-}
-.hf .hero-ctrls .ctrl-sound.is-muted::after {
-  content: "";
-  position: absolute;
-  left: 6%;
-  top: 50%;
-  width: 88%;
-  height: 11%;
-  max-height: 4px;
-  background: var(--vx-orange);
-  border-radius: 999px;
-  transform: translateY(-50%) rotate(-45deg);
-  pointer-events: none;
+  fill: currentColor;
 }
 
 /* ---------- FEATURE SUMMARY (titulek pořadu) — ikona vlevo, text vedle (mobil) ---------- */
@@ -374,6 +389,10 @@
   aspect-ratio: 16 / 9;
   background: #ccc;
   overflow: hidden;
+}
+/* Právě hrané = zvětšené (širší dlaždice) + oranžový rámeček. */
+.hf .playing-image.is-current {
+  flex-basis: clamp(200px, 42%, 480px);
 }
 .hf .playing-image.is-current .playing-thumb {
   outline: 3px solid var(--vx-orange);
@@ -528,6 +547,64 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* DETAIL PANEL kanálu — 4 poslední videa, klik otevře v HeroScreen. */
+.hf .channel-detail {
+  margin: clamp(12px, 1.4vw, 20px) 0 0;
+}
+.hf .channel-detail-info {
+  padding: clamp(10px, 1.2vw, 16px) 0;
+  font-size: clamp(0.85rem, 1.4vw, 1rem);
+  color: var(--vx-gray-dark);
+}
+.hf .channel-videos {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: clamp(10px, 1.2vw, 16px);
+}
+@media (min-width: 700px) {
+  .hf .channel-videos {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.hf .channel-video {
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 0.8vw, 10px);
+}
+.hf .channel-video .cv-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #ccc;
+  overflow: hidden;
+  border-radius: 2px;
+}
+.hf .channel-video .cv-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hf .channel-video:hover .cv-thumb {
+  outline: 2px solid var(--vx-orange);
+  outline-offset: -2px;
+}
+.hf .channel-video .cv-title {
+  font-family: var(--vx-myriad);
+  font-weight: 700;
+  font-size: clamp(0.78rem, 1.05vw, 0.95rem);
+  line-height: 1.2;
+  color: var(--vx-gray-dark);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* ============================================================================
