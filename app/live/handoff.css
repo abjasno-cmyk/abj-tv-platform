@@ -211,8 +211,11 @@
   place-items: center;
 }
 .hf .hero-media .playout-ident-logo {
-  width: min(46%, 360px);
+  width: auto;
   height: auto;
+  max-width: min(46%, 360px);
+  max-height: 42%;
+  object-fit: contain;
   animation: playout-ident-fade 2.8s ease-in-out infinite;
 }
 @keyframes playout-ident-fade {

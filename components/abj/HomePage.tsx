@@ -68,19 +68,12 @@ export function HomePage({
   const playerRef = useRef<PlayerHandle | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const channelTrackRef = useRef<HTMLDivElement | null>(null);
-  // Preference: videa jsou defaultně UNMUTED (viz uživatelská preference). Autoplay
-  // sám startuje muted (politika prohlížeče), zvuk se zapne hned po onReady.
-  const [muted, setMuted] = useState(false);
+  // Zvuk: autoplay MUSÍ startovat muted (jinak ho prohlížeč zablokuje / video pauzne).
+  // Po prvním odmutování (gesto uživatele) zvuk drží napříč všemi dalšími videi
+  // (onReady aplikuje `muted` stav). Auto-odmutovat hned po načtení nelze — browser
+  // to bez gesta zablokuje. Viz preference [[verox-videos-always-unmuted]].
+  const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(true);
-
-  // Obnov uloženou preferenci zvuku (kdyby si divák naopak vypnul zvuk).
-  useEffect(() => {
-    try {
-      if (window.localStorage.getItem("verox_muted") === "1") setMuted(true);
-    } catch {
-      // localStorage nedostupné — ignoruj.
-    }
-  }, []);
   const [stageDot, setStageDot] = useState(0);
   const [channelDot, setChannelDot] = useState(0);
   const [pendingChannel, setPendingChannel] = useState<string | null>(null);
@@ -264,11 +257,6 @@ export function HomePage({
   const toggleMute = () => {
     const next = !muted;
     setMuted(next);
-    try {
-      window.localStorage.setItem("verox_muted", next ? "1" : "0");
-    } catch {
-      // localStorage nedostupné — ignoruj.
-    }
     const p = playerRef.current;
     if (!p) return;
     if (next) p.mute?.();
