@@ -96,28 +96,44 @@ test.describe("/live — queue & playback", () => {
   });
 
   test("selecting another queued item swaps the player to that video", async ({ page }) => {
-    const embed = page.locator('iframe[src*="youtube.com/embed"], iframe[src*="youtube-nocookie.com/embed"]').first();
+    const embedSelector = 'iframe[src*="youtube.com/embed"], iframe[src*="youtube-nocookie.com/embed"]';
 
-    await page.goto("/live", { waitUntil: "domcontentloaded" });
-    await expect(embed, "player should mount").toBeVisible({ timeout: 25_000 });
-
+    // Resilient read: the YouTube component is keyed by videoId, so on a switch
+    // the old iframe detaches and a new one mounts. During that gap the element
+    // is briefly absent — return null instead of throwing/timing out.
     const videoIdFromSrc = async (): Promise<string | null> => {
-      const src = (await embed.getAttribute("src")) ?? "";
-      return src.match(/\/embed\/([A-Za-z0-9_-]{6,})/)?.[1] ?? null;
+      const el = page.locator(embedSelector).first();
+      if ((await el.count()) === 0) return null;
+      const src = await el.getAttribute("src", { timeout: 2_000 }).catch(() => null);
+      return src?.match(/\/embed\/([A-Za-z0-9_-]{6,})/)?.[1] ?? null;
     };
 
-    const initialId = await videoIdFromSrc();
-    expect(initialId, "initial video id should be readable from the embed").toBeTruthy();
+    await page.goto("/live", { waitUntil: "domcontentloaded" });
+    await expect(page.locator(embedSelector).first(), "player should mount").toBeVisible({ timeout: 25_000 });
+
+    let initialId: string | null = null;
+    await expect
+      .poll(async () => (initialId = await videoIdFromSrc()), {
+        message: "initial video id should be readable from the embed",
+        timeout: 25_000,
+      })
+      .toBeTruthy();
 
     // Pick a queued tile that is not the one currently playing.
     const otherTile = page.locator("section.playing-now button.playing-image:not(.is-current)").first();
     await expect(otherTile, "a non-current queued tile should exist").toBeVisible({ timeout: 20_000 });
     await otherTile.click();
 
-    // The player remounts on a new videoId (YouTube component is keyed by id),
-    // so the embed src should change to a different video.
+    // Wait until a *different, present* video id is mounted — tolerant of the
+    // transient remount gap (a momentary null does not count as a swap).
     await expect
-      .poll(videoIdFromSrc, { message: "embed should switch to a different video", timeout: 20_000 })
-      .not.toBe(initialId);
+      .poll(
+        async () => {
+          const id = await videoIdFromSrc();
+          return id && id !== initialId ? id : null;
+        },
+        { message: "embed should switch to a different video", timeout: 25_000 },
+      )
+      .toBeTruthy();
   });
 });
