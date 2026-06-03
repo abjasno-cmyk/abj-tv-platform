@@ -39,14 +39,16 @@ export function PlayoutStage({ surface, muted, onEnded, onPlayerReady, onPlaying
   const [fallbackEmbedUrl, setFallbackEmbedUrl] = useState<string | null>(null);
   const [sourcesExhausted, setSourcesExhausted] = useState(false);
 
-  // Nový YouTube blok → reset fallback stavu.
-  useEffect(() => {
-    if (!isYouTube) return;
+  // Nový YouTube blok → reset fallback stavu. Adjust-state-during-render (React
+  // doporučený vzor místo efektu se synchronním setState).
+  const [trackedVideoId, setTrackedVideoId] = useState(primaryVideoId);
+  if (isYouTube && primaryVideoId !== trackedVideoId) {
+    setTrackedVideoId(primaryVideoId);
     setActiveVideoId(primaryVideoId);
     setFallbackIndex(0);
     setFallbackEmbedUrl(null);
     setSourcesExhausted(false);
-  }, [isYouTube, primaryVideoId]);
+  }
 
   // Stabilní opts (start dolaďujeme přes seekTo v onReady).
   const opts = useMemo<YouTubeProps["opts"]>(
