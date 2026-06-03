@@ -187,36 +187,30 @@ export function usePlayoutLoop({ enabled, initialBlock }: UsePlayoutLoopOptions)
     };
 
     const runLoop = async () => {
-      // První iterace: pokud máme seed, přehrajeme rovnou ten blok (bez prvního tiku),
-      // ať nenavazujeme zbytečným reloadem. Časování dobereme ze seedu.
-      let firstSeed = seed?.videoId
-        ? ({
-            block_id: "seed",
-            starts_at: new Date(0).toISOString(),
-            ends_at: seed.endsAt ?? new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
-            expected_ends_at: seed.expectedEndsAt ?? null,
-            video_id: seed.videoId,
-          } satisfies PlayoutBlock)
-        : null;
-
-      // Bez seedu drž obraz živý hned, než dorazí první /program/now (zlaté pravidlo).
-      if (!firstSeed) showBridgeNow();
+      // OKAMŽITÉ pixely: seed (SSR now-playing) jen zobrazíme. Časování ale NEbereme
+      // ze seedu (nemá expected_ends_at) — hned voláme /program/now, ať máme reálný
+      // čas konce a přepínáme podle ČASOVAČE, ne podle YouTube ENDED.
+      if (seed?.videoId) {
+        setPhase("live");
+        setSurface({
+          kind: "youtube",
+          videoId: seed.videoId,
+          startSeconds: Math.max(0, Math.floor(seed.offsetSeconds ?? 0)),
+          title: seed.title,
+        });
+      } else {
+        showBridgeNow();
+      }
 
       while (!token.cancelled && enabled) {
-        if (firstSeed) {
-          await playBlock(firstSeed, Math.max(0, Math.floor(seed?.offsetSeconds ?? 0)));
-          if (token.cancelled) return;
-          await handleBlockEnd(firstSeed);
-          firstSeed = null;
-          continue;
-        }
-
         const now = await fetchProgramNow();
         if (token.cancelled) return;
         if (!now || !now.block) {
           await playSafetyBridge(); // API/prázdno → drž obraz živý a zkus znovu
           continue;
         }
+        // playBlock přepne na reálný blok (stejné video_id = bez reloadu) a nastaví
+        // časovač podle expected_ends_at/ends_at.
         await playBlock(now.block, now.offset_sec);
         if (token.cancelled) return;
         await handleBlockEnd(now.block);
