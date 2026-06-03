@@ -73,22 +73,8 @@ export function HomePage({
     [days],
   );
 
-  // PRÁVĚ HRAJE: pokud je vybraný kanál (běží jeho video), ukaž videa z toho
-  // kanálu; jinak default EPG program.
-  const activeChannel = useMemo(
-    () => channels.find((ch) => ch.channelName === channelName && ch.videos.length > 0) ?? null,
-    [channels, channelName],
-  );
+  // PRÁVĚ HRAJE = vždy PROGRAM (Bloky z Replitu / EPG), ne videa kanálu z hera.
   const stageItems = useMemo(() => {
-    if (activeChannel) {
-      return activeChannel.videos.slice(0, 12).map((video) => ({
-        key: video.videoId,
-        videoId: video.videoId,
-        title: video.title,
-        thumb: video.thumbnail || `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`,
-        onClick: () => onSelectChannelVideo({ channelName: activeChannel.channelName, video }),
-      }));
-    }
     return programItems.slice(0, 12).map((item, index) => ({
       key: `${item.videoId}-${index}`,
       videoId: item.videoId,
@@ -96,7 +82,7 @@ export function HomePage({
       thumb: thumbFor(item),
       onClick: () => onSelect(item),
     }));
-  }, [activeChannel, programItems, onSelect, onSelectChannelVideo]);
+  }, [programItems, onSelect]);
 
   const offset = Math.max(0, Math.floor(startSeconds));
 
