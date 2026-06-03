@@ -390,6 +390,10 @@
   background: #ccc;
   overflow: hidden;
 }
+/* Právě hrané = zvětšené (širší dlaždice) + oranžový rámeček. */
+.hf .playing-image.is-current {
+  flex-basis: clamp(200px, 42%, 480px);
+}
 .hf .playing-image.is-current .playing-thumb {
   outline: 3px solid var(--vx-orange);
   outline-offset: -3px;
@@ -543,6 +547,64 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* DETAIL PANEL kanálu — 4 poslední videa, klik otevře v HeroScreen. */
+.hf .channel-detail {
+  margin: clamp(12px, 1.4vw, 20px) 0 0;
+}
+.hf .channel-detail-info {
+  padding: clamp(10px, 1.2vw, 16px) 0;
+  font-size: clamp(0.85rem, 1.4vw, 1rem);
+  color: var(--vx-gray-dark);
+}
+.hf .channel-videos {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: clamp(10px, 1.2vw, 16px);
+}
+@media (min-width: 700px) {
+  .hf .channel-videos {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.hf .channel-video {
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 0.8vw, 10px);
+}
+.hf .channel-video .cv-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #ccc;
+  overflow: hidden;
+  border-radius: 2px;
+}
+.hf .channel-video .cv-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hf .channel-video:hover .cv-thumb {
+  outline: 2px solid var(--vx-orange);
+  outline-offset: -2px;
+}
+.hf .channel-video .cv-title {
+  font-family: var(--vx-myriad);
+  font-weight: 700;
+  font-size: clamp(0.78rem, 1.05vw, 0.95rem);
+  line-height: 1.2;
+  color: var(--vx-gray-dark);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* ============================================================================

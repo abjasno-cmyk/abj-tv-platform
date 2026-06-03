@@ -66,7 +66,11 @@ export function HomePage({
   const [playing, setPlaying] = useState(true);
   const [stageDot, setStageDot] = useState(0);
   const [channelDot, setChannelDot] = useState(0);
-  const [pendingChannel, setPendingChannel] = useState<string | null>(null);
+  // Sekce KANÁLY: otevřený kanál + jeho posledních ~4 videí (detail panel pod lištou).
+  const [openChannelName, setOpenChannelName] = useState<string | null>(null);
+  const [channelVideosByName, setChannelVideosByName] = useState<Record<string, LiveChannelVideo[]>>({});
+  const [channelLoading, setChannelLoading] = useState<string | null>(null);
+  const [channelError, setChannelError] = useState<Record<string, string>>({});
 
   const programItems = useMemo(
     () => days.flatMap((day) => day.items).filter((item) => Boolean(item.videoId)),
@@ -167,45 +171,60 @@ export function HomePage({
     };
   }, [stageItems.length, channels.length]);
 
-  // Výběr kanálu: pokud kanál nemá přednačtené video, doptáme se na nejnovější
-  // přes /api/channel-latest, ať jdou spustit i kanály bez položek ve feedu.
+  // Klik na kanál: otevři DETAIL PANEL a načti ~4 poslední videa kanálu (nepřehrává
+  // se rovnou — klik na konkrétní video v panelu pak otevře HeroScreen). Kanály bez
+  // přednačtených videí (např. Datarun) si je doptají přímo přes /api/channel-latest
+  // (YouTube), ať jdou taky zobrazit.
   const selectChannel = async (ch: LiveChannelGroup) => {
-    const firstVideo = ch.videos[0];
-    if (firstVideo) {
-      onSelectChannelVideo({ channelName: ch.channelName, video: firstVideo });
+    // Toggle: druhý klik na otevřený kanál panel zavře.
+    if (openChannelName === ch.channelName) {
+      setOpenChannelName(null);
       return;
     }
-    if (pendingChannel) return;
+    setOpenChannelName(ch.channelName);
+
+    if (ch.videos.length > 0) {
+      setChannelVideosByName((prev) => ({ ...prev, [ch.channelName]: ch.videos.slice(0, 4) }));
+      return;
+    }
+    if (channelVideosByName[ch.channelName]) return; // už načteno
     if (!ch.channelId && !ch.channelUrl && !ch.channelName.trim()) return;
 
-    setPendingChannel(ch.channelName);
+    setChannelLoading(ch.channelName);
+    setChannelError((prev) => ({ ...prev, [ch.channelName]: "" }));
     try {
       const params = new URLSearchParams();
       if (ch.channelId) params.set("channelId", ch.channelId);
       if (ch.channelUrl) params.set("channelUrl", ch.channelUrl);
       params.set("channelName", ch.channelName);
-      params.set("limit", "1");
+      params.set("limit", "4");
 
       const response = await fetch(`/api/channel-latest?${params.toString()}`, { cache: "no-store" });
       const payload = (await response.json().catch(() => ({}))) as {
         videos?: Array<{ videoId?: string; title?: string; thumbnail?: string; publishedAt?: string }>;
       };
-      const latest = payload.videos?.find((video) => video.videoId?.trim() && video.title?.trim());
-      if (latest?.videoId && latest.title) {
-        onSelectChannelVideo({
-          channelName: ch.channelName,
-          video: {
-            videoId: latest.videoId.trim(),
-            title: latest.title.trim(),
-            thumbnail: latest.thumbnail?.trim() || null,
-            publishedAt: latest.publishedAt?.trim() || new Date(0).toISOString(),
-          },
-        });
+      const videos = (payload.videos ?? [])
+        .map((video): LiveChannelVideo | null => {
+          const videoId = video.videoId?.trim();
+          const title = video.title?.trim();
+          if (!videoId || !title) return null;
+          return {
+            videoId,
+            title,
+            thumbnail: video.thumbnail?.trim() || null,
+            publishedAt: video.publishedAt?.trim() || new Date(0).toISOString(),
+          };
+        })
+        .filter((video): video is LiveChannelVideo => Boolean(video))
+        .slice(0, 4);
+      setChannelVideosByName((prev) => ({ ...prev, [ch.channelName]: videos }));
+      if (videos.length === 0) {
+        setChannelError((prev) => ({ ...prev, [ch.channelName]: "Kanál teď nemá dostupná videa." }));
       }
     } catch {
-      // Tiché selhání — kanál bez dostupných videí prostě nespustíme.
+      setChannelError((prev) => ({ ...prev, [ch.channelName]: "Videa kanálu se nepodařilo načíst." }));
     } finally {
-      setPendingChannel(null);
+      setChannelLoading(null);
     }
   };
 
@@ -371,7 +390,8 @@ export function HomePage({
               </>
             ) : (
               stageItems.map((it) => {
-                const isCurrent = Boolean(videoId) && it.videoId === videoId;
+                // „Právě hrané" = blok, který reálně běží v hero (sleduje playout smyčku).
+                const isCurrent = Boolean(currentVideoId) && it.videoId === currentVideoId;
                 return (
                   <button
                     type="button"
@@ -438,16 +458,17 @@ export function HomePage({
               </article>
             ) : (
               channels.map((ch) => {
-                const active = ch.channelName === channelName || ch.channelName === pendingChannel;
-                const isPending = ch.channelName === pendingChannel;
+                const active = ch.channelName === openChannelName;
+                const isLoading = ch.channelName === channelLoading;
                 return (
                   <button
                     type="button"
                     key={ch.channelName}
                     className={`channel-card${active ? " channel-card-active" : ""}`}
                     onClick={() => void selectChannel(ch)}
-                    aria-busy={isPending}
-                    style={isPending ? { opacity: 0.65 } : undefined}
+                    aria-busy={isLoading}
+                    aria-expanded={active}
+                    style={isLoading ? { opacity: 0.65 } : undefined}
                   >
                     {ch.avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -470,6 +491,41 @@ export function HomePage({
             </svg>
           </button>
         </div>
+
+        {/* DETAIL PANEL vybraného kanálu — ~4 poslední videa, klik otevře v HeroScreen. */}
+        {openChannelName ? (
+          <div className="channel-detail" aria-live="polite">
+            {channelLoading === openChannelName ? (
+              <p className="channel-detail-info">Načítám nejnovější videa…</p>
+            ) : (channelVideosByName[openChannelName]?.length ?? 0) > 0 ? (
+              <div className="channel-videos">
+                {channelVideosByName[openChannelName]!.map((video) => (
+                  <button
+                    type="button"
+                    key={video.videoId}
+                    className="channel-video"
+                    onClick={() => onSelectChannelVideo({ channelName: openChannelName, video })}
+                  >
+                    <span className="cv-thumb">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={video.thumbnail || `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`}
+                        alt=""
+                        loading="lazy"
+                      />
+                    </span>
+                    <span className="cv-title">{video.title}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="channel-detail-info">
+                {channelError[openChannelName] || "Tento kanál teď nemá dostupná videa."}
+              </p>
+            )}
+          </div>
+        ) : null}
+
         <div className="dots" aria-hidden="true">
           {Array.from({ length: DOT_COUNT }).map((_, i) => (
             <span key={i} className={i === channelDot ? "active" : undefined} />
