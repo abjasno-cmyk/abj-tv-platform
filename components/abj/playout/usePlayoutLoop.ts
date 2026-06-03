@@ -202,23 +202,34 @@ export function usePlayoutLoop({ enabled, initialBlock }: UsePlayoutLoopOptions)
     };
 
     const runLoop = async () => {
-      // OKAMŽITÉ pixely: seed (SSR now-playing) jen zobrazíme. Časování ale NEbereme
-      // ze seedu (nemá expected_ends_at) — hned voláme /program/now, ať máme reálný
-      // čas konce a přepínáme podle ČASOVAČE, ne podle YouTube ENDED.
-      if (seed?.videoId) {
-        setPhase("live");
-        setSurface({
-          kind: "youtube",
-          videoId: seed.videoId,
-          startSeconds: Math.max(0, Math.floor(seed.offsetSeconds ?? 0)),
-          title: seed.title,
-        });
-      } else {
-        showBridgeNow();
-      }
+      // Seed (SSR now-playing) hrajeme jako PRVNÍ blok — je to aktuální video
+      // programu. `/program/now` voláme až PO jeho konci, takže pomalá/selhaná
+      // první odpověď enginu (cold start) nezpůsobí safety-bridge (Windy) hned na
+      // startu. Konec videa spolehlivě detekuje polling pozice (ne YouTube ENDED).
+      let firstSeed: PlayoutBlock | null = seed?.videoId
+        ? {
+            block_id: "seed",
+            starts_at: new Date(0).toISOString(),
+            ends_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+            expected_ends_at: null,
+            video_id: seed.videoId,
+            title: seed.title,
+          }
+        : null;
+      if (!firstSeed) showBridgeNow();
 
       while (!token.cancelled && enabled) {
         const iterationStart = Date.now();
+
+        if (firstSeed) {
+          // Přehraj aktuální (seed) video. Po jeho konci pokračujeme rovnou na
+          // /program/now — BEZ handleBlockEnd (seed nemá reálný slot → falešná mezera).
+          await playBlock(firstSeed, Math.max(0, Math.floor(seed?.offsetSeconds ?? 0)));
+          firstSeed = null;
+          if (token.cancelled) return;
+          continue;
+        }
+
         const now = await fetchProgramNow();
         if (token.cancelled) return;
         if (!now || !now.block) {
