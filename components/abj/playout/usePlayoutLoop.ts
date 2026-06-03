@@ -171,7 +171,7 @@ export function usePlayoutLoop({ enabled, initialBlock }: UsePlayoutLoopOptions)
       await waitInterruptible(guardMs, token, true);
     };
 
-    const handleBlockEnd = async (block: PlayoutBlock): Promise<void> => {
+    const handleBlockEnd = async (block: PlayoutBlock, nextBlockId?: string | null): Promise<void> => {
       showBridgeNow(); // OKAMŽITĚ, ještě než dorazí API
       const slotEndMs = parseTimeMs(block.ends_at);
       const gapSec = slotEndMs ? Math.max(0, Math.floor((slotEndMs - Date.now()) / 1000)) : 0;
@@ -181,6 +181,7 @@ export function usePlayoutLoop({ enabled, initialBlock }: UsePlayoutLoopOptions)
       const fillPromise = fetchFillGap({
         seconds: Math.max(0, gapSec - VEROX_IDENT_SEC),
         currentBlockId: block.block_id,
+        nextBlockId,
       });
       await playFiller({ type: "boundary", duration_sec: VEROX_IDENT_SEC, title: IDENT_TITLE });
       if (token.cancelled) return;
@@ -224,7 +225,7 @@ export function usePlayoutLoop({ enabled, initialBlock }: UsePlayoutLoopOptions)
         // časovač podle expected_ends_at/ends_at.
         await playBlock(now.block, now.offset_sec);
         if (token.cancelled) return;
-        await handleBlockEnd(now.block);
+        await handleBlockEnd(now.block, now.next_block?.block_id ?? null);
       }
     };
 
