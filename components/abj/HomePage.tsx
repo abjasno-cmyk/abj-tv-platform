@@ -78,8 +78,10 @@ export function HomePage({
   );
 
   // PRÁVĚ HRAJE = vždy PROGRAM (Bloky z Replitu / EPG), ne videa kanálu z hera.
+  // Ukazujeme celý program dne (Replit jich servíruje ~50+), ne jen prvních pár —
+  // strop 100 jen bezpečně omezí degradovaný 7denní buildEPG fallback.
   const stageItems = useMemo(() => {
-    return programItems.slice(0, 12).map((item, index) => ({
+    return programItems.slice(0, 100).map((item, index) => ({
       key: `${item.videoId}-${index}`,
       videoId: item.videoId,
       title: item.title,
