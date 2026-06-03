@@ -15,6 +15,9 @@ type LivePageProps = {
   initialTitle: string;
   initialChannelName: string;
   initialStartSeconds?: number;
+  // true = lineární „živý" režim (běží nonstop playout smyčka); false = konkrétní
+  // VOD video (deep-link / klik) — po dohrání se vrátí na živo.
+  initialIsLive?: boolean;
   channels: LiveChannelGroup[];
 };
 
@@ -24,6 +27,7 @@ export default function LivePage({
   initialTitle,
   initialChannelName,
   initialStartSeconds = 0,
+  initialIsLive = true,
   channels,
 }: LivePageProps) {
   const { isAuthenticated } = useAuth();
@@ -38,7 +42,8 @@ export default function LivePage({
   const [videoId, setVideoId] = useState<string | null>(initialVideoId);
   const [title, setTitle] = useState(initialTitle);
   const [channelName, setChannelName] = useState(initialChannelName);
-  const [isLive, setIsLive] = useState(() => initialChannelName.toLowerCase().includes("abj"));
+  // Lineární režim (živý kanál) běží defaultně; konkrétní deep-link video = VOD.
+  const [isLive, setIsLive] = useState(() => initialIsLive);
   const [startSeconds, setStartSeconds] = useState(() => Math.max(0, Math.floor(initialStartSeconds)));
   const [remainingLabel, setRemainingLabel] = useState("za 12 min");
   const [progressPercent, setProgressPercent] = useState(22);

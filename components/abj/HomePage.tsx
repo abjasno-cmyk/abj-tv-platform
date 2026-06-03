@@ -121,6 +121,12 @@ export function HomePage({
   const registerPlayer = useCallback((player: PlayerHandle | null) => {
     playerRef.current = player;
   }, []);
+  // Konec videa: v živém režimu je to bonusový dřívější trigger pro smyčku;
+  // u VOD (vybrané video) dohrálo → vrať se na živý kanál (žádná slepá ulička).
+  const handleStageEnded = useCallback(() => {
+    if (isLive) playout.signalEnded();
+    else onReturnToLive();
+  }, [isLive, playout, onReturnToLive]);
 
   const scrollStage = (dir: -1 | 1) => {
     const el = stageRef.current;
@@ -261,7 +267,7 @@ export function HomePage({
           <PlayoutStage
             surface={heroSurface}
             muted={muted}
-            onEnded={playout.signalEnded}
+            onEnded={handleStageEnded}
             onPlayerReady={registerPlayer}
             onPlayingChange={setPlaying}
           />

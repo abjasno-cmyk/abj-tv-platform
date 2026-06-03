@@ -84,6 +84,38 @@ export function PlayoutStage({ surface, muted, onEnded, onPlayerReady, onPlaying
     }
   }, [isYouTube, onPlayerReady]);
 
+  // SPOLEHLIVÁ detekce konce videa: YouTube ENDED je nespolehlivý (reklama,
+  // embed restrikce, autoplay politika), proto aktivně pollujeme pozici vs délku.
+  // Jakmile video reálně dojede, ohlásíme konec (smyčka přepne na další).
+  const onEndedRef = useRef(onEnded);
+  useEffect(() => {
+    onEndedRef.current = onEnded;
+  }, [onEnded]);
+  const endedFiredRef = useRef(false);
+  useEffect(() => {
+    endedFiredRef.current = false; // nové video → smí znovu ohlásit konec
+  }, [activeVideoId]);
+  const fireEnded = () => {
+    if (endedFiredRef.current) return;
+    endedFiredRef.current = true;
+    onEndedRef.current();
+  };
+  useEffect(() => {
+    if (!isYouTube) return;
+    const id = window.setInterval(() => {
+      const player = playerRef.current;
+      if (!player) return;
+      const duration = player.getDuration?.() ?? 0;
+      const current = player.getCurrentTime?.() ?? 0;
+      // duration > 0 = konečné VOD (živý stream má 0/roste → poll nezasáhne).
+      if (duration > 0 && current >= duration - 1 && !endedFiredRef.current) {
+        endedFiredRef.current = true;
+        onEndedRef.current();
+      }
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [isYouTube, activeVideoId]);
+
   const advanceFallback = () => {
     const next = fallbacks[fallbackIndex];
     setFallbackIndex((index) => index + 1);
@@ -143,7 +175,7 @@ export function PlayoutStage({ surface, muted, onEnded, onPlayerReady, onPlaying
       onStateChange={(event) => {
         if (event.data === 1) onPlayingChange?.(true);
         else if (event.data === 2) onPlayingChange?.(false);
-        else if (event.data === 0) onEnded(); // ENDED = bonusový dřívější konec
+        else if (event.data === 0) fireEnded(); // ENDED = bonusový (dřívější) konec
       }}
       onError={() => {
         // Embed zakázaný / video nedostupné / rate limit → zkus další zdroj.

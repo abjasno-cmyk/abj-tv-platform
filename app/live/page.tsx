@@ -796,6 +796,7 @@ export default async function LivePageServer(
       initialTitle={initialTitle}
       initialChannelName={initialChannelName}
       initialStartSeconds={initialStartOffsetSeconds}
+      initialIsLive={!hasRequestedVideoId}
       channels={liveChannels}
     />
   );
