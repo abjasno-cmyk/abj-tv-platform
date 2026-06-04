@@ -4,7 +4,9 @@ import { proxyAnalyticalGet, proxyAnalyticalPost } from "@/lib/analyticalProxy";
 const BASE = "https://analytical-service-abjasno.replit.app";
 
 function mockFetchOnce(status: number, body: string) {
-  return vi.fn(async () => new Response(body, { status, headers: { "content-type": "application/json" } }));
+  return vi.fn(async (..._args: [input: RequestInfo | URL, init?: RequestInit]) =>
+    new Response(body, { status, headers: { "content-type": "application/json" } }),
+  );
 }
 
 beforeEach(() => {

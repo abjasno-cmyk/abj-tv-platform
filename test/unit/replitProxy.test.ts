@@ -4,7 +4,7 @@ import { proxyReplitGet, proxyReplitPost, resolveReplitBaseUrl } from "@/lib/rep
 const BASE = "https://attached-assets-abjasno.replit.app";
 
 function mockFetchOnce(status: number, body: string, contentType = "application/json") {
-  return vi.fn(async () =>
+  return vi.fn(async (..._args: [input: RequestInfo | URL, init?: RequestInit]) =>
     new Response(body, { status, headers: { "content-type": contentType } }),
   );
 }

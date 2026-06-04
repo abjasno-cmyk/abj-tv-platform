@@ -29,6 +29,7 @@ test/
   setup.ts                 # global afterEach cleanup (mocks/env/timers)
   stubs/                   # aliases for server-only / next-headers / next-cache
   unit/                    # pure-ish lib units + proxy contract tests
+  integration/             # data-layer tests with a mocked Supabase client
   live/                    # opt-in live Replit behavioral tests
 tests/
   e2e/
@@ -41,29 +42,40 @@ vitest.config.ts
 playwright.config.ts
 ```
 
-## What is covered in this first batch
+## What is covered
 
-Scope was **infra + critical core**, so the highest-risk, framework-light modules
-are covered first:
+Highest-risk, framework-light infra:
 
-- `lib/rateLimit.ts` — sliding-window limiter, IP resolution, 429 headers (~93%)
+- `lib/rateLimit.ts` — sliding-window limiter, IP resolution, 429 headers
 - `lib/cronAuth.ts` — timing-safe Vercel Cron auth (100%)
 - `lib/site.ts` — canonical host / site URL resolution (100%)
 - `lib/replitProxy.ts` — path allowlist, header/API-key forwarding, 404→next-base
-  fallthrough, 502 on upstream failure (~91%)
-- `lib/analyticalProxy.ts` — same contract for the analytical service (~88%)
+  fallthrough, 502 on upstream failure
+- `lib/analyticalProxy.ts` — same contract for the analytical service
 - `lib/buildPlaylist.ts` → `extractYoutubeHandle`
 - `lib/programEngine.ts` → `fillGapsWithAI` (timeline invariants)
 
+Data / domain logic:
+
+- `lib/jasne-zpravy.ts` — Prague-timezone date helpers, edition/date filter
+  normalization, day-range→UTC, slug/anchor, confidence, word count / read time,
+  metadata flags (pure helpers)
+- `lib/dayOverview.ts` — feed dedup, channel grouping, `buildStructuredFeedPayload`
+  topic/channel construction
+- `lib/wallModerationService.ts` — moderation rules (approve / pending / reject)
+- `lib/wallSecurity.ts` — text sanitization, salted identity hashing
+- `lib/wallService.ts` — list/create paths, validation, per-IP create rate limit,
+  schema/RLS error mapping (via a mocked Supabase client — see `test/integration/`)
+
 Plus Playwright smoke coverage of all public routes, the `/live` playout shell,
-and the proxy route handlers end-to-end.
+the proxy route handlers, and queue+playback end-to-end.
 
 ### Not yet covered (next iterations)
 
-Data-access-heavy modules need a Supabase test double or seeded data and are
-intentionally deferred: `api.ts`, `buildEPG.ts`, `jasne-zpravy.ts`,
-`wallService.ts`, `programFeedImport.ts`, `lib/studio/*`, `fetchVideos.ts`,
-`dayOverview.ts`. The proxy/live tests already exercise the Replit contract.
+Still need a Supabase double or seeded data: `api.ts`, `buildEPG.ts`,
+`programFeedImport.ts`, `lib/studio/*`, `fetchVideos.ts`. The proxy/live tests
+already exercise the Replit contract; component (React) tests and auth/admin E2E
+flows are future batches.
 
 ## How the Next.js runtime is handled in unit tests
 
