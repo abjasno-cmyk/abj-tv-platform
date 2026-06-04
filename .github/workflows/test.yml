@@ -1,0 +1,163 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # Daily prod/backend health monitor at 05:00 UTC.
+    - cron: "0 5 * * *"
+
+# Cancel superseded runs on the same ref (e.g. new push to a PR branch).
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Fast, hermetic. Runs on every PR to main and push to main. ──────────────
+  unit:
+    name: Unit & integration (Vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Vitest with coverage
+        run: npm run test:coverage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage
+          retention-days: 14
+
+  # ── Smoke E2E. Builds the PR's own code; data-driven specs auto-skip. ───────
+  e2e-smoke:
+    name: E2E smoke (Playwright)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      NEXT_PUBLIC_REPLIT_URL: ${{ secrets.NEXT_PUBLIC_REPLIT_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Install Playwright (chromium)
+        run: npx playwright install --with-deps chromium
+      - name: Run smoke / live-shell / api specs
+        run: npx playwright test smoke.spec.ts live.spec.ts api.spec.ts --project=chromium
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-smoke
+          path: playwright-report
+          retention-days: 14
+
+  # ── Queue + playback gate on PRs to main. Builds the PR with real data so the
+  #    playout has a populated queue, then asserts a video actually plays and the
+  #    queue swaps. Needs repo secrets, so only for same-repo PRs / pushes. ─────
+  e2e-data:
+    name: Queue & playback E2E (PR → main)
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'pull_request' || github.event_name == 'push') &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
+    env:
+      # Build-time + runtime env so /live renders a populated queue.
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      NEXT_PUBLIC_REPLIT_URL: ${{ secrets.NEXT_PUBLIC_REPLIT_URL }}
+      FEED_API_KEY: ${{ secrets.FEED_API_KEY }}
+      # Force the data-driven specs on against the PR's own built server.
+      E2E_WITH_DATA: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Install Playwright (chromium)
+        run: npx playwright install --with-deps chromium
+      - name: Run queue & playback specs
+        run: npx playwright test playback.spec.ts --project=chromium
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-playback
+          path: playwright-report
+          retention-days: 14
+
+  # ── Backend behavior + playout continuity gate on PRs to main. Hits the live
+  #    Replit backend directly (health, queue contract, continuity endpoints). ─
+  backend-live:
+    name: Replit backend & continuity (PR → main)
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'pull_request' || github.event_name == 'push') &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
+    env:
+      # Live tests target the PUBLISHED backend, not the app's NEXT_PUBLIC_REPLIT_URL
+      # secret (which may point at an ephemeral Replit dev instance). Override via
+      # the repo variable REPLIT_LIVE_URL if the published host ever changes.
+      REPLIT_LIVE_URL: ${{ vars.REPLIT_LIVE_URL || 'https://attached-assets-abjasno.replit.app' }}
+      REPLIT_API_KEY: ${{ secrets.FEED_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Run live backend + continuity tests
+        run: npm run test:live
+
+  # ── Scheduled prod monitor: same data/playback + backend checks, but against
+  #    the deployed production URL (catches backend/prod drift between PRs). ────
+  monitor:
+    name: Prod health monitor
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    env:
+      E2E_BASE_URL: ${{ vars.E2E_BASE_URL || 'https://abj-tv-platform-n7e8.vercel.app' }}
+      # Live tests target the PUBLISHED backend, not the app's NEXT_PUBLIC_REPLIT_URL
+      # secret (which may point at an ephemeral Replit dev instance). Override via
+      # the repo variable REPLIT_LIVE_URL if the published host ever changes.
+      REPLIT_LIVE_URL: ${{ vars.REPLIT_LIVE_URL || 'https://attached-assets-abjasno.replit.app' }}
+      REPLIT_API_KEY: ${{ secrets.FEED_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Install Playwright (chromium)
+        run: npx playwright install --with-deps chromium
+      - name: Queue & playback against prod
+        run: npx playwright test playback.spec.ts --project=chromium
+      - name: Backend + continuity against prod
+        run: npm run test:live
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-monitor
+          path: playwright-report
+          retention-days: 14
