@@ -12,6 +12,11 @@ function timingSafeEqualStr(provided: string, secret: string): boolean {
 // (Dřív se bralo jen `PROGRAM_CACHE_CRON_SECRET ?? CRON_SECRET` — když byl nastavený
 // ten první, ale Vercel posílal CRON_SECRET, vracelo to 401 a ingest se zastavil.)
 export function isCronAuthorized(request: Request): boolean {
+  // POZN.: Vercel podepisuje cron requesty `Authorization: Bearer <CRON_SECRET>`
+  // JEN když je env pojmenovaný přesně `CRON_SECRET`. Aby plánovaný cron prošel,
+  // musí být v projektu nastavený `CRON_SECRET` (ne jen `PROGRAM_CACHE_CRON_SECRET`).
+  // Hlavičku `x-vercel-cron-schedule` ZÁMĚRNĚ NEbereme jako autorizaci — je
+  // forgeable (může ji nastavit kdokoliv) → byl by to auth bypass.
   const secrets = [process.env.PROGRAM_CACHE_CRON_SECRET, process.env.CRON_SECRET]
     .map((value) => value?.trim())
     .filter((value): value is string => Boolean(value));

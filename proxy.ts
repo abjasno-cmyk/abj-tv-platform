@@ -21,11 +21,16 @@ function sanitizeEnvValue(value?: string): string | undefined {
 
 export async function proxy(request: NextRequest) {
   const requestHost = request.nextUrl.host.toLowerCase();
+  // Cron endpointy NESMÍ být kanonikalizované: Vercel cron fíruje proti generovanému
+  // deployment URL a redirecty NEnásleduje (Vercel docs) — 307 by cron zabil. Necháme
+  // je doběhnout na endpoint (auth řeší CRON_SECRET, ne host).
+  const isCronPath = request.nextUrl.pathname.startsWith("/api/program/v3/");
   // Canonicalize only on the production deployment. NODE_ENV is "production"
   // on every Vercel build (preview included), so gating on it bounced preview
   // deployments to prod and made branch visual review impossible. VERCEL_ENV
   // is "preview" on preview deployments and "production" only on production.
   const shouldCanonicalizeHost =
+    !isCronPath &&
     process.env.VERCEL_ENV === "production" &&
     /^abj-tv-platform-n7e8(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(requestHost) &&
     requestHost !== CANONICAL_VERCEL_HOST;
