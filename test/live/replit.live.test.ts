@@ -18,7 +18,10 @@ import { describe, it, expect, beforeAll } from "vitest";
  *   REPLIT_API_KEY    (sent as X-Api-Key when present)
  */
 
-const BASE = (process.env.REPLIT_LIVE_URL ?? "https://attached-assets-abjasno.replit.app").replace(/\/+$/, "");
+// Treat an empty env (e.g. an unset CI secret resolves to "") as "use default",
+// not as a literal empty base URL.
+const RAW_BASE = process.env.REPLIT_LIVE_URL?.trim();
+const BASE = (RAW_BASE && RAW_BASE.length > 0 ? RAW_BASE : "https://attached-assets-abjasno.replit.app").replace(/\/+$/, "");
 const API_KEY = process.env.REPLIT_API_KEY ?? process.env.FEED_API_KEY ?? "";
 const TIMEOUT_MS = 15_000;
 

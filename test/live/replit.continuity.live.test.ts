@@ -17,7 +17,9 @@ import { describe, it, expect } from "vitest";
  * Env: REPLIT_LIVE_URL (default prod), REPLIT_API_KEY (optional).
  */
 
-const BASE = (process.env.REPLIT_LIVE_URL ?? "https://attached-assets-abjasno.replit.app").replace(/\/+$/, "");
+// Treat an empty env (e.g. an unset CI secret resolves to "") as "use default".
+const RAW_BASE = process.env.REPLIT_LIVE_URL?.trim();
+const BASE = (RAW_BASE && RAW_BASE.length > 0 ? RAW_BASE : "https://attached-assets-abjasno.replit.app").replace(/\/+$/, "");
 const API_KEY = process.env.REPLIT_API_KEY ?? process.env.FEED_API_KEY ?? "";
 const TIMEOUT_MS = 15_000;
 
