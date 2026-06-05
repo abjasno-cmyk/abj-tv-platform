@@ -549,7 +549,7 @@
   text-overflow: ellipsis;
 }
 
-/* DETAIL PANEL kanálu — 4 poslední videa, klik otevře v HeroScreen. */
+/* DETAIL PANEL kanálu — poslední videa, klik otevře v HeroScreen. */
 .hf .channel-detail {
   margin: clamp(12px, 1.4vw, 20px) 0 0;
 }

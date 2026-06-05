@@ -1,5 +1,6 @@
 import { buildEPG } from "@/lib/buildEPG";
 import { loadStructuredFeedPayload, parsePublishedTimestamp, type FeedVideo } from "@/lib/dayOverview";
+import { selectLatestNonShortChannelVideos } from "@/lib/liveChannelVideos";
 import { createSupabaseAnonServerClient } from "@/lib/supabase/server";
 import { getNowPlaying, getProgram } from "@/lib/programEngine";
 import LivePage from "@/app/live/LivePage";
@@ -596,15 +597,23 @@ function mapLiveChannelsFromFeed(channels: Record<string, FeedVideo[]>): LiveCha
       avatarUrl: null,
       channelId: null,
       channelUrl: null,
-      videos: [...videos]
-        .filter((video) => typeof video.video_id === "string" && video.video_id.trim().length > 0)
-        .sort((a, b) => parsePublishedTimestamp(b.published_at) - parsePublishedTimestamp(a.published_at))
-        .map((video) => ({
-          videoId: video.video_id,
-          title: video.title,
-          thumbnail: video.thumbnail ?? null,
-          publishedAt: video.published_at,
-        })),
+      videos: selectLatestNonShortChannelVideos(
+        [...videos]
+          .filter((video) => typeof video.video_id === "string" && video.video_id.trim().length > 0)
+          .sort((a, b) => parsePublishedTimestamp(b.published_at) - parsePublishedTimestamp(a.published_at))
+          .map((video) => ({
+              videoId: video.video_id,
+              title: video.title,
+              thumbnail: video.thumbnail ?? null,
+              publishedAt: video.published_at,
+              durationMin: video.duration_min ?? null,
+            })),
+      ).map(({ videoId, title, thumbnail, publishedAt }) => ({
+        videoId,
+        title,
+        thumbnail,
+        publishedAt,
+      })),
     }))
     .sort((a, b) => a.channelName.localeCompare(b.channelName, "cs-CZ"));
 }

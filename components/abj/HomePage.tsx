@@ -1,5 +1,7 @@
 "use client";
 
+import { LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT } from "@/lib/liveChannelVideos";
+
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -188,7 +190,7 @@ export function HomePage({
     return () => window.clearTimeout(id);
   }, [currentVideoId, stageItems.length]);
 
-  // Klik na kanál: otevři DETAIL PANEL a načti ~4 poslední videa kanálu (nepřehrává
+  // Klik na kanál: otevři DETAIL PANEL a načti poslední videa kanálu (nepřehrává
   // se rovnou — klik na konkrétní video v panelu pak otevře HeroScreen). Kanály bez
   // přednačtených videí (např. Datarun) si je doptají přímo přes /api/channel-latest
   // (YouTube), ať jdou taky zobrazit.
@@ -201,7 +203,10 @@ export function HomePage({
     setOpenChannelName(ch.channelName);
 
     if (ch.videos.length > 0) {
-      setChannelVideosByName((prev) => ({ ...prev, [ch.channelName]: ch.videos.slice(0, 4) }));
+      setChannelVideosByName((prev) => ({
+        ...prev,
+        [ch.channelName]: ch.videos.slice(0, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT),
+      }));
       return;
     }
     if (channelVideosByName[ch.channelName]) return; // už načteno
@@ -214,7 +219,7 @@ export function HomePage({
       if (ch.channelId) params.set("channelId", ch.channelId);
       if (ch.channelUrl) params.set("channelUrl", ch.channelUrl);
       params.set("channelName", ch.channelName);
-      params.set("limit", "4");
+      params.set("limit", String(LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT));
 
       const response = await fetch(`/api/channel-latest?${params.toString()}`, { cache: "no-store" });
       const payload = (await response.json().catch(() => ({}))) as {
@@ -233,7 +238,7 @@ export function HomePage({
           };
         })
         .filter((video): video is LiveChannelVideo => Boolean(video))
-        .slice(0, 4);
+        .slice(0, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT);
       setChannelVideosByName((prev) => ({ ...prev, [ch.channelName]: videos }));
       if (videos.length === 0) {
         setChannelError((prev) => ({ ...prev, [ch.channelName]: "Kanál teď nemá dostupná videa." }));
@@ -510,7 +515,7 @@ export function HomePage({
           </button>
         </div>
 
-        {/* DETAIL PANEL vybraného kanálu — ~4 poslední videa, klik otevře v HeroScreen. */}
+        {/* DETAIL PANEL vybraného kanálu — poslední videa, klik otevře v HeroScreen. */}
         {openChannelName ? (
           <div className="channel-detail" aria-live="polite">
             {channelLoading === openChannelName ? (
