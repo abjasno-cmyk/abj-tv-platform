@@ -1,11 +1,17 @@
 "use client";
 
+import { LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT } from "@/lib/liveChannelVideos";
+
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { HeroAudienceIndicator } from "@/components/abj/HeroAudienceIndicator";
 import { VeroxHeader } from "@/components/abj/VeroxHeader";
+import { HeroPlayerBar, type PlaybackSpeed } from "@/components/abj/playout/HeroPlayerBar";
+import { VideoCommentsDrawer } from "@/components/auth/VideoCommentsDrawer";
 import { PlayoutStage } from "@/components/abj/playout/PlayoutStage";
 import { usePlayoutLoop } from "@/components/abj/playout/usePlayoutLoop";
+import { clampSeekSeconds } from "@/lib/playerTime";
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import type { DayProgram, ProgramItem } from "@/lib/epg-types";
 import type { PlayerHandle, PlayoutSurface } from "@/lib/playout/types";
@@ -52,8 +58,10 @@ export function HomePage({
   onSelect,
   onReturnToLive,
   onPlaybackSample,
-  onSelectChannelVideo,
+  onSelectChannelVideo: onSelectChannelVideoProp,
 }: HomePageProps) {
+  const [clientChannels, setClientChannels] = useState<LiveChannelGroup[]>([]);
+  const displayChannels = channels.length > 0 ? channels : clientChannels;
   const heroRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<PlayerHandle | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -64,18 +72,69 @@ export function HomePage({
   // (onReady aplikuje `muted` stav). Auto-odmutovat hned po načtení nelze — browser
   // to bez gesta zablokuje. Viz preference [[verox-videos-always-unmuted]].
   const [muted, setMuted] = useState(true);
+  const [volume, setVolume] = useState(100);
   const [playing, setPlaying] = useState(true);
   const [stageDot, setStageDot] = useState(0);
   const [channelDot, setChannelDot] = useState(0);
-  // Sekce KANÁLY: otevřený kanál + jeho posledních ~4 videí (detail panel pod lištou).
+  // Sekce KANÁLY: otevřený kanál + až 24 videí bez Shorts (detail panel pod lištou).
+  const [commentsOpen, setCommentsOpen] = useState(false);
   const [openChannelName, setOpenChannelName] = useState<string | null>(null);
   const [channelVideosByName, setChannelVideosByName] = useState<Record<string, LiveChannelVideo[]>>({});
   const [channelLoading, setChannelLoading] = useState<string | null>(null);
   const [channelError, setChannelError] = useState<Record<string, string>>({});
+  const [playbackRate, setPlaybackRate] = useState<PlaybackSpeed>(1);
+  const [playerCurrentTime, setPlayerCurrentTime] = useState(0);
+  const [playerDuration, setPlayerDuration] = useState(0);
+  const [playerBarExpanded, setPlayerBarExpanded] = useState(false);
+
+  const onSelectChannelVideo = useCallback(
+    (payload: { channelName: string; video: LiveChannelVideo }) => {
+      setPlayerBarExpanded(true);
+      onSelectChannelVideoProp(payload);
+    },
+    [onSelectChannelVideoProp],
+  );
+
+  useEffect(() => {
+    if (channels.length > 0) return;
+    let cancelled = false;
+    void fetch("/api/live/channels", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((payload: { channels?: LiveChannelGroup[] }) => {
+        if (cancelled) return;
+        if (Array.isArray(payload.channels) && payload.channels.length > 0) {
+          setClientChannels(payload.channels);
+        }
+      })
+      .catch(() => {
+        // Kanály zůstanou prázdné — sekce zobrazí fallback.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [channels.length]);
+
+  const scrollToChannels = useCallback(() => {
+    const target = document.getElementById("hf-channels");
+    if (!target) return;
+    const navHeader = document.querySelector("header");
+    const headerOffset =
+      navHeader instanceof HTMLElement ? Math.ceil(navHeader.getBoundingClientRect().height) + 10 : 78;
+    const top = Math.max(0, window.scrollY + target.getBoundingClientRect().top - headerOffset);
+    window.scrollTo({ top, behavior: "smooth" });
+  }, []);
 
   const programItems = useMemo(
     () => days.flatMap((day) => day.items).filter((item) => Boolean(item.videoId)),
     [days],
+  );
+
+  const handleSelectProgram = useCallback(
+    (item: ProgramItem) => {
+      onSelect(item);
+      if (item.type !== "live") setPlayerBarExpanded(true);
+    },
+    [onSelect],
   );
 
   // PRÁVĚ HRAJE = vždy PROGRAM (Bloky z Replitu / EPG), ne videa kanálu z hera.
@@ -87,9 +146,9 @@ export function HomePage({
       videoId: item.videoId,
       title: item.title,
       thumb: thumbFor(item),
-      onClick: () => onSelect(item),
+      onClick: () => handleSelectProgram(item),
     }));
-  }, [programItems, onSelect]);
+  }, [programItems, handleSelectProgram]);
 
   const offset = Math.max(0, Math.floor(startSeconds));
 
@@ -129,6 +188,8 @@ export function HomePage({
     return map;
   }, [days]);
   const currentVideoId = heroSurface?.kind === "youtube" ? heroSurface.videoId : null;
+  const activeCommentVideoId = currentVideoId ?? videoId;
+  const playerControlsEnabled = heroSurface?.kind === "youtube" && Boolean(activeCommentVideoId);
   const currentEpg = currentVideoId ? epgInfoById.get(currentVideoId) : null;
   const displayTitle =
     (heroSurface?.kind === "youtube" ? heroSurface.title : undefined) ?? currentEpg?.title ?? title;
@@ -172,7 +233,7 @@ export function HomePage({
       window.removeEventListener("resize", onStageScroll);
       window.removeEventListener("resize", onTrackScroll);
     };
-  }, [stageItems.length, channels.length]);
+  }, [stageItems.length, displayChannels.length]);
 
   // Vycentruj PRÁVĚ HRAJE na aktuálně hrané video (při startu i při každém přepnutí bloku).
   useEffect(() => {
@@ -188,7 +249,7 @@ export function HomePage({
     return () => window.clearTimeout(id);
   }, [currentVideoId, stageItems.length]);
 
-  // Klik na kanál: otevři DETAIL PANEL a načti ~4 poslední videa kanálu (nepřehrává
+  // Klik na kanál: otevři DETAIL PANEL a načti poslední videa kanálu (nepřehrává
   // se rovnou — klik na konkrétní video v panelu pak otevře HeroScreen). Kanály bez
   // přednačtených videí (např. Datarun) si je doptají přímo přes /api/channel-latest
   // (YouTube), ať jdou taky zobrazit.
@@ -201,7 +262,11 @@ export function HomePage({
     setOpenChannelName(ch.channelName);
 
     if (ch.videos.length > 0) {
-      setChannelVideosByName((prev) => ({ ...prev, [ch.channelName]: ch.videos.slice(0, 4) }));
+      setChannelVideosByName((prev) => ({
+        ...prev,
+        [ch.channelName]: ch.videos.slice(0, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT),
+      }));
+      setPlayerBarExpanded(true);
       return;
     }
     if (channelVideosByName[ch.channelName]) return; // už načteno
@@ -214,7 +279,7 @@ export function HomePage({
       if (ch.channelId) params.set("channelId", ch.channelId);
       if (ch.channelUrl) params.set("channelUrl", ch.channelUrl);
       params.set("channelName", ch.channelName);
-      params.set("limit", "4");
+      params.set("limit", String(LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT));
 
       const response = await fetch(`/api/channel-latest?${params.toString()}`, { cache: "no-store" });
       const payload = (await response.json().catch(() => ({}))) as {
@@ -233,8 +298,9 @@ export function HomePage({
           };
         })
         .filter((video): video is LiveChannelVideo => Boolean(video))
-        .slice(0, 4);
+        .slice(0, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT);
       setChannelVideosByName((prev) => ({ ...prev, [ch.channelName]: videos }));
+      if (videos.length > 0) setPlayerBarExpanded(true);
       if (videos.length === 0) {
         setChannelError((prev) => ({ ...prev, [ch.channelName]: "Kanál teď nemá dostupná videa." }));
       }
@@ -244,6 +310,60 @@ export function HomePage({
       setChannelLoading(null);
     }
   };
+
+  // Pozice přehrávače pro vlastní posuvník / čas (YouTube iframe, controls:0).
+  useEffect(() => {
+    if (!playerControlsEnabled) {
+      setPlayerCurrentTime(0);
+      setPlayerDuration(0);
+      return;
+    }
+    const id = window.setInterval(() => {
+      const player = playerRef.current;
+      if (!player) return;
+      const duration = Math.max(0, Math.floor(player.getDuration?.() ?? 0));
+      const current = Math.max(0, Math.floor(player.getCurrentTime?.() ?? 0));
+      setPlayerDuration(duration);
+      setPlayerCurrentTime(current);
+    }, 500);
+    return () => window.clearInterval(id);
+  }, [playerControlsEnabled, currentVideoId]);
+
+  const seekPlayerTo = useCallback(
+    (seconds: number) => {
+      const player = playerRef.current;
+      if (!player?.seekTo) return;
+      const target = clampSeekSeconds(seconds, playerDuration);
+      player.seekTo(target, true);
+      setPlayerCurrentTime(target);
+    },
+    [playerDuration],
+  );
+
+  useEffect(() => {
+    if (!playerControlsEnabled) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT")
+      ) {
+        return;
+      }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        seekPlayerTo(playerCurrentTime - (event.shiftKey ? 30 : 10));
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        seekPlayerTo(playerCurrentTime + (event.shiftKey ? 30 : 10));
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [playerControlsEnabled, playerCurrentTime, seekPlayerTo]);
 
   // Sledování pozice pro „pokračovat ve sledování" — jen u VOD (ne v živé smyčce,
   // kde se přehrávaný blok mění sám a videoId prop neodpovídá běžícímu videu).
@@ -268,14 +388,48 @@ export function HomePage({
     setPlaying(!playing);
   };
 
-  const toggleMute = () => {
-    const next = !muted;
-    setMuted(next);
+  const applyAudioToPlayer = useCallback((nextMuted: boolean, nextVolume: number) => {
     const p = playerRef.current;
     if (!p) return;
-    if (next) p.mute?.();
-    else p.unMute?.();
-  };
+    const level = Math.min(100, Math.max(0, Math.round(nextVolume)));
+    if (nextMuted || level === 0) {
+      p.mute?.();
+      return;
+    }
+    p.unMute?.();
+    try {
+      p.setVolume?.(level);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleVolumeChange = useCallback(
+    (next: number) => {
+      const level = Math.min(100, Math.max(0, Math.round(next)));
+      setVolume(level);
+      if (level === 0) {
+        setMuted(true);
+        applyAudioToPlayer(true, 0);
+        return;
+      }
+      setMuted(false);
+      applyAudioToPlayer(false, level);
+    },
+    [applyAudioToPlayer],
+  );
+
+  const toggleMute = useCallback(() => {
+    if (muted) {
+      const restore = volume > 0 ? volume : 100;
+      if (volume <= 0) setVolume(100);
+      setMuted(false);
+      applyAudioToPlayer(false, restore);
+      return;
+    }
+    setMuted(true);
+    applyAudioToPlayer(true, volume);
+  }, [muted, volume, applyAudioToPlayer]);
 
   const toggleFullscreen = () => {
     const el = heroRef.current as (HTMLDivElement & { webkitRequestFullscreen?: () => void }) | null;
@@ -298,11 +452,13 @@ export function HomePage({
       {/* STAGE: na desktopu dvousloupec (feature vlevo, video vpravo) */}
       <div className="hf-stage">
       {/* HERO */}
-      <section className="hero" aria-label="Živé vysílání">
+      <section id="live-player-shell" className="hero" aria-label="Živé vysílání">
         <div className="hero-media" ref={heroRef}>
           <PlayoutStage
             surface={heroSurface}
             muted={muted}
+            volume={volume}
+            playbackRate={playbackRate}
             onEnded={handleStageEnded}
             onPlayerReady={registerPlayer}
             onPlayingChange={setPlaying}
@@ -311,6 +467,7 @@ export function HomePage({
               se hover ovládání YouTube (titulek, sdílení, „More videos", logo)
               vůbec nezobrazí a nic neodvede diváka pryč. Jediný ovladač jsou naše
               3 tlačítka v .hero-ctrls (z-index nad guardem). */}
+          <HeroAudienceIndicator />
           <span className="hero-guard" aria-hidden="true" />
           <div className="hero-ctrls">
             <button
@@ -362,6 +519,21 @@ export function HomePage({
               )}
             </button>
           </div>
+          <HeroPlayerBar
+            enabled={playerControlsEnabled}
+            expanded={playerBarExpanded}
+            onExpandedChange={setPlayerBarExpanded}
+            currentTime={playerCurrentTime}
+            duration={playerDuration}
+            onSeek={seekPlayerTo}
+            playbackRate={playbackRate}
+            onPlaybackRateChange={setPlaybackRate}
+            volume={volume}
+            muted={muted}
+            onVolumeChange={handleVolumeChange}
+            onMuteToggle={toggleMute}
+            onScrollToChannels={displayChannels.length > 0 ? scrollToChannels : undefined}
+          />
         </div>
         <button type="button" className="live-badge" onClick={onReturnToLive} aria-label="Přepnout na živé vysílání">
           ŽIVÉ
@@ -372,12 +544,26 @@ export function HomePage({
 
       {/* FEATURE SUMMARY */}
       <section className="feature-summary" aria-labelledby="hf-featured">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="comment-icon" src="/design/icons/ikona_komentovat.png" alt="" />
+        <button
+          type="button"
+          className="comment-icon-btn"
+          onClick={() => setCommentsOpen(true)}
+          aria-label="Otevřít komentáře"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="comment-icon" src="/design/icons/ikona_komentovat.png" alt="" />
+        </button>
         <div className="feature-copy">
           <h1 id="hf-featured">{displayTitle}</h1>
-          <p>{displayChannel}</p>
-        </div>
+        <p>{displayChannel}</p>
+        {displayChannels.length > 0 ? (
+          <p className="hero-pick-hint">
+            <button type="button" className="hero-pick-hint-btn" onClick={scrollToChannels}>
+              Vyberte jiné video v sekci KANÁLY níže ↓
+            </button>
+          </p>
+        ) : null}
+      </div>
       </section>
       </div>
       {/* /STAGE */}
@@ -470,12 +656,12 @@ export function HomePage({
             </svg>
           </button>
           <div className="channel-track" ref={channelTrackRef} aria-label="Kanály">
-            {channels.length === 0 ? (
+            {displayChannels.length === 0 ? (
               <article className="channel-card">
                 <span className="ch-name">Připravujeme…</span>
               </article>
             ) : (
-              channels.map((ch) => {
+              displayChannels.map((ch) => {
                 const active = ch.channelName === openChannelName;
                 const isLoading = ch.channelName === channelLoading;
                 return (
@@ -510,7 +696,7 @@ export function HomePage({
           </button>
         </div>
 
-        {/* DETAIL PANEL vybraného kanálu — ~4 poslední videa, klik otevře v HeroScreen. */}
+        {/* DETAIL PANEL vybraného kanálu — poslední videa, klik otevře v HeroScreen. */}
         {openChannelName ? (
           <div className="channel-detail" aria-live="polite">
             {channelLoading === openChannelName ? (
@@ -552,6 +738,12 @@ export function HomePage({
       </section>
       </div>
       {/* /hf-body */}
+      <VideoCommentsDrawer
+        open={commentsOpen}
+        onClose={() => setCommentsOpen(false)}
+        videoId={activeCommentVideoId}
+        videoTitle={displayTitle}
+      />
     </div>
   );
 }

@@ -52,3 +52,19 @@ describe("LEGACY_VERCEL_HOST_PATTERN", () => {
     expect(LEGACY_VERCEL_HOST_PATTERN.test("evil-abj-tv-platform-n7e8.vercel.app.attacker.com")).toBe(false);
   });
 });
+
+describe("resolveAuthCallbackOrigin", () => {
+  it("keeps preview deployment host after OAuth", async () => {
+    const { resolveAuthCallbackOrigin } = await loadSite();
+    const previewUrl = new URL("https://abj-tv-platform-n7e8-git-cursor-pr-120.vercel.app/auth/callback");
+    expect(resolveAuthCallbackOrigin(previewUrl)).toBe(
+      "https://abj-tv-platform-n7e8-git-cursor-pr-120.vercel.app",
+    );
+  });
+
+  it("keeps custom domain on production", async () => {
+    const { resolveAuthCallbackOrigin } = await loadSite();
+    const veroxUrl = new URL("https://www.verox.cz/auth/callback");
+    expect(resolveAuthCallbackOrigin(veroxUrl)).toBe("https://www.verox.cz");
+  });
+});

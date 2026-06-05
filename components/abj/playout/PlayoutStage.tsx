@@ -8,6 +8,8 @@ import type { PlayerHandle, PlayoutSourceCandidate, PlayoutSurface } from "@/lib
 interface PlayoutStageProps {
   surface: PlayoutSurface | null;
   muted: boolean;
+  volume?: number;
+  playbackRate?: number;
   // Stage hlásí dřívější konec videa (YouTube ENDED) — bonus trigger pro smyčku.
   onEnded: () => void;
   onPlayerReady?: (player: PlayerHandle | null) => void;
@@ -16,7 +18,29 @@ interface PlayoutStageProps {
 
 const IDENT_LOGO = "/design/brand/verox-logo.png";
 
-export function PlayoutStage({ surface, muted, onEnded, onPlayerReady, onPlayingChange }: PlayoutStageProps) {
+function applyPlayerAudio(player: PlayerHandle, muted: boolean, volume: number) {
+  const level = Math.min(100, Math.max(0, Math.round(volume)));
+  if (muted || level === 0) {
+    player.mute?.();
+    return;
+  }
+  player.unMute?.();
+  try {
+    player.setVolume?.(level);
+  } catch {
+    // Některé embedy hlasitost nepodporují.
+  }
+}
+
+export function PlayoutStage({
+  surface,
+  muted,
+  volume = 100,
+  playbackRate = 1,
+  onEnded,
+  onPlayerReady,
+  onPlayingChange,
+}: PlayoutStageProps) {
   const playerRef = useRef<PlayerHandle | null>(null);
   const isYouTube = surface?.kind === "youtube";
   const primaryVideoId = isYouTube ? surface.videoId : "";
@@ -60,13 +84,21 @@ export function PlayoutStage({ surface, muted, onEnded, onPlayerReady, onPlaying
     [],
   );
 
-  // Aplikuj mute, když se změní.
   useEffect(() => {
     const player = playerRef.current;
     if (!player) return;
-    if (muted) player.mute?.();
-    else player.unMute?.();
-  }, [muted]);
+    applyPlayerAudio(player, muted, volume);
+  }, [muted, volume, activeVideoId]);
+
+  useEffect(() => {
+    const player = playerRef.current;
+    if (!player?.setPlaybackRate) return;
+    try {
+      player.setPlaybackRate(playbackRate);
+    } catch {
+      // Některá videa (živý stream) rychlost nepodporují.
+    }
+  }, [playbackRate, activeVideoId]);
 
   // Když nehrajeme YouTube (ident/embed/weather), zruš referenci na (zničený)
   // přehrávač, aby na něj ovládání nesahalo.
@@ -164,11 +196,14 @@ export function PlayoutStage({ surface, muted, onEnded, onPlayerReady, onPlaying
         const player = event.target as unknown as PlayerHandle;
         playerRef.current = player;
         onPlayerReady?.(player);
-        // Aplikuj preferenci zvuku na každé nové video (odmutování drží napříč přepnutími).
-        if (muted) player.mute?.();
-        else player.unMute?.();
+        applyPlayerAudio(player, muted, volume);
         if (startSeconds > 0) {
           window.setTimeout(() => player.seekTo?.(startSeconds, true), 300);
+        }
+        try {
+          player.setPlaybackRate?.(playbackRate);
+        } catch {
+          // ignore unsupported rate on live streams
         }
       }}
       onStateChange={(event) => {

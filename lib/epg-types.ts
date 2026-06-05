@@ -32,6 +32,7 @@ export type CachedVideo = {
   video_type: "vod" | "upcoming" | "live";
   channel_name: string;
   is_abj: boolean;
+  duration_min?: number | null;
   created_at: string;
 };
 

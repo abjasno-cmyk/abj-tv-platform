@@ -5,12 +5,8 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { LoginModal } from "@/components/auth/LoginModal";
-import { CANONICAL_HOST, LEGACY_VERCEL_HOST_PATTERN } from "@/lib/site";
 
 const PENDING_CONSENTS_KEY = "verox_pending_consents_v1";
-// Preview deployments must stay on their own host (visual review before
-// merge). Only the production deployment canonicalizes the host.
-const IS_PREVIEW_DEPLOYMENT = process.env.NEXT_PUBLIC_VERCEL_ENV === "preview";
 
 type ViewerProfile = {
   id: string;
@@ -83,40 +79,13 @@ function clearPendingConsentsStorage() {
   }
 }
 
-function resolvePreferredAuthOrigin(isPreview: boolean): string | null {
-  if (typeof window === "undefined") return null;
-  const protocol = window.location.protocol || "https:";
-  const host = window.location.host;
-  // Na preview deploymentu zůstaň na aktuálním (preview) hostu — nepřesměrovávej
-  // login na produkci.
-  if (isPreview) return `${protocol}//${host}`;
-  if (LEGACY_VERCEL_HOST_PATTERN.test(host) && host.toLowerCase() !== CANONICAL_HOST) {
-    return `${protocol}//${CANONICAL_HOST}`;
-  }
-  return `${protocol}//${host}`;
-}
-
-function redirectToPreferredAuthOriginIfNeeded(isPreview: boolean): boolean {
-  if (typeof window === "undefined") return false;
-  if (isPreview) return false;
-  const preferredOrigin = resolvePreferredAuthOrigin(isPreview);
-  if (!preferredOrigin) return false;
-  const currentOrigin = `${window.location.protocol}//${window.location.host}`;
-  if (preferredOrigin === currentOrigin) return false;
-  window.location.replace(`${preferredOrigin}${window.location.pathname}${window.location.search}${window.location.hash}`);
-  return true;
-}
-
 export function AuthProvider({
   children,
-  vercelEnv,
 }: {
   children: React.ReactNode;
+  /** @deprecated Passed from layout for backwards compatibility; ignored. */
   vercelEnv?: string;
 }) {
-  // Spolehlivá detekce preview: VERCEL_ENV se předává ze serverového layoutu
-  // (NEXT_PUBLIC_VERCEL_ENV se do klientského bundle nedostane).
-  const isPreviewDeployment = vercelEnv === "preview" || IS_PREVIEW_DEPLOYMENT;
   const supabase = useMemo<SupabaseClient | null>(() => {
     try {
       return createSupabaseBrowserClient();
@@ -135,16 +104,13 @@ export function AuthProvider({
   const lastBootstrappedUserIdRef = useRef<string | null>(null);
   const lastSyncedAccessTokenRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    redirectToPreferredAuthOriginIfNeeded(isPreviewDeployment);
-  }, [isPreviewDeployment]);
-
   const syncServerSession = useCallback(async (accessToken: string, refreshToken?: string | null) => {
     if (!accessToken) return;
     if (lastSyncedAccessTokenRef.current === accessToken) return;
     try {
       const response = await fetch("/api/auth/session-sync", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           accessToken,
@@ -221,7 +187,7 @@ export function AuthProvider({
       }
       lastBootstrappedUserIdRef.current = currentUser.id;
     },
-    []
+    [],
   );
 
   useEffect(() => {
@@ -290,7 +256,7 @@ export function AuthProvider({
       openLoginModal(intent);
       return false;
     },
-    [openLoginModal, user]
+    [openLoginModal, user],
   );
 
   const signOut = useCallback(async () => {
@@ -303,13 +269,16 @@ export function AuthProvider({
     setModalError(null);
   }, [clearServerSession, supabase]);
 
+  const buildOAuthRedirectTo = useCallback(() => {
+    if (typeof window === "undefined") return undefined;
+    const nextPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
+  }, []);
+
   const handleOAuth = useCallback(
     async (provider: "google" | "facebook", options: { termsAccepted: boolean; newsletterOptIn: boolean }) => {
       if (!supabase) {
         setModalError("Přihlášení není dostupné: chybí konfigurace Supabase.");
-        return;
-      }
-      if (redirectToPreferredAuthOriginIfNeeded(isPreviewDeployment)) {
         return;
       }
       setBusyProvider(provider);
@@ -319,20 +288,11 @@ export function AuthProvider({
         newsletterOptIn: options.newsletterOptIn,
         source: "login_modal",
       });
-      const nextPath =
-        typeof window !== "undefined"
-          ? `${window.location.pathname}${window.location.search}${window.location.hash}`
-          : "/live";
-      const preferredOrigin = resolvePreferredAuthOrigin(isPreviewDeployment);
-      const redirectTo =
-        preferredOrigin
-          ? `${preferredOrigin}/auth/callback?next=${encodeURIComponent(nextPath)}`
-          : undefined;
 
       const result = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo,
+          redirectTo: buildOAuthRedirectTo(),
         },
       });
 
@@ -341,16 +301,13 @@ export function AuthProvider({
         setModalError(result.error.message);
       }
     },
-    [supabase, isPreviewDeployment]
+    [buildOAuthRedirectTo, supabase],
   );
 
   const handleEmail = useCallback(
     async (email: string, options: { termsAccepted: boolean; newsletterOptIn: boolean }) => {
       if (!supabase) {
         setModalError("Přihlášení není dostupné: chybí konfigurace Supabase.");
-        return;
-      }
-      if (redirectToPreferredAuthOriginIfNeeded(isPreviewDeployment)) {
         return;
       }
       setBusyProvider("email");
@@ -361,20 +318,10 @@ export function AuthProvider({
         source: "magic_link",
       });
 
-      const nextPath =
-        typeof window !== "undefined"
-          ? `${window.location.pathname}${window.location.search}${window.location.hash}`
-          : "/live";
-      const preferredOrigin = resolvePreferredAuthOrigin(isPreviewDeployment);
-      const redirectTo =
-        preferredOrigin
-          ? `${preferredOrigin}/auth/callback?next=${encodeURIComponent(nextPath)}`
-          : undefined;
-
       const result = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: redirectTo,
+          emailRedirectTo: buildOAuthRedirectTo(),
         },
       });
 
@@ -385,7 +332,7 @@ export function AuthProvider({
       }
       setModalError("Na e-mail jsme poslali bezpečný odkaz pro přihlášení.");
     },
-    [supabase, isPreviewDeployment]
+    [buildOAuthRedirectTo, supabase],
   );
 
   const value = useMemo<AuthContextValue>(
@@ -400,7 +347,7 @@ export function AuthProvider({
       signOut,
       refreshProfile,
     }),
-    [closeLoginModal, loading, openLoginModal, profile, refreshProfile, requestAuth, signOut, user]
+    [closeLoginModal, loading, openLoginModal, profile, refreshProfile, requestAuth, signOut, user],
   );
 
   return (

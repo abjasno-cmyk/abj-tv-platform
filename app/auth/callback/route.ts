@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 
-import { CANONICAL_HOST, LEGACY_VERCEL_HOST_PATTERN } from "@/lib/site";
+import { resolveAuthCallbackOrigin } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -33,10 +33,7 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const next = safeNextPath(url.searchParams.get("next"));
-  const requestHost = url.host.toLowerCase();
-  const shouldCanonicalizeHost =
-    LEGACY_VERCEL_HOST_PATTERN.test(requestHost) && requestHost !== CANONICAL_HOST;
-  const origin = `${url.protocol}//${shouldCanonicalizeHost ? CANONICAL_HOST : url.host}`;
+  const origin = resolveAuthCallbackOrigin(url);
   const cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }> = [];
 
   if (code) {

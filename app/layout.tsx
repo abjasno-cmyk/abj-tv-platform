@@ -6,6 +6,7 @@ import "./live/verox.css";
 import "./live/handoff.css";
 import { ABJNav } from "@/components/abj/Nav";
 import { LegalFooter } from "@/components/abj/LegalFooter";
+import { SitePresenceReporter } from "@/components/abj/SitePresenceReporter";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { EditorialEventDebugPanel } from "@/components/dev/EditorialEventDebugPanel";
 import { CANONICAL_HOST, SITE_URL } from "@/lib/site";
@@ -59,7 +60,11 @@ export default function RootLayout({ children }: RootLayoutProps) {
   // visual changes can be reviewed before merging to main.
   const isProductionDeployment = process.env.VERCEL_ENV === "production";
   return (
-    <html lang="cs" className={`${montserrat.variable} ${robotoCondensed.variable}`}>
+    <html
+      lang="cs"
+      className={`${montserrat.variable} ${robotoCondensed.variable}`}
+      data-vercel-env={process.env.VERCEL_ENV ?? ""}
+    >
       <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
         {isProductionDeployment ? (
           <Script id="verox-canonical-host-guard" strategy="beforeInteractive">
@@ -68,8 +73,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
               try {
                 var canonicalHost = "${CANONICAL_HOST}";
                 var host = window.location.host.toLowerCase();
-                var hostPattern = /^abj-tv-platform-n7e8(?:-[a-z0-9-]+)?\\.vercel\\.app$/i;
-                if (hostPattern.test(host) && host !== canonicalHost) {
+                var productionVercelHost = "abj-tv-platform-n7e8.vercel.app";
+                if (host.indexOf("-git-") !== -1) return;
+                if (host === productionVercelHost && host !== canonicalHost) {
                   var target =
                     window.location.protocol +
                     "//" +
@@ -100,6 +106,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
             })();
           `}
         </Script>
+        <SitePresenceReporter />
         <AuthProvider vercelEnv={process.env.VERCEL_ENV}>
           {/* Single global nav only — prevents duplicate legacy header stacks. */}
           <ABJNav />

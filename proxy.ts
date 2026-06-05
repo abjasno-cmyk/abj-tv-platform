@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-const CANONICAL_VERCEL_HOST = "abj-tv-platform-n7e8.vercel.app";
+
+import { PRODUCTION_LEGACY_VERCEL_HOST } from "@/lib/deploymentHost";
 
 function sanitizeEnvValue(value?: string): string | undefined {
   if (!value) return undefined;
@@ -33,12 +34,13 @@ export async function proxy(request: NextRequest) {
     !isCronPath &&
     process.env.VERCEL_ENV === "production" &&
     /^abj-tv-platform-n7e8(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(requestHost) &&
-    requestHost !== CANONICAL_VERCEL_HOST;
+    !requestHost.includes("-git-") &&
+    requestHost !== PRODUCTION_LEGACY_VERCEL_HOST;
 
   if (shouldCanonicalizeHost) {
     const canonicalUrl = request.nextUrl.clone();
     canonicalUrl.protocol = "https";
-    canonicalUrl.host = CANONICAL_VERCEL_HOST;
+    canonicalUrl.host = PRODUCTION_LEGACY_VERCEL_HOST;
     return NextResponse.redirect(canonicalUrl, 307);
   }
 

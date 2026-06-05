@@ -1,18 +1,19 @@
-// Jeden zdroj pravdy pro kanonickou doménu webu. Pro přesun na verox.cz stačí
-// nastavit env (na produkčním deploymentu ve Vercelu):
-//   NEXT_PUBLIC_CANONICAL_HOST=verox.cz
-//   NEXT_PUBLIC_SITE_URL=https://verox.cz
-// Bez env zůstává původní vercel host (žádná změna chování).
+export {
+  CANONICAL_HOST,
+  SITE_URL,
+  LEGACY_VERCEL_HOST_PATTERN,
+  PRODUCTION_LEGACY_VERCEL_HOST,
+  isVercelGitBranchPreviewHost,
+  resolveAuthOriginForHost,
+  shouldCanonicalizeAuthHost,
+  shouldPreserveAuthOnHost,
+} from "@/lib/deploymentHost";
 
-export const CANONICAL_HOST = (
-  process.env.NEXT_PUBLIC_CANONICAL_HOST ?? "abj-tv-platform-n7e8.vercel.app"
-)
-  .trim()
-  .toLowerCase();
-
-export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL ?? `https://${CANONICAL_HOST}`
-).replace(/\/+$/, "");
-
-// Hosty starého vercel projektu, které chceme sjednotit na CANONICAL_HOST.
-export const LEGACY_VERCEL_HOST_PATTERN = /^abj-tv-platform-n7e8(?:-[a-z0-9-]+)?\.vercel\.app$/i;
+/**
+ * Kam poslat uživatele po OAuth callbacku. Vždy stejný host jako request —
+ * OAuth nesmí přesměrovat na jinou doménu (preview / produkce).
+ */
+export function resolveAuthCallbackOrigin(requestUrl: URL): string {
+  const protocol = requestUrl.protocol || "https:";
+  return `${protocol}//${requestUrl.host}`;
+}

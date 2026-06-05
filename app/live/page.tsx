@@ -1,6 +1,5 @@
 import { buildEPG } from "@/lib/buildEPG";
-import { loadStructuredFeedPayload, parsePublishedTimestamp, type FeedVideo } from "@/lib/dayOverview";
-import { createSupabaseAnonServerClient } from "@/lib/supabase/server";
+import { loadLiveChannelsForPage } from "@/lib/liveChannelsServer";
 import { getNowPlaying, getProgram } from "@/lib/programEngine";
 import LivePage from "@/app/live/LivePage";
 import type { DayProgram, ProgramBlock, ProgramItem } from "@/lib/epg-types";
@@ -28,25 +27,6 @@ type LiveChannelGroup = {
   channelId: string | null;
   channelUrl: string | null;
   videos: LiveChannelVideo[];
-};
-
-type SourceChannel = {
-  channelName: string;
-  channelId: string | null;
-  channelUrl: string | null;
-};
-
-type YouTubeChannelApiPayload = {
-  items?: Array<{
-    id?: string;
-    snippet?: {
-      thumbnails?: {
-        high?: { url?: string };
-        medium?: { url?: string };
-        default?: { url?: string };
-      };
-    };
-  }>;
 };
 
 function resolveProgramFeedApiKey(): string | null {
@@ -142,48 +122,6 @@ function resolveProgramFeedUrlCandidates(): string[] {
   }
   pushCandidate(DEFAULT_PROGRAM_FEED_URL);
   return candidates;
-}
-
-function resolveYouTubeApiKey(): string | null {
-  return sanitizeEnvValue(process.env.YOUTUBE_API_KEY) ?? null;
-}
-
-function normalizeChannelKey(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim()
-    .toLowerCase();
-}
-
-function extractYouTubeIdentifier(channelUrl: string | null): string | null {
-  if (!channelUrl) return null;
-  try {
-    const parsed = new URL(channelUrl);
-    const parts = parsed.pathname.split("/").filter(Boolean);
-    if (parts.length === 0) return null;
-    const first = parts[0];
-    if (first.startsWith("@")) {
-      const handle = first.slice(1).trim();
-      return handle.length > 0 ? handle : null;
-    }
-    if ((first === "channel" || first === "c" || first === "user") && parts[1]) {
-      const candidate = parts[1].trim();
-      return candidate.length > 0 ? candidate : null;
-    }
-  } catch {
-    // Ignore malformed URLs.
-  }
-  return null;
-}
-
-function fallbackAvatarUrl(channelId: string | null, channelUrl: string | null): string | null {
-  if (channelId) {
-    return `https://unavatar.io/youtube/${encodeURIComponent(channelId)}`;
-  }
-  const fallbackIdentifier = extractYouTubeIdentifier(channelUrl);
-  if (!fallbackIdentifier) return null;
-  return `https://unavatar.io/youtube/${encodeURIComponent(fallbackIdentifier)}`;
 }
 
 function readString(value: unknown): string | null {
@@ -495,188 +433,6 @@ function mapOffsetFromStartIso(startIso: string | null): number {
   return Math.max(0, Math.floor((nowTs - startTs) / 1000));
 }
 
-async function withTimeoutFallback<T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  const timeoutPromise = new Promise<T>((resolve) => {
-    timer = setTimeout(() => resolve(fallback), timeoutMs);
-  });
-  const resolved = await Promise.race([promise, timeoutPromise]);
-  if (timer) {
-    clearTimeout(timer);
-  }
-  return resolved;
-}
-
-async function loadYouTubeChannelAvatars(channelIds: string[]): Promise<Map<string, string>> {
-  const apiKey = resolveYouTubeApiKey();
-  if (!apiKey || channelIds.length === 0) return new Map();
-
-  const result = new Map<string, string>();
-  const uniqueIds = [...new Set(channelIds.map((id) => id.trim()).filter((id) => id.length > 0))];
-  for (let index = 0; index < uniqueIds.length; index += 50) {
-    const batch = uniqueIds.slice(index, index + 50);
-    try {
-      const url = new URL("https://www.googleapis.com/youtube/v3/channels");
-      url.searchParams.set("part", "snippet");
-      url.searchParams.set("id", batch.join(","));
-      url.searchParams.set("maxResults", String(batch.length));
-      url.searchParams.set("key", apiKey);
-
-      const response = await fetch(url.toString(), {
-        next: { revalidate: 3600 },
-      });
-      if (!response.ok) continue;
-
-      const payload = (await response.json()) as YouTubeChannelApiPayload;
-      for (const item of payload.items ?? []) {
-        const channelId = readString(item.id);
-        const thumbnailUrl =
-          readString(item.snippet?.thumbnails?.high?.url) ??
-          readString(item.snippet?.thumbnails?.medium?.url) ??
-          readString(item.snippet?.thumbnails?.default?.url);
-        if (!channelId || !thumbnailUrl) continue;
-        result.set(channelId, thumbnailUrl);
-      }
-    } catch (error) {
-      console.warn("live-page-youtube-avatar-batch-failed", error);
-    }
-  }
-
-  return result;
-}
-
-async function loadSourceChannels(): Promise<SourceChannel[]> {
-  try {
-    const supabase = createSupabaseAnonServerClient();
-    const { data, error } = await supabase
-      .from("sources")
-      .select("source_name, channel_id, channel_url")
-      .eq("platform", "youtube")
-      .eq("active", true)
-      .order("source_name", { ascending: true });
-    if (error) {
-      console.error("live-page-source-channels-query-failed", error.message);
-      return [];
-    }
-
-    const byKey = new Map<string, SourceChannel>();
-    const rows = (data ?? []) as Array<Record<string, unknown>>;
-    for (const row of rows) {
-      const channelName = readString(row.source_name);
-      if (!channelName) continue;
-      const key = normalizeChannelKey(channelName);
-      if (!key) continue;
-      const nextEntry: SourceChannel = {
-        channelName,
-        channelId: readString(row.channel_id),
-        channelUrl: readString(row.channel_url),
-      };
-      const existing = byKey.get(key);
-      if (!existing) {
-        byKey.set(key, nextEntry);
-        continue;
-      }
-      // Keep the most complete channel record.
-      if (!existing.channelId && nextEntry.channelId) existing.channelId = nextEntry.channelId;
-      if (!existing.channelUrl && nextEntry.channelUrl) existing.channelUrl = nextEntry.channelUrl;
-      if (nextEntry.channelName.length > existing.channelName.length) existing.channelName = nextEntry.channelName;
-    }
-
-    return [...byKey.values()];
-  } catch (error) {
-    console.error("live-page-source-channels-load-failed", error);
-    return [];
-  }
-}
-
-function mapLiveChannelsFromFeed(channels: Record<string, FeedVideo[]>): LiveChannelGroup[] {
-  return Object.entries(channels)
-    .map(([channelName, videos]) => ({
-      channelName,
-      avatarUrl: null,
-      channelId: null,
-      channelUrl: null,
-      videos: [...videos]
-        .filter((video) => typeof video.video_id === "string" && video.video_id.trim().length > 0)
-        .sort((a, b) => parsePublishedTimestamp(b.published_at) - parsePublishedTimestamp(a.published_at))
-        .map((video) => ({
-          videoId: video.video_id,
-          title: video.title,
-          thumbnail: video.thumbnail ?? null,
-          publishedAt: video.published_at,
-        })),
-    }))
-    .sort((a, b) => a.channelName.localeCompare(b.channelName, "cs-CZ"));
-}
-
-function mergeLiveChannels(feedChannels: LiveChannelGroup[], sourceChannels: SourceChannel[], avatarByChannelId: Map<string, string>): LiveChannelGroup[] {
-  const merged = new Map<string, LiveChannelGroup>();
-
-  for (const channel of feedChannels) {
-    const key = normalizeChannelKey(channel.channelName);
-    if (!key) continue;
-    merged.set(key, {
-      channelName: channel.channelName,
-      avatarUrl: channel.avatarUrl,
-      channelId: channel.channelId,
-      channelUrl: channel.channelUrl,
-      videos: channel.videos,
-    });
-  }
-
-  for (const source of sourceChannels) {
-    const key = normalizeChannelKey(source.channelName);
-    if (!key) continue;
-    const avatarUrl =
-      (source.channelId ? avatarByChannelId.get(source.channelId) ?? null : null) ??
-      fallbackAvatarUrl(source.channelId, source.channelUrl);
-    const existing = merged.get(key);
-    if (!existing) {
-      merged.set(key, {
-        channelName: source.channelName,
-        avatarUrl,
-        channelId: source.channelId,
-        channelUrl: source.channelUrl,
-        videos: [],
-      });
-      continue;
-    }
-    existing.channelName = source.channelName;
-    if (!existing.channelId && source.channelId) {
-      existing.channelId = source.channelId;
-    }
-    if (!existing.channelUrl && source.channelUrl) {
-      existing.channelUrl = source.channelUrl;
-    }
-    if (!existing.avatarUrl && avatarUrl) {
-      existing.avatarUrl = avatarUrl;
-    }
-  }
-
-  return [...merged.values()].sort((a, b) => a.channelName.localeCompare(b.channelName, "cs-CZ"));
-}
-
-async function loadLiveChannels(): Promise<LiveChannelGroup[]> {
-  try {
-    const [feedPayload, sourceChannels] = await Promise.all([
-      loadStructuredFeedPayload().catch((error) => {
-        console.error("live-page-feed-channels-load-failed", error);
-        return { channels: {} as Record<string, FeedVideo[]> };
-      }),
-      loadSourceChannels(),
-    ]);
-    const feedChannels = mapLiveChannelsFromFeed(feedPayload.channels);
-    const channelIds = sourceChannels
-      .map((channel) => channel.channelId)
-      .filter((channelId): channelId is string => Boolean(channelId));
-    const avatarByChannelId = await withTimeoutFallback(loadYouTubeChannelAvatars(channelIds), 1200, new Map<string, string>());
-    return mergeLiveChannels(feedChannels, sourceChannels, avatarByChannelId);
-  } catch (error) {
-    console.error("live-page-channels-load-failed", error);
-    return [];
-  }
-}
-
 export default async function LivePageServer(
   {
     searchParams,
@@ -697,7 +453,7 @@ export default async function LivePageServer(
   const requestedTitleParam = (Array.isArray(rawTitle) ? rawTitle[0] : rawTitle)?.trim() || null;
   const rawChannel = resolvedSearchParams?.channel;
   const requestedChannelParam = (Array.isArray(rawChannel) ? rawChannel[0] : rawChannel)?.trim() || null;
-  const liveChannelsPromise = loadLiveChannels();
+  const liveChannelsPromise = loadLiveChannelsForPage();
 
   try {
     timeline = await loadExternalProgramTimeline();

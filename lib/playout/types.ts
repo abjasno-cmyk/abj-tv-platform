@@ -10,6 +10,11 @@ export type PlayerHandle = {
   playVideo?: () => void;
   pauseVideo?: () => void;
   seekTo?: (seconds: number, allowSeekAhead?: boolean) => void;
+  getPlaybackRate?: () => number;
+  setPlaybackRate?: (rate: number) => void;
+  getVolume?: () => number;
+  setVolume?: (volume: number) => void;
+  isMuted?: () => boolean;
 };
 
 export type PlayoutFillerType = "panorama" | "weather" | "short" | "boundary" | string;

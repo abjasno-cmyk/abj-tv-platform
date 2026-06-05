@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -133,7 +134,15 @@ export function MujVeroxTemplate() {
               PŘIHLÁSIT ZDARMA
             </button>
           </>
-        ) : null}
+        ) : (
+          <p className="sub" style={{ marginTop: "1rem" }}>
+            Pro komentáře k videím, ovládací lištu přehrávače a výběr z kanálů přejděte na{" "}
+            <Link href="/live" style={{ color: "var(--vx-orange)", fontWeight: 700 }}>
+              ŽIVĚ
+            </Link>
+            .
+          </p>
+        )}
       </div>
 
       <div className="vx-strip w75">
