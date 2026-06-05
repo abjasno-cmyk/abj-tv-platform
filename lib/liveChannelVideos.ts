@@ -1,10 +1,10 @@
 import { filterNonShortVideos, type ShortDetectionInput } from "@/lib/youtubeShort";
 
 /** How many recent non-short videos to show in the /live KANÁLY detail panel. */
-export const LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT = 12;
+export const LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT = 24;
 
 /** Fetch extra candidates before filtering Shorts out (RSS/API). */
-export const LIVE_CHANNEL_VIDEO_FETCH_BUFFER = 36;
+export const LIVE_CHANNEL_VIDEO_FETCH_BUFFER = 72;
 
 export type ChannelVideoCandidate = ShortDetectionInput & {
   videoId: string;

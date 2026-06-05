@@ -536,7 +536,7 @@ export async function GET(request: Request) {
   const channelName = searchParams.get("channelName")?.trim() ?? "";
   const requestedLimit = Number.parseInt(searchParams.get("limit") ?? String(LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT), 10);
   const displayLimit = Number.isFinite(requestedLimit)
-    ? Math.min(24, Math.max(1, requestedLimit))
+    ? Math.min(LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT, Math.max(1, requestedLimit))
     : LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT;
   const fetchBuffer = Math.max(displayLimit * 3, LIVE_CHANNEL_VIDEO_FETCH_BUFFER);
   const apiKey = resolveYouTubeApiKey();

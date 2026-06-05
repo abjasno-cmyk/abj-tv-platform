@@ -39,7 +39,7 @@ describe("isYouTubeShort", () => {
 
 describe("selectLatestNonShortChannelVideos", () => {
   it("returns up to the display limit and skips shorts", () => {
-    const videos = Array.from({ length: 20 }, (_, index) => ({
+    const videos = Array.from({ length: 40 }, (_, index) => ({
       videoId: `v${index}`,
       title: `Video ${index}`,
       thumbnail: null,
