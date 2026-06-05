@@ -16,3 +16,21 @@ export const SITE_URL = (
 
 // Hosty starého vercel projektu, které chceme sjednotit na CANONICAL_HOST.
 export const LEGACY_VERCEL_HOST_PATTERN = /^abj-tv-platform-n7e8(?:-[a-z0-9-]+)?\.vercel\.app$/i;
+
+/**
+ * Kam poslat uživatele po OAuth callbacku. Na preview deploymentu musí zůstat
+ * stejný host (jinak skončí na produkci bez kódu z PR větve).
+ */
+export function resolveAuthCallbackOrigin(requestUrl: URL, vercelEnv = process.env.VERCEL_ENV): string {
+  const protocol = requestUrl.protocol || "https:";
+  const requestHost = requestUrl.host.toLowerCase();
+
+  if (vercelEnv === "preview") {
+    return `${protocol}//${requestUrl.host}`;
+  }
+
+  const shouldCanonicalizeHost =
+    LEGACY_VERCEL_HOST_PATTERN.test(requestHost) && requestHost !== CANONICAL_HOST;
+
+  return `${protocol}//${shouldCanonicalizeHost ? CANONICAL_HOST : requestUrl.host}`;
+}

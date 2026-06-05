@@ -123,7 +123,12 @@ export function VeroxHeader({ active = "zive" }: VeroxHeaderProps) {
             href="#"
             onClick={(e) => {
               e.preventDefault();
-              openLoginModal();
+              openLoginModal({
+                reason:
+                  active === "zive"
+                    ? "Přihlaste se pro komentáře k videím a uložení průběhu sledování."
+                    : "Přihlaste se zdarma a zapojte se do VEROX.",
+              });
             }}
           >
             PŘIHLÁSIT
