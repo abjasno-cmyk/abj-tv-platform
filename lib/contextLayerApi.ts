@@ -276,6 +276,14 @@ function normalizeClaim(row: unknown, idx: number): ContextClaim | null {
   };
 }
 
+export async function resolvePublishedVideoIdForYoutube(youtubeId: string): Promise<string | null> {
+  const normalized = youtubeId.trim();
+  if (!normalized) return null;
+  const videos = await fetchPublishedVideos();
+  const match = videos.find((video) => video.youtubeId === normalized);
+  return match?.id ?? null;
+}
+
 export async function fetchPublishedVideos(): Promise<PublishedVideo[]> {
   if (videosCache.data) return videosCache.data;
   if (videosCache.promise) return videosCache.promise;

@@ -4,8 +4,15 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { VeroxHeader } from "@/components/abj/VeroxHeader";
+import { HeroPlayerBar, type PlaybackSpeed } from "@/components/abj/playout/HeroPlayerBar";
 import { PlayoutStage } from "@/components/abj/playout/PlayoutStage";
 import { usePlayoutLoop } from "@/components/abj/playout/usePlayoutLoop";
+import {
+  fetchPublishedContext,
+  resolvePublishedVideoIdForYoutube,
+  type ContextClaim,
+} from "@/lib/contextLayerApi";
+import { clampSeekSeconds } from "@/lib/playerTime";
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import type { DayProgram, ProgramItem } from "@/lib/epg-types";
 import type { PlayerHandle, PlayoutSurface } from "@/lib/playout/types";
@@ -72,6 +79,11 @@ export function HomePage({
   const [channelVideosByName, setChannelVideosByName] = useState<Record<string, LiveChannelVideo[]>>({});
   const [channelLoading, setChannelLoading] = useState<string | null>(null);
   const [channelError, setChannelError] = useState<Record<string, string>>({});
+  const [playbackRate, setPlaybackRate] = useState<PlaybackSpeed>(1);
+  const [playerCurrentTime, setPlayerCurrentTime] = useState(0);
+  const [playerDuration, setPlayerDuration] = useState(0);
+  const [contextClaims, setContextClaims] = useState<ContextClaim[]>([]);
+  const [contextLoading, setContextLoading] = useState(false);
 
   const programItems = useMemo(
     () => days.flatMap((day) => day.items).filter((item) => Boolean(item.videoId)),
@@ -129,6 +141,7 @@ export function HomePage({
     return map;
   }, [days]);
   const currentVideoId = heroSurface?.kind === "youtube" ? heroSurface.videoId : null;
+  const playerControlsEnabled = heroSurface?.kind === "youtube" && Boolean(currentVideoId);
   const currentEpg = currentVideoId ? epgInfoById.get(currentVideoId) : null;
   const displayTitle =
     (heroSurface?.kind === "youtube" ? heroSurface.title : undefined) ?? currentEpg?.title ?? title;
@@ -245,6 +258,90 @@ export function HomePage({
     }
   };
 
+  // Pozice přehrávače pro vlastní posuvník / čas (YouTube iframe, controls:0).
+  useEffect(() => {
+    if (!playerControlsEnabled) {
+      setPlayerCurrentTime(0);
+      setPlayerDuration(0);
+      return;
+    }
+    const id = window.setInterval(() => {
+      const player = playerRef.current;
+      if (!player) return;
+      const duration = Math.max(0, Math.floor(player.getDuration?.() ?? 0));
+      const current = Math.max(0, Math.floor(player.getCurrentTime?.() ?? 0));
+      setPlayerDuration(duration);
+      setPlayerCurrentTime(current);
+    }, 500);
+    return () => window.clearInterval(id);
+  }, [playerControlsEnabled, currentVideoId]);
+
+  // Textový skok: kontextové bloky k videu (když existují v context layeru).
+  useEffect(() => {
+    if (!currentVideoId) {
+      setContextClaims([]);
+      return;
+    }
+    let cancelled = false;
+    setContextLoading(true);
+    void (async () => {
+      const publishedId = await resolvePublishedVideoIdForYoutube(currentVideoId);
+      const contextIds = [publishedId, currentVideoId].filter((id): id is string => Boolean(id));
+      for (const contextId of contextIds) {
+        const claims = await fetchPublishedContext(contextId);
+        if (cancelled) return;
+        if (claims.length > 0) {
+          setContextClaims(claims);
+          setContextLoading(false);
+          return;
+        }
+      }
+      if (!cancelled) {
+        setContextClaims([]);
+        setContextLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentVideoId]);
+
+  const seekPlayerTo = useCallback(
+    (seconds: number) => {
+      const player = playerRef.current;
+      if (!player?.seekTo) return;
+      const target = clampSeekSeconds(seconds, playerDuration);
+      player.seekTo(target, true);
+      setPlayerCurrentTime(target);
+    },
+    [playerDuration],
+  );
+
+  useEffect(() => {
+    if (!playerControlsEnabled) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT")
+      ) {
+        return;
+      }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        seekPlayerTo(playerCurrentTime - (event.shiftKey ? 30 : 10));
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        seekPlayerTo(playerCurrentTime + (event.shiftKey ? 30 : 10));
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [playerControlsEnabled, playerCurrentTime, seekPlayerTo]);
+
   // Sledování pozice pro „pokračovat ve sledování" — jen u VOD (ne v živé smyčce,
   // kde se přehrávaný blok mění sám a videoId prop neodpovídá běžícímu videu).
   useEffect(() => {
@@ -303,6 +400,7 @@ export function HomePage({
           <PlayoutStage
             surface={heroSurface}
             muted={muted}
+            playbackRate={playbackRate}
             onEnded={handleStageEnded}
             onPlayerReady={registerPlayer}
             onPlayingChange={setPlaying}
@@ -362,6 +460,16 @@ export function HomePage({
               )}
             </button>
           </div>
+          <HeroPlayerBar
+            enabled={playerControlsEnabled}
+            currentTime={playerCurrentTime}
+            duration={playerDuration}
+            onSeek={seekPlayerTo}
+            playbackRate={playbackRate}
+            onPlaybackRateChange={setPlaybackRate}
+            contextClaims={contextClaims}
+            contextLoading={contextLoading}
+          />
         </div>
         <button type="button" className="live-badge" onClick={onReturnToLive} aria-label="Přepnout na živé vysílání">
           ŽIVÉ
