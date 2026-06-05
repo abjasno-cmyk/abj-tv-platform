@@ -12,6 +12,7 @@ export type FeedVideo = {
   context?: string;
   impact?: string;
   freshness: "breaking" | "today" | "week" | "evergreen";
+  duration_min?: number | null;
 };
 
 export type FeedVideoFreshness = FeedVideo["freshness"];
@@ -156,6 +157,15 @@ function inferTopics(video: Omit<FeedVideo, "topics">, metadata: unknown): Topic
 
 function feedVideoFromRaw(video: RawVideo): FeedVideo {
   const metadata = asObject(video.metadata);
+  const durationFromMetadata =
+    typeof metadata?.durationMin === "number" && Number.isFinite(metadata.durationMin)
+      ? metadata.durationMin
+      : null;
+  const durationMin =
+    typeof video.duration_min === "number" && Number.isFinite(video.duration_min)
+      ? video.duration_min
+      : durationFromMetadata;
+
   const base: Omit<FeedVideo, "topics"> = {
     video_id: video.video_id,
     title: video.title,
@@ -166,6 +176,7 @@ function feedVideoFromRaw(video: RawVideo): FeedVideo {
     context: readString(metadata?.context),
     impact: readString(metadata?.impact),
     freshness: readFreshness(metadata, toIsoOrEpoch(video.published_at ?? video.created_at)),
+    duration_min: durationMin,
   };
 
   return {
@@ -229,7 +240,7 @@ async function loadVideosFromSupabase(): Promise<RawVideo[]> {
   const canonical = await supabase
     .from("videos")
     .select(
-      "id, source_id, channel_id, video_id, title, thumbnail, published_at, scheduled_start_at, video_type, channel_name, is_abj, metadata, created_at"
+      "id, source_id, channel_id, video_id, title, thumbnail, published_at, scheduled_start_at, video_type, channel_name, is_abj, duration_min, metadata, created_at"
     )
     .order("published_at", { ascending: false })
     .limit(260);

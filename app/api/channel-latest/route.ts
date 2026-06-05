@@ -1,8 +1,18 @@
+import {
+  LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT,
+  LIVE_CHANNEL_VIDEO_FETCH_BUFFER,
+  selectLatestNonShortChannelVideos,
+  type ChannelVideoCandidate,
+} from "@/lib/liveChannelVideos";
+import { parseIsoDurationSeconds } from "@/lib/youtubeShort";
+
 type ChannelLatestVideo = {
   videoId: string;
   title: string;
   publishedAt: string;
   thumbnail: string;
+  durationIso?: string | null;
+  durationMin?: number | null;
 };
 
 type YouTubeChannelLookupPayload = {
@@ -27,6 +37,42 @@ type YouTubeVideoSearchPayload = {
     snippet?: {
       title?: string;
       publishedAt?: string;
+      thumbnails?: {
+        high?: { url?: string };
+        medium?: { url?: string };
+        default?: { url?: string };
+      };
+    };
+  }>;
+};
+
+type YouTubeVideosListPayload = {
+  items?: Array<{
+    id?: string;
+    contentDetails?: {
+      duration?: string;
+    };
+  }>;
+};
+
+type YouTubeChannelContentPayload = {
+  items?: Array<{
+    contentDetails?: {
+      relatedPlaylists?: {
+        uploads?: string;
+      };
+    };
+  }>;
+};
+
+type YouTubePlaylistItemsPayload = {
+  items?: Array<{
+    snippet?: {
+      title?: string;
+      publishedAt?: string;
+      resourceId?: {
+        videoId?: string;
+      };
       thumbnails?: {
         high?: { url?: string };
         medium?: { url?: string };
@@ -225,7 +271,11 @@ async function resolveChannelIdBySearchQuery(channelName: string, apiKey: string
   }
 }
 
-async function resolveLatestVideosBySearchQuery(channelName: string, apiKey: string | null, limit: number): Promise<ChannelLatestVideo[]> {
+async function resolveLatestVideosBySearchQuery(
+  channelName: string,
+  apiKey: string | null,
+  fetchLimit: number,
+): Promise<ChannelLatestVideo[]> {
   if (!apiKey) return [];
   const normalized = channelName.trim();
   if (!normalized) return [];
@@ -234,7 +284,7 @@ async function resolveLatestVideosBySearchQuery(channelName: string, apiKey: str
     url.searchParams.set("part", "snippet");
     url.searchParams.set("type", "video");
     url.searchParams.set("order", "date");
-    url.searchParams.set("maxResults", String(Math.min(10, Math.max(1, limit))));
+    url.searchParams.set("maxResults", String(Math.min(50, Math.max(1, fetchLimit))));
     url.searchParams.set("q", normalized);
     url.searchParams.set("key", apiKey);
     const response = await fetchWithTimeout(url.toString(), 9000);
@@ -257,8 +307,7 @@ async function resolveLatestVideosBySearchQuery(channelName: string, apiKey: str
           thumbnail,
         };
       })
-      .filter((video): video is ChannelLatestVideo => Boolean(video))
-      .slice(0, limit);
+      .filter((video): video is ChannelLatestVideo => Boolean(video));
   } catch {
     return [];
   }
@@ -341,6 +390,134 @@ function parseLatestVideosFromXml(xml: string, limit: number): ChannelLatestVide
   return videos;
 }
 
+function toPublicChannelVideo(video: ChannelVideoCandidate): ChannelLatestVideo {
+  return {
+    videoId: video.videoId,
+    title: video.title,
+    publishedAt: video.publishedAt,
+    thumbnail: video.thumbnail ?? `https://i.ytimg.com/vi/${encodeURIComponent(video.videoId)}/hqdefault.jpg`,
+  };
+}
+
+async function enrichVideosWithDuration(
+  videos: ChannelLatestVideo[],
+  apiKey: string,
+): Promise<ChannelLatestVideo[]> {
+  if (videos.length === 0) return videos;
+  const durationByVideoId = new Map<string, string>();
+  const ids = videos.map((video) => video.videoId).filter(Boolean);
+
+  for (let idx = 0; idx < ids.length; idx += 50) {
+    const batch = ids.slice(idx, idx + 50);
+    try {
+      const url = new URL("https://www.googleapis.com/youtube/v3/videos");
+      url.searchParams.set("part", "contentDetails");
+      url.searchParams.set("id", batch.join(","));
+      url.searchParams.set("key", apiKey);
+      const response = await fetchWithTimeout(url.toString(), 9000);
+      if (!response.ok) continue;
+      const payload = (await response.json()) as YouTubeVideosListPayload;
+      for (const item of payload.items ?? []) {
+        const videoId = item.id?.trim();
+        const duration = item.contentDetails?.duration?.trim();
+        if (videoId && duration) durationByVideoId.set(videoId, duration);
+      }
+    } catch {
+      // Continue without duration for this batch.
+    }
+  }
+
+  return videos.map((video) => {
+    const durationIso = durationByVideoId.get(video.videoId) ?? null;
+    const durationSeconds = parseIsoDurationSeconds(durationIso);
+    return {
+      ...video,
+      durationIso,
+      durationMin: durationSeconds !== null ? durationSeconds / 60 : null,
+    };
+  });
+}
+
+async function resolveUploadsPlaylistId(channelId: string, apiKey: string): Promise<string | null> {
+  try {
+    const url = new URL("https://www.googleapis.com/youtube/v3/channels");
+    url.searchParams.set("part", "contentDetails");
+    url.searchParams.set("id", channelId);
+    url.searchParams.set("key", apiKey);
+    const response = await fetchWithTimeout(url.toString(), 9000);
+    if (!response.ok) return null;
+    const payload = (await response.json()) as YouTubeChannelContentPayload;
+    return payload.items?.[0]?.contentDetails?.relatedPlaylists?.uploads?.trim() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchUploadPlaylistVideos(
+  channelId: string,
+  apiKey: string,
+  fetchLimit: number,
+): Promise<ChannelLatestVideo[]> {
+  const uploadsPlaylistId = await resolveUploadsPlaylistId(channelId, apiKey);
+  if (!uploadsPlaylistId) return [];
+
+  try {
+    const url = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
+    url.searchParams.set("part", "snippet");
+    url.searchParams.set("playlistId", uploadsPlaylistId);
+    url.searchParams.set("maxResults", String(Math.min(50, Math.max(1, fetchLimit))));
+    url.searchParams.set("key", apiKey);
+    const response = await fetchWithTimeout(url.toString(), 9000);
+    if (!response.ok) return [];
+    const payload = (await response.json()) as YouTubePlaylistItemsPayload;
+    return (payload.items ?? [])
+      .map((item): ChannelLatestVideo | null => {
+        const videoId = item.snippet?.resourceId?.videoId?.trim();
+        const title = item.snippet?.title?.trim();
+        if (!videoId || !title) return null;
+        const thumbnail =
+          item.snippet?.thumbnails?.high?.url?.trim() ||
+          item.snippet?.thumbnails?.medium?.url?.trim() ||
+          item.snippet?.thumbnails?.default?.url?.trim() ||
+          `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`;
+        return {
+          videoId,
+          title,
+          publishedAt: item.snippet?.publishedAt?.trim() || new Date(0).toISOString(),
+          thumbnail,
+        };
+      })
+      .filter((video): video is ChannelLatestVideo => Boolean(video));
+  } catch {
+    return [];
+  }
+}
+
+async function finalizeChannelVideos(
+  videos: ChannelLatestVideo[],
+  displayLimit: number,
+  fetchBuffer: number,
+  apiKey: string | null,
+): Promise<ChannelLatestVideo[]> {
+  const candidates = videos.slice(0, fetchBuffer);
+  const enriched =
+    apiKey && candidates.length > 0 ? await enrichVideosWithDuration(candidates, apiKey) : candidates;
+  const selected = selectLatestNonShortChannelVideos(
+    enriched.map(
+      (video): ChannelVideoCandidate => ({
+        videoId: video.videoId,
+        title: video.title,
+        thumbnail: video.thumbnail,
+        publishedAt: video.publishedAt,
+        durationMin: video.durationMin ?? null,
+        durationIso: video.durationIso ?? null,
+      }),
+    ),
+    displayLimit,
+  );
+  return selected.map(toPublicChannelVideo);
+}
+
 async function fetchChannelFeed(channelId: string, limit: number): Promise<{ ok: boolean; status: number; videos: ChannelLatestVideo[] }> {
   const feedUrl = new URL("https://www.youtube.com/feeds/videos.xml");
   feedUrl.searchParams.set("channel_id", channelId);
@@ -357,8 +534,11 @@ export async function GET(request: Request) {
   let channelId = searchParams.get("channelId")?.trim() ?? "";
   const channelUrl = searchParams.get("channelUrl")?.trim() ?? "";
   const channelName = searchParams.get("channelName")?.trim() ?? "";
-  const requestedLimit = Number.parseInt(searchParams.get("limit") ?? "4", 10);
-  const limit = Number.isFinite(requestedLimit) ? Math.min(8, Math.max(1, requestedLimit)) : 4;
+  const requestedLimit = Number.parseInt(searchParams.get("limit") ?? String(LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT), 10);
+  const displayLimit = Number.isFinite(requestedLimit)
+    ? Math.min(LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT, Math.max(1, requestedLimit))
+    : LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT;
+  const fetchBuffer = Math.max(displayLimit * 3, LIVE_CHANNEL_VIDEO_FETCH_BUFFER);
   const apiKey = resolveYouTubeApiKey();
 
   if (channelId && !isValidYouTubeChannelId(channelId)) {
@@ -394,59 +574,79 @@ export async function GET(request: Request) {
   }
 
   try {
-    let feedResult = await fetchChannelFeed(channelId, limit);
+    let rawVideos: ChannelLatestVideo[] = [];
 
-    // Some stored source IDs are stale or not YouTube channel IDs.
-    // If feed lookup fails, resolve channel ID again from URL/name and retry once.
-    if (!feedResult.ok && (feedResult.status === 404 || feedResult.status === 400)) {
-      let retriedChannelId = "";
-      if (channelUrl) {
-        const parsed = parseChannelUrl(channelUrl);
-        if (
-          parsed.directChannelId &&
-          isValidYouTubeChannelId(parsed.directChannelId) &&
-          parsed.directChannelId !== channelId
-        ) {
-          retriedChannelId = parsed.directChannelId;
-        } else {
-          if (apiKey && parsed.handle) {
-            retriedChannelId = (await resolveChannelIdByHandle(parsed.handle, apiKey)) ?? "";
+    if (apiKey) {
+      rawVideos = await fetchUploadPlaylistVideos(channelId, apiKey, fetchBuffer);
+    }
+
+    if (rawVideos.length === 0) {
+      let feedResult = await fetchChannelFeed(channelId, fetchBuffer);
+
+      // Some stored source IDs are stale or not YouTube channel IDs.
+      // If feed lookup fails, resolve channel ID again from URL/name and retry once.
+      if (!feedResult.ok && (feedResult.status === 404 || feedResult.status === 400)) {
+        let retriedChannelId = "";
+        if (channelUrl) {
+          const parsed = parseChannelUrl(channelUrl);
+          if (
+            parsed.directChannelId &&
+            isValidYouTubeChannelId(parsed.directChannelId) &&
+            parsed.directChannelId !== channelId
+          ) {
+            retriedChannelId = parsed.directChannelId;
+          } else {
+            if (apiKey && parsed.handle) {
+              retriedChannelId = (await resolveChannelIdByHandle(parsed.handle, apiKey)) ?? "";
+            }
+            if (!retriedChannelId && apiKey && parsed.username) {
+              retriedChannelId = (await resolveChannelIdByUsername(parsed.username, apiKey)) ?? "";
+            }
+            if (!retriedChannelId) {
+              retriedChannelId = (await resolveChannelIdFromPage(parsed)) ?? "";
+            }
           }
-          if (!retriedChannelId && apiKey && parsed.username) {
-            retriedChannelId = (await resolveChannelIdByUsername(parsed.username, apiKey)) ?? "";
+        }
+        if (!retriedChannelId && channelName) {
+          retriedChannelId = (await resolveChannelIdBySearchQuery(channelName, apiKey)) ?? "";
+        }
+        if (retriedChannelId && retriedChannelId !== channelId) {
+          if (apiKey) {
+            rawVideos = await fetchUploadPlaylistVideos(retriedChannelId, apiKey, fetchBuffer);
           }
-          if (!retriedChannelId) {
-            retriedChannelId = (await resolveChannelIdFromPage(parsed)) ?? "";
+          if (rawVideos.length === 0) {
+            const retriedResult = await fetchChannelFeed(retriedChannelId, fetchBuffer);
+            if (retriedResult.ok) {
+              channelId = retriedChannelId;
+              feedResult = retriedResult;
+            }
+          } else {
+            channelId = retriedChannelId;
           }
         }
       }
-      if (!retriedChannelId && channelName) {
-        retriedChannelId = (await resolveChannelIdBySearchQuery(channelName, apiKey)) ?? "";
-      }
-      if (retriedChannelId && retriedChannelId !== channelId) {
-        const retriedResult = await fetchChannelFeed(retriedChannelId, limit);
-        if (retriedResult.ok) {
-          channelId = retriedChannelId;
-          feedResult = retriedResult;
+
+      if (rawVideos.length === 0) {
+        if (!feedResult.ok) {
+          const fallbackVideos = await resolveLatestVideosBySearchQuery(channelName, apiKey, fetchBuffer);
+          if (fallbackVideos.length > 0) {
+            const videos = await finalizeChannelVideos(fallbackVideos, displayLimit, fetchBuffer, apiKey);
+            return Response.json({ videos, resolvedChannelId: null, fallback: "search" });
+          }
+          return Response.json(
+            {
+              videos: [],
+              error: `YouTube feed unavailable (${feedResult.status}).`,
+            },
+            { status: 502 }
+          );
         }
+        rawVideos = feedResult.videos;
       }
     }
 
-    if (!feedResult.ok) {
-      const fallbackVideos = await resolveLatestVideosBySearchQuery(channelName, apiKey, limit);
-      if (fallbackVideos.length > 0) {
-        return Response.json({ videos: fallbackVideos, resolvedChannelId: null, fallback: "search" });
-      }
-      return Response.json(
-        {
-          videos: [],
-          error: `YouTube feed unavailable (${feedResult.status}).`,
-        },
-        { status: 502 }
-      );
-    }
-
-    return Response.json({ videos: feedResult.videos, resolvedChannelId: channelId });
+    const videos = await finalizeChannelVideos(rawVideos, displayLimit, fetchBuffer, apiKey);
+    return Response.json({ videos, resolvedChannelId: channelId });
   } catch (error) {
     // Detail jen do server logu; klientovi generická hláška (chybové hlášky
     // fetch() mohou prozradit interní hostname/port).
