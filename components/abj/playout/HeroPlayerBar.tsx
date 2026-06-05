@@ -1,10 +1,8 @@
 "use client";
 
-import { useId, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useId, useMemo, useState, type CSSProperties } from "react";
 
-import type { ContextClaim } from "@/lib/contextLayerApi";
 import { formatPlayerClock } from "@/lib/playerTime";
-import { findSeekSecondsByTextQuery } from "@/lib/playerSeek";
 
 export const PLAYBACK_SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as const;
 export type PlaybackSpeed = (typeof PLAYBACK_SPEED_OPTIONS)[number];
@@ -18,8 +16,6 @@ type HeroPlayerBarProps = {
   onSeek: (seconds: number) => void;
   playbackRate: PlaybackSpeed;
   onPlaybackRateChange: (rate: PlaybackSpeed) => void;
-  contextClaims: ContextClaim[];
-  contextLoading: boolean;
   onScrollToChannels?: () => void;
 };
 
@@ -32,13 +28,9 @@ export function HeroPlayerBar({
   onSeek,
   playbackRate,
   onPlaybackRateChange,
-  contextClaims,
-  contextLoading,
   onScrollToChannels,
 }: HeroPlayerBarProps) {
-  const searchId = useId();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchMessage, setSearchMessage] = useState("");
+  const controlId = useId();
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [scrubValue, setScrubValue] = useState(0);
   const rangeValue = isScrubbing ? scrubValue : currentTime;
@@ -55,27 +47,6 @@ export function HeroPlayerBar({
     [],
   );
 
-  const runTextSeek = () => {
-    const query = searchQuery.trim();
-    if (!query) {
-      setSearchMessage("Napište slovo nebo větu z videa.");
-      return;
-    }
-    const target = findSeekSecondsByTextQuery(contextClaims, query);
-    if (target === null) {
-      setSearchMessage(
-        contextLoading
-          ? "Načítám kontext videa… zkuste to za chvíli."
-          : contextClaims.length === 0
-            ? "Pro toto video zatím nemáme textový kontext — použijte posuvník nebo tlačítka −10 s / +10 s."
-            : "Pasáž nenalezena. Zkuste kratší výraz nebo jiné slovo.",
-      );
-      return;
-    }
-    onSeek(target);
-    setSearchMessage(`Přeskočeno na ${formatPlayerClock(target)}.`);
-  };
-
   if (!enabled) return null;
 
   const timeLabel = `${formatPlayerClock(currentTime)} / ${duration > 0 ? formatPlayerClock(duration) : "--:--"}`;
@@ -89,15 +60,9 @@ export function HeroPlayerBar({
         <button
           type="button"
           className="hero-player-toggle"
-          onClick={() => {
-            if (expanded) {
-              setSearchQuery("");
-              setSearchMessage("");
-            }
-            onExpandedChange(!expanded);
-          }}
+          onClick={() => onExpandedChange(!expanded)}
           aria-expanded={expanded}
-          aria-controls={`${searchId}-panel`}
+          aria-controls={`${controlId}-panel`}
         >
           {expanded ? "Skrýt ovládání" : "Ovládání přehrávání"}
           <span className="hero-player-toggle-meta" aria-hidden="true">
@@ -115,7 +80,7 @@ export function HeroPlayerBar({
       </div>
 
       {expanded ? (
-        <div id={`${searchId}-panel`} className="hero-player-panel">
+        <div id={`${controlId}-panel`} className="hero-player-panel">
           <div className="hero-player-row hero-player-row--transport">
             <button
               type="button"
@@ -148,16 +113,16 @@ export function HeroPlayerBar({
                 aria-valuenow={Math.floor(rangeValue)}
                 aria-label="Pozice ve videu"
                 style={{ "--hero-progress": `${progressPercent}%` } as CSSProperties}
-            onPointerDown={() => {
-              setIsScrubbing(true);
-              setScrubValue(currentTime);
-            }}
-            onPointerUp={() => {
-              setIsScrubbing(false);
-            }}
-            onPointerCancel={() => {
-              setIsScrubbing(false);
-            }}
+                onPointerDown={() => {
+                  setIsScrubbing(true);
+                  setScrubValue(currentTime);
+                }}
+                onPointerUp={() => {
+                  setIsScrubbing(false);
+                }}
+                onPointerCancel={() => {
+                  setIsScrubbing(false);
+                }}
                 onInput={(event) => {
                   const next = Number(event.currentTarget.value);
                   setScrubValue(next);
@@ -183,10 +148,10 @@ export function HeroPlayerBar({
               +30 s
             </button>
 
-            <label className="hero-player-speed" htmlFor={`${searchId}-speed`}>
+            <label className="hero-player-speed" htmlFor={`${controlId}-speed`}>
               <span className="sr-only">Rychlost přehrávání</span>
               <select
-                id={`${searchId}-speed`}
+                id={`${controlId}-speed`}
                 value={playbackRate}
                 onChange={(event) => onPlaybackRateChange(Number(event.target.value) as PlaybackSpeed)}
                 aria-label="Rychlost přehrávání"
@@ -198,33 +163,6 @@ export function HeroPlayerBar({
                 ))}
               </select>
             </label>
-          </div>
-
-          <div className="hero-player-row hero-player-row--search">
-            <label className="hero-player-search-label" htmlFor={`${searchId}-query`}>
-              Najít pasáž
-            </label>
-            <input
-              id={`${searchId}-query`}
-              type="search"
-              className="hero-player-search-input"
-              placeholder="Slovo nebo věta z videa…"
-              value={searchQuery}
-              onChange={(event) => {
-                setSearchQuery(event.target.value);
-                if (searchMessage) setSearchMessage("");
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  runTextSeek();
-                }
-              }}
-            />
-            <button type="button" className="hero-player-search-btn" onClick={runTextSeek}>
-              Přejít
-            </button>
-            {searchMessage ? <p className="hero-player-search-msg">{searchMessage}</p> : null}
           </div>
         </div>
       ) : null}

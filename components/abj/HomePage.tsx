@@ -7,11 +7,6 @@ import { VeroxHeader } from "@/components/abj/VeroxHeader";
 import { HeroPlayerBar, type PlaybackSpeed } from "@/components/abj/playout/HeroPlayerBar";
 import { PlayoutStage } from "@/components/abj/playout/PlayoutStage";
 import { usePlayoutLoop } from "@/components/abj/playout/usePlayoutLoop";
-import {
-  fetchPublishedContext,
-  resolvePublishedVideoIdForYoutube,
-  type ContextClaim,
-} from "@/lib/contextLayerApi";
 import { clampSeekSeconds } from "@/lib/playerTime";
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import type { DayProgram, ProgramItem } from "@/lib/epg-types";
@@ -84,8 +79,6 @@ export function HomePage({
   const [playbackRate, setPlaybackRate] = useState<PlaybackSpeed>(1);
   const [playerCurrentTime, setPlayerCurrentTime] = useState(0);
   const [playerDuration, setPlayerDuration] = useState(0);
-  const [contextClaims, setContextClaims] = useState<ContextClaim[]>([]);
-  const [contextLoading, setContextLoading] = useState(false);
   const [playerBarExpanded, setPlayerBarExpanded] = useState(false);
 
   const onSelectChannelVideo = useCallback(
@@ -326,36 +319,6 @@ export function HomePage({
     return () => window.clearInterval(id);
   }, [playerControlsEnabled, currentVideoId]);
 
-  // Textový skok: kontextové bloky k videu (když existují v context layeru).
-  useEffect(() => {
-    if (!currentVideoId) {
-      setContextClaims([]);
-      return;
-    }
-    let cancelled = false;
-    setContextLoading(true);
-    void (async () => {
-      const publishedId = await resolvePublishedVideoIdForYoutube(currentVideoId);
-      const contextIds = [publishedId, currentVideoId].filter((id): id is string => Boolean(id));
-      for (const contextId of contextIds) {
-        const claims = await fetchPublishedContext(contextId);
-        if (cancelled) return;
-        if (claims.length > 0) {
-          setContextClaims(claims);
-          setContextLoading(false);
-          return;
-        }
-      }
-      if (!cancelled) {
-        setContextClaims([]);
-        setContextLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [currentVideoId]);
-
   const seekPlayerTo = useCallback(
     (seconds: number) => {
       const player = playerRef.current;
@@ -519,8 +482,6 @@ export function HomePage({
             onSeek={seekPlayerTo}
             playbackRate={playbackRate}
             onPlaybackRateChange={setPlaybackRate}
-            contextClaims={contextClaims}
-            contextLoading={contextLoading}
             onScrollToChannels={displayChannels.length > 0 ? scrollToChannels : undefined}
           />
         </div>
