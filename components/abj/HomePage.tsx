@@ -59,8 +59,10 @@ export function HomePage({
   onSelect,
   onReturnToLive,
   onPlaybackSample,
-  onSelectChannelVideo,
+  onSelectChannelVideo: onSelectChannelVideoProp,
 }: HomePageProps) {
+  const [clientChannels, setClientChannels] = useState<LiveChannelGroup[]>([]);
+  const displayChannels = channels.length > 0 ? channels : clientChannels;
   const heroRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<PlayerHandle | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -84,10 +86,56 @@ export function HomePage({
   const [playerDuration, setPlayerDuration] = useState(0);
   const [contextClaims, setContextClaims] = useState<ContextClaim[]>([]);
   const [contextLoading, setContextLoading] = useState(false);
+  const [playerBarExpanded, setPlayerBarExpanded] = useState(false);
+
+  const onSelectChannelVideo = useCallback(
+    (payload: { channelName: string; video: LiveChannelVideo }) => {
+      setPlayerBarExpanded(true);
+      onSelectChannelVideoProp(payload);
+    },
+    [onSelectChannelVideoProp],
+  );
+
+  useEffect(() => {
+    if (channels.length > 0) return;
+    let cancelled = false;
+    void fetch("/api/live/channels", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((payload: { channels?: LiveChannelGroup[] }) => {
+        if (cancelled) return;
+        if (Array.isArray(payload.channels) && payload.channels.length > 0) {
+          setClientChannels(payload.channels);
+        }
+      })
+      .catch(() => {
+        // Kanály zůstanou prázdné — sekce zobrazí fallback.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [channels.length]);
+
+  const scrollToChannels = useCallback(() => {
+    const target = document.getElementById("hf-channels");
+    if (!target) return;
+    const navHeader = document.querySelector("header");
+    const headerOffset =
+      navHeader instanceof HTMLElement ? Math.ceil(navHeader.getBoundingClientRect().height) + 10 : 78;
+    const top = Math.max(0, window.scrollY + target.getBoundingClientRect().top - headerOffset);
+    window.scrollTo({ top, behavior: "smooth" });
+  }, []);
 
   const programItems = useMemo(
     () => days.flatMap((day) => day.items).filter((item) => Boolean(item.videoId)),
     [days],
+  );
+
+  const handleSelectProgram = useCallback(
+    (item: ProgramItem) => {
+      onSelect(item);
+      if (item.type !== "live") setPlayerBarExpanded(true);
+    },
+    [onSelect],
   );
 
   // PRÁVĚ HRAJE = vždy PROGRAM (Bloky z Replitu / EPG), ne videa kanálu z hera.
@@ -99,9 +147,9 @@ export function HomePage({
       videoId: item.videoId,
       title: item.title,
       thumb: thumbFor(item),
-      onClick: () => onSelect(item),
+      onClick: () => handleSelectProgram(item),
     }));
-  }, [programItems, onSelect]);
+  }, [programItems, handleSelectProgram]);
 
   const offset = Math.max(0, Math.floor(startSeconds));
 
@@ -185,7 +233,7 @@ export function HomePage({
       window.removeEventListener("resize", onStageScroll);
       window.removeEventListener("resize", onTrackScroll);
     };
-  }, [stageItems.length, channels.length]);
+  }, [stageItems.length, displayChannels.length]);
 
   // Vycentruj PRÁVĚ HRAJE na aktuálně hrané video (při startu i při každém přepnutí bloku).
   useEffect(() => {
@@ -215,6 +263,7 @@ export function HomePage({
 
     if (ch.videos.length > 0) {
       setChannelVideosByName((prev) => ({ ...prev, [ch.channelName]: ch.videos.slice(0, 4) }));
+      setPlayerBarExpanded(true);
       return;
     }
     if (channelVideosByName[ch.channelName]) return; // už načteno
@@ -248,6 +297,7 @@ export function HomePage({
         .filter((video): video is LiveChannelVideo => Boolean(video))
         .slice(0, 4);
       setChannelVideosByName((prev) => ({ ...prev, [ch.channelName]: videos }));
+      if (videos.length > 0) setPlayerBarExpanded(true);
       if (videos.length === 0) {
         setChannelError((prev) => ({ ...prev, [ch.channelName]: "Kanál teď nemá dostupná videa." }));
       }
@@ -395,7 +445,7 @@ export function HomePage({
       {/* STAGE: na desktopu dvousloupec (feature vlevo, video vpravo) */}
       <div className="hf-stage">
       {/* HERO */}
-      <section className="hero" aria-label="Živé vysílání">
+      <section id="live-player-shell" className="hero" aria-label="Živé vysílání">
         <div className="hero-media" ref={heroRef}>
           <PlayoutStage
             surface={heroSurface}
@@ -462,6 +512,8 @@ export function HomePage({
           </div>
           <HeroPlayerBar
             enabled={playerControlsEnabled}
+            expanded={playerBarExpanded}
+            onExpandedChange={setPlayerBarExpanded}
             currentTime={playerCurrentTime}
             duration={playerDuration}
             onSeek={seekPlayerTo}
@@ -469,6 +521,7 @@ export function HomePage({
             onPlaybackRateChange={setPlaybackRate}
             contextClaims={contextClaims}
             contextLoading={contextLoading}
+            onScrollToChannels={displayChannels.length > 0 ? scrollToChannels : undefined}
           />
         </div>
         <button type="button" className="live-badge" onClick={onReturnToLive} aria-label="Přepnout na živé vysílání">
@@ -484,8 +537,15 @@ export function HomePage({
         <img className="comment-icon" src="/design/icons/ikona_komentovat.png" alt="" />
         <div className="feature-copy">
           <h1 id="hf-featured">{displayTitle}</h1>
-          <p>{displayChannel}</p>
-        </div>
+        <p>{displayChannel}</p>
+        {displayChannels.length > 0 ? (
+          <p className="hero-pick-hint">
+            <button type="button" className="hero-pick-hint-btn" onClick={scrollToChannels}>
+              Vyberte jiné video v sekci KANÁLY níže ↓
+            </button>
+          </p>
+        ) : null}
+      </div>
       </section>
       </div>
       {/* /STAGE */}
@@ -578,12 +638,12 @@ export function HomePage({
             </svg>
           </button>
           <div className="channel-track" ref={channelTrackRef} aria-label="Kanály">
-            {channels.length === 0 ? (
+            {displayChannels.length === 0 ? (
               <article className="channel-card">
                 <span className="ch-name">Připravujeme…</span>
               </article>
             ) : (
-              channels.map((ch) => {
+              displayChannels.map((ch) => {
                 const active = ch.channelName === openChannelName;
                 const isLoading = ch.channelName === channelLoading;
                 return (

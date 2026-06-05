@@ -270,7 +270,8 @@ export default function LivePage({
           setChannelName(item.channelName);
           setVideoId(item.videoId);
           setStartSeconds(0);
-          setIsLive(item.type === "live" || item.channelName.toLowerCase().includes("abj"));
+          // VOD režim pro testování ovládání a běžná videa; lineární živý proud jen u type=live.
+          setIsLive(item.type === "live");
           setContinueFromSeconds(null);
           trackAnalyticsEvent({
             event_name: item.type === "live" ? "live_open" : "video_start",
