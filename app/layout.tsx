@@ -59,7 +59,11 @@ export default function RootLayout({ children }: RootLayoutProps) {
   // visual changes can be reviewed before merging to main.
   const isProductionDeployment = process.env.VERCEL_ENV === "production";
   return (
-    <html lang="cs" className={`${montserrat.variable} ${robotoCondensed.variable}`}>
+    <html
+      lang="cs"
+      className={`${montserrat.variable} ${robotoCondensed.variable}`}
+      data-vercel-env={process.env.VERCEL_ENV ?? ""}
+    >
       <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
         {isProductionDeployment ? (
           <Script id="verox-canonical-host-guard" strategy="beforeInteractive">

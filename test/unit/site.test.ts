@@ -62,11 +62,13 @@ describe("resolveAuthCallbackOrigin", () => {
     );
   });
 
-  it("canonicalizes legacy vercel host on production", async () => {
-    vi.stubEnv("NEXT_PUBLIC_CANONICAL_HOST", "verox.cz");
-    const { resolveAuthCallbackOrigin, CANONICAL_HOST } = await loadSite();
-    const legacyUrl = new URL("https://abj-tv-platform-n7e8-git-main.vercel.app/auth/callback");
-    expect(resolveAuthCallbackOrigin(legacyUrl, "production")).toBe(`https://${CANONICAL_HOST}`);
+  it("keeps git branch host when VERCEL_ENV is missing", async () => {
+    vi.stubEnv("NEXT_PUBLIC_CANONICAL_HOST", "www.verox.cz");
+    const { resolveAuthCallbackOrigin } = await loadSite();
+    const previewUrl = new URL("https://abj-tv-platform-n7e8-git-cursor-pr-120.vercel.app/auth/callback");
+    expect(resolveAuthCallbackOrigin(previewUrl, undefined)).toBe(
+      "https://abj-tv-platform-n7e8-git-cursor-pr-120.vercel.app",
+    );
   });
 
   it("keeps custom domain on production", async () => {
