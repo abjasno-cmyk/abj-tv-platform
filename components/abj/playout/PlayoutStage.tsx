@@ -8,6 +8,7 @@ import type { PlayerHandle, PlayoutSourceCandidate, PlayoutSurface } from "@/lib
 interface PlayoutStageProps {
   surface: PlayoutSurface | null;
   muted: boolean;
+  volume?: number;
   playbackRate?: number;
   // Stage hlásí dřívější konec videa (YouTube ENDED) — bonus trigger pro smyčku.
   onEnded: () => void;
@@ -17,9 +18,24 @@ interface PlayoutStageProps {
 
 const IDENT_LOGO = "/design/brand/verox-logo.png";
 
+function applyPlayerAudio(player: PlayerHandle, muted: boolean, volume: number) {
+  const level = Math.min(100, Math.max(0, Math.round(volume)));
+  if (muted || level === 0) {
+    player.mute?.();
+    return;
+  }
+  player.unMute?.();
+  try {
+    player.setVolume?.(level);
+  } catch {
+    // Některé embedy hlasitost nepodporují.
+  }
+}
+
 export function PlayoutStage({
   surface,
   muted,
+  volume = 100,
   playbackRate = 1,
   onEnded,
   onPlayerReady,
@@ -68,13 +84,11 @@ export function PlayoutStage({
     [],
   );
 
-  // Aplikuj mute, když se změní.
   useEffect(() => {
     const player = playerRef.current;
     if (!player) return;
-    if (muted) player.mute?.();
-    else player.unMute?.();
-  }, [muted]);
+    applyPlayerAudio(player, muted, volume);
+  }, [muted, volume, activeVideoId]);
 
   useEffect(() => {
     const player = playerRef.current;
@@ -182,9 +196,7 @@ export function PlayoutStage({
         const player = event.target as unknown as PlayerHandle;
         playerRef.current = player;
         onPlayerReady?.(player);
-        // Aplikuj preferenci zvuku na každé nové video (odmutování drží napříč přepnutími).
-        if (muted) player.mute?.();
-        else player.unMute?.();
+        applyPlayerAudio(player, muted, volume);
         if (startSeconds > 0) {
           window.setTimeout(() => player.seekTo?.(startSeconds, true), 300);
         }

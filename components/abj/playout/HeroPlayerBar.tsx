@@ -16,6 +16,10 @@ type HeroPlayerBarProps = {
   onSeek: (seconds: number) => void;
   playbackRate: PlaybackSpeed;
   onPlaybackRateChange: (rate: PlaybackSpeed) => void;
+  volume: number;
+  muted: boolean;
+  onVolumeChange: (volume: number) => void;
+  onMuteToggle: () => void;
   onScrollToChannels?: () => void;
 };
 
@@ -28,6 +32,10 @@ export function HeroPlayerBar({
   onSeek,
   playbackRate,
   onPlaybackRateChange,
+  volume,
+  muted,
+  onVolumeChange,
+  onMuteToggle,
   onScrollToChannels,
 }: HeroPlayerBarProps) {
   const controlId = useId();
@@ -162,6 +170,48 @@ export function HeroPlayerBar({
                   </option>
                 ))}
               </select>
+            </label>
+          </div>
+
+          <div className="hero-player-row hero-player-row--volume">
+            <button
+              type="button"
+              className={`hero-player-mute${muted ? " is-muted" : ""}`}
+              onClick={onMuteToggle}
+              aria-label={muted ? "Zapnout zvuk" : "Ztlumit zvuk"}
+              aria-pressed={muted}
+            >
+              {muted ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+                  <path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+                  <path d="M16 8.6a4 4 0 0 1 0 6.8M18.6 6a7 7 0 0 1 0 12" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                </svg>
+              )}
+            </button>
+            <label className="hero-player-volume" htmlFor={`${controlId}-volume`}>
+              <span className="hero-player-volume-label">Hlasitost</span>
+              <input
+                id={`${controlId}-volume`}
+                type="range"
+                className="hero-player-volume-slider"
+                min={0}
+                max={100}
+                step={1}
+                value={volume}
+                onChange={(event) => onVolumeChange(Number(event.target.value))}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={volume}
+                aria-label="Hlasitost videa"
+              />
+              <span className="hero-player-volume-value" aria-hidden="true">
+                {muted ? "0" : volume}%
+              </span>
             </label>
           </div>
         </div>

@@ -462,6 +462,58 @@
   font-weight: 700;
   cursor: pointer;
 }
+.hf .hero-player-row--volume {
+  margin-top: clamp(4px, 0.6vw, 8px);
+  padding-top: clamp(4px, 0.6vw, 8px);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+.hf .hero-player-mute {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.hf .hero-player-mute.is-muted {
+  border-color: rgba(255, 106, 0, 0.65);
+  background: rgba(255, 106, 0, 0.2);
+}
+.hf .hero-player-mute svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+.hf .hero-player-volume {
+  flex: 1 1 140px;
+  display: flex;
+  align-items: center;
+  gap: clamp(6px, 1vw, 10px);
+  min-width: 0;
+}
+.hf .hero-player-volume-label {
+  font-size: clamp(0.68rem, 1vw, 0.8rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.hf .hero-player-volume-slider {
+  flex: 1 1 auto;
+  min-width: 0;
+  accent-color: var(--vx-orange);
+  cursor: pointer;
+}
+.hf .hero-player-volume-value {
+  flex: 0 0 auto;
+  min-width: 2.2rem;
+  font-size: clamp(0.72rem, 1.05vw, 0.85rem);
+  font-weight: 700;
+  text-align: right;
+}
 @media (max-width: 640px) {
   .hf .hero-player-skip:nth-child(2),
   .hf .hero-player-skip:nth-child(5) {

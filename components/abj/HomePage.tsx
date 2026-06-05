@@ -68,6 +68,7 @@ export function HomePage({
   // (onReady aplikuje `muted` stav). Auto-odmutovat hned po načtení nelze — browser
   // to bez gesta zablokuje. Viz preference [[verox-videos-always-unmuted]].
   const [muted, setMuted] = useState(true);
+  const [volume, setVolume] = useState(100);
   const [playing, setPlaying] = useState(true);
   const [stageDot, setStageDot] = useState(0);
   const [channelDot, setChannelDot] = useState(0);
@@ -378,14 +379,48 @@ export function HomePage({
     setPlaying(!playing);
   };
 
-  const toggleMute = () => {
-    const next = !muted;
-    setMuted(next);
+  const applyAudioToPlayer = useCallback((nextMuted: boolean, nextVolume: number) => {
     const p = playerRef.current;
     if (!p) return;
-    if (next) p.mute?.();
-    else p.unMute?.();
-  };
+    const level = Math.min(100, Math.max(0, Math.round(nextVolume)));
+    if (nextMuted || level === 0) {
+      p.mute?.();
+      return;
+    }
+    p.unMute?.();
+    try {
+      p.setVolume?.(level);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleVolumeChange = useCallback(
+    (next: number) => {
+      const level = Math.min(100, Math.max(0, Math.round(next)));
+      setVolume(level);
+      if (level === 0) {
+        setMuted(true);
+        applyAudioToPlayer(true, 0);
+        return;
+      }
+      setMuted(false);
+      applyAudioToPlayer(false, level);
+    },
+    [applyAudioToPlayer],
+  );
+
+  const toggleMute = useCallback(() => {
+    if (muted) {
+      const restore = volume > 0 ? volume : 100;
+      if (volume <= 0) setVolume(100);
+      setMuted(false);
+      applyAudioToPlayer(false, restore);
+      return;
+    }
+    setMuted(true);
+    applyAudioToPlayer(true, volume);
+  }, [muted, volume, applyAudioToPlayer]);
 
   const toggleFullscreen = () => {
     const el = heroRef.current as (HTMLDivElement & { webkitRequestFullscreen?: () => void }) | null;
@@ -413,6 +448,7 @@ export function HomePage({
           <PlayoutStage
             surface={heroSurface}
             muted={muted}
+            volume={volume}
             playbackRate={playbackRate}
             onEnded={handleStageEnded}
             onPlayerReady={registerPlayer}
@@ -482,6 +518,10 @@ export function HomePage({
             onSeek={seekPlayerTo}
             playbackRate={playbackRate}
             onPlaybackRateChange={setPlaybackRate}
+            volume={volume}
+            muted={muted}
+            onVolumeChange={handleVolumeChange}
+            onMuteToggle={toggleMute}
             onScrollToChannels={displayChannels.length > 0 ? scrollToChannels : undefined}
           />
         </div>
