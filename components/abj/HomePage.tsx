@@ -131,6 +131,7 @@ export function HomePage({
     return map;
   }, [days]);
   const currentVideoId = heroSurface?.kind === "youtube" ? heroSurface.videoId : null;
+  const activeCommentVideoId = currentVideoId ?? videoId;
   const currentEpg = currentVideoId ? epgInfoById.get(currentVideoId) : null;
   const displayTitle =
     (heroSurface?.kind === "youtube" ? heroSurface.title : undefined) ?? currentEpg?.title ?? title;
@@ -564,7 +565,7 @@ export function HomePage({
       <VideoCommentsDrawer
         open={commentsOpen}
         onClose={() => setCommentsOpen(false)}
-        videoId={currentVideoId}
+        videoId={activeCommentVideoId}
         videoTitle={displayTitle}
       />
     </div>

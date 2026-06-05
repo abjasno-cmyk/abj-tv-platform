@@ -145,6 +145,7 @@ export function AuthProvider({
     try {
       const response = await fetch("/api/auth/session-sync", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           accessToken,

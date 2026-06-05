@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { CommentsSection } from "@/components/auth/CommentsSection";
 
@@ -11,7 +11,11 @@ type VideoCommentsDrawerProps = {
   videoTitle?: string;
 };
 
+type DrawerView = "global" | "video";
+
 export function VideoCommentsDrawer({ open, onClose, videoId, videoTitle }: VideoCommentsDrawerProps) {
+  const [view, setView] = useState<DrawerView>("global");
+
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -30,6 +34,10 @@ export function VideoCommentsDrawer({ open, onClose, videoId, videoTitle }: Vide
     };
   }, [handleKeyDown, open]);
 
+  useEffect(() => {
+    if (open) setView("global");
+  }, [open]);
+
   if (!open) return null;
 
   return (
@@ -42,12 +50,34 @@ export function VideoCommentsDrawer({ open, onClose, videoId, videoTitle }: Vide
             ×
           </button>
         </header>
+        <div className="vx-comments-drawer-tabs" role="tablist" aria-label="Rozsah komentářů">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === "global"}
+            className={view === "global" ? "is-active" : undefined}
+            onClick={() => setView("global")}
+          >
+            Všechny
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === "video"}
+            className={view === "video" ? "is-active" : undefined}
+            onClick={() => setView("video")}
+            disabled={!videoId}
+          >
+            Toto video
+          </button>
+        </div>
         <div className="vx-comments-drawer-body">
           <CommentsSection
-            scope="global"
+            key={view}
+            scope={view === "global" ? "global" : "entity"}
             entityId={videoId}
             videoTitle={videoTitle}
-            heading="Diskuse VEROX"
+            heading={view === "global" ? "Diskuse VEROX" : "Komentáře k videu"}
             compact
           />
         </div>

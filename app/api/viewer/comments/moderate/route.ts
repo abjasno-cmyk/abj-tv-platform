@@ -1,6 +1,13 @@
 import { AuthApiError, requireAuthenticatedUser } from "@/lib/supabase/authenticated-server";
 import { canModerateViewerComments } from "@/lib/viewer/commentAccess";
 import { mapCommentRows } from "@/lib/viewer/commentMapper";
+import {
+  COMMENT_CORE_SELECT,
+  COMMENT_FULL_SELECT,
+  isSupabaseSchemaMismatch,
+  normalizeCommentRow,
+  type CommentDbRow,
+} from "@/lib/viewer/commentsDb";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +21,14 @@ function normalize(value: unknown): string {
 }
 
 const ALLOWED_ACTIONS = new Set(["hide", "pin", "unpin"]);
+
+async function loadCommentRow(supabase: Awaited<ReturnType<typeof requireAuthenticatedUser>>["supabase"], commentId: string) {
+  let current = await supabase.from("comments").select(COMMENT_FULL_SELECT).eq("id", commentId).maybeSingle();
+  if (isSupabaseSchemaMismatch(current.error)) {
+    current = await supabase.from("comments").select(COMMENT_CORE_SELECT).eq("id", commentId).maybeSingle();
+  }
+  return current;
+}
 
 export async function POST(request: Request) {
   try {
@@ -34,12 +49,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Neplatná akce moderace." }, { status: 400 });
     }
 
-    const current = await supabase
-      .from("comments")
-      .select("id, user_id, entity_type, entity_id, parent_id, body, status, is_pinned, created_at, updated_at")
-      .eq("id", commentId)
-      .maybeSingle();
-
+    const current = await loadCommentRow(supabase, commentId);
     if (current.error || !current.data) {
       return Response.json({ error: "Komentář nebyl nalezen." }, { status: 404 });
     }
@@ -60,18 +70,32 @@ export async function POST(request: Request) {
     }
 
     const isPinned = action === "pin";
-    const update = await supabase
+    let update = await supabase
       .from("comments")
       .update({ is_pinned: isPinned })
       .eq("id", commentId)
-      .select("id, user_id, entity_type, entity_id, parent_id, body, status, is_pinned, created_at, updated_at")
+      .select(COMMENT_FULL_SELECT)
       .single();
+
+    if (isSupabaseSchemaMismatch(update.error)) {
+      return Response.json(
+        {
+          error:
+            "Připínání komentářů vyžaduje migraci databáze (supabase/008_comments_pinned.sql). Skrývání komentářů funguje i bez ní.",
+        },
+        { status: 503 },
+      );
+    }
 
     if (update.error || !update.data) {
       return Response.json({ error: "Komentář se nepodařilo upravit." }, { status: 500 });
     }
 
-    const [comment] = await mapCommentRows(supabase, [update.data], { viewerCanModerate: true });
+    const [comment] = await mapCommentRows(
+      supabase,
+      [normalizeCommentRow(update.data as CommentDbRow)],
+      { viewerCanModerate: true },
+    );
     return Response.json({ ok: true, comment });
   } catch (error) {
     if (error instanceof AuthApiError) {

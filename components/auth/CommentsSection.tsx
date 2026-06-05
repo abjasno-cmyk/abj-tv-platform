@@ -23,8 +23,11 @@ type CommentsSectionProps = {
 type CommentsResponse = {
   comments?: ViewerCommentRecord[];
   canModerate?: boolean;
+  schemaReady?: boolean;
   error?: string;
 };
+
+const fetchOpts: RequestInit = { credentials: "include", cache: "no-store" };
 
 function formatCommentDate(value: string): string {
   const date = new Date(value);
@@ -166,6 +169,7 @@ export function CommentsSection({
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [replyParentId, setReplyParentId] = useState<string | null>(null);
+  const [schemaReady, setSchemaReady] = useState(true);
 
   const isGlobal = scope === "global";
   const canLoad = isGlobal || Boolean(entityId);
@@ -174,17 +178,17 @@ export function CommentsSection({
     if (!canLoad) return;
     setLoading(true);
     setError(null);
-    const response = await fetch(commentsQuery(isGlobal ? "global" : "entity", entityType, entityId), {
-      cache: "no-store",
-    });
+    const response = await fetch(commentsQuery(isGlobal ? "global" : "entity", entityType, entityId), fetchOpts);
     const payload = (await response.json().catch(() => ({}))) as CommentsResponse;
     if (!response.ok) {
       setLoading(false);
       setError(payload.error ?? "Komentáře se nepodařilo načíst.");
+      setSchemaReady(false);
       return;
     }
     setComments(Array.isArray(payload.comments) ? payload.comments : []);
     setCanModerate(Boolean(payload.canModerate));
+    setSchemaReady(payload.schemaReady !== false);
     setLoading(false);
   }, [canLoad, entityId, entityType, isGlobal]);
 
@@ -207,13 +211,14 @@ export function CommentsSection({
   }, [comments, entityId, replyParentId]);
 
   const canSubmit = useMemo(() => draft.trim().length >= 2 && draft.trim().length <= 2000, [draft]);
-  const canPost = Boolean(composeEntityId) && isAuthenticated;
+  const canPost = Boolean(composeEntityId) && isAuthenticated && schemaReady;
 
   const addComment = async () => {
     if (!canSubmit || !composeEntityId) return;
     setSaving(true);
     setError(null);
     const response = await fetch("/api/viewer/comments", {
+      ...fetchOpts,
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -230,6 +235,11 @@ export function CommentsSection({
     setSaving(false);
     const createdComment = payload.comment;
     if (!response.ok || !createdComment) {
+      if (response.status === 401) {
+        setError("Přihlášení vypršelo nebo není vidět serveru. Přihlaste se prosím znovu.");
+        requestAuth(() => undefined, { reason: "Pro uložení komentáře je potřeba přihlášení." });
+        return;
+      }
       setError(payload.error ?? "Komentář se nepodařilo uložit.");
       return;
     }
@@ -241,6 +251,7 @@ export function CommentsSection({
 
   const deleteComment = async (commentId: string) => {
     const response = await fetch(`/api/viewer/comments/${encodeURIComponent(commentId)}`, {
+      ...fetchOpts,
       method: "DELETE",
     });
     if (!response.ok) {
@@ -253,6 +264,7 @@ export function CommentsSection({
 
   const moderateComment = async (commentId: string, action: "hide" | "pin" | "unpin") => {
     const response = await fetch("/api/viewer/comments/moderate", {
+      ...fetchOpts,
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ commentId, action }),
@@ -273,6 +285,16 @@ export function CommentsSection({
     if (payload.comment) {
       setComments((prev) => prev.map((comment) => (comment.id === commentId ? payload.comment! : comment)));
     }
+  };
+
+  const handleReply = (parentId: string) => {
+    if (!isAuthenticated) {
+      requestAuth(() => setReplyParentId(parentId), {
+        reason: "Pro odpověď na komentář se přihlaste zdarma.",
+      });
+      return;
+    }
+    setReplyParentId(parentId);
   };
 
   const shellClass = compact ? "vx-comments vx-comments--compact" : "vx-comments";
@@ -312,7 +334,9 @@ export function CommentsSection({
         <div className="vx-comments-compose">
           {replyParentId ? <p className="vx-comments-reply-hint">Odpovídáte na komentář</p> : null}
           {!composeEntityId ? (
-            <p className="vx-comments-hint">Nejdřív vyberte video v přehrávači, pak můžete komentovat.</p>
+            <p className="vx-comments-hint">
+              Vyberte konkrétní video v sekci PRÁVĚ HRAJE nebo KANÁLY — pak zde můžete napsat komentář k němu.
+            </p>
           ) : (
             <>
               <textarea
@@ -341,6 +365,13 @@ export function CommentsSection({
         </div>
       ) : null}
 
+      {!schemaReady ? (
+        <p className="vx-comments-schema">
+          Databáze komentářů na tomto serveru ještě není připravená. Správce musí v Supabase spustit migrace{" "}
+          <code>004_viewer_accounts.sql</code> a <code>008_comments_pinned.sql</code>.
+        </p>
+      ) : null}
+
       {error ? <p className="vx-comments-error">{error}</p> : null}
 
       {loading ? (
@@ -359,7 +390,7 @@ export function CommentsSection({
               activeVideoId={entityId}
               showVideoContext={isGlobal}
               replyParentId={replyParentId}
-              onReply={setReplyParentId}
+              onReply={handleReply}
               onCancelReply={() => setReplyParentId(null)}
               onDeleteOwn={(id) => {
                 void deleteComment(id);

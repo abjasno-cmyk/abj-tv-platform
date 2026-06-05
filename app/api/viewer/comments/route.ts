@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canModerateViewerComments } from "@/lib/viewer/commentAccess";
 import { mapCommentRows } from "@/lib/viewer/commentMapper";
 import { VIEWER_COMMENT_ENTITY_VIDEO } from "@/lib/viewer/comments";
+import { insertComment, isSupabaseSchemaMismatch, listPublishedComments } from "@/lib/viewer/commentsDb";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,19 @@ type CreateCommentPayload = {
 
 function normalizeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function publicErrorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === "object" && "message" in error) {
+    const message = String((error as { message: string }).message);
+    if (isSupabaseSchemaMismatch(error as { message: string })) {
+      return "Tabulka komentářů na serveru ještě není připravená. Spusťte migraci supabase/004_viewer_accounts.sql a 008_comments_pinned.sql.";
+    }
+    if (message.toLowerCase().includes("row-level security")) {
+      return "Komentář se nepodařilo uložit — zkuste se znovu přihlásit.";
+    }
+  }
+  return fallback;
 }
 
 export async function GET(request: Request) {
@@ -45,36 +59,34 @@ export async function GET(request: Request) {
       ? GLOBAL_LIMIT
       : DEFAULT_LIMIT;
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const viewerCanModerate = user ? await canModerateViewerComments(supabase, user) : false;
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const viewerCanModerate = user ? await canModerateViewerComments(supabase, user) : false;
 
-  let query = supabase
-    .from("comments")
-    .select("id, user_id, entity_type, entity_id, parent_id, body, status, is_pinned, created_at, updated_at")
-    .eq("entity_type", entityType)
-    .order("is_pinned", { ascending: false })
-    .order("created_at", { ascending: true })
-    .limit(limit);
+    const { rows, supportsPinned, schemaReady } = await listPublishedComments(supabase, {
+      entityType,
+      entityId: isGlobalVideoFeed ? undefined : entityId,
+      limit,
+    });
 
-  if (!isGlobalVideoFeed) {
-    query = query.eq("entity_id", entityId);
+    const comments = await mapCommentRows(supabase, rows, { viewerCanModerate });
+
+    return Response.json({
+      comments,
+      scope: isGlobalVideoFeed ? "global" : "entity",
+      canModerate: viewerCanModerate,
+      schemaReady,
+      supportsPinned,
+    });
+  } catch (error) {
+    return Response.json(
+      { error: publicErrorMessage(error, "Načtení komentářů selhalo.") },
+      { status: 500 },
+    );
   }
-
-  const result = await query;
-  if (result.error) {
-    return Response.json({ error: "Načtení komentářů selhalo." }, { status: 500 });
-  }
-
-  const comments = await mapCommentRows(supabase, result.data ?? [], { viewerCanModerate });
-
-  return Response.json({
-    comments,
-    scope: isGlobalVideoFeed ? "global" : "entity",
-    canModerate: viewerCanModerate,
-  });
 }
 
 export async function POST(request: Request) {
@@ -110,21 +122,14 @@ export async function POST(request: Request) {
       }
     }
 
-    const insert = await supabase
-      .from("comments")
-      .insert({
-        user_id: user.id,
-        entity_type: entityType,
-        entity_id: entityId,
-        parent_id: parentId,
-        body,
-      })
-      .select("id, user_id, entity_type, entity_id, parent_id, body, status, is_pinned, created_at, updated_at")
-      .single();
-
-    if (insert.error || !insert.data) {
-      return Response.json({ error: "Vytvoření komentáře selhalo." }, { status: 500 });
-    }
+    const viewerCanModerate = await canModerateViewerComments(supabase, user);
+    const { row } = await insertComment(supabase, {
+      user_id: user.id,
+      entity_type: entityType,
+      entity_id: entityId,
+      parent_id: parentId,
+      body,
+    });
 
     await supabase.from("viewer_activity").insert({
       user_id: user.id,
@@ -132,19 +137,21 @@ export async function POST(request: Request) {
       entity_type: entityType,
       entity_id: entityId,
       metadata: {
-        comment_id: insert.data.id,
+        comment_id: row.id,
         parent_id: parentId,
       },
     });
 
-    const viewerCanModerate = await canModerateViewerComments(supabase, user);
-    const [comment] = await mapCommentRows(supabase, [insert.data], { viewerCanModerate });
+    const [comment] = await mapCommentRows(supabase, [row], { viewerCanModerate });
 
     return Response.json({ ok: true, comment }, { status: 201 });
   } catch (error) {
     if (error instanceof AuthApiError) {
       return Response.json({ error: error.message }, { status: error.status });
     }
-    return Response.json({ error: "Komentář se nepodařilo uložit." }, { status: 500 });
+    return Response.json(
+      { error: publicErrorMessage(error, "Komentář se nepodařilo uložit.") },
+      { status: 500 },
+    );
   }
 }
