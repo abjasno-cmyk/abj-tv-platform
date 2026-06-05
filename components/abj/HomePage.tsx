@@ -5,6 +5,7 @@ import { LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT } from "@/lib/liveChannelVideos";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { HeroAudienceIndicator } from "@/components/abj/HeroAudienceIndicator";
 import { VeroxHeader } from "@/components/abj/VeroxHeader";
 import { HeroPlayerBar, type PlaybackSpeed } from "@/components/abj/playout/HeroPlayerBar";
 import { VideoCommentsDrawer } from "@/components/auth/VideoCommentsDrawer";
@@ -466,6 +467,7 @@ export function HomePage({
               se hover ovládání YouTube (titulek, sdílení, „More videos", logo)
               vůbec nezobrazí a nic neodvede diváka pryč. Jediný ovladač jsou naše
               3 tlačítka v .hero-ctrls (z-index nad guardem). */}
+          <HeroAudienceIndicator />
           <span className="hero-guard" aria-hidden="true" />
           <div className="hero-ctrls">
             <button
