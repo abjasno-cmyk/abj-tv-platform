@@ -72,7 +72,12 @@ export function HeroPlayerBar({
           aria-expanded={expanded}
           aria-controls={`${controlId}-panel`}
         >
-          {expanded ? "Skrýt ovládání" : "Ovládání přehrávání"}
+          <span className="hero-player-toggle-text hero-player-toggle-text--desktop">
+            {expanded ? "Skrýt ovládání" : "Ovládání přehrávání"}
+          </span>
+          <span className="hero-player-toggle-text hero-player-toggle-text--mobile">
+            {expanded ? "Skrýt" : "Ovládání"}
+          </span>
           <span className="hero-player-toggle-meta" aria-hidden="true">
             {timeLabel}
           </span>
@@ -81,7 +86,12 @@ export function HeroPlayerBar({
           </span>
         </button>
         {!expanded && onScrollToChannels ? (
-          <button type="button" className="hero-player-pick-video" onClick={onScrollToChannels}>
+          <button
+            type="button"
+            className="hero-player-pick-video"
+            onClick={onScrollToChannels}
+            aria-label="Vybrat jiné video v sekci kanálů"
+          >
             Vybrat jiné video ↓
           </button>
         ) : null}
