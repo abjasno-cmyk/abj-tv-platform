@@ -199,6 +199,22 @@ export function CommentsSection({
     return () => window.cancelAnimationFrame(frame);
   }, [loadComments]);
 
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    void fetch("/api/auth/bootstrap", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        termsAccepted: true,
+        newsletterOptIn: false,
+        source: "comments_panel",
+      }),
+    }).catch(() => {
+      // Best-effort — komentáře fungují i bez profilu, ale bootstrap pomůže se jménem.
+    });
+  }, [isAuthenticated]);
+
   const tree = useMemo(() => buildCommentTree(comments), [comments]);
   const totalCount = useMemo(() => countVisibleComments(comments), [comments]);
 
@@ -244,9 +260,9 @@ export function CommentsSection({
       return;
     }
 
-    setComments((prev) => [...prev, createdComment]);
     setDraft("");
     setReplyParentId(null);
+    await loadComments();
   };
 
   const deleteComment = async (commentId: string) => {

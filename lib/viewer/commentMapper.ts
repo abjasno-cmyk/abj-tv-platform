@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { isStaffCommentAuthor } from "@/lib/viewer/commentsStaff";
 import type { ViewerCommentRecord } from "@/lib/viewer/comments";
+import { loadCommentAuthorProfiles } from "@/lib/viewer/profileLookup";
 
 type CommentRow = {
   id: string;
@@ -18,40 +19,16 @@ type CommentRow = {
   updated_at: string;
 };
 
-type ProfileLookup = {
-  display_name: string | null;
-  avatar_url: string | null;
-  email: string | null;
-  role: string | null;
-};
-
 export async function mapCommentRows(
   supabase: SupabaseClient,
   rows: CommentRow[],
   options: { viewerCanModerate: boolean },
 ): Promise<ViewerCommentRecord[]> {
   const userIds = Array.from(new Set(rows.map((row) => row.user_id).filter((value) => typeof value === "string")));
-  const profileById = new Map<string, ProfileLookup>();
-
-  if (userIds.length > 0) {
-    const profilesLookup = await supabase
-      .from("profiles")
-      .select("id, display_name, avatar_url, email, role")
-      .in("id", userIds);
-    if (!profilesLookup.error) {
-      for (const profile of profilesLookup.data ?? []) {
-        profileById.set(profile.id, {
-          display_name: profile.display_name,
-          avatar_url: profile.avatar_url,
-          email: profile.email,
-          role: profile.role,
-        });
-      }
-    }
-  }
+  const profileById = await loadCommentAuthorProfiles(supabase, userIds);
 
   return rows.map((row) => {
-    const profile = profileById.get(row.user_id);
+    const profile = profileById.get(row.user_id) ?? null;
     return {
       id: row.id,
       userId: row.user_id,

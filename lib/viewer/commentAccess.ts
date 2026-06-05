@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 import { STUDIO_ALLOWED_EMAILS } from "@/lib/studio/access";
+import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { isStaffCommentAuthor } from "@/lib/viewer/commentsStaff";
 
 export { isStaffCommentAuthor };
@@ -24,7 +25,14 @@ export async function canModerateViewerComments(supabase: SupabaseClient, user: 
   const email = normalizeEmail(user.email ?? null);
   if (email && STUDIO_ALLOWED_EMAILS.has(email)) return true;
 
-  const profileQuery = await supabase.from("profiles").select("email, role").eq("id", user.id).maybeSingle();
+  let profileClient = supabase;
+  try {
+    profileClient = createSupabaseServiceClient();
+  } catch {
+    // Fall back to session client.
+  }
+
+  const profileQuery = await profileClient.from("profiles").select("email, role").eq("id", user.id).maybeSingle();
   if (profileQuery.error || !profileQuery.data) return false;
 
   const profile = profileQuery.data;

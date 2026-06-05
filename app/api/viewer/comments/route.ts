@@ -122,7 +122,13 @@ export async function POST(request: Request) {
       }
     }
 
-    const viewerCanModerate = await canModerateViewerComments(supabase, user);
+    let viewerCanModerate = false;
+    try {
+      viewerCanModerate = await canModerateViewerComments(supabase, user);
+    } catch {
+      viewerCanModerate = false;
+    }
+
     const { row } = await insertComment(supabase, {
       user_id: user.id,
       entity_type: entityType,
