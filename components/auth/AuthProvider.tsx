@@ -5,7 +5,6 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { LoginModal } from "@/components/auth/LoginModal";
-import { isVercelGitBranchPreviewHost, resolveAuthOriginForHost } from "@/lib/deploymentHost";
 
 const PENDING_CONSENTS_KEY = "verox_pending_consents_v1";
 
@@ -80,45 +79,13 @@ function clearPendingConsentsStorage() {
   }
 }
 
-function readVercelEnvFromDocument(): string | null {
-  if (typeof document === "undefined") return null;
-  const fromHtml = document.documentElement.dataset.vercelEnv;
-  return typeof fromHtml === "string" && fromHtml.trim() ? fromHtml.trim() : null;
-}
-
-function resolveClientVercelEnv(vercelEnvProp?: string): string | null {
-  return vercelEnvProp ?? readVercelEnvFromDocument() ?? process.env.NEXT_PUBLIC_VERCEL_ENV ?? null;
-}
-
-function shouldPreserveAuthOrigin(vercelEnv: string | null): boolean {
-  if (typeof window === "undefined") return vercelEnv === "preview" || vercelEnv === "development";
-  if (vercelEnv === "preview" || vercelEnv === "development") return true;
-  return isVercelGitBranchPreviewHost(window.location.host);
-}
-
-function redirectToPreferredAuthOriginIfNeeded(vercelEnv: string | null): boolean {
-  if (typeof window === "undefined") return false;
-  if (shouldPreserveAuthOrigin(vercelEnv)) return false;
-
-  const protocol = window.location.protocol || "https:";
-  const host = window.location.host;
-  const preferredOrigin = resolveAuthOriginForHost(host, protocol, vercelEnv);
-  const currentOrigin = `${protocol}//${host}`;
-  if (preferredOrigin === currentOrigin) return false;
-
-  window.location.replace(`${preferredOrigin}${window.location.pathname}${window.location.search}${window.location.hash}`);
-  return true;
-}
-
 export function AuthProvider({
   children,
-  vercelEnv: vercelEnvProp,
 }: {
   children: React.ReactNode;
+  /** @deprecated Passed from layout for backwards compatibility; ignored. */
   vercelEnv?: string;
 }) {
-  const vercelEnv = useMemo(() => resolveClientVercelEnv(vercelEnvProp), [vercelEnvProp]);
-
   const supabase = useMemo<SupabaseClient | null>(() => {
     try {
       return createSupabaseBrowserClient();
@@ -136,10 +103,6 @@ export function AuthProvider({
   const pendingActionRef = useRef<(() => void) | null>(null);
   const lastBootstrappedUserIdRef = useRef<string | null>(null);
   const lastSyncedAccessTokenRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    redirectToPreferredAuthOriginIfNeeded(vercelEnv);
-  }, [vercelEnv]);
 
   const syncServerSession = useCallback(async (accessToken: string, refreshToken?: string | null) => {
     if (!accessToken) return;
@@ -307,24 +270,15 @@ export function AuthProvider({
   }, [clearServerSession, supabase]);
 
   const buildOAuthRedirectTo = useCallback(() => {
-    const nextPath =
-      typeof window !== "undefined"
-        ? `${window.location.pathname}${window.location.search}${window.location.hash}`
-        : "/live";
-    const origin =
-      typeof window !== "undefined"
-        ? resolveAuthOriginForHost(window.location.host, window.location.protocol || "https:", vercelEnv)
-        : null;
-    return origin ? `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}` : undefined;
-  }, [vercelEnv]);
+    if (typeof window === "undefined") return undefined;
+    const nextPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
+  }, []);
 
   const handleOAuth = useCallback(
     async (provider: "google" | "facebook", options: { termsAccepted: boolean; newsletterOptIn: boolean }) => {
       if (!supabase) {
         setModalError("Přihlášení není dostupné: chybí konfigurace Supabase.");
-        return;
-      }
-      if (redirectToPreferredAuthOriginIfNeeded(vercelEnv)) {
         return;
       }
       setBusyProvider(provider);
@@ -347,16 +301,13 @@ export function AuthProvider({
         setModalError(result.error.message);
       }
     },
-    [buildOAuthRedirectTo, supabase, vercelEnv],
+    [buildOAuthRedirectTo, supabase],
   );
 
   const handleEmail = useCallback(
     async (email: string, options: { termsAccepted: boolean; newsletterOptIn: boolean }) => {
       if (!supabase) {
         setModalError("Přihlášení není dostupné: chybí konfigurace Supabase.");
-        return;
-      }
-      if (redirectToPreferredAuthOriginIfNeeded(vercelEnv)) {
         return;
       }
       setBusyProvider("email");
@@ -381,7 +332,7 @@ export function AuthProvider({
       }
       setModalError("Na e-mail jsme poslali bezpečný odkaz pro přihlášení.");
     },
-    [buildOAuthRedirectTo, supabase, vercelEnv],
+    [buildOAuthRedirectTo, supabase],
   );
 
   const value = useMemo<AuthContextValue>(

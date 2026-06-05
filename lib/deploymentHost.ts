@@ -13,6 +13,9 @@ export const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL ?? `https://${CANONICAL_HOST}`
 ).replace(/\/+$/, "");
 
+/** Bare production Vercel alias (no branch suffix). */
+export const PRODUCTION_LEGACY_VERCEL_HOST = "abj-tv-platform-n7e8.vercel.app";
+
 export const LEGACY_VERCEL_HOST_PATTERN = /^abj-tv-platform-n7e8(?:-[a-z0-9-]+)?\.vercel\.app$/i;
 
 /** Vercel PR / branch preview URLs contain `-git-` (e.g. *-git-cursor-foo.vercel.app). */
@@ -28,7 +31,27 @@ export function shouldPreserveAuthOnHost(
   const env = vercelEnv?.trim().toLowerCase() ?? "";
   if (env === "preview" || env === "development") return true;
   if (isVercelGitBranchPreviewHost(host)) return true;
+
+  const normalizedHost = host.trim().toLowerCase();
+  // Any other legacy Vercel deployment URL (branch builds, hashes) — stay put.
+  if (
+    LEGACY_VERCEL_HOST_PATTERN.test(normalizedHost) &&
+    normalizedHost !== PRODUCTION_LEGACY_VERCEL_HOST
+  ) {
+    return true;
+  }
+
   return false;
+}
+
+export function shouldCanonicalizeAuthHost(
+  host: string,
+  vercelEnv?: string | null,
+): boolean {
+  if (shouldPreserveAuthOnHost(host, vercelEnv)) return false;
+  const env = vercelEnv?.trim().toLowerCase() ?? "";
+  if (env !== "production") return false;
+  return host.trim().toLowerCase() === PRODUCTION_LEGACY_VERCEL_HOST;
 }
 
 export function resolveAuthOriginForHost(
@@ -40,9 +63,9 @@ export function resolveAuthOriginForHost(
     return `${protocol}//${host}`;
   }
 
-  const normalizedHost = host.trim().toLowerCase();
-  const shouldCanonicalize =
-    LEGACY_VERCEL_HOST_PATTERN.test(normalizedHost) && normalizedHost !== CANONICAL_HOST;
+  if (shouldCanonicalizeAuthHost(host, vercelEnv)) {
+    return `${protocol}//${CANONICAL_HOST}`;
+  }
 
-  return `${protocol}//${shouldCanonicalize ? CANONICAL_HOST : host}`;
+  return `${protocol}//${host}`;
 }

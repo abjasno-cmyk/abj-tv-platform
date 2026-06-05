@@ -31,11 +31,27 @@ describe("resolveAuthOriginForHost", () => {
     );
   });
 
+  it("keeps other legacy vercel deployment hosts", async () => {
+    vi.stubEnv("NEXT_PUBLIC_CANONICAL_HOST", "www.verox.cz");
+    const { resolveAuthOriginForHost } = await loadDeploymentHost();
+    expect(resolveAuthOriginForHost("abj-tv-platform-n7e8-abc123.vercel.app", "https:", "production")).toBe(
+      "https://abj-tv-platform-n7e8-abc123.vercel.app",
+    );
+  });
+
   it("canonicalizes bare legacy vercel host to verox on production", async () => {
     vi.stubEnv("NEXT_PUBLIC_CANONICAL_HOST", "www.verox.cz");
     const { resolveAuthOriginForHost } = await loadDeploymentHost();
     expect(resolveAuthOriginForHost("abj-tv-platform-n7e8.vercel.app", "https:", "production")).toBe(
       "https://www.verox.cz",
+    );
+  });
+
+  it("does not canonicalize bare legacy vercel host without production env", async () => {
+    vi.stubEnv("NEXT_PUBLIC_CANONICAL_HOST", "www.verox.cz");
+    const { resolveAuthOriginForHost } = await loadDeploymentHost();
+    expect(resolveAuthOriginForHost("abj-tv-platform-n7e8.vercel.app", "https:", undefined)).toBe(
+      "https://abj-tv-platform-n7e8.vercel.app",
     );
   });
 });

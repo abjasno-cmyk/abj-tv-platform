@@ -57,16 +57,7 @@ describe("resolveAuthCallbackOrigin", () => {
   it("keeps preview deployment host after OAuth", async () => {
     const { resolveAuthCallbackOrigin } = await loadSite();
     const previewUrl = new URL("https://abj-tv-platform-n7e8-git-cursor-pr-120.vercel.app/auth/callback");
-    expect(resolveAuthCallbackOrigin(previewUrl, "preview")).toBe(
-      "https://abj-tv-platform-n7e8-git-cursor-pr-120.vercel.app",
-    );
-  });
-
-  it("keeps git branch host when VERCEL_ENV is missing", async () => {
-    vi.stubEnv("NEXT_PUBLIC_CANONICAL_HOST", "www.verox.cz");
-    const { resolveAuthCallbackOrigin } = await loadSite();
-    const previewUrl = new URL("https://abj-tv-platform-n7e8-git-cursor-pr-120.vercel.app/auth/callback");
-    expect(resolveAuthCallbackOrigin(previewUrl, undefined)).toBe(
+    expect(resolveAuthCallbackOrigin(previewUrl)).toBe(
       "https://abj-tv-platform-n7e8-git-cursor-pr-120.vercel.app",
     );
   });
@@ -74,6 +65,6 @@ describe("resolveAuthCallbackOrigin", () => {
   it("keeps custom domain on production", async () => {
     const { resolveAuthCallbackOrigin } = await loadSite();
     const veroxUrl = new URL("https://www.verox.cz/auth/callback");
-    expect(resolveAuthCallbackOrigin(veroxUrl, "production")).toBe("https://www.verox.cz");
+    expect(resolveAuthCallbackOrigin(veroxUrl)).toBe("https://www.verox.cz");
   });
 });

@@ -72,8 +72,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
               try {
                 var canonicalHost = "${CANONICAL_HOST}";
                 var host = window.location.host.toLowerCase();
-                var hostPattern = /^abj-tv-platform-n7e8(?:-[a-z0-9-]+)?\\.vercel\\.app$/i;
-                if (hostPattern.test(host) && host !== canonicalHost) {
+                var productionVercelHost = "abj-tv-platform-n7e8.vercel.app";
+                if (host.indexOf("-git-") !== -1) return;
+                if (host === productionVercelHost && host !== canonicalHost) {
                   var target =
                     window.location.protocol +
                     "//" +

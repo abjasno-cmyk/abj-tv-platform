@@ -2,17 +2,18 @@ export {
   CANONICAL_HOST,
   SITE_URL,
   LEGACY_VERCEL_HOST_PATTERN,
+  PRODUCTION_LEGACY_VERCEL_HOST,
   isVercelGitBranchPreviewHost,
   resolveAuthOriginForHost,
+  shouldCanonicalizeAuthHost,
   shouldPreserveAuthOnHost,
 } from "@/lib/deploymentHost";
 
-import { resolveAuthOriginForHost } from "@/lib/deploymentHost";
-
 /**
- * Kam poslat uživatele po OAuth callbacku. Na preview deploymentu musí zůstat
- * stejný host (jinak skončí na produkci bez kódu z PR větve).
+ * Kam poslat uživatele po OAuth callbacku. Vždy stejný host jako request —
+ * OAuth nesmí přesměrovat na jinou doménu (preview / produkce).
  */
-export function resolveAuthCallbackOrigin(requestUrl: URL, vercelEnv = process.env.VERCEL_ENV): string {
-  return resolveAuthOriginForHost(requestUrl.host, requestUrl.protocol || "https:", vercelEnv);
+export function resolveAuthCallbackOrigin(requestUrl: URL): string {
+  const protocol = requestUrl.protocol || "https:";
+  return `${protocol}//${requestUrl.host}`;
 }
