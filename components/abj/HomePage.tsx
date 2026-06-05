@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { VeroxHeader } from "@/components/abj/VeroxHeader";
+import { VideoCommentsDrawer } from "@/components/auth/VideoCommentsDrawer";
 import { PlayoutStage } from "@/components/abj/playout/PlayoutStage";
 import { usePlayoutLoop } from "@/components/abj/playout/usePlayoutLoop";
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
@@ -68,6 +69,7 @@ export function HomePage({
   const [stageDot, setStageDot] = useState(0);
   const [channelDot, setChannelDot] = useState(0);
   // Sekce KANÁLY: otevřený kanál + jeho posledních ~4 videí (detail panel pod lištou).
+  const [commentsOpen, setCommentsOpen] = useState(false);
   const [openChannelName, setOpenChannelName] = useState<string | null>(null);
   const [channelVideosByName, setChannelVideosByName] = useState<Record<string, LiveChannelVideo[]>>({});
   const [channelLoading, setChannelLoading] = useState<string | null>(null);
@@ -372,8 +374,15 @@ export function HomePage({
 
       {/* FEATURE SUMMARY */}
       <section className="feature-summary" aria-labelledby="hf-featured">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="comment-icon" src="/design/icons/ikona_komentovat.png" alt="" />
+        <button
+          type="button"
+          className="comment-icon-btn"
+          onClick={() => setCommentsOpen(true)}
+          aria-label="Otevřít komentáře"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="comment-icon" src="/design/icons/ikona_komentovat.png" alt="" />
+        </button>
         <div className="feature-copy">
           <h1 id="hf-featured">{displayTitle}</h1>
           <p>{displayChannel}</p>
@@ -552,6 +561,12 @@ export function HomePage({
       </section>
       </div>
       {/* /hf-body */}
+      <VideoCommentsDrawer
+        open={commentsOpen}
+        onClose={() => setCommentsOpen(false)}
+        videoId={currentVideoId}
+        videoTitle={displayTitle}
+      />
     </div>
   );
 }
