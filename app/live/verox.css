@@ -1256,6 +1256,10 @@
     text-underline-offset: 4px;
     text-decoration-thickness: 2px;
   }
+  .kostka-nazory .body p.kostka-nazory-perex,
+  .nazory-detail-perex {
+    font-size: 14pt;
+  }
 
   /* akční tlačítka V KOSTCE — kompaktní sloupec vpravo */
   .kostka .actions {
@@ -1455,45 +1459,78 @@
   padding: 24px 0;
   color: rgba(23, 20, 17, 0.7);
 }
-.nazory-grid {
-  display: grid;
-  gap: 20px;
+/* Názory — stejná mřížka jako V KOSTCE (.kostka), text místo videa */
+.kostka-nazory .body {
+  min-width: 0;
 }
-.nazory-card {
-  border-top: 1px solid rgba(23, 20, 17, 0.12);
-  padding-top: 18px;
-}
-.nazory-card-link {
-  display: grid;
+.kostka-nazory-head {
+  display: flex;
+  align-items: flex-start;
   gap: 14px;
-  color: inherit;
-  text-decoration: none;
 }
-.nazory-card-thumb img,
+.kostka-nazory-head h3 {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+.kostka-nazory-head h3 a {
+  color: inherit;
+  text-decoration: inherit;
+}
+.kostka-nazory-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  overflow: hidden;
+  flex: 0 0 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(23, 20, 17, 0.08);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--vx-gray-dark);
+}
+.kostka-nazory-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.kostka-nazory .body p.kostka-nazory-perex {
+  font-size: max(12pt, 1rem);
+  line-height: 1.55;
+  color: var(--vx-gray-dark);
+  margin-bottom: 0.85em;
+}
 .nazory-detail-hero img {
   width: 100%;
   height: auto;
   border-radius: 8px;
   display: block;
 }
-.nazory-card-title,
 .nazory-detail-title {
   font-size: clamp(1.35rem, 2vw, 2rem);
   font-weight: 800;
   line-height: 1.15;
 }
-.nazory-card-perex,
 .nazory-detail-perex {
-  color: rgba(23, 20, 17, 0.78);
+  font-size: max(12pt, 1rem);
+  color: rgba(23, 20, 17, 0.82);
   line-height: 1.55;
 }
-.nazory-card-meta,
 .nazory-detail-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 10px 16px;
-  font-size: 0.86rem;
+  font-size: max(12pt, 0.92rem);
   color: rgba(23, 20, 17, 0.62);
+}
+.nazory-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
 }
 .nazory-detail {
   display: grid;
