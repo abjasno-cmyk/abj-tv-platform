@@ -1,3 +1,7 @@
+import "server-only";
+
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import type { LiveChannelGroup } from "@/components/abj/ChannelDirectory";
 import { loadLiveChannelsForPage } from "@/lib/liveChannelsServer";
 import {
@@ -145,21 +149,7 @@ export function buildMyVeroxLibraryFromRows(input: {
 }
 
 export async function loadMyVeroxLibraryForUser(
-  supabase: {
-    from: (table: string) => {
-      select: (columns: string) => {
-        eq: (
-          column: string,
-          value: string,
-        ) => {
-          order: (
-            column: string,
-            options: { ascending: boolean },
-          ) => Promise<{ data: unknown[] | null; error: { message: string } | null }>;
-        };
-      };
-    };
-  },
+  supabase: SupabaseClient,
   userId: string,
 ): Promise<MyVeroxLibraryPayload> {
   const [savedRes, progressRes, followsRes, catalog] = await Promise.all([
