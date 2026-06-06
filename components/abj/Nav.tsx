@@ -10,14 +10,10 @@ import { VeroxHeader, type VeroxNavKey } from "@/components/abj/VeroxHeader";
 
 function activeKeyFor(pathname: string): VeroxNavKey | undefined {
   if (pathname.startsWith("/nazory")) {
-    // Názory zatím nejsou v menu — přístup přímo přes URL.
-    return undefined;
+    return "nazory";
   }
   if (pathname.startsWith("/videa") || pathname.startsWith("/archiv") || pathname.startsWith("/feed")) {
     return "videa";
-  }
-  if (pathname.startsWith("/v-kostce") || pathname.startsWith("/abj-x")) {
-    return "kostce";
   }
   if (pathname.startsWith("/muj-verox") || pathname.startsWith("/komunita") || pathname.startsWith("/zed")) {
     return "muj";
