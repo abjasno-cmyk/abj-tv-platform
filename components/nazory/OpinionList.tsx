@@ -1,21 +1,31 @@
+import { Fragment } from "react";
+
 import { OpinionCard } from "@/components/nazory/OpinionCard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAuthorDisplayName } from "@/lib/nazory/display";
+import { publicNazoryMediaUrl } from "@/lib/nazory/media";
 import type { AuthorProfileRow, OpinionArticleRow } from "@/lib/nazory/types";
 
 async function loadAuthorsForArticles(articles: OpinionArticleRow[]) {
   const authorIds = [...new Set(articles.map((article) => article.author_id))];
-  if (authorIds.length === 0) return new Map<string, string>();
+  if (authorIds.length === 0) {
+    return new Map<string, { name: string; avatarUrl: string | null }>();
+  }
 
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from("author_profiles")
-    .select("user_id, first_name, last_name")
+    .select("user_id, first_name, last_name, avatar_storage_path")
     .in("user_id", authorIds);
 
-  const map = new Map<string, string>();
-  for (const row of (data ?? []) as Array<Pick<AuthorProfileRow, "user_id" | "first_name" | "last_name">>) {
-    map.set(row.user_id, getAuthorDisplayName(row));
+  const map = new Map<string, { name: string; avatarUrl: string | null }>();
+  for (const row of (data ?? []) as Array<
+    Pick<AuthorProfileRow, "user_id" | "first_name" | "last_name" | "avatar_storage_path">
+  >) {
+    map.set(row.user_id, {
+      name: getAuthorDisplayName(row),
+      avatarUrl: publicNazoryMediaUrl(row.avatar_storage_path),
+    });
   }
   return map;
 }
@@ -44,15 +54,22 @@ export async function OpinionList({ articles }: { articles: OpinionArticleRow[] 
   ]);
 
   return (
-    <div className="nazory-grid">
-      {articles.map((article) => (
-        <OpinionCard
-          key={article.id}
-          article={article}
-          authorName={authors.get(article.author_id) ?? null}
-          commentCount={commentCounts.get(article.id) ?? 0}
-        />
+    <>
+      {articles.map((article, index) => (
+        <Fragment key={article.id}>
+          <OpinionCard
+            article={article}
+            author={authors.get(article.author_id) ?? null}
+            commentCount={commentCounts.get(article.id) ?? 0}
+          />
+          {index < articles.length - 1 ? (
+            <div className="vx-strip" aria-hidden="true">
+              <span />
+              <span />
+            </div>
+          ) : null}
+        </Fragment>
       ))}
-    </div>
+    </>
   );
 }

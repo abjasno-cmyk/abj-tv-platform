@@ -34,12 +34,14 @@ export default async function NazoryEditPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="vx-live vx-sub nazory-page">
-      <h1 className="section-h">UPRAVIT KONCEPT</h1>
+      <h1 className="section-h">{article.status === "published" ? "UPRAVIT ČLÁNEK" : "UPRAVIT KONCEPT"}</h1>
       <OpinionEditor
         articleId={article.id}
         initialTitle={article.title}
         initialPerex={article.perex}
         initialContent={article.content_json}
+        initialStatus={article.status}
+        publishedSlug={article.status === "published" ? article.slug : null}
       />
     </div>
   );
