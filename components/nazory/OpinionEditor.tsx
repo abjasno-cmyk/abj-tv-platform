@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Youtube } from "@/components/nazory/tiptapYoutube";
+import { hasMeaningfulDraftContent } from "@/lib/nazory/content";
 import { extractYoutubeVideoId } from "@/lib/nazory/youtube";
 
 type OpinionEditorProps = {
@@ -75,13 +76,19 @@ export function OpinionEditor({
 
   const persistDraft = useCallback(async () => {
     if (!editor || mode !== "edit") return;
+
+    const contentJson = editor.getJSON();
+    if (!currentArticleId && !hasMeaningfulDraftContent(title, perex, contentJson)) {
+      return;
+    }
+
     setSaveState("saving");
     setError(null);
 
     const payload = {
       title,
       perex,
-      contentJson: editor.getJSON(),
+      contentJson,
     };
 
     try {
@@ -144,6 +151,7 @@ export function OpinionEditor({
 
   useEffect(() => {
     if (mode !== "edit") return;
+    if (!currentArticleId && !title.trim() && !perex.trim()) return;
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     saveTimerRef.current = window.setTimeout(() => {
       void persistDraft();
@@ -151,7 +159,7 @@ export function OpinionEditor({
     return () => {
       if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     };
-  }, [title, perex, mode, persistDraft]);
+  }, [title, perex, mode, persistDraft, currentArticleId]);
 
   const addLink = () => {
     if (!editor) return;
