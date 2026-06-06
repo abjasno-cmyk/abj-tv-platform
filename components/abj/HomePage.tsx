@@ -10,7 +10,9 @@ import { VeroxHeader } from "@/components/abj/VeroxHeader";
 import { HeroPlayerBar, type PlaybackSpeed } from "@/components/abj/playout/HeroPlayerBar";
 import { FollowChannelButton } from "@/components/auth/FollowChannelButton";
 import { VideoCommentsDrawer } from "@/components/auth/VideoCommentsDrawer";
+import { SaveVideoButton } from "@/components/auth/SaveVideoButton";
 import { ChannelVideoTile } from "@/components/viewer/ChannelVideoTile";
+import { ViewerVideoBadges } from "@/components/viewer/ViewerVideoBadges";
 import { useViewerVideoState } from "@/lib/viewer/useViewerVideoState";
 import { normalizeChannelFollowId } from "@/lib/viewer/videoMetadata";
 import { PlayoutStage } from "@/components/abj/playout/PlayoutStage";
@@ -561,6 +563,22 @@ export function HomePage({
         <div className="feature-copy">
           <h1 id="hf-featured">{displayTitle}</h1>
         <p>{displayChannel}</p>
+        {activeCommentVideoId ? (
+          <div className="hero-save-row">
+            <SaveVideoButton
+              videoId={activeCommentVideoId}
+              title={displayTitle}
+              channelName={displayChannel}
+              thumbnailUrl={`https://img.youtube.com/vi/${activeCommentVideoId}/hqdefault.jpg`}
+              saved={savedVideoIds.has(activeCommentVideoId)}
+              onSavedChange={(nextSaved) => setSaved(activeCommentVideoId, nextSaved)}
+            />
+            <ViewerVideoBadges
+              watched={watchedVideoIds.has(activeCommentVideoId)}
+              saved={savedVideoIds.has(activeCommentVideoId)}
+            />
+          </div>
+        ) : null}
         {displayChannels.length > 0 ? (
           <p className="hero-pick-hint">
             <button type="button" className="hero-pick-hint-btn" onClick={scrollToChannels}>

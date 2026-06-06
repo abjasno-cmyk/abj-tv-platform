@@ -29,6 +29,7 @@ export function SaveVideoButton({
   const { isAuthenticated, requestAuth } = useAuth();
   const [isSaved, setIsSaved] = useState(saved);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setIsSaved(saved);
@@ -36,6 +37,7 @@ export function SaveVideoButton({
 
   const toggleSave = async () => {
     setLoading(true);
+    setError(null);
     const method = isSaved ? "DELETE" : "POST";
     const url =
       method === "DELETE"
@@ -54,14 +56,19 @@ export function SaveVideoButton({
             })
           : undefined,
     });
+    const payload = (await response.json().catch(() => ({}))) as { error?: string };
     setLoading(false);
-    if (!response.ok) return;
+    if (!response.ok) {
+      setError(payload.error ?? "Uložení se nepodařilo. Zkuste obnovit stránku nebo se přihlásit znovu.");
+      return;
+    }
     const nextSaved = !isSaved;
     setIsSaved(nextSaved);
     onSavedChange?.(nextSaved);
   };
 
   return (
+    <span className="vx-save-video-wrap">
     <button
       type="button"
       className={
@@ -89,5 +96,7 @@ export function SaveVideoButton({
         {loading ? "…" : isSaved ? "Uloženo" : "Uložit"}
       </span>
     </button>
+    {error ? <span className="vx-save-video-error">{error}</span> : null}
+    </span>
   );
 }
