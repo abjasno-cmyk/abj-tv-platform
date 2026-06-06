@@ -172,7 +172,7 @@ export function MyVeroxLibrary() {
         Uložená videa, historie sledování a oblíbené kanály — vše na jednom místě.
       </p>
 
-      <ShelfSection title="Uložená videa" empty="Zatím nemáte uložená videa. Na stránce Živě je u každého videa tlačítko ☆ Uložit.">
+      <ShelfSection title="Uložená videa" empty="Zatím nemáte uložená videa. Klepněte na ☆ Uložit video na stránce Živě nebo Videa.">
         {data.savedVideos.map((video) => (
           <VideoShelfCard key={`saved-${video.videoId}`} video={video} onUnsave={() => void loadLibrary()} />
         ))}

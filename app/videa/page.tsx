@@ -1,20 +1,7 @@
-import { Fragment } from "react";
-import Link from "next/link";
-
+import { VideaVideoList } from "@/components/viewer/VideaVideoList";
 import { loadStructuredFeedPayload, type FeedVideo } from "@/lib/dayOverview";
 
 export const dynamic = "force-dynamic";
-
-const MONTHS = [
-  "LEDEN", "ÚNOR", "BŘEZEN", "DUBEN", "KVĚTEN", "ČERVEN",
-  "ČERVENEC", "SRPEN", "ZÁŘÍ", "ŘÍJEN", "LISTOPAD", "PROSINEC",
-];
-
-function dateParts(iso: string): { month: string; day: string } {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return { month: "", day: "" };
-  return { month: MONTHS[d.getMonth()] ?? "", day: String(d.getDate()) };
-}
 
 async function loadVideos(): Promise<FeedVideo[]> {
   try {
@@ -38,41 +25,7 @@ export default async function VideaPage() {
           <div className="info">Videa se právě připravují.</div>
         </div>
       ) : (
-        videos.map((video, i) => {
-          const { month, day } = dateParts(video.published_at);
-          const desc = video.tldr ?? video.context ?? "";
-          const href = `/live?videoId=${encodeURIComponent(video.video_id)}`;
-          return (
-            <Fragment key={video.video_id}>
-              <article className="vx-card">
-                <div className="date">
-                  <div className="month">{month}</div>
-                  <div className="day">{day}</div>
-                </div>
-                <Link href={href} className="thumb" aria-label={video.title}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={video.thumbnail || "/placeholder-thumb.jpg"} alt={video.title} loading="lazy" />
-                </Link>
-                <div className="body">
-                  <h3>{video.title}</h3>
-                  <div className="by">{video.channel}</div>
-                  {desc ? <p>{desc}</p> : null}
-                  <Link href={href} className="vx-arrow">
-                    <b>Zjistit více</b>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/icons/ikona_sipka.svg" alt="" />
-                  </Link>
-                </div>
-              </article>
-              {i < videos.length - 1 ? (
-                <div className="vx-strip">
-                  <span />
-                  <span />
-                </div>
-              ) : null}
-            </Fragment>
-          );
-        })
+        <VideaVideoList videos={videos} />
       )}
     </div>
   );
