@@ -1,6 +1,7 @@
 import { AuthApiError, requireAuthenticatedUser } from "@/lib/supabase/authenticated-server";
 import { isNazoryAdmin, requireAuthorWithCompletedProfile } from "@/lib/nazory/access";
 import {
+  getArticleById,
   getArticleByIdForAuthor,
   updateArticleByAdmin,
   updateDraftArticle,
@@ -16,8 +17,13 @@ export async function GET(
   try {
     const { id } = await context.params;
     const { supabase, user } = await requireAuthenticatedUser();
-    await requireAuthorWithCompletedProfile(supabase, user);
-    const article = await getArticleByIdForAuthor(supabase, id, user.id);
+    const admin = await isNazoryAdmin(supabase, user);
+    const article = admin
+      ? await getArticleById(supabase, id)
+      : await (async () => {
+          await requireAuthorWithCompletedProfile(supabase, user);
+          return getArticleByIdForAuthor(supabase, id, user.id);
+        })();
     if (!article) {
       return Response.json({ error: "Článek nebyl nalezen." }, { status: 404 });
     }

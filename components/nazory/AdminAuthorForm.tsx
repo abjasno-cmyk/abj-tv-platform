@@ -1,13 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { AuthorProfilePreview } from "@/components/nazory/AuthorProfilePreview";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { getAuthorDisplayName } from "@/lib/nazory/display";
 
-type ProfilePayload = {
-  profile?: {
+type AdminAuthorPayload = {
+  author?: {
+    userId: string;
     firstName: string;
     lastName: string;
     slug: string;
@@ -22,29 +24,28 @@ type ProfilePayload = {
     contactEmail: string | null;
     avatarUrl: string | null;
     profileCompleted: boolean;
+    isActive: boolean;
+    accountEmail: string | null;
   };
   error?: string;
 };
 
-async function activateAuthorAccount(): Promise<boolean> {
-  const response = await fetch("/api/nazory/author/activate", {
-    method: "POST",
-    credentials: "include",
-  });
-  return response.ok;
-}
+type AdminAuthorFormProps = {
+  userId: string;
+};
 
-export function AuthorProfileForm() {
+export function AdminAuthorForm({ userId }: AdminAuthorFormProps) {
   const router = useRouter();
-  const { isAuthenticated, openLoginModal, user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [activating, setActivating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [creatingArticle, setCreatingArticle] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [slug, setSlug] = useState("autor");
+  const [accountEmail, setAccountEmail] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [profileCompleted, setProfileCompleted] = useState(false);
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -59,65 +60,46 @@ export function AuthorProfileForm() {
     contactEmail: "",
   });
 
-  const loadProfile = useCallback(async () => {
-    const response = await fetch("/api/nazory/profile", { credentials: "include", cache: "no-store" });
-    const payload = (await response.json()) as ProfilePayload;
-
-    if (response.status === 403 || response.status === 404) {
-      const isAdminEmail = user?.email?.trim().toLowerCase() === "abjasno@gmail.com";
-      if (!isAdminEmail) {
-        setError(
-          payload.error ??
-            "Autorský účet pro vás zatím není aktivní. Pokud vás redakce přidala jako autora, přihlaste se stejným Google účtem, který vám sdělila.",
-        );
-        return false;
-      }
-      setActivating(true);
-      const activated = await activateAuthorAccount();
-      setActivating(false);
-      if (!activated) {
-        setError(payload.error ?? "Autorský účet se nepodařilo aktivovat. Zkuste se znovu přihlásit.");
-        return false;
-      }
-      return loadProfile();
-    }
-
-    if (!response.ok) {
-      setError(payload.error ?? "Profil se nepodařilo načíst.");
+  const loadAuthor = useCallback(async () => {
+    const response = await fetch(`/api/nazory/admin/authors/${encodeURIComponent(userId)}`, {
+      credentials: "include",
+      cache: "no-store",
+    });
+    const payload = (await response.json()) as AdminAuthorPayload;
+    if (!response.ok || !payload.author) {
+      setError(payload.error ?? "Autora se nepodařilo načíst.");
       return false;
     }
 
-    if (payload.profile) {
-      setSlug(payload.profile.slug);
-      setAvatarUrl(payload.profile.avatarUrl);
-      setForm({
-        firstName: payload.profile.firstName ?? "",
-        lastName: payload.profile.lastName ?? "",
-        bio: payload.profile.bio ?? "",
-        title: payload.profile.title ?? "",
-        profession: payload.profile.profession ?? "",
-        city: payload.profile.city ?? "",
-        websiteUrl: payload.profile.websiteUrl ?? "",
-        facebookUrl: payload.profile.facebookUrl ?? "",
-        xUrl: payload.profile.xUrl ?? "",
-        linkedinUrl: payload.profile.linkedinUrl ?? "",
-        contactEmail: payload.profile.contactEmail ?? "",
-      });
-    }
+    const author = payload.author;
+    setSlug(author.slug);
+    setAccountEmail(author.accountEmail);
+    setAvatarUrl(author.avatarUrl);
+    setProfileCompleted(author.profileCompleted);
+    setForm({
+      firstName: author.firstName ?? "",
+      lastName: author.lastName ?? "",
+      bio: author.bio ?? "",
+      title: author.title ?? "",
+      profession: author.profession ?? "",
+      city: author.city ?? "",
+      websiteUrl: author.websiteUrl ?? "",
+      facebookUrl: author.facebookUrl ?? "",
+      xUrl: author.xUrl ?? "",
+      linkedinUrl: author.linkedinUrl ?? "",
+      contactEmail: author.contactEmail ?? author.accountEmail ?? "",
+    });
+    setError(null);
     return true;
-  }, [user?.email]);
+  }, [userId]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      setLoading(false);
-      return;
-    }
-    void loadProfile().finally(() => setLoading(false));
-  }, [isAuthenticated, loadProfile]);
+    void loadAuthor().finally(() => setLoading(false));
+  }, [loadAuthor]);
 
-  const updateField = useCallback((key: keyof typeof form, value: string) => {
+  const updateField = (key: keyof typeof form, value: string) => {
     setForm((current) => ({ ...current, [key]: value }));
-  }, []);
+  };
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -128,7 +110,7 @@ export function AuthorProfileForm() {
     const body = new FormData();
     body.append("file", file);
 
-    const response = await fetch("/api/nazory/upload/avatar", {
+    const response = await fetch(`/api/nazory/admin/authors/${encodeURIComponent(userId)}/avatar`, {
       method: "POST",
       credentials: "include",
       body,
@@ -147,56 +129,62 @@ export function AuthorProfileForm() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!isAuthenticated) {
-      openLoginModal({ reason: "Pro úpravu autorského profilu se přihlaste." });
-      return;
-    }
     setSaving(true);
     setError(null);
     setMessage(null);
-    const response = await fetch("/api/nazory/profile", {
+
+    const response = await fetch(`/api/nazory/admin/authors/${encodeURIComponent(userId)}`, {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, profileCompleted }),
     });
-    const payload = (await response.json()) as ProfilePayload;
+    const payload = (await response.json()) as AdminAuthorPayload;
     setSaving(false);
+
     if (!response.ok) {
       setError(payload.error ?? "Profil se nepodařilo uložit.");
       return;
     }
-    if (payload.profile?.slug) {
-      setSlug(payload.profile.slug);
+
+    if (payload.author?.slug) {
+      setSlug(payload.author.slug);
     }
-    setMessage("Profil byl uložen.");
-    if (payload.profile?.profileCompleted) {
-      router.push("/nazory/napsat");
-    }
+    setMessage("Profil autora byl uložen.");
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="nazory-panel">
-        <p>
-          Chcete psát své texty na verox.cz? Napište nám na{" "}
-          <a href="mailto:info@abybylojasno.cz">info@abybylojasno.cz</a> — pošlete první článek a domluvíme se.
-        </p>
-      </div>
-    );
-  }
+  const createFirstArticle = async () => {
+    setCreatingArticle(true);
+    setError(null);
+    const response = await fetch("/api/nazory/admin/articles", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ authorId: userId }),
+    });
+    const payload = (await response.json()) as { article?: { id: string }; error?: string };
+    setCreatingArticle(false);
 
-  if (loading || activating) {
-    return <p className="nazory-empty">{activating ? "Aktivuji autorský účet…" : "Načítám profil…"}</p>;
+    if (!response.ok || !payload.article) {
+      setError(payload.error ?? "Koncept se nepodařilo vytvořit.");
+      return;
+    }
+
+    router.push(`/nazory/napsat/${payload.article.id}`);
+  };
+
+  if (loading) {
+    return <p className="nazory-empty">Načítám profil autora…</p>;
   }
 
   return (
     <div className="nazory-profile-layout">
       <form className="nazory-form" onSubmit={(event) => void handleSubmit(event)}>
         <p className="nazory-form-lead">
-          Vyplňte autorskou kartu. Jméno a příjmení jsou povinné. Po uložení můžete napsat první článek.
+          Správa autorského profilu pro{" "}
+          <strong>{accountEmail ?? form.contactEmail ?? "neznámý účet"}</strong>. Autor se může přihlásit
+          stejným Google účtem a profil si dál spravovat sám.
         </p>
-        {user?.email ? <p className="nazory-form-meta">Přihlášeno jako {user.email}</p> : null}
 
         <div className="nazory-avatar-upload">
           <span className="nazory-author-avatar nazory-author-avatar--large">
@@ -223,12 +211,7 @@ export function AuthorProfileForm() {
         </label>
         <label className="nazory-field">
           <span>Krátké představení</span>
-          <textarea
-            value={form.bio}
-            maxLength={500}
-            rows={4}
-            onChange={(event) => updateField("bio", event.target.value)}
-          />
+          <textarea value={form.bio} maxLength={500} rows={4} onChange={(event) => updateField("bio", event.target.value)} />
         </label>
         <label className="nazory-field">
           <span>Titul</span>
@@ -259,18 +242,35 @@ export function AuthorProfileForm() {
           <input value={form.linkedinUrl} onChange={(event) => updateField("linkedinUrl", event.target.value)} />
         </label>
         <label className="nazory-field">
-          <span>Kontaktní e-mail (jen interně)</span>
-          <input
-            type="email"
-            value={form.contactEmail}
-            onChange={(event) => updateField("contactEmail", event.target.value)}
-          />
+          <span>Kontaktní e-mail (interně)</span>
+          <input type="email" value={form.contactEmail} onChange={(event) => updateField("contactEmail", event.target.value)} />
         </label>
+
+        <label className="nazory-field nazory-field-checkbox">
+          <input
+            type="checkbox"
+            checked={profileCompleted}
+            onChange={(event) => setProfileCompleted(event.target.checked)}
+          />
+          <span>Profil považovat za dokončený (zveřejnit autorskou kartu na webu)</span>
+        </label>
+
+        <div className="nazory-editor-actions">
+          <button type="submit" className="nazory-btn nazory-btn-primary" disabled={saving}>
+            {saving ? "Ukládám…" : "Uložit profil autora"}
+          </button>
+          <button type="button" className="nazory-btn" disabled={creatingArticle} onClick={() => void createFirstArticle()}>
+            {creatingArticle ? "Vytvářím koncept…" : "Vytvořit první článek"}
+          </button>
+          {profileCompleted ? (
+            <Link className="nazory-btn" href={`/nazory/autor/${slug}`}>
+              Veřejná karta
+            </Link>
+          ) : null}
+        </div>
+
         {error ? <p className="nazory-error">{error}</p> : null}
         {message ? <p className="nazory-success">{message}</p> : null}
-        <button type="submit" className="nazory-btn nazory-btn-primary" disabled={saving}>
-          {saving ? "Ukládám…" : "Uložit profil a pokračovat k psaní"}
-        </button>
       </form>
 
       <AuthorProfilePreview
@@ -283,6 +283,10 @@ export function AuthorProfileForm() {
           avatarStoragePath: avatarUrl,
         }}
       />
+
+      <p className="nazory-form-meta">
+        Zobrazené jméno: {getAuthorDisplayName({ first_name: form.firstName, last_name: form.lastName })}
+      </p>
     </div>
   );
 }

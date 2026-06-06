@@ -1835,6 +1835,30 @@
   padding: 12px 0;
   border-bottom: 1px solid rgba(23, 20, 17, 0.08);
 }
+.nazory-admin-meta {
+  font-size: 0.88rem;
+  color: rgba(23, 20, 17, 0.62);
+}
+.nazory-admin-create-grid {
+  display: grid;
+  gap: 12px;
+}
+@media (min-width: 720px) {
+  .nazory-admin-create-grid {
+    grid-template-columns: 1.4fr 1fr 1fr;
+  }
+}
+.nazory-field-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+.nazory-field-checkbox input {
+  width: auto;
+  min-height: auto;
+  margin-top: 4px;
+}
 .nazory-error {
   color: #b42318;
 }

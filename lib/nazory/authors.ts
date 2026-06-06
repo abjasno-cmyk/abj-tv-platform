@@ -171,6 +171,7 @@ export async function createAuthorAccount(
     firstName?: string;
     lastName?: string;
     avatarStoragePath?: string | null;
+    profileCompleted?: boolean;
   },
   options?: {
     elevatedSupabase?: SupabaseClient;
@@ -199,7 +200,7 @@ export async function createAuthorAccount(
         contact_email: trimOrNull(input.email, 200),
         avatar_storage_path: trimOrNull(input.avatarStoragePath, 500),
         is_active: true,
-        profile_completed: false,
+        profile_completed: input.profileCompleted === true,
       },
       { onConflict: "user_id" },
     )
@@ -208,6 +209,60 @@ export async function createAuthorAccount(
 
   if (error || !data) {
     throw new Error(error?.message ?? "Nepodařilo se vytvořit autorský účet.");
+  }
+
+  return data as AuthorProfileRow;
+}
+
+export async function adminUpdateAuthorProfile(
+  supabase: SupabaseClient,
+  userId: string,
+  input: AuthorProfileInput & { profileCompleted?: boolean },
+): Promise<AuthorProfileRow> {
+  const firstName = input.firstName.trim();
+  const lastName = input.lastName.trim();
+  if (!firstName || !lastName) {
+    throw new Error("Jméno a příjmení jsou povinné.");
+  }
+
+  const existing = await getAuthorProfileByUserId(supabase, userId);
+  if (!existing) {
+    throw new Error("Autorský profil nebyl nalezen.");
+  }
+
+  const takenSlugs = await loadTakenAuthorSlugs(supabase, userId);
+  const slug = existing.slug || buildAuthorSlug(firstName, lastName, takenSlugs);
+
+  const payload = {
+    user_id: userId,
+    first_name: firstName.slice(0, 120),
+    last_name: lastName.slice(0, 120),
+    slug,
+    bio: trimOrNull(input.bio, 500),
+    title: trimOrNull(input.title, 160),
+    profession: trimOrNull(input.profession, 160),
+    city: trimOrNull(input.city, 120),
+    website_url: normalizeUrl(input.websiteUrl),
+    facebook_url: normalizeUrl(input.facebookUrl),
+    x_url: normalizeUrl(input.xUrl),
+    linkedin_url: normalizeUrl(input.linkedinUrl),
+    contact_email: trimOrNull(input.contactEmail, 200),
+    avatar_storage_path:
+      input.avatarStoragePath === undefined
+        ? existing.avatar_storage_path
+        : trimOrNull(input.avatarStoragePath, 500),
+    profile_completed: input.profileCompleted ?? existing.profile_completed,
+  };
+
+  const { data, error } = await supabase
+    .from("author_profiles")
+    .update(payload)
+    .eq("user_id", userId)
+    .select("*")
+    .single();
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "Nepodařilo se uložit autorský profil.");
   }
 
   return data as AuthorProfileRow;
