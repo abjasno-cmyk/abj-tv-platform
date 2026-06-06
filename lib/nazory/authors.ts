@@ -3,6 +3,8 @@ import "server-only";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 import { isAuthorRole, isNazoryAdminEmail, loadProfileRoleRow } from "@/lib/nazory/access";
+import { getAuthorDisplayName } from "@/lib/nazory/display";
+import { publicNazoryMediaUrl } from "@/lib/nazory/media";
 import { buildAuthorSlug } from "@/lib/nazory/slug";
 import {
   AUTHOR_PROFILE_PUBLIC_COLUMNS,
@@ -305,6 +307,32 @@ export async function findUserIdByEmail(supabase: SupabaseClient, email: string)
   const { data, error } = await supabase.from("profiles").select("id").ilike("email", normalized).maybeSingle();
   if (error || !data) return null;
   return (data as { id: string }).id;
+}
+
+export type PublicAuthorCatalogItem = {
+  slug: string;
+  displayName: string;
+  avatarUrl: string | null;
+};
+
+export async function listPublicAuthorsForCatalog(supabase: SupabaseClient): Promise<PublicAuthorCatalogItem[]> {
+  const { data, error } = await supabase
+    .from("author_profiles")
+    .select("first_name, last_name, slug, avatar_storage_path")
+    .eq("is_active", true)
+    .eq("profile_completed", true)
+    .order("last_name", { ascending: true })
+    .order("first_name", { ascending: true });
+
+  if (error || !data) return [];
+
+  return (data as Array<Pick<AuthorProfileRow, "first_name" | "last_name" | "slug" | "avatar_storage_path">>).map(
+    (row) => ({
+      slug: row.slug,
+      displayName: getAuthorDisplayName(row),
+      avatarUrl: publicNazoryMediaUrl(row.avatar_storage_path),
+    }),
+  );
 }
 
 export async function listAuthorsForAdmin(supabase: SupabaseClient) {
