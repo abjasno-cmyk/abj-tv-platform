@@ -5,10 +5,13 @@ import {
   buildAuthCompleteUrl,
   createAuthHandoffToken,
   parsePreviewHandoffNext,
+  parsePreviewHandoffRequest,
 } from "@/lib/auth/handoff";
 import { resolveAuthCallbackOrigin } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
+
+const OAUTH_RETURN_PATH_COOKIE = "verox_oauth_next";
 
 function safeNextPath(value: string | null): string {
   if (!value?.trim()) return "/live";
@@ -53,7 +56,7 @@ export async function GET(request: NextRequest) {
   const code = url.searchParams.get("code");
   const next = safeNextPath(url.searchParams.get("next"));
   const origin = resolveAuthCallbackOrigin(url);
-  const previewHandoff = parsePreviewHandoffNext(next);
+  const previewHandoff = parsePreviewHandoffRequest(url.searchParams, next);
   const cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }> = [];
 
   if (code) {
@@ -89,6 +92,7 @@ export async function GET(request: NextRequest) {
           const response = NextResponse.redirect(
             buildAuthCompleteUrl(previewHandoff.returnOrigin, handoff),
           );
+          response.cookies.set(OAUTH_RETURN_PATH_COOKIE, "", { path: "/", maxAge: 0 });
           applyAuthCookies(response, cookiesToSet);
           return response;
         }
@@ -104,6 +108,7 @@ export async function GET(request: NextRequest) {
   }
 
   const response = NextResponse.redirect(`${origin}${next}`);
+  response.cookies.set(OAUTH_RETURN_PATH_COOKIE, "", { path: "/", maxAge: 0 });
   applyAuthCookies(response, cookiesToSet);
   return response;
 }

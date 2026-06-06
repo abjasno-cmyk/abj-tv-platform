@@ -1,9 +1,12 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 
 import {
+  PREVIEW_ORIGIN_QUERY_PARAM,
   buildAuthCompleteUrl,
+  buildPreviewHandoffCallbackUrl,
   createAuthHandoffToken,
-  parsePreviewHandoffNext,
+  parsePreviewHandoffQuery,
+  parsePreviewHandoffRequest,
   verifyAuthHandoffToken,
 } from "@/lib/auth/handoff";
 
@@ -25,10 +28,15 @@ describe("preview auth handoff", () => {
     expect(verified?.accessToken).toBe("access");
   });
 
-  it("parses preview handoff next paths", () => {
-    const next =
-      "/api/auth/preview-continue?returnOrigin=https%3A%2F%2Fabj-tv-platform-n7e8-git-cursor-nazory.vercel.app&returnPath=%2Fnazory";
-    expect(parsePreviewHandoffNext(next)).toEqual({
+  it("parses preview handoff callback query params", () => {
+    const callbackUrl = buildPreviewHandoffCallbackUrl({
+      productionOrigin: "https://www.verox.cz",
+      previewOrigin: "https://abj-tv-platform-n7e8-git-cursor-nazory.vercel.app",
+      returnPath: "/nazory",
+    });
+    const params = new URL(callbackUrl).searchParams;
+    expect(params.get(PREVIEW_ORIGIN_QUERY_PARAM)).toContain("abj-tv-platform-n7e8-git-cursor-nazory.vercel.app");
+    expect(parsePreviewHandoffRequest(params, params.get("next") ?? "/live")).toEqual({
       returnOrigin: "https://abj-tv-platform-n7e8-git-cursor-nazory.vercel.app",
       returnPath: "/nazory",
     });
@@ -38,5 +46,16 @@ describe("preview auth handoff", () => {
         "token",
       ),
     ).toContain("/auth/complete?handoff=token");
+  });
+
+  it("parses legacy preview-continue query params", () => {
+    const params = new URLSearchParams({
+      returnOrigin: "https://abj-tv-platform-n7e8-git-cursor-nazory.vercel.app",
+      returnPath: "/nazory",
+    });
+    expect(parsePreviewHandoffQuery(params)).toEqual({
+      returnOrigin: "https://abj-tv-platform-n7e8-git-cursor-nazory.vercel.app",
+      returnPath: "/nazory",
+    });
   });
 });
