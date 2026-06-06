@@ -3,6 +3,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
+import {
+  buildOAuthRedirectToForBrowser,
+  rememberOAuthReturnPath,
+} from "@/lib/auth/oauthRedirect";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { LoginModal } from "@/components/auth/LoginModal";
 
@@ -272,7 +276,12 @@ export function AuthProvider({
   const buildOAuthRedirectTo = useCallback(() => {
     if (typeof window === "undefined") return undefined;
     const nextPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
+    rememberOAuthReturnPath(nextPath);
+    return buildOAuthRedirectToForBrowser({
+      host: window.location.host,
+      origin: window.location.origin,
+      returnPath: nextPath,
+    });
   }, []);
 
   const handleOAuth = useCallback(

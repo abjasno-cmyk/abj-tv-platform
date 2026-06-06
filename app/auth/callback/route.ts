@@ -1,15 +1,33 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 
+import {
+  buildAuthCompleteUrl,
+  createAuthHandoffToken,
+  parsePreviewHandoffNext,
+} from "@/lib/auth/handoff";
+import { OAUTH_RETURN_PATH_COOKIE, sanitizeOAuthReturnPath } from "@/lib/auth/oauthRedirect";
 import { resolveAuthCallbackOrigin } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
-function safeNextPath(value: string | null): string {
-  if (!value) return "/live";
-  if (!value.startsWith("/")) return "/live";
-  if (value.startsWith("//")) return "/live";
-  return value;
+function readNextPath(request: NextRequest, queryValue: string | null): string {
+  if (queryValue?.trim()) {
+    const trimmed = queryValue.trim();
+    if (parsePreviewHandoffNext(trimmed)) return trimmed;
+    return sanitizeOAuthReturnPath(trimmed);
+  }
+
+  const cookieValue = request.cookies.get(OAUTH_RETURN_PATH_COOKIE)?.value;
+  if (cookieValue) {
+    try {
+      return sanitizeOAuthReturnPath(decodeURIComponent(cookieValue));
+    } catch {
+      return sanitizeOAuthReturnPath(cookieValue);
+    }
+  }
+
+  return "/live";
 }
 
 function sanitizeEnvValue(value?: string): string | undefined {
@@ -29,17 +47,32 @@ function sanitizeEnvValue(value?: string): string | undefined {
   return maybeAssigned;
 }
 
+function applyAuthCookies(
+  response: NextResponse,
+  cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>,
+) {
+  cookiesToSet.forEach((cookie) => {
+    response.cookies.set({
+      name: cookie.name,
+      value: cookie.value,
+      ...(cookie.options ?? {}),
+    });
+  });
+}
+
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
-  const next = safeNextPath(url.searchParams.get("next"));
+  const next = readNextPath(request, url.searchParams.get("next"));
   const origin = resolveAuthCallbackOrigin(url);
+  const previewHandoff = parsePreviewHandoffNext(next);
   const cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }> = [];
+
+  const supabaseUrl = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const supabaseAnonKey = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
   if (code) {
     try {
-      const supabaseUrl = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);
-      const supabaseAnonKey = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
       if (!supabaseUrl || !supabaseAnonKey) {
         throw new Error("Supabase env vars not set");
       }
@@ -54,29 +87,38 @@ export async function GET(request: NextRequest) {
         },
       });
       await supabase.auth.exchangeCodeForSession(code);
+
+      if (previewHandoff) {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session?.access_token && session.refresh_token) {
+          const handoff = createAuthHandoffToken({
+            accessToken: session.access_token,
+            refreshToken: session.refresh_token,
+            returnOrigin: previewHandoff.returnOrigin,
+            returnPath: previewHandoff.returnPath,
+          });
+          const response = NextResponse.redirect(
+            buildAuthCompleteUrl(previewHandoff.returnOrigin, handoff),
+          );
+          response.cookies.set(OAUTH_RETURN_PATH_COOKIE, "", { path: "/", maxAge: 0 });
+          applyAuthCookies(response, cookiesToSet);
+          return response;
+        }
+      }
     } catch (error) {
       const target = new URL(`${origin}${next}`);
       target.searchParams.set("auth_sync_error", "1");
       target.searchParams.set("auth_sync_message", error instanceof Error ? error.message : "OAuth exchange failed");
       const response = NextResponse.redirect(target);
-      cookiesToSet.forEach((cookie) => {
-        response.cookies.set({
-          name: cookie.name,
-          value: cookie.value,
-          ...(cookie.options ?? {}),
-        });
-      });
+      applyAuthCookies(response, cookiesToSet);
       return response;
     }
   }
 
   const response = NextResponse.redirect(`${origin}${next}`);
-  cookiesToSet.forEach((cookie) => {
-    response.cookies.set({
-      name: cookie.name,
-      value: cookie.value,
-      ...(cookie.options ?? {}),
-    });
-  });
+  response.cookies.set(OAUTH_RETURN_PATH_COOKIE, "", { path: "/", maxAge: 0 });
+  applyAuthCookies(response, cookiesToSet);
   return response;
 }

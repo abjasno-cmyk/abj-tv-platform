@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { PreviewAuthNotice } from "@/components/auth/PreviewAuthNotice";
 import { OpinionList } from "@/components/nazory/OpinionList";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listPublishedArticles } from "@/lib/nazory/articles";
@@ -20,6 +21,7 @@ export default async function NazoryPage() {
       <div className="nazory-page-head">
         <h1 className="section-h">NÁZORY</h1>
         <p className="nazory-page-lead">Autorské texty schválených přispěvatelů VEROX.</p>
+        <PreviewAuthNotice />
       </div>
       {articles.length > 0 ? (
         <OpinionList articles={articles} />

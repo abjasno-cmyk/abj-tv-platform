@@ -1693,6 +1693,19 @@
 .nazory-comments {
   margin-top: 12px;
 }
+.nazory-preview-auth-notice {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(255, 106, 0, 0.08);
+  color: rgba(23, 20, 17, 0.82);
+  line-height: 1.5;
+  font-size: 0.92rem;
+}
+.nazory-preview-auth-notice code {
+  font-size: 0.85rem;
+  word-break: break-all;
+}
 @media (min-width: 768px) {
   .nazory-card-link {
     grid-template-columns: 220px 1fr;
