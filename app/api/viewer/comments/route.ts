@@ -9,6 +9,7 @@ import {
   type CommentSortMode,
   filterCommentsForViewer,
 } from "@/lib/viewer/comments";
+import { enforceWriteRateLimit } from "@/lib/rateLimit";
 import { insertComment, isSupabaseSchemaMismatch, listPublishedComments } from "@/lib/viewer/commentsDb";
 
 export const dynamic = "force-dynamic";
@@ -109,6 +110,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const limited = enforceWriteRateLimit(request, "viewer-comments");
+    if (limited) return limited;
+
     const { supabase, user } = await requireAuthenticatedUser();
     const payload = (await request.json().catch(() => ({}))) as CreateCommentPayload;
     const entityType = normalizeString(payload.entityType).slice(0, 100);

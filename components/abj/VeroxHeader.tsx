@@ -60,7 +60,7 @@ interface VeroxHeaderProps {
   active?: VeroxNavKey;
 }
 
-export function VeroxHeader({ active = "zive" }: VeroxHeaderProps) {
+export function VeroxHeader({ active }: VeroxHeaderProps) {
   const { isAuthenticated, profile, openLoginModal, signOut } = useAuth();
   const [now, setNow] = useState<Date>(() => new Date());
 

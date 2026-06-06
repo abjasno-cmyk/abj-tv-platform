@@ -1435,3 +1435,337 @@
   text-transform: uppercase;
   color: var(--vx-orange);
 }
+
+/* Názory */
+.nazory-page {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 0 16px 48px;
+}
+.nazory-page-head {
+  margin-bottom: 24px;
+}
+.nazory-page-lead,
+.nazory-form-lead {
+  margin-top: 8px;
+  color: rgba(23, 20, 17, 0.72);
+  line-height: 1.5;
+}
+.nazory-empty {
+  padding: 24px 0;
+  color: rgba(23, 20, 17, 0.7);
+}
+.nazory-grid {
+  display: grid;
+  gap: 20px;
+}
+.nazory-card {
+  border-top: 1px solid rgba(23, 20, 17, 0.12);
+  padding-top: 18px;
+}
+.nazory-card-link {
+  display: grid;
+  gap: 14px;
+  color: inherit;
+  text-decoration: none;
+}
+.nazory-card-thumb img,
+.nazory-detail-hero img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  display: block;
+}
+.nazory-card-title,
+.nazory-detail-title {
+  font-size: clamp(1.35rem, 2vw, 2rem);
+  font-weight: 800;
+  line-height: 1.15;
+}
+.nazory-card-perex,
+.nazory-detail-perex {
+  color: rgba(23, 20, 17, 0.78);
+  line-height: 1.55;
+}
+.nazory-card-meta,
+.nazory-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  font-size: 0.86rem;
+  color: rgba(23, 20, 17, 0.62);
+}
+.nazory-detail {
+  display: grid;
+  gap: 24px;
+}
+.nazory-detail-header {
+  display: grid;
+  gap: 14px;
+}
+.nazory-copy-link,
+.nazory-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgba(23, 20, 17, 0.18);
+  border-radius: 999px;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  font: inherit;
+  cursor: pointer;
+}
+.nazory-btn-primary,
+.nazory-copy-link {
+  background: var(--vx-orange);
+  border-color: var(--vx-orange);
+  color: #fff;
+}
+.nazory-form,
+.nazory-editor,
+.nazory-panel,
+.nazory-admin {
+  display: grid;
+  gap: 16px;
+}
+.nazory-field {
+  display: grid;
+  gap: 8px;
+}
+.nazory-field input,
+.nazory-field textarea,
+.nazory-admin-row input {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid rgba(23, 20, 17, 0.18);
+  border-radius: 8px;
+  font: inherit;
+}
+.nazory-field textarea,
+.nazory-editor-content .ProseMirror {
+  min-height: 220px;
+  line-height: 1.6;
+}
+.nazory-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.nazory-editor-toolbar button {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid rgba(23, 20, 17, 0.14);
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+}
+.nazory-editor-actions,
+.nazory-preview-head,
+.nazory-admin-row,
+.nazory-admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.nazory-editor-status {
+  color: rgba(23, 20, 17, 0.62);
+  font-size: 0.9rem;
+}
+.nazory-prose {
+  display: grid;
+  gap: 16px;
+  line-height: 1.7;
+}
+.nazory-prose-h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+.nazory-prose-h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+.nazory-prose-quote {
+  border-left: 4px solid var(--vx-orange);
+  padding-left: 16px;
+  color: rgba(23, 20, 17, 0.8);
+}
+.nazory-prose-ul,
+.nazory-prose-ol {
+  padding-left: 1.4rem;
+}
+.nazory-prose-youtube {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+.nazory-prose-youtube iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.nazory-author-card,
+.nazory-author-page-head {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.nazory-author-card-link {
+  display: flex;
+  gap: 16px;
+  color: inherit;
+  text-decoration: none;
+}
+.nazory-author-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 102, 0, 0.12);
+  color: var(--vx-orange);
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.nazory-author-avatar--large {
+  width: 96px;
+  height: 96px;
+}
+.nazory-author-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.nazory-author-body,
+.nazory-author-page {
+  display: grid;
+  gap: 12px;
+}
+.nazory-author-name {
+  font-weight: 800;
+}
+.nazory-author-bio,
+.nazory-author-page-bio {
+  color: rgba(23, 20, 17, 0.76);
+  line-height: 1.55;
+}
+.nazory-author-count,
+.nazory-author-page-meta,
+.nazory-author-page-title {
+  color: rgba(23, 20, 17, 0.62);
+}
+.nazory-author-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.nazory-author-link,
+.nazory-guest-pitch {
+  margin-top: 24px;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.6;
+}
+.nazory-guest-pitch a {
+  color: #c8a84b;
+}
+.nazory-onboarding {
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  border: 1px solid rgba(200, 168, 75, 0.35);
+  border-radius: 10px;
+  background: rgba(200, 168, 75, 0.08);
+  color: rgba(255, 255, 255, 0.86);
+  line-height: 1.55;
+}
+.nazory-onboarding code {
+  color: #c8a84b;
+}
+.nazory-profile-layout {
+  display: grid;
+  gap: 28px;
+}
+@media (min-width: 960px) {
+  .nazory-profile-layout {
+    grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+    align-items: start;
+  }
+}
+.nazory-profile-preview-title {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+}
+.nazory-form-meta {
+  margin: 0 0 12px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.92rem;
+}
+.nazory-avatar-upload {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.nazory-avatar-upload .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.nazory-admin-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+.nazory-admin-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(23, 20, 17, 0.08);
+}
+.nazory-error {
+  color: #b42318;
+}
+.nazory-success {
+  color: #067647;
+}
+.nazory-comments {
+  margin-top: 12px;
+}
+.nazory-preview-auth-notice {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(255, 106, 0, 0.08);
+  color: rgba(23, 20, 17, 0.82);
+  line-height: 1.5;
+  font-size: 0.92rem;
+}
+.nazory-preview-auth-notice code {
+  font-size: 0.85rem;
+  word-break: break-all;
+}
+@media (min-width: 768px) {
+  .nazory-card-link {
+    grid-template-columns: 220px 1fr;
+    align-items: start;
+  }
+}

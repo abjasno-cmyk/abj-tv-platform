@@ -7,18 +7,28 @@ import {
   parsePreviewHandoffNext,
   parsePreviewHandoffRequest,
 } from "@/lib/auth/handoff";
+import { OAUTH_RETURN_PATH_COOKIE, sanitizeOAuthReturnPath } from "@/lib/auth/oauthRedirect";
 import { resolveAuthCallbackOrigin } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
-const OAUTH_RETURN_PATH_COOKIE = "verox_oauth_next";
+function readNextPath(request: NextRequest, queryValue: string | null): string {
+  if (queryValue?.trim()) {
+    const trimmed = queryValue.trim();
+    if (parsePreviewHandoffNext(trimmed)) return trimmed;
+    return sanitizeOAuthReturnPath(trimmed);
+  }
 
-function safeNextPath(value: string | null): string {
-  if (!value?.trim()) return "/live";
-  const trimmed = value.trim();
-  if (parsePreviewHandoffNext(trimmed)) return trimmed;
-  if (!trimmed.startsWith("/") || trimmed.startsWith("//")) return "/live";
-  return trimmed;
+  const cookieValue = request.cookies.get(OAUTH_RETURN_PATH_COOKIE)?.value;
+  if (cookieValue) {
+    try {
+      return sanitizeOAuthReturnPath(decodeURIComponent(cookieValue));
+    } catch {
+      return sanitizeOAuthReturnPath(cookieValue);
+    }
+  }
+
+  return "/live";
 }
 
 function sanitizeEnvValue(value?: string): string | undefined {
@@ -54,15 +64,16 @@ function applyAuthCookies(
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
-  const next = safeNextPath(url.searchParams.get("next"));
+  const next = readNextPath(request, url.searchParams.get("next"));
   const origin = resolveAuthCallbackOrigin(url);
   const previewHandoff = parsePreviewHandoffRequest(url.searchParams, next);
   const cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }> = [];
 
+  const supabaseUrl = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const supabaseAnonKey = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+
   if (code) {
     try {
-      const supabaseUrl = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);
-      const supabaseAnonKey = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
       if (!supabaseUrl || !supabaseAnonKey) {
         throw new Error("Supabase env vars not set");
       }
