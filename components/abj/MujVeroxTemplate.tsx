@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { MujVeroxAuthorStudio } from "@/components/nazory/MujVeroxAuthorStudio";
 import { MyVeroxLibrary } from "@/components/viewer/MyVeroxLibrary";
 import { buildWallTree, formatWallPostTime, type WallTreeNode } from "@/lib/wallThread";
 import type { WallPost } from "@/lib/wallTypes";
@@ -263,6 +264,16 @@ export function MujVeroxTemplate() {
     <div className="vx-live vx-sub">
       <div className="mv">
         <h1>MŮJ VEROX</h1>
+      </div>
+
+      <MujVeroxAuthorStudio />
+
+      <div className="vx-strip w75">
+        <span />
+        <span />
+      </div>
+
+      <div className="mv">
         <h2>VAŠE VIDEA, KANÁLY A DISKUZE</h2>
         <div className="sub">Uložená videa, sledování a oblíbené kanály — plus komunitní diskuze níže.</div>
         {!isAuthenticated ? (

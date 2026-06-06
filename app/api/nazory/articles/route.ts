@@ -1,9 +1,32 @@
 import { AuthApiError, requireAuthenticatedUser } from "@/lib/supabase/authenticated-server";
 import { requireAuthorWithCompletedProfile } from "@/lib/nazory/access";
-import { createDraftArticle } from "@/lib/nazory/articles";
+import { createDraftArticle, listAuthorArticles } from "@/lib/nazory/articles";
 import { enforceWriteRateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
+
+export async function GET() {
+  try {
+    const { supabase, user } = await requireAuthenticatedUser();
+    await requireAuthorWithCompletedProfile(supabase, user);
+    const articles = await listAuthorArticles(supabase, user.id);
+    return Response.json({
+      articles: articles.map((article) => ({
+        id: article.id,
+        title: article.title,
+        status: article.status,
+        slug: article.slug,
+        updatedAt: article.updated_at,
+        publishedAt: article.published_at,
+      })),
+    });
+  } catch (error) {
+    if (error instanceof AuthApiError) {
+      return Response.json({ error: error.message }, { status: error.status });
+    }
+    return Response.json({ error: "Články se nepodařilo načíst." }, { status: 500 });
+  }
+}
 
 export async function POST(request: Request) {
   try {

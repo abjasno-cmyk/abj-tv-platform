@@ -1288,6 +1288,102 @@
 }
 
 /* ============ MŮJ VEROX — osobní knihovna ============ */
+.mv-author-studio {
+  margin: clamp(12px, 2vw, 24px) 0 clamp(20px, 3vw, 36px);
+  padding: 0;
+}
+.mv-author-studio-heading {
+  margin: 0 0 8px;
+  font-family: var(--vx-impact);
+  font-weight: 400;
+  font-size: clamp(1.35rem, 2.8vw, 2rem);
+  letter-spacing: 0.06em;
+  color: var(--vx-orange);
+}
+.mv-author-studio-lead {
+  margin: 0 0 20px;
+  color: rgba(23, 20, 17, 0.78);
+  line-height: 1.5;
+}
+.mv-author-studio-lead a {
+  color: var(--vx-orange);
+  font-weight: 700;
+}
+.mv-author-articles {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(23, 20, 17, 0.12);
+}
+.mv-author-articles-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.mv-author-articles-head h3 {
+  margin: 0;
+  font-family: var(--vx-impact);
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  letter-spacing: 0.05em;
+  color: var(--vx-gray-dark);
+}
+.mv-author-articles-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.mv-author-articles-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  border: 1px solid rgba(23, 20, 17, 0.12);
+  padding: 10px 12px;
+  background: #fff;
+}
+.mv-author-articles-item {
+  flex: 1 1 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  border: 0;
+  padding: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.mv-author-articles-item:hover .mv-author-articles-title {
+  color: var(--vx-orange);
+}
+.mv-author-articles-item:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.mv-author-articles-title {
+  font-weight: 700;
+  color: var(--vx-gray-dark);
+}
+.mv-author-articles-meta {
+  font-size: 0.85rem;
+  color: rgba(23, 20, 17, 0.62);
+}
+.mv-author-articles-link {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--vx-orange);
+  text-decoration: none;
+}
+.mv-author-articles-link:hover {
+  text-decoration: underline;
+}
+
 .mv-library {
   padding: 0 var(--L1) 4cqw;
   text-align: left;

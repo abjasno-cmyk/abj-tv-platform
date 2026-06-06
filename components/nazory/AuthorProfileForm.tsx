@@ -34,7 +34,12 @@ async function activateAuthorAccount(): Promise<boolean> {
   return response.ok;
 }
 
-export function AuthorProfileForm() {
+type AuthorProfileFormProps = {
+  redirectOnComplete?: boolean;
+  onProfileCompleted?: () => void;
+};
+
+export function AuthorProfileForm({ redirectOnComplete = true, onProfileCompleted }: AuthorProfileFormProps = {}) {
   const router = useRouter();
   const { isAuthenticated, openLoginModal, user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -171,7 +176,10 @@ export function AuthorProfileForm() {
     }
     setMessage("Profil byl uložen.");
     if (payload.profile?.profileCompleted) {
-      router.push("/nazory/napsat");
+      onProfileCompleted?.();
+      if (redirectOnComplete) {
+        router.push("/nazory/napsat");
+      }
     }
   };
 
