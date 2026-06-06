@@ -46,10 +46,6 @@ export function mapAuthorProfileToPublic(
   };
 }
 
-export function getAuthorDisplayName(row: Pick<AuthorProfileRow, "first_name" | "last_name">): string {
-  return [row.first_name, row.last_name].map((part) => part.trim()).filter(Boolean).join(" ");
-}
-
 async function loadTakenAuthorSlugs(supabase: SupabaseClient, excludeUserId?: string): Promise<string[]> {
   const query = supabase.from("author_profiles").select("slug, user_id");
   const { data, error } = await query;
@@ -189,6 +185,24 @@ export async function createAuthorAccount(
   }
 
   return data as AuthorProfileRow;
+}
+
+export async function findUserIdByEmail(supabase: SupabaseClient, email: string): Promise<string | null> {
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return null;
+  const { data, error } = await supabase.from("profiles").select("id").ilike("email", normalized).maybeSingle();
+  if (error || !data) return null;
+  return (data as { id: string }).id;
+}
+
+export async function listAuthorsForAdmin(supabase: SupabaseClient) {
+  const { data, error } = await supabase
+    .from("author_profiles")
+    .select("*")
+    .order("updated_at", { ascending: false });
+
+  if (error || !data) return [];
+  return data as AuthorProfileRow[];
 }
 
 export async function setAuthorActiveState(

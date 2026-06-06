@@ -262,6 +262,24 @@ export async function getArticleByIdForAuthor(
   return data as OpinionArticleRow;
 }
 
+export async function listPublishedArticlesByAuthor(
+  supabase: SupabaseClient,
+  authorId: string,
+  limit = 40,
+): Promise<OpinionArticleRow[]> {
+  const { data, error } = await supabase
+    .from("opinion_articles")
+    .select(OPINION_ARTICLE_COLUMNS)
+    .eq("author_id", authorId)
+    .eq("status", OPINION_ARTICLE_STATUS_PUBLISHED)
+    .is("deleted_at", null)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+  return data as OpinionArticleRow[];
+}
+
 export async function listPublishedArticles(
   supabase: SupabaseClient,
   limit = 40,
@@ -272,6 +290,77 @@ export async function listPublishedArticles(
     .eq("status", OPINION_ARTICLE_STATUS_PUBLISHED)
     .is("deleted_at", null)
     .order("published_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+  return data as OpinionArticleRow[];
+}
+
+export async function getArticleById(
+  supabase: SupabaseClient,
+  articleId: string,
+): Promise<OpinionArticleRow | null> {
+  const { data, error } = await supabase
+    .from("opinion_articles")
+    .select(OPINION_ARTICLE_COLUMNS)
+    .eq("id", articleId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as OpinionArticleRow;
+}
+
+export async function updateArticleByAdmin(
+  supabase: SupabaseClient,
+  articleId: string,
+  input: OpinionArticleDraftInput,
+): Promise<OpinionArticleRow> {
+  const existing = await getArticleById(supabase, articleId);
+  if (!existing || existing.deleted_at) {
+    throw new Error("Článek nebyl nalezen.");
+  }
+
+  const title = input.title !== undefined ? trimText(input.title, 300) : existing.title;
+  const perex =
+    input.perex !== undefined ? trimText(input.perex, MAX_PUBLISH_PEREX_LENGTH) : existing.perex;
+  const contentJson = input.contentJson ?? existing.content_json;
+  const slug =
+    title !== existing.title
+      ? buildArticleSlug(title || "koncept", await loadTakenArticleSlugs(supabase, articleId))
+      : existing.slug;
+  const seo = buildArticleSeoFields({ title, perex, content_json: contentJson });
+
+  const { data, error } = await supabase
+    .from("opinion_articles")
+    .update({
+      title,
+      perex,
+      slug,
+      hero_image_path: input.heroImagePath ?? existing.hero_image_path,
+      content_json: contentJson,
+      reading_time_min: estimateReadingTimeFromContentJson(contentJson, `${title} ${perex}`),
+      seo_title: seo.seo_title,
+      seo_description: seo.seo_description,
+    })
+    .eq("id", articleId)
+    .select(OPINION_ARTICLE_COLUMNS)
+    .single();
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "Nepodařilo se uložit článek.");
+  }
+
+  return data as OpinionArticleRow;
+}
+
+export async function listAllArticlesForAdmin(
+  supabase: SupabaseClient,
+  limit = 100,
+): Promise<OpinionArticleRow[]> {
+  const { data, error } = await supabase
+    .from("opinion_articles")
+    .select(OPINION_ARTICLE_COLUMNS)
+    .order("updated_at", { ascending: false })
     .limit(limit);
 
   if (error || !data) return [];

@@ -1,4 +1,5 @@
 export const VIEWER_COMMENT_ENTITY_VIDEO = "video" as const;
+export const VIEWER_COMMENT_ENTITY_OPINION = "opinion" as const;
 export const VIEWER_COMMENT_LIKE_ENTITY = "comment" as const;
 
 export type CommentSortMode = "popular" | "newest";

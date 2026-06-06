@@ -15,6 +15,7 @@ const PUBLIC_ROUTES = [
   "/videa",
   "/archiv",
   "/v-kostce",
+  "/nazory",
   "/komunita",
   "/terms",
   "/privacy",

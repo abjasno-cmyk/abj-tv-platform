@@ -12,8 +12,8 @@ function activeKeyFor(pathname: string): VeroxNavKey {
   if (pathname.startsWith("/videa") || pathname.startsWith("/archiv") || pathname.startsWith("/feed")) {
     return "videa";
   }
-  if (pathname.startsWith("/v-kostce") || pathname.startsWith("/abj-x")) {
-    return "kostce";
+  if (pathname.startsWith("/nazory")) {
+    return "nazory";
   }
   if (pathname.startsWith("/muj-verox") || pathname.startsWith("/komunita") || pathname.startsWith("/zed")) {
     return "muj";

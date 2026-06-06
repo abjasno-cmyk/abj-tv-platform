@@ -1,0 +1,104 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+import { OpinionCard } from "@/components/nazory/OpinionCard";
+import { getPublicAuthorBySlug } from "@/lib/nazory/authors";
+import { getAuthorDisplayName } from "@/lib/nazory/display";
+import { publicNazoryMediaUrl } from "@/lib/nazory/media";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { listPublishedArticlesByAuthor } from "@/lib/nazory/articles";
+
+export const revalidate = 60;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ authorSlug: string }>;
+}): Promise<Metadata> {
+  const { authorSlug } = await params;
+  const supabase = await createSupabaseServerClient();
+  const author = await getPublicAuthorBySlug(supabase, authorSlug);
+  if (!author) return { title: "Autor nenalezen — Názory" };
+
+  const name = getAuthorDisplayName({ first_name: author.firstName, last_name: author.lastName });
+  return {
+    title: `${name} — Názory`,
+    description: author.bio ?? `Autorské články autora ${name} na VEROX.`,
+  };
+}
+
+export default async function NazoryAuthorPage({ params }: { params: Promise<{ authorSlug: string }> }) {
+  const { authorSlug } = await params;
+  const supabase = await createSupabaseServerClient();
+  const author = await getPublicAuthorBySlug(supabase, authorSlug);
+  if (!author) notFound();
+
+  const articles = await listPublishedArticlesByAuthor(supabase, author.userId);
+  const name = getAuthorDisplayName({ first_name: author.firstName, last_name: author.lastName });
+  const avatarUrl = publicNazoryMediaUrl(author.avatarStoragePath);
+
+  return (
+    <div className="vx-live vx-sub nazory-page">
+      <header className="nazory-author-page">
+        <div className="nazory-author-page-head">
+          <span className="nazory-author-avatar nazory-author-avatar--large">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt="" />
+            ) : (
+              <span aria-hidden="true">{author.firstName.charAt(0)}</span>
+            )}
+          </span>
+          <div>
+            <h1 className="section-h">{name}</h1>
+            {author.title ? <p className="nazory-author-page-title">{author.title}</p> : null}
+            {author.profession ? <p className="nazory-author-page-meta">{author.profession}</p> : null}
+            {author.city ? <p className="nazory-author-page-meta">{author.city}</p> : null}
+            {author.bio ? <p className="nazory-author-page-bio">{author.bio}</p> : null}
+            <p className="nazory-author-page-meta">{author.publishedArticleCount} publikovaných článků</p>
+          </div>
+        </div>
+        <div className="nazory-author-links">
+          {author.websiteUrl ? (
+            <a href={author.websiteUrl} target="_blank" rel="noopener noreferrer">
+              Web
+            </a>
+          ) : null}
+          {author.facebookUrl ? (
+            <a href={author.facebookUrl} target="_blank" rel="noopener noreferrer">
+              Facebook
+            </a>
+          ) : null}
+          {author.xUrl ? (
+            <a href={author.xUrl} target="_blank" rel="noopener noreferrer">
+              X
+            </a>
+          ) : null}
+          {author.linkedinUrl ? (
+            <a href={author.linkedinUrl} target="_blank" rel="noopener noreferrer">
+              LinkedIn
+            </a>
+          ) : null}
+        </div>
+      </header>
+
+      <section className="nazory-author-articles">
+        <h2>Články autora</h2>
+        {articles.length > 0 ? (
+          <div className="nazory-grid">
+            {articles.map((article) => (
+              <OpinionCard key={article.id} article={article} authorName={name} />
+            ))}
+          </div>
+        ) : (
+          <p className="nazory-empty">Autor zatím nemá publikované články.</p>
+        )}
+      </section>
+
+      <p className="nazory-author-link">
+        <Link href="/nazory">Zpět na Názory</Link>
+      </p>
+    </div>
+  );
+}

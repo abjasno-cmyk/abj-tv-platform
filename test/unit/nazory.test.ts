@@ -16,7 +16,15 @@ import {
   isNazoryAdminRole,
 } from "@/lib/nazory/access";
 import { buildArticleSlug, buildAuthorSlug, buildUniqueSlug, slugifyText } from "@/lib/nazory/slug";
-import { getAuthorDisplayName } from "@/lib/nazory/authors";
+import { extractYoutubeVideoId } from "@/lib/nazory/youtube";
+import { getAuthorDisplayName } from "@/lib/nazory/display";
+
+describe("nazory youtube helpers", () => {
+  it("extracts youtube ids from common urls", () => {
+    expect(extractYoutubeVideoId("https://www.youtube.com/watch?v=dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
+    expect(extractYoutubeVideoId("https://youtu.be/dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
+  });
+});
 
 describe("nazory slug helpers", () => {
   it("slugifies Czech diacritics", () => {

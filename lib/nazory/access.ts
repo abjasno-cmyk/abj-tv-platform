@@ -100,3 +100,11 @@ export async function requireActiveAuthor(supabase: SupabaseClient, user: User) 
     throw new AuthApiError(403, "Pro psaní článků potřebujete aktivní autorský účet.");
   }
 }
+
+export async function requireAuthorWithCompletedProfile(supabase: SupabaseClient, user: User) {
+  await requireActiveAuthor(supabase, user);
+  const profile = await loadAuthorProfileRow(supabase, user.id);
+  if (!profile?.profile_completed) {
+    throw new AuthApiError(403, "Nejdřív dokončete autorský profil v sekci Názory.");
+  }
+}
