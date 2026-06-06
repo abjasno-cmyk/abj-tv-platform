@@ -1,6 +1,8 @@
 import Link from "next/link";
 
+import { NazoryAuthorsCarousel } from "@/components/nazory/NazoryAuthorsCarousel";
 import { OpinionList } from "@/components/nazory/OpinionList";
+import { listPublicAuthorsForCatalog } from "@/lib/nazory/authors";
 import {
   canUseAuthorFeatures,
   isNazoryAdminProfile,
@@ -14,6 +16,7 @@ export const revalidate = 60;
 
 export default async function NazoryPage() {
   let articles: Awaited<ReturnType<typeof listPublishedArticles>> = [];
+  let authors: Awaited<ReturnType<typeof listPublicAuthorsForCatalog>> = [];
   let isAuthenticated = false;
   let isAuthor = false;
   let isAdmin = false;
@@ -26,7 +29,10 @@ export default async function NazoryPage() {
       data: { user },
     } = await supabase.auth.getUser();
     isAuthenticated = Boolean(user);
-    articles = await listPublishedArticles(supabase, 40);
+    [articles, authors] = await Promise.all([
+      listPublishedArticles(supabase, 40),
+      listPublicAuthorsForCatalog(supabase),
+    ]);
 
     if (user) {
       const [profile, authorProfile] = await Promise.all([
@@ -44,6 +50,11 @@ export default async function NazoryPage() {
 
   return (
     <div className="vx-live vx-sub nazory-page">
+      <div className="hf nazory-authors-hf">
+        <div className="double-rule channels-rule" aria-hidden="true" />
+        <NazoryAuthorsCarousel authors={authors} />
+      </div>
+
       <h1 className="section-h">NÁZORY</h1>
 
       {articles.length > 0 ? (
