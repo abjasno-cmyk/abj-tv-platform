@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { NazoryAdmin } from "@/components/nazory/NazoryAdmin";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { AdminAuthorForm } from "@/components/nazory/AdminAuthorForm";
 import { isNazoryAdmin } from "@/lib/nazory/access";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-export default async function NazoryAdminPage() {
+export default async function AutoriAuthorPage({ params }: { params: Promise<{ userId: string }> }) {
+  const { userId } = await params;
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -20,12 +21,10 @@ export default async function NazoryAdminPage() {
   return (
     <div className="vx-live vx-sub nazory-page">
       <p className="nazory-author-link">
-        <Link href="/autori">Správa autorů</Link>
-        {" · "}
-        <Link href="/nazory">Veřejné Názory</Link>
+        <Link href="/autori">← Zpět na Autory</Link>
       </p>
-      <h1 className="section-h">SPRÁVA ČLÁNKŮ</h1>
-      <NazoryAdmin />
+      <h1 className="section-h">SPRÁVA AUTORA</h1>
+      <AdminAuthorForm userId={userId} />
     </div>
   );
 }

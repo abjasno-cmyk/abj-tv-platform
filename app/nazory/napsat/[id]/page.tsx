@@ -43,7 +43,7 @@ export default async function NazoryEditPage({ params }: { params: Promise<{ id:
     <div className="vx-live vx-sub nazory-page">
       {editingAsAdmin && managedAuthor ? (
         <p className="nazory-author-link">
-          <Link href={`/nazory/sprava/autor/${article.author_id}#clanky`}>
+          <Link href={`/autori/${article.author_id}#clanky`}>
             ← Zpět k článkům autora {getAuthorDisplayName(managedAuthor)}
           </Link>
         </p>

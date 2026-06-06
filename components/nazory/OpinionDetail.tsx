@@ -1,7 +1,7 @@
 import { AuthorCard } from "@/components/nazory/AuthorCard";
 import { CommentsBlock } from "@/components/nazory/CommentsBlock";
-import { CopyLinkButton } from "@/components/nazory/CopyLinkButton";
 import { OpinionContent } from "@/components/nazory/OpinionContent";
+import { OpinionDetailActions } from "@/components/nazory/OpinionDetailActions";
 import { getAuthorDisplayName } from "@/lib/nazory/display";
 import { publicNazoryMediaUrl } from "@/lib/nazory/media";
 import type { OpinionArticleRow, PublicAuthorProfile } from "@/lib/nazory/types";
@@ -39,14 +39,15 @@ export function OpinionDetail({ article, author, shareUrl, commentCount = 0, edi
           {article.reading_time_min ? <span>{article.reading_time_min} min čtení</span> : null}
           <span>{commentCount} komentářů</span>
         </div>
-        <div className="nazory-detail-actions">
-          <CopyLinkButton url={shareUrl} />
-          {editHref ? (
-            <a className="nazory-btn" href={editHref}>
-              Upravit článek
-            </a>
-          ) : null}
-        </div>
+        <OpinionDetailActions
+          articleId={article.id}
+          title={article.title}
+          slug={article.slug}
+          heroImagePath={article.hero_image_path}
+          authorName={authorName}
+          shareUrl={shareUrl}
+          editHref={editHref}
+        />
       </header>
 
       {heroUrl ? (

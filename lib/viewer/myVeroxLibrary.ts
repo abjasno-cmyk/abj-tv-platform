@@ -28,8 +28,19 @@ export type ViewerLibraryChannel = {
   href: string;
 };
 
+export type ViewerLibraryOpinion = {
+  articleId: string;
+  title: string;
+  slug: string;
+  heroImagePath: string | null;
+  authorName: string | null;
+  savedAt: string;
+  href: string;
+};
+
 export type MyVeroxLibraryPayload = {
   savedVideos: ViewerLibraryVideo[];
+  savedOpinions: ViewerLibraryOpinion[];
   watchedVideos: ViewerLibraryVideo[];
   continueWatching: ViewerLibraryVideo[];
   followedChannels: ViewerLibraryChannel[];
@@ -55,6 +66,15 @@ export type VideoProgressRow = {
 
 export type FollowRow = {
   channel_id: string;
+  created_at: string;
+};
+
+export type SavedOpinionRow = {
+  article_id: string;
+  title: string | null;
+  slug: string | null;
+  hero_image_path: string | null;
+  author_name: string | null;
   created_at: string;
 };
 
@@ -116,13 +136,28 @@ function resolveChannelFromCatalog(channelId: string, catalog: LiveChannelGroup[
   return null;
 }
 
+function mapSavedOpinionRow(row: SavedOpinionRow): ViewerLibraryOpinion {
+  const slug = row.slug?.trim() || "";
+  return {
+    articleId: row.article_id,
+    title: row.title?.trim() || "Článek Názorů",
+    slug,
+    heroImagePath: row.hero_image_path,
+    authorName: row.author_name?.trim() || null,
+    savedAt: row.created_at,
+    href: slug ? `/nazory/${slug}` : "/nazory",
+  };
+}
+
 export function buildMyVeroxLibraryFromRows(input: {
   savedRows: SavedVideoRow[];
+  savedOpinionRows?: SavedOpinionRow[];
   progressRows: VideoProgressRow[];
   followRows: FollowRow[];
   catalog: LiveChannelGroup[];
 }): MyVeroxLibraryPayload {
   const savedVideos = input.savedRows.map(mapSavedRow);
+  const savedOpinions = (input.savedOpinionRows ?? []).map(mapSavedOpinionRow);
   const watchedVideos = input.progressRows.filter((row) => row.completed).map(mapProgressRow);
   const continueWatching = input.progressRows
     .filter((row) => !row.completed && (row.progress_percent ?? 0) >= 2)
@@ -142,6 +177,7 @@ export function buildMyVeroxLibraryFromRows(input: {
 
   return {
     savedVideos,
+    savedOpinions,
     watchedVideos,
     continueWatching,
     followedChannels,
@@ -152,10 +188,15 @@ export async function loadMyVeroxLibraryForUser(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<MyVeroxLibraryPayload> {
-  const [savedRes, progressRes, followsRes, catalog] = await Promise.all([
+  const [savedRes, savedOpinionsRes, progressRes, followsRes, catalog] = await Promise.all([
     supabase
       .from("saved_videos")
       .select("video_id, title, thumbnail_url, channel_name, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("saved_opinion_articles")
+      .select("article_id, title, slug, hero_image_path, author_name, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false }),
     supabase
@@ -179,6 +220,9 @@ export async function loadMyVeroxLibraryForUser(
 
   return buildMyVeroxLibraryFromRows({
     savedRows: (savedRes.data ?? []) as SavedVideoRow[],
+    savedOpinionRows: savedOpinionsRes.error
+      ? []
+      : ((savedOpinionsRes.data ?? []) as SavedOpinionRow[]),
     progressRows: (progressRes.data ?? []) as VideoProgressRow[],
     followRows: (followsRes.data ?? []) as FollowRow[],
     catalog,

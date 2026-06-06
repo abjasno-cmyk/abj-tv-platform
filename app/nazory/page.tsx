@@ -72,7 +72,9 @@ export default async function NazoryPage() {
           {isAdmin ? (
             <>
               {" · "}
-              <Link href="/nazory/sprava">Správa Názorů</Link>
+              <Link href="/autori">Autoři</Link>
+              {" · "}
+              <Link href="/nazory/sprava">Správa článků</Link>
             </>
           ) : null}
         </p>
