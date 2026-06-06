@@ -130,4 +130,14 @@ describe("validateArticleForPublish", () => {
       }),
     ).toThrow("Obsah článku je příliš krátký.");
   });
+
+  it("rejects perex longer than 600 characters", () => {
+    expect(() =>
+      validateArticleForPublish({
+        title: "Silný názor",
+        perex: "a".repeat(601),
+        content_json: validContent,
+      }),
+    ).toThrow("Perex musí mít 20 až 600 znaků.");
+  });
 });
