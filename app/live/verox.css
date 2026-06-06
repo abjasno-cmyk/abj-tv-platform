@@ -1666,8 +1666,14 @@
   flex-wrap: wrap;
   gap: 12px;
 }
-.nazory-author-link {
+.nazory-author-link,
+.nazory-guest-pitch {
   margin-top: 24px;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.6;
+}
+.nazory-guest-pitch a {
+  color: #c8a84b;
 }
 .nazory-admin-list {
   list-style: none;

@@ -4,12 +4,19 @@ import { isVercelGitBranchPreviewHost } from "@/lib/deploymentHost";
 
 const HANDOFF_TTL_MS = 60_000;
 
+export const PREVIEW_ORIGIN_QUERY_PARAM = "preview_origin";
+
 export type AuthHandoffPayload = {
   accessToken: string;
   refreshToken: string;
   returnPath: string;
   returnOrigin: string;
   exp: number;
+};
+
+export type PreviewHandoffTarget = {
+  returnOrigin: string;
+  returnPath: string;
 };
 
 function handoffSecret(): string {
@@ -39,6 +46,13 @@ export function isAllowedPreviewReturnOrigin(origin: string): boolean {
   }
 }
 
+function sanitizeReturnPath(value: string | null | undefined, fallback = "/live"): string {
+  if (!value?.trim()) return fallback;
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//")) return fallback;
+  return trimmed;
+}
+
 export function createAuthHandoffToken(input: {
   accessToken: string;
   refreshToken: string;
@@ -52,7 +66,7 @@ export function createAuthHandoffToken(input: {
   const payload: AuthHandoffPayload = {
     accessToken: input.accessToken,
     refreshToken: input.refreshToken,
-    returnPath: input.returnPath.startsWith("/") ? input.returnPath : "/nazory",
+    returnPath: sanitizeReturnPath(input.returnPath, "/live"),
     returnOrigin: input.returnOrigin.replace(/\/+$/, ""),
     exp: Date.now() + HANDOFF_TTL_MS,
   };
@@ -95,12 +109,11 @@ export function resolveProductionAuthOrigin(): string {
   return "https://www.verox.cz";
 }
 
-const PREVIEW_HANDOFF_NEXT_PREFIX = "/api/auth/preview-continue";
+const LEGACY_PREVIEW_HANDOFF_NEXT_PREFIX = "/api/auth/preview-continue";
 
-export function parsePreviewHandoffNext(
-  next: string,
-): { returnOrigin: string; returnPath: string } | null {
-  if (!next.startsWith(PREVIEW_HANDOFF_NEXT_PREFIX)) return null;
+/** @deprecated Legacy nested-next format; kept for in-flight OAuth redirects. */
+export function parsePreviewHandoffNext(next: string): PreviewHandoffTarget | null {
+  if (!next.startsWith(LEGACY_PREVIEW_HANDOFF_NEXT_PREFIX)) return null;
 
   const query = next.includes("?") ? next.slice(next.indexOf("?") + 1) : "";
   const params = new URLSearchParams(query);
@@ -109,22 +122,57 @@ export function parsePreviewHandoffNext(
   if (!returnOrigin || !returnPath) return null;
   if (!isAllowedPreviewReturnOrigin(returnOrigin)) return null;
 
-  const safePath = returnPath.trim().startsWith("/") && !returnPath.trim().startsWith("//")
-    ? returnPath.trim()
-    : "/nazory";
-
   return {
     returnOrigin: returnOrigin.replace(/\/+$/, ""),
-    returnPath: safePath,
+    returnPath: sanitizeReturnPath(returnPath, "/live"),
   };
 }
 
-export function buildPreviewHandoffNextPath(returnOrigin: string, returnPath: string): string {
-  const params = new URLSearchParams({
+export function parsePreviewHandoffRequest(
+  searchParams: URLSearchParams,
+  nextPath: string,
+): PreviewHandoffTarget | null {
+  const previewOrigin =
+    searchParams.get(PREVIEW_ORIGIN_QUERY_PARAM) ??
+    searchParams.get("returnOrigin") ??
+    searchParams.get("preview_origin");
+
+  if (previewOrigin && isAllowedPreviewReturnOrigin(previewOrigin)) {
+    return {
+      returnOrigin: previewOrigin.replace(/\/+$/, ""),
+      returnPath: sanitizeReturnPath(nextPath, "/live"),
+    };
+  }
+
+  return parsePreviewHandoffNext(nextPath);
+}
+
+export function parsePreviewHandoffQuery(
+  searchParams: URLSearchParams,
+): PreviewHandoffTarget | null {
+  const returnOrigin =
+    searchParams.get("returnOrigin") ??
+    searchParams.get(PREVIEW_ORIGIN_QUERY_PARAM) ??
+    searchParams.get("preview_origin");
+  const returnPath = searchParams.get("returnPath") ?? searchParams.get("next");
+  if (!returnOrigin || !returnPath) return null;
+  if (!isAllowedPreviewReturnOrigin(returnOrigin)) return null;
+
+  return {
     returnOrigin: returnOrigin.replace(/\/+$/, ""),
-    returnPath: returnPath.startsWith("/") ? returnPath : "/nazory",
-  });
-  return `${PREVIEW_HANDOFF_NEXT_PREFIX}?${params.toString()}`;
+    returnPath: sanitizeReturnPath(returnPath, "/live"),
+  };
+}
+
+export function buildPreviewHandoffCallbackUrl(input: {
+  productionOrigin: string;
+  previewOrigin: string;
+  returnPath: string;
+}): string {
+  const url = new URL(`${input.productionOrigin.replace(/\/+$/, "")}/auth/callback`);
+  url.searchParams.set("next", sanitizeReturnPath(input.returnPath, "/live"));
+  url.searchParams.set(PREVIEW_ORIGIN_QUERY_PARAM, input.previewOrigin.replace(/\/+$/, ""));
+  return url.toString();
 }
 
 export function buildAuthCompleteUrl(returnOrigin: string, handoffToken: string): string {

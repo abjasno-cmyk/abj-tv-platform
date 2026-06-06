@@ -5,6 +5,7 @@ import {
   buildAuthCompleteUrl,
   createAuthHandoffToken,
   parsePreviewHandoffNext,
+  parsePreviewHandoffRequest,
 } from "@/lib/auth/handoff";
 import { OAUTH_RETURN_PATH_COOKIE, sanitizeOAuthReturnPath } from "@/lib/auth/oauthRedirect";
 import { resolveAuthCallbackOrigin } from "@/lib/site";
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
   const code = url.searchParams.get("code");
   const next = readNextPath(request, url.searchParams.get("next"));
   const origin = resolveAuthCallbackOrigin(url);
-  const previewHandoff = parsePreviewHandoffNext(next);
+  const previewHandoff = parsePreviewHandoffRequest(url.searchParams, next);
   const cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }> = [];
 
   const supabaseUrl = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);

@@ -109,10 +109,10 @@ export function AuthorProfileForm() {
   if (!isAuthenticated) {
     return (
       <div className="nazory-panel">
-        <p>Pro úpravu autorského profilu se nejdřív přihlaste.</p>
-        <button type="button" className="nazory-btn" onClick={() => openLoginModal({ reason: "Přihlaste se pro autorský profil." })}>
-          Přihlásit
-        </button>
+        <p>
+          Chcete psát své texty na verox.cz? Napište nám na{" "}
+          <a href="mailto:info@abybylojasno.cz">info@abybylojasno.cz</a> — pošlete první článek a domluvíme se.
+        </p>
       </div>
     );
   }

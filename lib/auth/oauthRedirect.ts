@@ -1,5 +1,5 @@
 import { isVercelGitBranchPreviewHost } from "@/lib/deploymentHost";
-import { buildPreviewHandoffNextPath, resolveProductionAuthOrigin } from "@/lib/auth/handoff";
+import { buildPreviewHandoffCallbackUrl, resolveProductionAuthOrigin } from "@/lib/auth/handoff";
 
 export const OAUTH_RETURN_PATH_COOKIE = "verox_oauth_next";
 export const OAUTH_RETURN_PATH_STORAGE_KEY = "verox_oauth_next_v1";
@@ -28,11 +28,6 @@ export function shouldUsePreviewAuthHandoff(host: string): boolean {
   return true;
 }
 
-/**
- * Supabase → Authentication → URL Configuration → Redirect URLs:
- *   https://www.verox.cz/auth/callback
- *   https://**-git-**.vercel.app/auth/callback
- */
 export function buildOAuthRedirectToForBrowser(input: {
   host: string;
   origin: string;
@@ -41,10 +36,11 @@ export function buildOAuthRedirectToForBrowser(input: {
   const safePath = sanitizeOAuthReturnPath(input.returnPath);
 
   if (shouldUsePreviewAuthHandoff(input.host)) {
-    const previewOrigin = input.origin.replace(/\/+$/, "");
-    const productionOrigin = resolveProductionAuthOrigin();
-    const handoffPath = buildPreviewHandoffNextPath(previewOrigin, safePath);
-    return buildOAuthCallbackUrl(productionOrigin, handoffPath);
+    return buildPreviewHandoffCallbackUrl({
+      productionOrigin: resolveProductionAuthOrigin(),
+      previewOrigin: input.origin.replace(/\/+$/, ""),
+      returnPath: safePath,
+    });
   }
 
   return buildOAuthCallbackUrl(input.origin, safePath);
