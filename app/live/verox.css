@@ -1383,6 +1383,19 @@
 .mv-author-articles-link:hover {
   text-decoration: underline;
 }
+.mv-author-articles-delete {
+  border: 0;
+  padding: 0;
+  background: none;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #b42318;
+  cursor: pointer;
+  font-family: inherit;
+}
+.mv-author-articles-delete:hover {
+  text-decoration: underline;
+}
 
 .mv-library {
   padding: 0 var(--L1) 4cqw;
@@ -1743,6 +1756,19 @@
   background: var(--vx-orange);
   border-color: var(--vx-orange);
   color: #fff;
+}
+.nazory-btn-danger {
+  border-color: #b42318;
+  color: #b42318;
+}
+.nazory-btn-danger:hover {
+  background: #b42318;
+  color: #fff;
+}
+.nazory-admin-danger-zone {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(180, 35, 24, 0.2);
 }
 .nazory-form,
 .nazory-editor,

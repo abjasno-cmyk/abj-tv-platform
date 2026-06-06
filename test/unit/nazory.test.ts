@@ -101,43 +101,13 @@ describe("nazory author helpers", () => {
 });
 
 describe("validateArticleForPublish", () => {
-  const validContent = {
-    type: "doc",
-    content: [
-      {
-        type: "paragraph",
-        content: [{ type: "text", text: "a".repeat(120) }],
-      },
-    ],
-  };
-
-  it("accepts valid article payload", () => {
+  it("does not enforce length limits", () => {
     expect(() =>
       validateArticleForPublish({
-        title: "Silný názor",
-        perex: "a".repeat(25),
-        content_json: validContent,
-      }),
-    ).not.toThrow();
-  });
-
-  it("rejects short content", () => {
-    expect(() =>
-      validateArticleForPublish({
-        title: "Silný názor",
-        perex: "a".repeat(25),
+        title: "",
+        perex: "a".repeat(5000),
         content_json: { type: "doc", content: [] },
       }),
-    ).toThrow("Obsah článku je příliš krátký.");
-  });
-
-  it("rejects perex longer than 600 characters", () => {
-    expect(() =>
-      validateArticleForPublish({
-        title: "Silný názor",
-        perex: "a".repeat(601),
-        content_json: validContent,
-      }),
-    ).toThrow("Perex musí mít 20 až 600 znaků.");
+    ).not.toThrow();
   });
 });

@@ -3,6 +3,8 @@ import { isNazoryAdmin, requireAuthorWithCompletedProfile } from "@/lib/nazory/a
 import {
   getArticleById,
   getArticleByIdForAuthor,
+  softDeleteArticle,
+  softDeleteArticleForAuthor,
   updateArticleByAdmin,
   updateDraftArticle,
 } from "@/lib/nazory/articles";
@@ -74,6 +76,32 @@ export async function PATCH(
       return Response.json({ error: error.message }, { status: error.status });
     }
     const message = error instanceof Error ? error.message : "Článek se nepodařilo uložit.";
+    return Response.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await context.params;
+    const { supabase, user } = await requireAuthenticatedUser();
+    const admin = await isNazoryAdmin(supabase, user);
+
+    const article = admin
+      ? await softDeleteArticle(supabase, id)
+      : await (async () => {
+          await requireAuthorWithCompletedProfile(supabase, user);
+          return softDeleteArticleForAuthor(supabase, id, user.id);
+        })();
+
+    return Response.json({ article });
+  } catch (error) {
+    if (error instanceof AuthApiError) {
+      return Response.json({ error: error.message }, { status: error.status });
+    }
+    const message = error instanceof Error ? error.message : "Článek se nepodařilo odstranit.";
     return Response.json({ error: message }, { status: 500 });
   }
 }

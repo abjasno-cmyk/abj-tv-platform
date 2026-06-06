@@ -8,7 +8,6 @@ import {
   estimateReadingTimeFromContentJson,
   extractPlainTextFromTipTapJson,
 } from "@/lib/nazory/content";
-import { MAX_PEREX_LENGTH, MIN_PEREX_LENGTH } from "@/lib/nazory/limits";
 import { buildArticleSlug } from "@/lib/nazory/slug";
 import {
   OPINION_ARTICLE_COLUMNS,
@@ -19,13 +18,8 @@ import {
   type OpinionArticleStatus,
 } from "@/lib/nazory/types";
 
-const MIN_PUBLISH_TITLE_LENGTH = 5;
-const MIN_PUBLISH_BODY_LENGTH = 100;
-
-function trimText(value: string | undefined, maxLength?: number): string {
-  const trimmed = value?.trim() ?? "";
-  if (!maxLength) return trimmed;
-  return trimmed.slice(0, maxLength);
+function trimText(value: string | undefined): string {
+  return value?.trim() ?? "";
 }
 
 async function loadTakenArticleSlugs(
@@ -40,20 +34,8 @@ async function loadTakenArticleSlugs(
     .map((row) => row.slug);
 }
 
-export function validateArticleForPublish(article: Pick<OpinionArticleRow, "title" | "perex" | "content_json">): void {
-  const title = article.title.trim();
-  const perex = article.perex.trim();
-  const plainText = extractPlainTextFromTipTapJson(article.content_json);
-
-  if (title.length < MIN_PUBLISH_TITLE_LENGTH) {
-    throw new Error("Titulek musí mít alespoň 5 znaků.");
-  }
-  if (perex.length < MIN_PEREX_LENGTH || perex.length > MAX_PEREX_LENGTH) {
-    throw new Error(`Perex musí mít ${MIN_PEREX_LENGTH} až ${MAX_PEREX_LENGTH} znaků.`);
-  }
-  if (plainText.length < MIN_PUBLISH_BODY_LENGTH) {
-    throw new Error("Obsah článku je příliš krátký.");
-  }
+export function validateArticleForPublish(_article: Pick<OpinionArticleRow, "title" | "perex" | "content_json">): void {
+  // Bez limitů délky titulku, perexu ani těla článku.
 }
 
 export function buildArticleSeoFields(
@@ -74,9 +56,9 @@ export async function createDraftArticle(
   input: OpinionArticleDraftInput = {},
 ): Promise<OpinionArticleRow> {
   const takenSlugs = await loadTakenArticleSlugs(supabase);
-  const title = trimText(input.title, 300);
+  const title = trimText(input.title);
   const slug = buildArticleSlug(title || "koncept", takenSlugs);
-  const perex = trimText(input.perex, MAX_PEREX_LENGTH);
+  const perex = trimText(input.perex);
   const contentJson = input.contentJson ?? { type: "doc", content: [] };
   const seo = buildArticleSeoFields({ title, perex, content_json: contentJson });
 
@@ -118,9 +100,8 @@ export async function updateDraftArticle(
     throw new Error("Skrytý článek nelze upravovat.");
   }
 
-  const title = input.title !== undefined ? trimText(input.title, 300) : existing.title;
-  const perex =
-    input.perex !== undefined ? trimText(input.perex, MAX_PEREX_LENGTH) : existing.perex;
+  const title = input.title !== undefined ? trimText(input.title) : existing.title;
+  const perex = input.perex !== undefined ? trimText(input.perex) : existing.perex;
   const contentJson = input.contentJson ?? existing.content_json;
   const slug =
     title !== existing.title
@@ -204,10 +185,22 @@ export async function softDeleteArticle(
     .single();
 
   if (error || !data) {
-    throw new Error(error?.message ?? "Nepodařilo se skrýt článek.");
+    throw new Error(error?.message ?? "Nepodařilo se odstranit článek.");
   }
 
   return data as OpinionArticleRow;
+}
+
+export async function softDeleteArticleForAuthor(
+  supabase: SupabaseClient,
+  articleId: string,
+  authorId: string,
+): Promise<OpinionArticleRow> {
+  const existing = await getArticleByIdForAuthor(supabase, articleId, authorId);
+  if (!existing) {
+    throw new Error("Článek nebyl nalezen.");
+  }
+  return softDeleteArticle(supabase, articleId);
 }
 
 export async function restoreArticle(
@@ -319,9 +312,8 @@ export async function updateArticleByAdmin(
     throw new Error("Článek nebyl nalezen.");
   }
 
-  const title = input.title !== undefined ? trimText(input.title, 300) : existing.title;
-  const perex =
-    input.perex !== undefined ? trimText(input.perex, MAX_PEREX_LENGTH) : existing.perex;
+  const title = input.title !== undefined ? trimText(input.title) : existing.title;
+  const perex = input.perex !== undefined ? trimText(input.perex) : existing.perex;
   const contentJson = input.contentJson ?? existing.content_json;
   const slug =
     title !== existing.title

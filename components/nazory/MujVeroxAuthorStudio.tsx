@@ -126,6 +126,22 @@ export function MujVeroxAuthorStudio() {
     setEditorKey(`new-${Date.now()}`);
   }, []);
 
+  const deleteArticle = useCallback(
+    async (articleId: string) => {
+      if (!window.confirm("Opravdu chcete tento článek odstranit? Akci nelze vrátit.")) return;
+      const response = await fetch(`/api/nazory/articles/${encodeURIComponent(articleId)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) return;
+      if (editingArticle?.id === articleId) {
+        startNewArticle();
+      }
+      await loadArticles();
+    },
+    [editingArticle?.id, loadArticles, startNewArticle],
+  );
+
   if (studio.kind === "hidden") {
     return null;
   }
@@ -188,6 +204,10 @@ export function MujVeroxAuthorStudio() {
         onDraftSaved={() => {
           void loadArticles();
         }}
+        onDeleted={() => {
+          startNewArticle();
+          void loadArticles();
+        }}
       />
 
       <div className="mv-author-articles">
@@ -224,6 +244,13 @@ export function MujVeroxAuthorStudio() {
                     Zobrazit
                   </Link>
                 ) : null}
+                <button
+                  type="button"
+                  className="mv-author-articles-delete"
+                  onClick={() => void deleteArticle(article.id)}
+                >
+                  Odstranit
+                </button>
               </li>
             ))}
           </ul>
