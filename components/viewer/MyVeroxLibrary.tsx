@@ -5,7 +5,14 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { SaveVideoButton } from "@/components/auth/SaveVideoButton";
-import type { MyVeroxLibraryPayload, ViewerLibraryChannel, ViewerLibraryVideo } from "@/lib/viewer/myVeroxLibrary";
+import { SaveOpinionButton } from "@/components/nazory/SaveOpinionButton";
+import type {
+  MyVeroxLibraryPayload,
+  ViewerLibraryChannel,
+  ViewerLibraryOpinion,
+  ViewerLibraryVideo,
+} from "@/lib/viewer/myVeroxLibrary";
+import { publicNazoryMediaUrl } from "@/lib/nazory/media";
 
 function VideoShelfCard({
   video,
@@ -38,6 +45,42 @@ function VideoShelfCard({
         saved
         compact
         className="mv-library-unsave"
+        onSavedChange={(saved) => {
+          if (!saved) onUnsave?.();
+        }}
+      />
+    </article>
+  );
+}
+
+function OpinionShelfCard({
+  article,
+  onUnsave,
+}: {
+  article: ViewerLibraryOpinion;
+  onUnsave?: () => void;
+}) {
+  const heroUrl = publicNazoryMediaUrl(article.heroImagePath);
+  return (
+    <article className="mv-library-opinion-card">
+      <Link href={article.href}>
+        {heroUrl ? (
+          <span className="mv-library-thumb">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={heroUrl} alt="" loading="lazy" />
+          </span>
+        ) : null}
+        <span className="mv-library-opinion-title">{article.title}</span>
+        {article.authorName ? <span className="mv-library-opinion-meta">{article.authorName}</span> : null}
+      </Link>
+      <SaveOpinionButton
+        articleId={article.articleId}
+        title={article.title}
+        slug={article.slug}
+        heroImagePath={article.heroImagePath}
+        authorName={article.authorName}
+        saved
+        className="nazory-btn mv-library-unsave"
         onSavedChange={(saved) => {
           if (!saved) onUnsave?.();
         }}
@@ -160,6 +203,7 @@ export function MyVeroxLibrary() {
 
   const data = library ?? {
     savedVideos: [],
+    savedOpinions: [],
     watchedVideos: [],
     continueWatching: [],
     followedChannels: [],
@@ -175,6 +219,12 @@ export function MyVeroxLibrary() {
       <ShelfSection title="Uložená videa" empty="Zatím nemáte uložená videa. Klepněte na ☆ Uložit video na stránce Živě nebo Videa.">
         {data.savedVideos.map((video) => (
           <VideoShelfCard key={`saved-${video.videoId}`} video={video} onUnsave={() => void loadLibrary()} />
+        ))}
+      </ShelfSection>
+
+      <ShelfSection title="Uložené články Názorů" empty="Zatím nemáte uložené články. Na detailu článku klepněte na Uložit článek.">
+        {data.savedOpinions.map((article) => (
+          <OpinionShelfCard key={`opinion-${article.articleId}`} article={article} onUnsave={() => void loadLibrary()} />
         ))}
       </ShelfSection>
 
