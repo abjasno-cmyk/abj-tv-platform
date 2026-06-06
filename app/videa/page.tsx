@@ -1,7 +1,8 @@
 import { Fragment } from "react";
 import Link from "next/link";
 
-import { loadStructuredFeedPayload, type FeedVideo } from "@/lib/dayOverview";
+import { loadVideaPageVideos, type FeedVideo } from "@/lib/dayOverview";
+import { resolveVideaCardSummary } from "@/lib/videoDescriptionSummary";
 
 export const dynamic = "force-dynamic";
 
@@ -18,9 +19,7 @@ function dateParts(iso: string): { month: string; day: string } {
 
 async function loadVideos(): Promise<FeedVideo[]> {
   try {
-    const payload = await loadStructuredFeedPayload();
-    const videos = payload.top.length > 0 ? payload.top : Object.values(payload.channels).flat();
-    return videos.slice(0, 30);
+    return await loadVideaPageVideos();
   } catch {
     return [];
   }
@@ -35,12 +34,12 @@ export default async function VideaPage() {
       <h1 className="section-h">VIDEA</h1>
       {videos.length === 0 ? (
         <div className="mv">
-          <div className="info">Videa se právě připravují.</div>
+          <div className="info">Za posledních 7 dní zatím nejsou k dispozici žádná videa.</div>
         </div>
       ) : (
         videos.map((video, i) => {
           const { month, day } = dateParts(video.published_at);
-          const desc = video.tldr ?? video.context ?? "";
+          const desc = resolveVideaCardSummary(video);
           const href = `/live?videoId=${encodeURIComponent(video.video_id)}`;
           return (
             <Fragment key={video.video_id}>
