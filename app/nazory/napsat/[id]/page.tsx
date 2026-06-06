@@ -18,13 +18,14 @@ export default async function NazoryEditPage({ params }: { params: Promise<{ id:
     redirect("/nazory/profil");
   }
 
-  try {
-    await requireAuthorWithCompletedProfile(supabase, user);
-  } catch {
-    redirect("/nazory/profil");
-  }
-
   const admin = await isNazoryAdmin(supabase, user);
+  if (!admin) {
+    try {
+      await requireAuthorWithCompletedProfile(supabase, user);
+    } catch {
+      redirect("/nazory/profil");
+    }
+  }
   const article = admin
     ? await getArticleById(supabase, id)
     : await getArticleByIdForAuthor(supabase, id, user.id);

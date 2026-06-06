@@ -1,6 +1,7 @@
 import { AuthApiError, requireAuthenticatedUser } from "@/lib/supabase/authenticated-server";
-import { requireAuthorWithCompletedProfile } from "@/lib/nazory/access";
-import { publishArticle } from "@/lib/nazory/articles";
+import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { isNazoryAdmin, requireAuthorWithCompletedProfile } from "@/lib/nazory/access";
+import { getArticleById, publishArticle } from "@/lib/nazory/articles";
 import { enforceWriteRateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
@@ -15,8 +16,21 @@ export async function POST(
 
     const { id } = await context.params;
     const { supabase, user } = await requireAuthenticatedUser();
-    await requireAuthorWithCompletedProfile(supabase, user);
-    const article = await publishArticle(supabase, id, user.id);
+    const admin = await isNazoryAdmin(supabase, user);
+
+    const article = admin
+      ? await (async () => {
+          const existing = await getArticleById(supabase, id);
+          if (!existing) {
+            throw new Error("Článek nebyl nalezen.");
+          }
+          return publishArticle(createSupabaseServiceClient(), id, existing.author_id);
+        })()
+      : await (async () => {
+          await requireAuthorWithCompletedProfile(supabase, user);
+          return publishArticle(supabase, id, user.id);
+        })();
+
     return Response.json({ article });
   } catch (error) {
     if (error instanceof AuthApiError) {

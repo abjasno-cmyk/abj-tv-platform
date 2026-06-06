@@ -1,14 +1,20 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import type { AuthorProfileRow, OpinionArticleRow } from "@/lib/nazory/types";
 import { getAuthorDisplayName } from "@/lib/nazory/display";
 
+type AdminAuthorRow = AuthorProfileRow & { account_email?: string | null };
+
 export function NazoryAdmin() {
-  const [authors, setAuthors] = useState<AuthorProfileRow[]>([]);
+  const [authors, setAuthors] = useState<AdminAuthorRow[]>([]);
   const [articles, setArticles] = useState<OpinionArticleRow[]>([]);
   const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [profileCompleted, setProfileCompleted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -17,7 +23,7 @@ export function NazoryAdmin() {
       fetch("/api/nazory/admin/authors", { credentials: "include", cache: "no-store" }),
       fetch("/api/nazory/admin/articles", { credentials: "include", cache: "no-store" }),
     ]);
-    const authorsPayload = (await authorsRes.json()) as { authors?: AuthorProfileRow[]; error?: string };
+    const authorsPayload = (await authorsRes.json()) as { authors?: AdminAuthorRow[]; error?: string };
     const articlesPayload = (await articlesRes.json()) as { articles?: OpinionArticleRow[]; error?: string };
     if (!authorsRes.ok) {
       setError(authorsPayload.error ?? "Nepodařilo se načíst autory.");
@@ -39,16 +45,25 @@ export function NazoryAdmin() {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({
+        email,
+        firstName,
+        lastName,
+        profileCompleted,
+      }),
     });
-    const payload = (await response.json()) as { error?: string };
-    if (!response.ok) {
+    const payload = (await response.json()) as { author?: AuthorProfileRow; error?: string };
+    if (!response.ok || !payload.author) {
       setError(payload.error ?? "Autora se nepodařilo přidat.");
       return;
     }
     setEmail("");
-    setMessage("Autor byl přidán.");
+    setFirstName("");
+    setLastName("");
+    setProfileCompleted(false);
+    setMessage("Autor byl vytvořen. Pokračujte úpravou profilu.");
     await load();
+    window.location.href = `/nazory/sprava/autor/${payload.author.user_id}`;
   };
 
   const toggleAuthor = async (userId: string, isActive: boolean) => {
@@ -76,17 +91,39 @@ export function NazoryAdmin() {
       <section className="nazory-admin-section">
         <h2>Přidat autora</h2>
         <p className="nazory-form-lead">
-          Zadejte Google e-mail. Uživatel se musí nejdřív jednou přihlásit přes Google Login.
+          Zadejte Google e-mail autora. Účet připravíme i bez předchozího přihlášení — autor se pak přihlásí stejným
+          Gmailem a může profil spravovat sám. Vy mu mezitím můžete doplnit fotku, texty i první článek.
         </p>
-        <div className="nazory-admin-row">
+        <div className="nazory-admin-create-grid">
+          <label className="nazory-field">
+            <span>Google e-mail *</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="autor@gmail.com"
+            />
+          </label>
+          <label className="nazory-field">
+            <span>Jméno</span>
+            <input value={firstName} onChange={(event) => setFirstName(event.target.value)} placeholder="Jan" />
+          </label>
+          <label className="nazory-field">
+            <span>Příjmení</span>
+            <input value={lastName} onChange={(event) => setLastName(event.target.value)} placeholder="Novák" />
+          </label>
+        </div>
+        <label className="nazory-field nazory-field-checkbox">
           <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="autor@example.com"
+            type="checkbox"
+            checked={profileCompleted}
+            onChange={(event) => setProfileCompleted(event.target.checked)}
           />
+          <span>Hned označit profil jako dokončený (zveřejnit autorskou kartu)</span>
+        </label>
+        <div className="nazory-editor-actions">
           <button type="button" className="nazory-btn nazory-btn-primary" onClick={() => void addAuthor()}>
-            Přidat autora
+            Vytvořit autora
           </button>
         </div>
       </section>
@@ -97,11 +134,22 @@ export function NazoryAdmin() {
           {authors.map((author) => (
             <li key={author.user_id}>
               <span>
-                {getAuthorDisplayName(author)} ({author.slug}) — {author.is_active ? "aktivní" : "deaktivovaný"}
+                {getAuthorDisplayName(author)} ({author.slug})
+                <br />
+                <span className="nazory-admin-meta">
+                  {author.account_email ?? author.contact_email ?? "bez e-mailu"} —{" "}
+                  {author.profile_completed ? "profil hotový" : "profil nedokončený"} —{" "}
+                  {author.is_active ? "aktivní" : "deaktivovaný"}
+                </span>
               </span>
-              <button type="button" className="nazory-btn" onClick={() => void toggleAuthor(author.user_id, author.is_active)}>
-                {author.is_active ? "Deaktivovat" : "Obnovit"}
-              </button>
+              <span className="nazory-admin-actions">
+                <Link className="nazory-btn" href={`/nazory/sprava/autor/${author.user_id}`}>
+                  Spravovat
+                </Link>
+                <button type="button" className="nazory-btn" onClick={() => void toggleAuthor(author.user_id, author.is_active)}>
+                  {author.is_active ? "Deaktivovat" : "Obnovit"}
+                </button>
+              </span>
             </li>
           ))}
         </ul>
