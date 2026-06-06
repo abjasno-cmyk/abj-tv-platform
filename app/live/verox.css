@@ -1252,3 +1252,170 @@
     white-space: nowrap;
   }
 }
+
+/* ============ MŮJ VEROX — osobní knihovna ============ */
+.mv-library {
+  padding: 0 var(--L1) 4cqw;
+  text-align: left;
+}
+.mv-library-heading {
+  margin: 0;
+  font-family: var(--vx-impact);
+  font-size: clamp(1.1rem, 2.8cqw, 1.5rem);
+  color: var(--vx-orange);
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+.mv-library-lead {
+  margin: 1.2cqw 0 3cqw;
+  text-align: center;
+  color: var(--vx-gray-light);
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+}
+.mv-library-login {
+  display: block;
+  margin: 0 auto;
+  border: 0;
+  background: var(--vx-orange);
+  color: #fff;
+  padding: 12px 22px;
+  font-family: var(--vx-myriad);
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+.mv-library-section {
+  margin-bottom: 4cqw;
+}
+.mv-library-section h3 {
+  margin: 0 0 2cqw;
+  font-size: clamp(0.9rem, 2cqw, 1.05rem);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--vx-gray-dark);
+}
+.mv-library-empty {
+  margin: 0;
+  color: var(--vx-gray-light);
+  font-size: clamp(0.82rem, 1.8cqw, 0.95rem);
+  line-height: 1.45;
+}
+.mv-library-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (min-width: 700px) {
+  .mv-library-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1024px) {
+  .mv-library-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.mv-library-card {
+  position: relative;
+  border: 1px solid rgba(17, 17, 17, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+.mv-library-card-link {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+.mv-library-thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  background: #ddd;
+  overflow: hidden;
+}
+.mv-library-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.mv-library-badge {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(48, 48, 48, 0.88);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.mv-library-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 10px 12px;
+}
+.mv-library-title {
+  font-size: clamp(0.82rem, 1.8cqw, 0.95rem);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--vx-gray-dark);
+}
+.mv-library-channel,
+.mv-library-progress {
+  font-size: 0.72rem;
+  color: var(--vx-gray-light);
+}
+.mv-library-unsave {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.92);
+}
+.mv-library-channel-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 10px;
+  border: 1px solid rgba(17, 17, 17, 0.1);
+  border-radius: 8px;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  text-align: center;
+}
+.mv-library-channel-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 102, 0, 0.12);
+  color: var(--vx-orange);
+  font-size: 1.4rem;
+}
+.mv-library-channel-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.mv-library-channel-name {
+  font-weight: 800;
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+.mv-library-channel-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vx-orange);
+}

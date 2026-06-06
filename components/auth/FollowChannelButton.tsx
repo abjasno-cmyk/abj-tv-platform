@@ -20,7 +20,6 @@ export function FollowChannelButton({ channelId, channelName, className }: Follo
   const [followed, setFollowed] = useState(false);
   const [loading, setLoading] = useState(false);
   const effectiveFollowed = isAuthenticated && followed;
-  const canToggleFollow = isAuthenticated && Boolean(channelId);
 
   useEffect(() => {
     if (!isAuthenticated || !channelId) return;
@@ -45,7 +44,9 @@ export function FollowChannelButton({ channelId, channelName, className }: Follo
     if (!channelId) return;
     setLoading(true);
     if (effectiveFollowed) {
-      const response = await fetch(`/api/viewer/follows?channelId=${encodeURIComponent(channelId)}`, { method: "DELETE" });
+      const response = await fetch(`/api/viewer/follows?channelId=${encodeURIComponent(channelId)}`, {
+        method: "DELETE",
+      });
       setLoading(false);
       if (response.ok) setFollowed(false);
       return;
@@ -63,35 +64,28 @@ export function FollowChannelButton({ channelId, channelName, className }: Follo
   return (
     <button
       type="button"
-      className={
-        className ??
-        `inline-flex min-h-9 items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] transition ${
-          !isAuthenticated
-            ? "border-[rgba(17,17,17,0.16)] bg-[rgba(17,17,17,0.04)] text-abj-text2"
-            : effectiveFollowed
-            ? "border-[#FF6A00] bg-[rgba(255,106,0,0.15)] text-[#B04A00]"
-            : "border-[rgba(17,17,17,0.2)] bg-white text-abj-text2 hover:border-[#FF6A00]/45 hover:text-abj-text1"
-        }`
-      }
+      className={className ?? `vx-save-video vx-save-video--channel${effectiveFollowed ? " is-saved" : ""}`}
       disabled={loading || !channelId}
+      aria-pressed={effectiveFollowed}
+      aria-label={effectiveFollowed ? "Odebrat z oblíbených kanálů" : "Uložit kanál mezi oblíbené"}
+      title={channelId ? undefined : "Kanál zatím nemá interní identifikátor"}
       onClick={() => {
+        if (!channelId) return;
         if (!isAuthenticated) {
-          requestAuth(
-            () => {
-              // Po přihlášení si uživatel tlačítko aktivně potvrdí.
-            },
-            {
-              reason: `Přihlaste se zdarma a uložte si kanál ${channelName} mezi oblíbené.`,
-            }
-          );
+          requestAuth(() => {
+            void toggleFollow();
+          }, {
+            reason: `Přihlaste se zdarma a uložte si kanál ${channelName} mezi oblíbené.`,
+          });
           return;
         }
-        if (!canToggleFollow) return;
         void toggleFollow();
       }}
-      title={channelId ? undefined : "Kanál zatím nemá interní identifikátor"}
     >
-      {loading ? "..." : !isAuthenticated ? "Přihlásit pro uložení" : effectiveFollowed ? "★ Oblíbený" : "☆ Uložit"}
+      <span aria-hidden="true">{effectiveFollowed ? "★" : "☆"}</span>
+      <span className="vx-save-video-label">
+        {loading ? "…" : effectiveFollowed ? "Oblíbený" : "Uložit kanál"}
+      </span>
     </button>
   );
 }

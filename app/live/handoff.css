@@ -903,6 +903,39 @@
   font-size: clamp(0.85rem, 1.4vw, 1rem);
   color: var(--vx-gray-dark);
 }
+.hf .channel-detail-head {
+  margin-bottom: clamp(10px, 1.2vw, 16px);
+}
+.hf .channel-detail-label {
+  margin: 0;
+  font-size: clamp(0.7rem, 1vw, 0.8rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vx-gray-light);
+}
+.hf .channel-detail-head-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.hf .channel-detail-name {
+  margin: 4px 0 0;
+  font-size: clamp(1rem, 1.8vw, 1.35rem);
+  font-weight: 800;
+  color: var(--vx-gray-dark);
+}
+.hf .channel-video-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.hf .channel-video-save,
+.hf .vx-save-video.channel-video-save {
+  align-self: flex-start;
+}
 .hf .channel-videos {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -924,12 +957,90 @@
   gap: clamp(6px, 0.8vw, 10px);
 }
 .hf .channel-video .cv-thumb {
+  position: relative;
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
   background: #ccc;
   overflow: hidden;
   border-radius: 2px;
+}
+.hf .vx-video-badges {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  z-index: 1;
+}
+.hf .vx-video-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.hf .vx-video-badge--watched {
+  background: rgba(48, 48, 48, 0.88);
+}
+.hf .vx-video-badge--saved {
+  background: rgba(255, 102, 0, 0.92);
+}
+.hf .vx-save-video {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(17, 17, 17, 0.16);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--vx-gray-dark);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.hf .vx-save-video.is-saved {
+  border-color: var(--vx-orange);
+  color: var(--vx-orange);
+  background: rgba(255, 102, 0, 0.08);
+}
+.hf .vx-save-video--compact {
+  padding: 4px 8px;
+}
+.hf .vx-save-video-label--compact {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (min-width: 520px) {
+  .hf .vx-save-video-label--compact {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+}
+.hf .vx-save-video--channel {
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 0.74rem;
 }
 .hf .channel-video .cv-thumb img {
   width: 100%;
