@@ -3,8 +3,15 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { LiveChannelGroup } from "@/components/abj/ChannelDirectory";
+import { loadStructuredFeedPayload } from "@/lib/dayOverview";
 import { loadLiveChannelsForPage } from "@/lib/liveChannelsServer";
 import {
+  collectVideoIdsNeedingTitleHydration,
+  hydrateVideoMetadataLookup,
+  type VideoMetaLookup,
+} from "@/lib/viewer/hydrateVideoMetadata";
+import {
+  isPlaceholderVideoTitle,
   liveVideoHref,
   normalizeChannelFollowId,
   resolveVideoThumbnail,
@@ -58,36 +65,47 @@ export type FollowRow = {
   created_at: string;
 };
 
-function mapSavedRow(row: SavedVideoRow): ViewerLibraryVideo {
-  const title = resolveVideoTitle(row.video_id, row.title);
+function resolveRowMetadata(
+  row: Pick<SavedVideoRow, "video_id" | "title" | "thumbnail_url" | "channel_name">,
+  lookup?: VideoMetaLookup,
+) {
+  const hydrated = lookup?.get(row.video_id);
+  const title = resolveVideoTitle(row.video_id, hydrated?.title ?? row.title);
+  const thumbnailUrl = resolveVideoThumbnail(row.video_id, hydrated?.thumbnailUrl ?? row.thumbnail_url);
+  const channelName = hydrated?.channelName?.trim() || row.channel_name?.trim() || null;
+  return { title, thumbnailUrl, channelName };
+}
+
+function mapSavedRow(row: SavedVideoRow, lookup?: VideoMetaLookup): ViewerLibraryVideo {
+  const { title, thumbnailUrl, channelName } = resolveRowMetadata(row, lookup);
   return {
     videoId: row.video_id,
     title,
-    thumbnailUrl: resolveVideoThumbnail(row.video_id, row.thumbnail_url),
-    channelName: row.channel_name?.trim() || null,
+    thumbnailUrl,
+    channelName,
     savedAt: row.created_at,
     href: liveVideoHref({
       videoId: row.video_id,
       title,
-      channelName: row.channel_name,
+      channelName,
     }),
   };
 }
 
-function mapProgressRow(row: VideoProgressRow): ViewerLibraryVideo {
-  const title = resolveVideoTitle(row.video_id, row.title);
+function mapProgressRow(row: VideoProgressRow, lookup?: VideoMetaLookup): ViewerLibraryVideo {
+  const { title, thumbnailUrl, channelName } = resolveRowMetadata(row, lookup);
   return {
     videoId: row.video_id,
     title,
-    thumbnailUrl: resolveVideoThumbnail(row.video_id, row.thumbnail_url),
-    channelName: row.channel_name?.trim() || null,
+    thumbnailUrl,
+    channelName,
     lastWatchedAt: row.last_watched_at,
     progressPercent: row.progress_percent,
     completed: row.completed,
     href: liveVideoHref({
       videoId: row.video_id,
       title,
-      channelName: row.channel_name,
+      channelName,
     }),
   };
 }
@@ -121,12 +139,15 @@ export function buildMyVeroxLibraryFromRows(input: {
   progressRows: VideoProgressRow[];
   followRows: FollowRow[];
   catalog: LiveChannelGroup[];
+  metadataLookup?: VideoMetaLookup;
 }): MyVeroxLibraryPayload {
-  const savedVideos = input.savedRows.map(mapSavedRow);
-  const watchedVideos = input.progressRows.filter((row) => row.completed).map(mapProgressRow);
+  const savedVideos = input.savedRows.map((row) => mapSavedRow(row, input.metadataLookup));
+  const watchedVideos = input.progressRows
+    .filter((row) => row.completed)
+    .map((row) => mapProgressRow(row, input.metadataLookup));
   const continueWatching = input.progressRows
     .filter((row) => !row.completed && (row.progress_percent ?? 0) >= 2)
-    .map(mapProgressRow);
+    .map((row) => mapProgressRow(row, input.metadataLookup));
 
   const followedChannels = input.followRows.map((row) => {
     const matched = resolveChannelFromCatalog(row.channel_id, input.catalog);
@@ -148,11 +169,57 @@ export function buildMyVeroxLibraryFromRows(input: {
   };
 }
 
+function buildMetadataBackfillPatch(
+  row: Pick<SavedVideoRow, "video_id" | "title" | "thumbnail_url" | "channel_name">,
+  lookup: VideoMetaLookup,
+): { title: string; thumbnail_url?: string; channel_name?: string } | null {
+  const hydrated = lookup.get(row.video_id);
+  if (!hydrated?.title || isPlaceholderVideoTitle(row.video_id, hydrated.title)) return null;
+
+  const patch: { title: string; thumbnail_url?: string; channel_name?: string } = {
+    title: hydrated.title,
+  };
+  if (hydrated.thumbnailUrl && !row.thumbnail_url?.trim()) {
+    patch.thumbnail_url = hydrated.thumbnailUrl;
+  }
+  if (hydrated.channelName && !row.channel_name?.trim()) {
+    patch.channel_name = hydrated.channelName;
+  }
+
+  const needsTitle = isPlaceholderVideoTitle(row.video_id, row.title);
+  const needsThumbnail = !row.thumbnail_url?.trim() && Boolean(patch.thumbnail_url);
+  const needsChannel = !row.channel_name?.trim() && Boolean(patch.channel_name);
+  if (!needsTitle && !needsThumbnail && !needsChannel) return null;
+
+  return patch;
+}
+
+async function backfillHydratedVideoMetadata(
+  supabase: SupabaseClient,
+  userId: string,
+  savedRows: SavedVideoRow[],
+  progressRows: VideoProgressRow[],
+  lookup: VideoMetaLookup,
+): Promise<void> {
+  await Promise.all([
+    ...savedRows.map(async (row) => {
+      const patch = buildMetadataBackfillPatch(row, lookup);
+      if (!patch) return;
+      await supabase.from("saved_videos").update(patch).eq("user_id", userId).eq("video_id", row.video_id);
+    }),
+    ...progressRows.map(async (row) => {
+      const patch = buildMetadataBackfillPatch(row, lookup);
+      if (!patch) return;
+      await supabase.from("video_progress").update(patch).eq("user_id", userId).eq("video_id", row.video_id);
+    }),
+  ]);
+}
+
 export async function loadMyVeroxLibraryForUser(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<MyVeroxLibraryPayload> {
-  const [savedRes, progressRes, followsRes, catalog] = await Promise.all([
+  const [savedRes, progressRes, followsRes, catalog, feed] = await Promise.all([
     supabase
       .from("saved_videos")
       .select("video_id, title, thumbnail_url, channel_name, created_at")
@@ -171,16 +238,32 @@ export async function loadMyVeroxLibraryForUser(
       .eq("user_id", userId)
       .order("created_at", { ascending: false }),
     loadLiveChannelsForPage().catch(() => [] as LiveChannelGroup[]),
+    loadStructuredFeedPayload().catch(() => null),
   ]);
 
   if (savedRes.error || progressRes.error || followsRes.error) {
     throw new Error("Nepodařilo se načíst osobní knihovnu.");
   }
 
+  const savedRows = (savedRes.data ?? []) as SavedVideoRow[];
+  const progressRows = (progressRes.data ?? []) as VideoProgressRow[];
+  const videoIdsNeedingHydration = collectVideoIdsNeedingTitleHydration([...savedRows, ...progressRows]);
+  const metadataLookup = await hydrateVideoMetadataLookup({
+    supabase,
+    videoIds: videoIdsNeedingHydration,
+    catalog,
+    feed,
+  });
+
+  await backfillHydratedVideoMetadata(supabase, userId, savedRows, progressRows, metadataLookup).catch(() => {
+    // Backfill is best-effort; the response still uses hydrated metadata.
+  });
+
   return buildMyVeroxLibraryFromRows({
-    savedRows: (savedRes.data ?? []) as SavedVideoRow[],
-    progressRows: (progressRes.data ?? []) as VideoProgressRow[],
+    savedRows,
+    progressRows,
     followRows: (followsRes.data ?? []) as FollowRow[],
     catalog,
+    metadataLookup,
   });
 }

@@ -14,9 +14,22 @@ export function resolveVideoThumbnail(videoId: string, thumbnailUrl?: string | n
   return trimmed && trimmed.length > 0 ? trimmed : youtubeThumbnailUrl(videoId);
 }
 
+export function placeholderVideoTitle(videoId: string): string {
+  return `Video ${videoId}`;
+}
+
+export function isPlaceholderVideoTitle(videoId: string, title?: string | null): boolean {
+  const trimmed = title?.trim();
+  if (!trimmed) return true;
+  return trimmed === placeholderVideoTitle(videoId);
+}
+
 export function resolveVideoTitle(videoId: string, title?: string | null): string {
   const trimmed = title?.trim();
-  return trimmed && trimmed.length > 0 ? trimmed : `Video ${videoId}`;
+  if (trimmed && trimmed.length > 0 && !isPlaceholderVideoTitle(videoId, trimmed)) {
+    return trimmed;
+  }
+  return placeholderVideoTitle(videoId);
 }
 
 export function liveVideoHref(input: {
