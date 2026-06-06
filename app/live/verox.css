@@ -1256,15 +1256,33 @@
     text-underline-offset: 4px;
     text-decoration-thickness: 2px;
   }
-  /* Názory — bez oranžového pruhu vlevo (čitelnost na desktopu) */
+  /* Názory — bez oranžového pruhu, obsah vlevo jako V kostce */
   .vx-live.vx-sub.nazory-page {
-    max-width: min(720px, 100%);
+    max-width: none;
+    width: 100%;
+    margin: 0;
     background-image: none;
     background-color: var(--vx-white);
+  }
+  .nazory-page {
+    max-width: min(760px, 100%);
+    margin: 0;
+    padding-inline: 0;
+  }
+  .nazory-page .section-h {
+    text-align: left;
   }
   .nazory-page .kostka-nazory {
     grid-template-columns: 72px 12px minmax(0, 1fr);
     padding-inline: 0;
+  }
+  .nazory-page .vx-strip {
+    margin-right: 0;
+  }
+  .nazory-detail,
+  .nazory-detail-header,
+  .nazory-prose {
+    text-align: left;
   }
   .nazory-page .kostka-nazory .day {
     color: var(--vx-orange);
