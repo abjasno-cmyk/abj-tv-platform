@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { OpinionDetail } from "@/components/nazory/OpinionDetail";
 import { SITE_URL } from "@/lib/site";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isNazoryAdmin } from "@/lib/nazory/access";
 import { getPublicAuthorBySlug } from "@/lib/nazory/authors";
 import { getPublishedArticleBySlug } from "@/lib/nazory/articles";
 
@@ -62,6 +63,13 @@ export default async function NazoryArticlePage({ params }: { params: Promise<{ 
     .eq("entity_id", article.id)
     .eq("status", "published");
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const admin = user ? await isNazoryAdmin(supabase, user) : false;
+  const canEdit = Boolean(user && (admin || user.id === article.author_id));
+  const editHref = canEdit ? `/nazory/napsat/${article.id}` : null;
+
   return (
     <div className="vx-live vx-sub nazory-page">
       <OpinionDetail
@@ -69,6 +77,7 @@ export default async function NazoryArticlePage({ params }: { params: Promise<{ 
         author={author}
         shareUrl={`${SITE_URL}/nazory/${article.slug}`}
         commentCount={count ?? 0}
+        editHref={editHref}
       />
     </div>
   );

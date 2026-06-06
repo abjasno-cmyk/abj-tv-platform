@@ -115,8 +115,8 @@ export async function updateDraftArticle(
   if (!existing) {
     throw new Error("Článek nebyl nalezen.");
   }
-  if (existing.status !== OPINION_ARTICLE_STATUS_DRAFT) {
-    throw new Error("Publikovaný článek lze upravovat jen přes administraci.");
+  if (existing.deleted_at) {
+    throw new Error("Skrytý článek nelze upravovat.");
   }
 
   const title = input.title !== undefined ? trimText(input.title, 300) : existing.title;

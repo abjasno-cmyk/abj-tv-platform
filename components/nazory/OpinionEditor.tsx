@@ -16,6 +16,8 @@ type OpinionEditorProps = {
   initialTitle?: string;
   initialPerex?: string;
   initialContent?: Record<string, unknown>;
+  initialStatus?: "draft" | "published";
+  publishedSlug?: string | null;
   mode?: "edit" | "preview";
 };
 
@@ -26,6 +28,8 @@ export function OpinionEditor({
   initialTitle = "",
   initialPerex = "",
   initialContent,
+  initialStatus = "draft",
+  publishedSlug = null,
   mode = "edit",
 }: OpinionEditorProps) {
   const router = useRouter();
@@ -273,8 +277,16 @@ export function OpinionEditor({
       {mode === "edit" ? (
         <div className="nazory-editor-actions">
           <span className="nazory-editor-status">
-            {saveState === "saving" ? "Ukládám koncept…" : null}
-            {saveState === "saved" ? "Koncept uložen" : null}
+            {saveState === "saving"
+              ? initialStatus === "published"
+                ? "Ukládám změny…"
+                : "Ukládám koncept…"
+              : null}
+            {saveState === "saved"
+              ? initialStatus === "published"
+                ? "Změny uloženy"
+                : "Koncept uložen"
+              : null}
             {saveState === "error" ? "Uložení selhalo" : null}
           </span>
           {currentArticleId ? (
@@ -282,9 +294,22 @@ export function OpinionEditor({
               Náhled
             </button>
           ) : null}
-          <button type="button" className="nazory-btn nazory-btn-primary" disabled={publishing} onClick={() => void publish()}>
-            {publishing ? "Publikuji…" : "Publikovat"}
-          </button>
+          {initialStatus === "published" ? (
+            <>
+              <button type="button" className="nazory-btn nazory-btn-primary" onClick={() => void persistDraft()}>
+                Uložit změny
+              </button>
+              {publishedSlug ? (
+                <a className="nazory-btn" href={`/nazory/${publishedSlug}`}>
+                  Zobrazit článek
+                </a>
+              ) : null}
+            </>
+          ) : (
+            <button type="button" className="nazory-btn nazory-btn-primary" disabled={publishing} onClick={() => void publish()}>
+              {publishing ? "Publikuji…" : "Publikovat"}
+            </button>
+          )}
         </div>
       ) : null}
 

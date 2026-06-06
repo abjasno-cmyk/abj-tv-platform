@@ -11,6 +11,7 @@ type OpinionDetailProps = {
   author: PublicAuthorProfile;
   shareUrl: string;
   commentCount?: number;
+  editHref?: string | null;
 };
 
 function formatPragueDate(value: string | null): string {
@@ -23,7 +24,7 @@ function formatPragueDate(value: string | null): string {
   }).format(new Date(value));
 }
 
-export function OpinionDetail({ article, author, shareUrl, commentCount = 0 }: OpinionDetailProps) {
+export function OpinionDetail({ article, author, shareUrl, commentCount = 0, editHref = null }: OpinionDetailProps) {
   const heroUrl = publicNazoryMediaUrl(article.hero_image_path);
   const authorName = getAuthorDisplayName({ first_name: author.firstName, last_name: author.lastName });
 
@@ -38,7 +39,14 @@ export function OpinionDetail({ article, author, shareUrl, commentCount = 0 }: O
           {article.reading_time_min ? <span>{article.reading_time_min} min čtení</span> : null}
           <span>{commentCount} komentářů</span>
         </div>
-        <CopyLinkButton url={shareUrl} />
+        <div className="nazory-detail-actions">
+          <CopyLinkButton url={shareUrl} />
+          {editHref ? (
+            <a className="nazory-btn" href={editHref}>
+              Upravit článek
+            </a>
+          ) : null}
+        </div>
       </header>
 
       {heroUrl ? (
