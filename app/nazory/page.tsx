@@ -49,14 +49,6 @@ export default async function NazoryPage() {
         <p className="nazory-page-lead">Autorské texty schválených přispěvatelů VEROX.</p>
       </div>
 
-      {isAuthenticated && isAdmin && !profileCompleted ? (
-        <aside className="nazory-onboarding">
-          <strong>Preview režim pro autora:</strong> po přihlášení jako{" "}
-          <code>abjasno@gmail.com</code> nejdřív vyplňte{" "}
-          <Link href="/nazory/profil">autorskou kartu</Link>, pak napište první článek.
-        </aside>
-      ) : null}
-
       {articles.length > 0 ? (
         <OpinionList articles={articles} />
       ) : (

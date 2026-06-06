@@ -9,7 +9,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 // vlevo, nav svisle vpravo, hodiny + datum vpravo (desktop) / pod logem (mobil).
 // Používá ji landing (HomePage) i subpages (ABJNav) — jeden zdroj pravdy.
 
-export type VeroxNavKey = "zive" | "videa" | "nazory" | "muj";
+export type VeroxNavKey = "zive" | "videa" | "kostce" | "muj";
 
 const DAYS = ["NEDĚLE", "PONDĚLÍ", "ÚTERÝ", "STŘEDA", "ČTVRTEK", "PÁTEK", "SOBOTA"];
 const MONTHS_GEN = [
@@ -60,7 +60,7 @@ interface VeroxHeaderProps {
   active?: VeroxNavKey;
 }
 
-export function VeroxHeader({ active = "zive" }: VeroxHeaderProps) {
+export function VeroxHeader({ active }: VeroxHeaderProps) {
   const { isAuthenticated, profile, openLoginModal, signOut } = useAuth();
   const [now, setNow] = useState<Date>(() => new Date());
 
@@ -100,8 +100,8 @@ export function VeroxHeader({ active = "zive" }: VeroxHeaderProps) {
         <Link className={active === "videa" ? "is-active" : undefined} href="/videa" aria-current={active === "videa" ? "page" : undefined}>
           VIDEA
         </Link>
-        <Link className={active === "nazory" ? "is-active" : undefined} href="/nazory" aria-current={active === "nazory" ? "page" : undefined}>
-          NÁZORY
+        <Link className={active === "kostce" ? "is-active" : undefined} href="/v-kostce" aria-current={active === "kostce" ? "page" : undefined}>
+          V KOSTCE
         </Link>
         <Link className={active === "muj" ? "is-active" : undefined} href="/muj-verox" aria-current={active === "muj" ? "page" : undefined}>
           MŮJ VEROX
