@@ -76,19 +76,18 @@ export function SaveVideoButton({
         event.stopPropagation();
         event.preventDefault();
         if (!isAuthenticated) {
-          requestAuth(
-            () => {
-              // Po přihlášení uživatel uložení potvrdí znovu.
-            },
-            { reason: "Přihlaste se zdarma a uložte si video na později." },
-          );
+          requestAuth(() => {
+            void toggleSave();
+          }, { reason: "Přihlaste se zdarma a uložte si video na později." });
           return;
         }
         void toggleSave();
       }}
     >
       <span aria-hidden="true">{isSaved ? "★" : "☆"}</span>
-      {!compact ? <span>{loading ? "…" : isSaved ? "Uloženo" : "Uložit"}</span> : null}
+      <span className={compact ? "vx-save-video-label vx-save-video-label--compact" : "vx-save-video-label"}>
+        {loading ? "…" : isSaved ? "Uloženo" : "Uložit"}
+      </span>
     </button>
   );
 }
