@@ -8,7 +8,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { HeroAudienceIndicator } from "@/components/abj/HeroAudienceIndicator";
 import { VeroxHeader } from "@/components/abj/VeroxHeader";
 import { HeroPlayerBar, type PlaybackSpeed } from "@/components/abj/playout/HeroPlayerBar";
+import { FollowChannelButton } from "@/components/auth/FollowChannelButton";
 import { VideoCommentsDrawer } from "@/components/auth/VideoCommentsDrawer";
+import { ChannelVideoTile } from "@/components/viewer/ChannelVideoTile";
+import { useViewerVideoState } from "@/lib/viewer/useViewerVideoState";
+import { normalizeChannelFollowId } from "@/lib/viewer/videoMetadata";
 import { PlayoutStage } from "@/components/abj/playout/PlayoutStage";
 import { usePlayoutLoop } from "@/components/abj/playout/usePlayoutLoop";
 import { clampSeekSeconds } from "@/lib/playerTime";
@@ -86,6 +90,7 @@ export function HomePage({
   const [playerCurrentTime, setPlayerCurrentTime] = useState(0);
   const [playerDuration, setPlayerDuration] = useState(0);
   const [playerBarExpanded, setPlayerBarExpanded] = useState(false);
+  const { savedVideoIds, watchedVideoIds, setSaved } = useViewerVideoState();
 
   const onSelectChannelVideo = useCallback(
     (payload: { channelName: string; video: LiveChannelVideo }) => {
@@ -699,27 +704,36 @@ export function HomePage({
         {/* DETAIL PANEL vybraného kanálu — poslední videa, klik otevře v HeroScreen. */}
         {openChannelName ? (
           <div className="channel-detail" aria-live="polite">
+            {(() => {
+              const openChannel = displayChannels.find((ch) => ch.channelName === openChannelName);
+              if (!openChannel) return null;
+              return (
+                <div className="channel-detail-head">
+                  <p className="channel-detail-label">Aktivní kanál</p>
+                  <div className="channel-detail-head-row">
+                    <p className="channel-detail-name">{openChannel.channelName}</p>
+                    <FollowChannelButton
+                      channelId={normalizeChannelFollowId(openChannel.channelId, openChannel.channelName)}
+                      channelName={openChannel.channelName}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
             {channelLoading === openChannelName ? (
               <p className="channel-detail-info">Načítám nejnovější videa…</p>
             ) : (channelVideosByName[openChannelName]?.length ?? 0) > 0 ? (
               <div className="channel-videos">
                 {channelVideosByName[openChannelName]!.map((video) => (
-                  <button
-                    type="button"
+                  <ChannelVideoTile
                     key={video.videoId}
-                    className="channel-video"
-                    onClick={() => onSelectChannelVideo({ channelName: openChannelName, video })}
-                  >
-                    <span className="cv-thumb">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={video.thumbnail || `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`}
-                        alt=""
-                        loading="lazy"
-                      />
-                    </span>
-                    <span className="cv-title">{video.title}</span>
-                  </button>
+                    video={video}
+                    channelName={openChannelName}
+                    saved={savedVideoIds.has(video.videoId)}
+                    watched={watchedVideoIds.has(video.videoId)}
+                    onSelect={() => onSelectChannelVideo({ channelName: openChannelName, video })}
+                    onSavedChange={(nextSaved) => setSaved(video.videoId, nextSaved)}
+                  />
                 ))}
               </div>
             ) : (

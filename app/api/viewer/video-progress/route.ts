@@ -8,6 +8,9 @@ type VideoProgressPayload = {
   durationSeconds?: unknown;
   progressPercent?: unknown;
   completed?: unknown;
+  title?: unknown;
+  thumbnailUrl?: unknown;
+  channelName?: unknown;
 };
 
 function normalizeString(value: unknown): string {
@@ -26,18 +29,37 @@ function normalizePercent(value: unknown): number | null {
   return Math.max(0, Math.min(100, Math.round(numeric * 100) / 100));
 }
 
+const PROGRESS_COLUMNS =
+  "user_id, video_id, position_seconds, duration_seconds, progress_percent, completed, last_watched_at, title, thumbnail_url, channel_name";
+
 export async function GET(request: Request) {
   try {
     const { supabase, user } = await requireAuthenticatedUser();
     const url = new URL(request.url);
     const videoId = normalizeString(url.searchParams.get("videoId"));
+    const listAll = url.searchParams.get("list") === "all";
+
+    if (listAll) {
+      const rows = await supabase
+        .from("video_progress")
+        .select(PROGRESS_COLUMNS)
+        .eq("user_id", user.id)
+        .order("last_watched_at", { ascending: false });
+
+      if (rows.error) {
+        return Response.json({ error: "Nepodařilo se načíst historii sledování." }, { status: 500 });
+      }
+
+      return Response.json({ progress: rows.data ?? [] });
+    }
+
     if (!videoId) {
       return Response.json({ error: "videoId je povinné." }, { status: 400 });
     }
 
     const row = await supabase
       .from("video_progress")
-      .select("user_id, video_id, position_seconds, duration_seconds, progress_percent, completed, last_watched_at")
+      .select(PROGRESS_COLUMNS)
       .eq("user_id", user.id)
       .eq("video_id", videoId)
       .maybeSingle();
@@ -70,6 +92,9 @@ export async function POST(request: Request) {
       durationSeconds && durationSeconds > 0 ? Math.min(100, (positionSeconds / durationSeconds) * 100) : null;
     const progressPercent = normalizePercent(payload.progressPercent) ?? normalizePercent(calculatedPercent) ?? 0;
     const completed = payload.completed === true || progressPercent >= 90;
+    const title = normalizeString(payload.title).slice(0, 500) || null;
+    const thumbnailUrl = normalizeString(payload.thumbnailUrl).slice(0, 500) || null;
+    const channelName = normalizeString(payload.channelName).slice(0, 200) || null;
 
     const upsert = await supabase
       .from("video_progress")
@@ -82,12 +107,15 @@ export async function POST(request: Request) {
           progress_percent: progressPercent,
           completed,
           last_watched_at: new Date().toISOString(),
+          ...(title ? { title } : {}),
+          ...(thumbnailUrl ? { thumbnail_url: thumbnailUrl } : {}),
+          ...(channelName ? { channel_name: channelName } : {}),
         },
         {
           onConflict: "user_id,video_id",
         }
       )
-      .select("user_id, video_id, position_seconds, duration_seconds, progress_percent, completed, last_watched_at")
+      .select(PROGRESS_COLUMNS)
       .single();
 
     if (upsert.error || !upsert.data) {

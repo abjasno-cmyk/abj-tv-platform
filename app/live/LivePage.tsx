@@ -207,6 +207,9 @@ export default function LivePage({
           durationSeconds: sample.durationSeconds,
           progressPercent: progressPercentValue,
           completed: progressPercentValue >= 90,
+          title,
+          channelName,
+          thumbnailUrl: `https://img.youtube.com/vi/${sample.videoId}/hqdefault.jpg`,
         }),
       });
       trackVideoProgressThrottled({
@@ -215,7 +218,7 @@ export default function LivePage({
         durationSeconds: sample.durationSeconds,
       });
     },
-    [continueFromSeconds, isAuthenticated, isLive, videoId]
+    [channelName, continueFromSeconds, isAuthenticated, isLive, title, videoId]
   );
 
   // KOMUNITA blok je nově součástí hero/live-block (viz HomePage), v souladu
