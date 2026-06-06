@@ -4,6 +4,7 @@ import {
   deduplicateVideos,
   videoUniqKey,
   deduplicateBySeen,
+  filterVideosWithinHours,
   groupChannelsForDisplay,
   buildStructuredFeedPayload,
   TOPIC_ORDER,
@@ -90,6 +91,19 @@ describe("groupChannelsForDisplay", () => {
       2,
     );
     expect(grouped.map((g) => g.channel)).toEqual(["Big", "Mid"]);
+  });
+});
+
+describe("filterVideosWithinHours", () => {
+  it("keeps only videos published inside the rolling window", () => {
+    const now = Date.now();
+    const recent = new Date(now - 2 * 60 * 60 * 1000).toISOString();
+    const old = new Date(now - 10 * 24 * 60 * 60 * 1000).toISOString();
+    const filtered = filterVideosWithinHours(
+      [feed({ video_id: "new", published_at: recent }), feed({ video_id: "old", published_at: old })],
+      168,
+    );
+    expect(filtered.map((video) => video.video_id)).toEqual(["new"]);
   });
 });
 
