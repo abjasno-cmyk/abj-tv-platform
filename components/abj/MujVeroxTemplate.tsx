@@ -4,14 +4,136 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { buildWallTree, formatWallPostTime, type WallTreeNode } from "@/lib/wallThread";
 import type { WallPost } from "@/lib/wallTypes";
 
 const MAX_LEN = 1500;
+const REPLIES_PREVIEW = 2;
 
-// MŮJ VEROX podle klientské šablony: komunitní diskuze — formulář vzkazu +
-// PŘIPNUTÉ VZKAZY, napojené na reálné wall API (/api/wall/posts).
+type WallThreadCardProps = {
+  node: WallTreeNode;
+  isReply?: boolean;
+  replyToName?: string | null;
+  replyParentId: string | null;
+  likesById: Record<string, number>;
+  reactedIds: Record<string, boolean>;
+  reactingId: string | null;
+  isAuthenticated: boolean;
+  onReply: (postId: string, authorName: string) => void;
+  onLike: (postId: string) => void;
+  onRequireAuth: (reason: string, after?: () => void) => void;
+};
+
+function WallThreadCard({
+  node,
+  isReply = false,
+  replyToName = null,
+  replyParentId,
+  likesById,
+  reactedIds,
+  reactingId,
+  isAuthenticated,
+  onReply,
+  onLike,
+  onRequireAuth,
+}: WallThreadCardProps) {
+  const likes = likesById[node.id] ?? node.likes_count;
+  const hasReacted = Boolean(reactedIds[node.id]);
+  const isReacting = reactingId === node.id;
+  return (
+    <article className={`mv-post${isReply ? " mv-post--reply" : ""}`}>
+      <div className="mv-post-head">
+        <p className="mv-post-author">{node.author_name}</p>
+        <time className="mv-post-time" dateTime={node.created_at}>
+          {formatWallPostTime(node.created_at)}
+        </time>
+      </div>
+      {isReply && replyToName ? (
+        <p className="mv-post-reply-to">
+          <span aria-hidden="true">↳</span> {replyToName}
+        </p>
+      ) : null}
+      <p className="mv-post-body">{node.body}</p>
+      <div className="mv-post-footer">
+        <button
+          type="button"
+          className={`mv-post-like${hasReacted ? " is-liked" : ""}`}
+          disabled={hasReacted || isReacting}
+          aria-pressed={hasReacted}
+          onClick={() => {
+            if (!isAuthenticated) {
+              onRequireAuth("Pro reakci srdcem se přihlaste zdarma.", () => onLike(node.id));
+              return;
+            }
+            onLike(node.id);
+          }}
+        >
+          <span aria-hidden="true">{hasReacted ? "♥" : "♡"}</span>
+          {likes > 0 ? <span>{likes}</span> : null}
+          <span>{hasReacted ? "Líbí se" : "Líbí se mi"}</span>
+        </button>
+        <button
+          type="button"
+          className="mv-post-reply-btn"
+          onClick={() => {
+            if (!isAuthenticated) {
+              onRequireAuth("Pro odpověď ve diskusi se přihlaste zdarma.", () =>
+                onReply(node.id, node.author_name),
+              );
+              return;
+            }
+            onReply(node.id, node.author_name);
+          }}
+        >
+          Odpovědět
+        </button>
+      </div>
+      {replyParentId === node.id ? (
+        <p className="mv-post-replying">Odpověď napíšete do formuláře výše.</p>
+      ) : null}
+    </article>
+  );
+}
+
+type WallThreadProps = Omit<WallThreadCardProps, "node" | "isReply"> & { node: WallTreeNode };
+
+function WallThread(props: WallThreadProps) {
+  const { node, ...rest } = props;
+  const [expanded, setExpanded] = useState(false);
+  const hiddenCount = Math.max(0, node.replies.length - REPLIES_PREVIEW);
+  const visibleReplies = expanded ? node.replies : node.replies.slice(0, REPLIES_PREVIEW);
+
+  return (
+    <div className="mv-thread">
+      <WallThreadCard node={node} {...rest} />
+      {node.replies.length > 0 ? (
+        <div className="mv-thread-replies">
+          <div className="mv-thread-line" aria-hidden="true" />
+          <div className="mv-thread-reply-list">
+            {visibleReplies.map((reply) => (
+              <WallThreadCard
+                key={reply.id}
+                node={reply}
+                isReply
+                replyToName={node.author_name}
+                {...rest}
+              />
+            ))}
+            {hiddenCount > 0 && !expanded ? (
+              <button type="button" className="mv-thread-more" onClick={() => setExpanded(true)}>
+                Zobrazit další odpovědi ({hiddenCount}) ▾
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// MŮJ VEROX: komunitní diskuze s odpověďmi ve stylu Seznam.cz (vlákna + srdíčko).
 export function MujVeroxTemplate() {
-  const { isAuthenticated, profile, openLoginModal } = useAuth();
+  const { isAuthenticated, profile, openLoginModal, requestAuth } = useAuth();
   const [sort, setSort] = useState<"newest" | "popular">("popular");
   const [posts, setPosts] = useState<WallPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +145,8 @@ export function MujVeroxTemplate() {
   const [likesById, setLikesById] = useState<Record<string, number>>({});
   const [reactedIds, setReactedIds] = useState<Record<string, boolean>>({});
   const [reactingId, setReactingId] = useState<string | null>(null);
+  const [replyParentId, setReplyParentId] = useState<string | null>(null);
+  const [replyParentName, setReplyParentName] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile?.display_name && !nick) setNick(profile.display_name);
@@ -31,7 +155,7 @@ export function MujVeroxTemplate() {
   const loadPosts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/wall/posts?sort=${sort}&limit=20`, { cache: "no-store" });
+      const res = await fetch(`/api/wall/posts?sort=${sort}&limit=50`, { cache: "no-store" });
       const data = (await res.json().catch(() => ({}))) as { posts?: WallPost[] };
       setPosts(Array.isArray(data.posts) ? data.posts : []);
     } catch {
@@ -44,6 +168,8 @@ export function MujVeroxTemplate() {
   useEffect(() => {
     void loadPosts();
   }, [loadPosts]);
+
+  const tree = useMemo(() => buildWallTree(posts, sort), [posts, sort]);
 
   const submit = useCallback(
     async (e: React.FormEvent) => {
@@ -64,6 +190,7 @@ export function MujVeroxTemplate() {
             author_name: author,
             author_email: email.trim() || null,
             body,
+            parent_id: replyParentId,
           }),
         });
         const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
@@ -72,7 +199,9 @@ export function MujVeroxTemplate() {
           return;
         }
         setMessage("");
-        setNotice("Vzkaz byl odeslán a čeká na schválení.");
+        setReplyParentId(null);
+        setReplyParentName(null);
+        setNotice(replyParentId ? "Odpověď byla odeslána a čeká na schválení." : "Vzkaz byl odeslán a čeká na schválení.");
         void loadPosts();
       } catch {
         setNotice("Odeslání se nezdařilo.");
@@ -80,7 +209,7 @@ export function MujVeroxTemplate() {
         setSubmitting(false);
       }
     },
-    [message, nick, email, loadPosts],
+    [message, nick, email, loadPosts, replyParentId],
   );
 
   const react = useCallback(
@@ -113,6 +242,20 @@ export function MujVeroxTemplate() {
     [reactingId, reactedIds],
   );
 
+  const handleReply = useCallback((postId: string, authorName: string) => {
+    setReplyParentId(postId);
+    setReplyParentName(authorName);
+    setNotice(null);
+    document.getElementById("mv-msg")?.focus();
+  }, []);
+
+  const requireAuth = useCallback(
+    (reason: string, after?: () => void) => {
+      requestAuth(() => after?.(), { reason });
+    },
+    [requestAuth],
+  );
+
   const counter = useMemo(() => `${message.length}/${MAX_LEN}`, [message.length]);
 
   return (
@@ -124,7 +267,7 @@ export function MujVeroxTemplate() {
         {!isAuthenticated ? (
           <>
             <div className="info">
-              INTERAKCE V KOMUNITĚ ( PŘIDÁNÍ, REAKCE, NAHLÁŠENÍ ) JSOU DOSTUPNÉ POUZE PO PŘIHLÁŠENÍ.
+              INTERAKCE V KOMUNITĚ (PŘIDÁNÍ, ODPOVĚDI, REAKCE) JSOU DOSTUPNÉ POUZE PO PŘIHLÁŠENÍ.
             </div>
             <button
               type="button"
@@ -136,11 +279,11 @@ export function MujVeroxTemplate() {
           </>
         ) : (
           <p className="sub" style={{ marginTop: "1rem" }}>
-            Pro komentáře k videím, ovládací lištu přehrávače a výběr z kanálů přejděte na{" "}
+            Komentáře přímo k videím najdete na{" "}
             <Link href="/live" style={{ color: "var(--vx-orange)", fontWeight: 700 }}>
               ŽIVĚ
-            </Link>
-            .
+            </Link>{" "}
+            (ikona komentářů u přehrávače).
           </p>
         )}
       </div>
@@ -151,6 +294,21 @@ export function MujVeroxTemplate() {
       </div>
 
       <form onSubmit={submit}>
+        {replyParentId && replyParentName ? (
+          <p className="mv-reply-hint">
+            Odpovídáte uživateli <strong>{replyParentName}</strong>
+            <button
+              type="button"
+              className="mv-reply-cancel"
+              onClick={() => {
+                setReplyParentId(null);
+                setReplyParentName(null);
+              }}
+            >
+              Zrušit
+            </button>
+          </p>
+        ) : null}
         <div className="form-row">
           <label htmlFor="mv-nick">PŘEZDÍVKA</label>
           <span />
@@ -161,6 +319,7 @@ export function MujVeroxTemplate() {
               onChange={(e) => setNick(e.target.value)}
               placeholder="Vaše přezdívka"
               maxLength={60}
+              disabled={!isAuthenticated}
             />
           </div>
         </div>
@@ -177,18 +336,24 @@ export function MujVeroxTemplate() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="vas@email.cz"
+              disabled={!isAuthenticated}
             />
           </div>
         </div>
         <div className="form-row">
-          <label htmlFor="mv-msg">VZKAZ</label>
+          <label htmlFor="mv-msg">{replyParentId ? "ODPOVĚĎ" : "VZKAZ"}</label>
           <span />
           <div className="field">
             <textarea
               id="mv-msg"
               value={message}
               onChange={(e) => setMessage(e.target.value.slice(0, MAX_LEN))}
-              placeholder="Co chcete vzkázat redakci, nebo ostatním divákům ?"
+              placeholder={
+                replyParentId
+                  ? "Napište odpověď..."
+                  : "Co chcete vzkázat redakci, nebo ostatním divákům?"
+              }
+              disabled={!isAuthenticated}
             />
           </div>
         </div>
@@ -196,8 +361,8 @@ export function MujVeroxTemplate() {
           <span />
           <span />
           <div className="submit">
-            <button type="submit" disabled={submitting}>
-              {submitting ? "ODESÍLÁM…" : "PŘIDAT VZKAZ"}
+            <button type="submit" disabled={submitting || !isAuthenticated}>
+              {submitting ? "ODESÍLÁM…" : replyParentId ? "ODESLAT ODPOVĚĎ" : "PŘIDAT VZKAZ"}
             </button>
             <span className="count">{counter}</span>
           </div>
@@ -233,55 +398,30 @@ export function MujVeroxTemplate() {
           </button>
         </div>
         <div className="col">
-          <h2>PŘIPNUTÉ VZKAZY</h2>
+          <h2>DISKUSE</h2>
           {loading ? (
-            <div className="empty">Načítám vzkazy…</div>
-          ) : posts.length === 0 ? (
-            <div className="empty">Zatím tu žádné příspěvky nejsou. Buďte první, kdo něco přidá do Komunity.</div>
+            <div className="empty">Načítám příspěvky…</div>
+          ) : tree.length === 0 ? (
+            <div className="empty">Zatím tu žádné příspěvky nejsou. Buďte první.</div>
           ) : (
-            <ul style={{ listStyle: "none", margin: "2cqw 0 0", padding: 0, display: "grid", gap: "2cqw" }}>
-              {posts.map((post) => (
-                <li
-                  key={post.id}
-                  style={{ border: "1px solid #eee", padding: "2.5cqw", background: "#fff" }}
-                >
-                  <div style={{ fontWeight: 700, color: "var(--vx-gray-dark)", fontSize: "0.95rem" }}>
-                    {post.author_name}
-                  </div>
-                  <p style={{ color: "var(--vx-gray-dark)", margin: "0.4em 0 0", lineHeight: 1.4 }}>{post.body}</p>
-                  {(() => {
-                    const likes = likesById[post.id] ?? post.likes_count;
-                    const hasReacted = Boolean(reactedIds[post.id]);
-                    const isReacting = reactingId === post.id;
-                    return (
-                      <button
-                        type="button"
-                        onClick={() => void react(post.id)}
-                        disabled={hasReacted || isReacting}
-                        aria-pressed={hasReacted}
-                        aria-label={hasReacted ? "Reakce odeslána" : "Reagovat na vzkaz"}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.35em",
-                          marginTop: "0.6em",
-                          padding: "0.3em 0.7em",
-                          border: "1px solid var(--vx-orange)",
-                          background: hasReacted ? "var(--vx-orange)" : "transparent",
-                          color: hasReacted ? "#fff" : "var(--vx-orange)",
-                          fontSize: "0.85rem",
-                          fontWeight: 700,
-                          borderRadius: 3,
-                          cursor: hasReacted || isReacting ? "default" : "pointer",
-                        }}
-                      >
-                        ♥ {likes > 0 ? likes : ""} {hasReacted ? "Líbí se" : "Reagovat"}
-                      </button>
-                    );
-                  })()}
-                </li>
+            <div className="mv-thread-list">
+              {tree.map((node) => (
+                <WallThread
+                  key={node.id}
+                  node={node}
+                  replyParentId={replyParentId}
+                  likesById={likesById}
+                  reactedIds={reactedIds}
+                  reactingId={reactingId}
+                  isAuthenticated={isAuthenticated}
+                  onReply={handleReply}
+                  onLike={(id) => {
+                    void react(id);
+                  }}
+                  onRequireAuth={requireAuth}
+                />
               ))}
-            </ul>
+            </div>
           )}
         </div>
       </div>
