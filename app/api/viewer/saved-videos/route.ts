@@ -70,7 +70,11 @@ export async function POST(request: Request) {
     );
 
     if (insert.error) {
-      return Response.json({ error: "Uložení videa selhalo." }, { status: 500 });
+      const message =
+        insert.error.code === "42P01"
+          ? "Chybí tabulka saved_videos. Spusťte migraci 011_viewer_library.sql v Supabase."
+          : "Uložení videa selhalo.";
+      return Response.json({ error: message }, { status: 500 });
     }
 
     await supabase.from("viewer_activity").insert({

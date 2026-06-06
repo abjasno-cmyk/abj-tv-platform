@@ -1042,6 +1042,28 @@
   letter-spacing: 0.02em;
   font-size: 0.74rem;
 }
+.hf .vx-save-video-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.hf .vx-save-video-error {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: #b42318;
+  max-width: 22rem;
+}
+.hf .hero-save-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: clamp(8px, 1.2vw, 14px);
+}
+.hf .hero-save-row .vx-video-badges {
+  position: static;
+}
 .hf .channel-video .cv-thumb img {
   width: 100%;
   height: 100%;

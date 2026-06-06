@@ -101,7 +101,11 @@ export function MyVeroxLibrary() {
         error?: string;
       };
       if (!response.ok) {
-        setError(payload.error ?? "Nepodařilo se načíst vaši knihovnu.");
+        const fallback =
+          response.status >= 500
+            ? "Knihovnu se nepodařilo načíst. Pravděpodobně chybí migrace databáze (tabulka saved_videos) — spusťte SQL skript 011_viewer_library.sql v Supabase."
+            : "Nepodařilo se načíst vaši knihovnu.";
+        setError(payload.error ?? fallback);
         setLibrary(null);
         return;
       }
