@@ -1,6 +1,7 @@
 import { AuthApiError, requireAuthenticatedUser } from "@/lib/supabase/authenticated-server";
 import { getAuthorProfileByUserId, upsertAuthorProfile } from "@/lib/nazory/authors";
 import { requireActiveAuthor } from "@/lib/nazory/access";
+import { publicNazoryMediaUrl } from "@/lib/nazory/media";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ function mapProfileResponse(row: NonNullable<Awaited<ReturnType<typeof getAuthor
     xUrl: row.x_url,
     linkedinUrl: row.linkedin_url,
     contactEmail: row.contact_email,
+    avatarUrl: publicNazoryMediaUrl(row.avatar_storage_path),
     profileCompleted: row.profile_completed,
     isActive: row.is_active,
   };
@@ -58,6 +60,8 @@ export async function PATCH(request: Request) {
       xUrl: typeof payload.xUrl === "string" ? payload.xUrl : null,
       linkedinUrl: typeof payload.linkedinUrl === "string" ? payload.linkedinUrl : null,
       contactEmail: typeof payload.contactEmail === "string" ? payload.contactEmail : null,
+      avatarStoragePath:
+        typeof payload.avatarStoragePath === "string" ? payload.avatarStoragePath : undefined,
     });
     return Response.json({ profile: mapProfileResponse(profile) });
   } catch (error) {

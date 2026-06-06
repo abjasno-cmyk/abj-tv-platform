@@ -82,6 +82,7 @@ export type AuthorProfileInput = {
   xUrl?: string | null;
   linkedinUrl?: string | null;
   contactEmail?: string | null;
+  avatarStoragePath?: string | null;
 };
 
 export const AUTHOR_PROFILE_PUBLIC_COLUMNS =

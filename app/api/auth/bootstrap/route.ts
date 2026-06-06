@@ -1,4 +1,6 @@
 import { AuthApiError, deriveProfileFromUser, requireAuthenticatedUser } from "@/lib/supabase/authenticated-server";
+import { isNazoryAdminEmail } from "@/lib/nazory/access";
+import { ensureSelfAuthorAccount } from "@/lib/nazory/authors";
 
 export const dynamic = "force-dynamic";
 
@@ -89,6 +91,17 @@ export async function POST(request: Request) {
         source,
       },
     });
+
+    if (isNazoryAdminEmail(user.email)) {
+      try {
+        await ensureSelfAuthorAccount(supabase, user, {
+          displayName: profileData.displayName,
+          avatarUrl: profileData.avatarUrl,
+        });
+      } catch {
+        // Názory schema may be absent outside preview deployments.
+      }
+    }
 
     const profileResult = await supabase
       .from("profiles")

@@ -1,14 +1,24 @@
 import Link from "next/link";
 
 import { OpinionList } from "@/components/nazory/OpinionList";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  canUseAuthorFeatures,
+  isNazoryAdminProfile,
+  loadAuthorProfileRow,
+  loadProfileRoleRow,
+} from "@/lib/nazory/access";
 import { listPublishedArticles } from "@/lib/nazory/articles";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const revalidate = 60;
 
 export default async function NazoryPage() {
   let articles: Awaited<ReturnType<typeof listPublishedArticles>> = [];
   let isAuthenticated = false;
+  let isAuthor = false;
+  let isAdmin = false;
+  let profileCompleted = false;
+  let authorSlug: string | null = null;
 
   try {
     const supabase = await createSupabaseServerClient();
@@ -17,6 +27,17 @@ export default async function NazoryPage() {
     } = await supabase.auth.getUser();
     isAuthenticated = Boolean(user);
     articles = await listPublishedArticles(supabase, 40);
+
+    if (user) {
+      const [profile, authorProfile] = await Promise.all([
+        loadProfileRoleRow(supabase, user.id),
+        loadAuthorProfileRow(supabase, user.id),
+      ]);
+      isAdmin = isNazoryAdminProfile(profile, user.email);
+      isAuthor = canUseAuthorFeatures(profile, authorProfile);
+      profileCompleted = authorProfile?.profile_completed === true;
+      authorSlug = authorProfile?.slug ?? null;
+    }
   } catch {
     articles = [];
   }
@@ -27,16 +48,44 @@ export default async function NazoryPage() {
         <h1 className="section-h">NÁZORY</h1>
         <p className="nazory-page-lead">Autorské texty schválených přispěvatelů VEROX.</p>
       </div>
+
+      {isAuthenticated && isAdmin && !profileCompleted ? (
+        <aside className="nazory-onboarding">
+          <strong>Preview režim pro autora:</strong> po přihlášení jako{" "}
+          <code>abjasno@gmail.com</code> nejdřív vyplňte{" "}
+          <Link href="/nazory/profil">autorskou kartu</Link>, pak napište první článek.
+        </aside>
+      ) : null}
+
       {articles.length > 0 ? (
         <OpinionList articles={articles} />
       ) : (
         <p className="nazory-empty">Brzy zde najdete autorské názory. Sekce se právě připravuje.</p>
       )}
+
       {isAuthenticated ? (
         <p className="nazory-author-link">
-          <Link href="/nazory/profil">Můj autorský profil</Link>
-          {" · "}
-          <Link href="/nazory/napsat">Napsat článek</Link>
+          {isAuthor ? (
+            <>
+              <Link href="/nazory/profil">Můj autorský profil</Link>
+              {" · "}
+              <Link href="/nazory/napsat">Napsat článek</Link>
+              {profileCompleted && authorSlug ? (
+                <>
+                  {" · "}
+                  <Link href={`/nazory/autor/${authorSlug}`}>Veřejná karta</Link>
+                </>
+              ) : null}
+            </>
+          ) : (
+            <Link href="/nazory/profil">Aktivovat autorský profil</Link>
+          )}
+          {isAdmin ? (
+            <>
+              {" · "}
+              <Link href="/nazory/sprava">Správa Názorů</Link>
+            </>
+          ) : null}
         </p>
       ) : (
         <p className="nazory-guest-pitch">

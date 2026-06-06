@@ -1,4 +1,5 @@
 import { AuthApiError, requireAuthenticatedUser } from "@/lib/supabase/authenticated-server";
+import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { requireNazoryAdmin } from "@/lib/nazory/access";
 import {
   createAuthorAccount,
@@ -45,12 +46,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const author = await createAuthorAccount(supabase, {
-      userId,
-      email,
-      firstName: typeof payload.firstName === "string" ? payload.firstName : undefined,
-      lastName: typeof payload.lastName === "string" ? payload.lastName : undefined,
-    });
+    const author = await createAuthorAccount(
+      supabase,
+      {
+        userId,
+        email,
+        firstName: typeof payload.firstName === "string" ? payload.firstName : undefined,
+        lastName: typeof payload.lastName === "string" ? payload.lastName : undefined,
+      },
+      { elevatedSupabase: createSupabaseServiceClient() },
+    );
 
     return Response.json({ author });
   } catch (error) {

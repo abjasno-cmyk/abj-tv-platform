@@ -68,6 +68,20 @@ describe("nazory content helpers", () => {
   });
 });
 
+describe("nazory author onboarding", () => {
+  it("parses display names into author names", async () => {
+    const { parseAuthorNameFromDisplayName } = await import("@/lib/nazory/authors");
+    expect(parseAuthorNameFromDisplayName("Jana Nováková")).toEqual({
+      firstName: "Jana",
+      lastName: "Nováková",
+    });
+    expect(parseAuthorNameFromDisplayName("Mononym")).toEqual({
+      firstName: "Mononym",
+      lastName: "Autor",
+    });
+  });
+});
+
 describe("nazory access helpers", () => {
   it("detects admin and author roles", () => {
     expect(isNazoryAdminEmail("abjasno@gmail.com")).toBe(true);

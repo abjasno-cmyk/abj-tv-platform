@@ -1,7 +1,8 @@
 import "server-only";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 
+import { isAuthorRole, isNazoryAdminEmail, loadProfileRoleRow } from "@/lib/nazory/access";
 import { buildAuthorSlug } from "@/lib/nazory/slug";
 import {
   AUTHOR_PROFILE_PUBLIC_COLUMNS,
@@ -15,6 +16,24 @@ function trimOrNull(value: string | null | undefined, maxLength?: number): strin
   const trimmed = value?.trim() ?? "";
   if (!trimmed) return null;
   return maxLength ? trimmed.slice(0, maxLength) : trimmed;
+}
+
+export function parseAuthorNameFromDisplayName(displayName: string | null | undefined): {
+  firstName: string;
+  lastName: string;
+} {
+  const trimmed = displayName?.trim() ?? "";
+  if (!trimmed) {
+    return { firstName: "Nový", lastName: "Autor" };
+  }
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) {
+    return { firstName: parts[0], lastName: "Autor" };
+  }
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(" "),
+  };
 }
 
 function normalizeUrl(value: string | null | undefined): string | null {
@@ -124,6 +143,10 @@ export async function upsertAuthorProfile(
     x_url: normalizeUrl(input.xUrl),
     linkedin_url: normalizeUrl(input.linkedinUrl),
     contact_email: trimOrNull(input.contactEmail, 200),
+    avatar_storage_path:
+      input.avatarStoragePath === undefined
+        ? existing?.avatar_storage_path ?? null
+        : trimOrNull(input.avatarStoragePath, 500),
     profile_completed: true,
   };
 
@@ -147,23 +170,25 @@ export async function createAuthorAccount(
     email?: string | null;
     firstName?: string;
     lastName?: string;
+    avatarStoragePath?: string | null;
+  },
+  options?: {
+    elevatedSupabase?: SupabaseClient;
   },
 ): Promise<AuthorProfileRow> {
+  const db = options?.elevatedSupabase ?? supabase;
   const firstName = input.firstName?.trim() || "Nový";
   const lastName = input.lastName?.trim() || "Autor";
-  const takenSlugs = await loadTakenAuthorSlugs(supabase);
+  const takenSlugs = await loadTakenAuthorSlugs(db);
   const slug = buildAuthorSlug(firstName, lastName, takenSlugs);
 
-  const profileUpdate = await supabase
-    .from("profiles")
-    .update({ role: "author" })
-    .eq("id", input.userId);
+  const profileUpdate = await db.from("profiles").update({ role: "author" }).eq("id", input.userId);
 
   if (profileUpdate.error) {
     throw new Error(profileUpdate.error.message);
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("author_profiles")
     .upsert(
       {
@@ -172,6 +197,7 @@ export async function createAuthorAccount(
         last_name: lastName,
         slug,
         contact_email: trimOrNull(input.email, 200),
+        avatar_storage_path: trimOrNull(input.avatarStoragePath, 500),
         is_active: true,
         profile_completed: false,
       },
@@ -185,6 +211,37 @@ export async function createAuthorAccount(
   }
 
   return data as AuthorProfileRow;
+}
+
+export async function ensureSelfAuthorAccount(
+  supabase: SupabaseClient,
+  user: User,
+  options?: {
+    displayName?: string | null;
+    avatarUrl?: string | null;
+  },
+): Promise<AuthorProfileRow | null> {
+  if (!isNazoryAdminEmail(user.email)) {
+    return null;
+  }
+
+  const [profile, existing] = await Promise.all([
+    loadProfileRoleRow(supabase, user.id),
+    getAuthorProfileByUserId(supabase, user.id),
+  ]);
+
+  if (existing && isAuthorRole(profile?.role) && existing.is_active) {
+    return existing;
+  }
+
+  const { firstName, lastName } = parseAuthorNameFromDisplayName(options?.displayName);
+  return createAuthorAccount(supabase, {
+    userId: user.id,
+    email: user.email,
+    firstName,
+    lastName,
+    avatarStoragePath: options?.avatarUrl ?? null,
+  });
 }
 
 export async function findUserIdByEmail(supabase: SupabaseClient, email: string): Promise<string | null> {
