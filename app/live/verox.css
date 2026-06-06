@@ -1472,6 +1472,21 @@
   text-decoration: none;
   color: inherit;
 }
+/* Názory — dvojčára: každá linka 6pt (záhlaví → Autoři → medailonek → články) */
+.nazory-chrome .double-rule,
+.nazory-page .double-rule {
+  height: calc(6pt + 5px + 6pt);
+}
+.nazory-chrome .double-rule::before,
+.nazory-chrome .double-rule::after,
+.nazory-page .double-rule::before,
+.nazory-page .double-rule::after {
+  height: 6pt;
+}
+.nazory-chrome .double-rule::after,
+.nazory-page .double-rule::after {
+  top: calc(6pt + 5px);
+}
 @media (max-width: 960px) {
   .nazory-page .kostka-nazory {
     grid-template-columns: 72px 12px minmax(0, 1fr);

@@ -32,10 +32,12 @@ export function ABJNav() {
     return null;
   }
 
+  const nazoryChrome = pathname.startsWith("/nazory");
+
   return (
-    <div className="hf-chrome">
+    <div className={`hf-chrome${nazoryChrome ? " nazory-chrome" : ""}`}>
       <VeroxHeader active={activeKeyFor(pathname)} />
-      <div className="double-rule header-rule" aria-hidden="true" />
+      <div className={`double-rule header-rule${nazoryChrome ? " nazory-double-rule" : ""}`} aria-hidden="true" />
     </div>
   );
 }
