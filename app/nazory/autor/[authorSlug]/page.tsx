@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Fragment } from "react";
 
 import { OpinionCard } from "@/components/nazory/OpinionCard";
 import { getPublicAuthorBySlug } from "@/lib/nazory/authors";
@@ -86,11 +87,22 @@ export default async function NazoryAuthorPage({ params }: { params: Promise<{ a
       <section className="nazory-author-articles">
         <h2>Články autora</h2>
         {articles.length > 0 ? (
-          <div className="nazory-grid">
-            {articles.map((article) => (
-              <OpinionCard key={article.id} article={article} authorName={name} />
+          <>
+            {articles.map((article, index) => (
+              <Fragment key={article.id}>
+                <OpinionCard
+                  article={article}
+                  author={{ name, avatarUrl }}
+                />
+                {index < articles.length - 1 ? (
+                  <div className="vx-strip" aria-hidden="true">
+                    <span />
+                    <span />
+                  </div>
+                ) : null}
+              </Fragment>
             ))}
-          </div>
+          </>
         ) : (
           <p className="nazory-empty">Autor zatím nemá publikované články.</p>
         )}
