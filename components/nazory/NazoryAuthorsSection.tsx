@@ -9,8 +9,8 @@ type NazoryAuthorsSectionProps = {
 export function NazoryAuthorsSection({ authors, activeSlug = null }: NazoryAuthorsSectionProps) {
   return (
     <div className="hf nazory-authors-hf">
-      <div className="double-rule channels-rule" aria-hidden="true" />
       <NazoryAuthorsCarousel authors={authors} activeSlug={activeSlug} />
+      <div className="double-rule channels-rule nazory-double-rule" aria-hidden="true" />
     </div>
   );
 }

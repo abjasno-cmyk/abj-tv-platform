@@ -90,8 +90,9 @@ export default async function NazoryAuthorPage({ params }: { params: Promise<{ a
         </div>
       </header>
 
+      <div className="double-rule channels-rule nazory-double-rule" aria-hidden="true" />
+
       <section className="nazory-author-articles">
-        <h2>Články autora</h2>
         {articles.length > 0 ? (
           <>
             {articles.map((article, index) => (
