@@ -468,6 +468,7 @@ export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
         actualStartTime,
         actualEndTime: details.liveStreamingDetails?.actualEndTime ?? null,
         channelTitle: snippet.channelTitle ?? source.sourceName,
+        description: snippet.description ?? null,
         ingestedAt: nowIso,
         sourcePriority: source.sourcePriority,
         ingestMode: "uploads-playlist-batch-videos-list",

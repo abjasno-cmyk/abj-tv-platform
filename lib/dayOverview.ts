@@ -11,9 +11,13 @@ export type FeedVideo = {
   tldr?: string;
   context?: string;
   impact?: string;
+  description?: string;
   freshness: "breaking" | "today" | "week" | "evergreen";
   duration_min?: number | null;
 };
+
+/** How far back the /videa page lists videos (168 h = 7 days). */
+export const VIDEA_PAGE_RECENT_HOURS = 168;
 
 export type FeedVideoFreshness = FeedVideo["freshness"];
 
@@ -175,6 +179,7 @@ function feedVideoFromRaw(video: RawVideo): FeedVideo {
     tldr: readString(metadata?.tldr) ?? readString(metadata?.summary),
     context: readString(metadata?.context),
     impact: readString(metadata?.impact),
+    description: readString(metadata?.description) ?? readString(metadata?.youtubeDescription),
     freshness: readFreshness(metadata, toIsoOrEpoch(video.published_at ?? video.created_at)),
     duration_min: durationMin,
   };
@@ -234,16 +239,36 @@ export function groupChannelsForDisplay(
     .slice(0, limit);
 }
 
-async function loadVideosFromSupabase(): Promise<RawVideo[]> {
-  const supabase = createSupabaseAnonServerClient();
+type LoadVideosOptions = {
+  publishedSinceHours?: number;
+  limit?: number;
+};
 
-  const canonical = await supabase
+function publishedSinceIso(hours: number): string {
+  return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+}
+
+async function loadVideosFromSupabase(options: LoadVideosOptions = {}): Promise<RawVideo[]> {
+  const supabase = createSupabaseAnonServerClient();
+  const limit = options.limit ?? 260;
+  const sinceIso =
+    typeof options.publishedSinceHours === "number" && options.publishedSinceHours > 0
+      ? publishedSinceIso(options.publishedSinceHours)
+      : null;
+
+  let canonicalQuery = supabase
     .from("videos")
     .select(
       "id, source_id, channel_id, video_id, title, thumbnail, published_at, scheduled_start_at, video_type, channel_name, is_abj, duration_min, metadata, created_at"
     )
     .order("published_at", { ascending: false })
-    .limit(260);
+    .limit(limit);
+
+  if (sinceIso) {
+    canonicalQuery = canonicalQuery.gte("published_at", sinceIso);
+  }
+
+  const canonical = await canonicalQuery;
 
   if (!canonical.error) {
     return (canonical.data ?? []) as RawVideo[];
@@ -254,11 +279,17 @@ async function loadVideosFromSupabase(): Promise<RawVideo[]> {
     throw new Error(`Feed canonical query failed: ${canonical.error.message}`);
   }
 
-  const legacy = await supabase
+  let legacyQuery = supabase
     .from("videos")
     .select("id, source_id, channel_id, video_id, title, thumbnail, published_at, scheduled_start_time, kind, raw, created_at")
     .order("published_at", { ascending: false })
-    .limit(260);
+    .limit(limit);
+
+  if (sinceIso) {
+    legacyQuery = legacyQuery.gte("published_at", sinceIso);
+  }
+
+  const legacy = await legacyQuery;
 
   if (legacy.error) {
     throw new Error(`Feed legacy query failed: ${legacy.error.message}`);
@@ -330,4 +361,27 @@ export function buildStructuredFeedPayload(videos: RawVideo[]): StructuredFeedPa
 export async function loadStructuredFeedPayload(): Promise<StructuredFeedPayload> {
   const videos = await loadVideosFromSupabase();
   return buildStructuredFeedPayload(videos);
+}
+
+export function filterVideosWithinHours(videos: FeedVideo[], hours: number): FeedVideo[] {
+  const cutoff = Date.now() - hours * 60 * 60 * 1000;
+  return videos.filter((video) => {
+    const publishedTs = parsePublishedTimestamp(video.published_at);
+    return publishedTs > 0 && publishedTs >= cutoff;
+  });
+}
+
+/** All deduped videos from the last N hours for the /videa listing. */
+export async function loadVideaPageVideos(
+  hours: number = VIDEA_PAGE_RECENT_HOURS,
+): Promise<FeedVideo[]> {
+  const raw = await loadVideosFromSupabase({
+    publishedSinceHours: hours,
+    limit: 800,
+  });
+  const recent = raw.filter((row) => row.video_type !== "upcoming");
+  return filterVideosWithinHours(
+    sortNewest(deduplicateVideos(recent.map(feedVideoFromRaw))),
+    hours,
+  );
 }
