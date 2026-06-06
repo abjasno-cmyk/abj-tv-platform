@@ -912,6 +912,145 @@
   font-size: clamp(0.85rem, 1.9cqw, 1rem);
 }
 
+.mv-reply-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6em;
+  margin: 0 0 1em;
+  padding: 0 var(--L1);
+  font-size: clamp(0.85rem, 1.9cqw, 1rem);
+  color: var(--vx-gray-dark);
+}
+.mv-reply-cancel {
+  border: 0;
+  background: transparent;
+  color: var(--vx-orange);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.mv-thread-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2cqw;
+  margin-top: 2cqw;
+}
+.mv-thread-replies {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  gap: 0 10px;
+  margin-top: 0.5em;
+  padding-left: 0.5em;
+}
+.mv-thread-line {
+  width: 2px;
+  margin: 4px auto 0;
+  border-radius: 999px;
+  background: rgba(17, 17, 17, 0.14);
+  min-height: 100%;
+}
+.mv-thread-reply-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2em;
+}
+.mv-thread-more {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  font-size: clamp(0.82rem, 1.8cqw, 0.95rem);
+  font-weight: 700;
+  color: var(--vx-gray-dark);
+  cursor: pointer;
+}
+.mv-thread-more:hover {
+  color: var(--vx-orange);
+}
+.mv-post {
+  border: 1px solid #eee;
+  padding: 2.5cqw;
+  background: #fff;
+}
+.mv-post--reply {
+  border-color: rgba(17, 17, 17, 0.08);
+  background: #fafafa;
+}
+.mv-post-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6em;
+}
+.mv-post-author {
+  margin: 0;
+  font-weight: 700;
+  color: var(--vx-gray-dark);
+  font-size: clamp(0.9rem, 2cqw, 1rem);
+}
+.mv-post-time {
+  font-size: clamp(0.75rem, 1.6cqw, 0.85rem);
+  color: var(--vx-gray-light);
+  white-space: nowrap;
+}
+.mv-post-reply-to {
+  margin: 0.35em 0 0;
+  font-size: clamp(0.78rem, 1.7cqw, 0.88rem);
+  font-weight: 700;
+  color: var(--vx-gray-light);
+}
+.mv-post-body {
+  margin: 0.45em 0 0;
+  color: var(--vx-gray-dark);
+  line-height: 1.45;
+}
+.mv-post-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8em;
+  margin-top: 0.75em;
+}
+.mv-post-like {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.35em 0.7em;
+  border: 1px solid var(--vx-orange);
+  background: transparent;
+  color: var(--vx-orange);
+  font-size: clamp(0.8rem, 1.8cqw, 0.9rem);
+  font-weight: 700;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.mv-post-like.is-liked {
+  background: var(--vx-orange);
+  color: #fff;
+}
+.mv-post-like:disabled {
+  cursor: default;
+}
+.mv-post-reply-btn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: clamp(0.82rem, 1.8cqw, 0.92rem);
+  font-weight: 700;
+  color: var(--vx-gray-dark);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.mv-post-reply-btn:hover {
+  color: var(--vx-orange);
+}
+.mv-post-replying {
+  margin: 0.5em 0 0;
+  font-size: clamp(0.78rem, 1.7cqw, 0.85rem);
+  color: var(--vx-orange);
+}
+
 /* Na širších kartách (tablet) zvětši poměry karet/náhledů */
 @container (min-width: 620px) {
   .carousel .track .thumb {
