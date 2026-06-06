@@ -366,6 +366,20 @@ export async function listAllArticlesForAdmin(
   return data as OpinionArticleRow[];
 }
 
+export async function listAuthorArticlesForAdmin(
+  supabase: SupabaseClient,
+  authorId: string,
+): Promise<OpinionArticleRow[]> {
+  const { data, error } = await supabase
+    .from("opinion_articles")
+    .select(OPINION_ARTICLE_COLUMNS)
+    .eq("author_id", authorId)
+    .order("updated_at", { ascending: false });
+
+  if (error || !data) return [];
+  return data as OpinionArticleRow[];
+}
+
 export async function listAuthorArticles(
   supabase: SupabaseClient,
   authorId: string,

@@ -1,9 +1,12 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { OpinionEditor } from "@/components/nazory/OpinionEditor";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getArticleById, getArticleByIdForAuthor } from "@/lib/nazory/articles";
+import { getAuthorProfileByUserId } from "@/lib/nazory/authors";
 import { isNazoryAdmin, requireAuthorWithCompletedProfile } from "@/lib/nazory/access";
+import { getAuthorDisplayName } from "@/lib/nazory/display";
 
 export const dynamic = "force-dynamic";
 
@@ -33,8 +36,18 @@ export default async function NazoryEditPage({ params }: { params: Promise<{ id:
     redirect("/nazory/napsat");
   }
 
+  const editingAsAdmin = admin && article.author_id !== user.id;
+  const managedAuthor = editingAsAdmin ? await getAuthorProfileByUserId(supabase, article.author_id) : null;
+
   return (
     <div className="vx-live vx-sub nazory-page">
+      {editingAsAdmin && managedAuthor ? (
+        <p className="nazory-author-link">
+          <Link href={`/nazory/sprava/autor/${article.author_id}#clanky`}>
+            ← Zpět k článkům autora {getAuthorDisplayName(managedAuthor)}
+          </Link>
+        </p>
+      ) : null}
       <h1 className="section-h">{article.status === "published" ? "UPRAVIT ČLÁNEK" : "UPRAVIT KONCEPT"}</h1>
       <OpinionEditor
         articleId={article.id}

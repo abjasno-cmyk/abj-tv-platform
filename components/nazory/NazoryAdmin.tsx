@@ -143,8 +143,11 @@ export function NazoryAdmin() {
                 </span>
               </span>
               <span className="nazory-admin-actions">
+                <Link className="nazory-btn nazory-btn-primary" href={`/nazory/sprava/autor/${author.user_id}#clanky`}>
+                  Články
+                </Link>
                 <Link className="nazory-btn" href={`/nazory/sprava/autor/${author.user_id}`}>
-                  Spravovat
+                  Profil
                 </Link>
                 <button type="button" className="nazory-btn" onClick={() => void toggleAuthor(author.user_id, author.is_active)}>
                   {author.is_active ? "Deaktivovat" : "Obnovit"}
