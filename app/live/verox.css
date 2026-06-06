@@ -641,6 +641,22 @@
   height: 100%;
   object-fit: cover;
 }
+.vx-card .thumb.vx-videa-thumb {
+  position: relative;
+}
+.vx-card .thumb.vx-videa-thumb .vx-video-badges {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  z-index: 1;
+}
+.vx-videa-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
 .vx-card .thumb.portrait {
   aspect-ratio: 9/16;
   background: var(--vx-black);

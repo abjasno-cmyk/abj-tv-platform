@@ -77,8 +77,8 @@ export function SaveVideoButton({
       }
       disabled={loading}
       aria-pressed={isSaved}
-      aria-label={isSaved ? "Odebrat z uložených" : "Uložit na později"}
-      title={isSaved ? "Odebrat z uložených" : "Uložit na později"}
+      aria-label={isSaved ? "Odebrat video z uložených" : "Uložit video na později"}
+      title={isSaved ? "Odebrat video z uložených" : "Uložit video na později"}
       onClick={(event) => {
         event.stopPropagation();
         event.preventDefault();
@@ -93,7 +93,7 @@ export function SaveVideoButton({
     >
       <span aria-hidden="true">{isSaved ? "★" : "☆"}</span>
       <span className={compact ? "vx-save-video-label vx-save-video-label--compact" : "vx-save-video-label"}>
-        {loading ? "…" : isSaved ? "Uloženo" : "Uložit"}
+        {loading ? "…" : isSaved ? "Video uloženo" : "Uložit video"}
       </span>
     </button>
     {error ? <span className="vx-save-video-error">{error}</span> : null}
