@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { AuthorProfilePreview } from "@/components/nazory/AuthorProfilePreview";
 import { getAuthorDisplayName } from "@/lib/nazory/display";
+import type { OpinionArticleRow } from "@/lib/nazory/types";
 
 type AdminAuthorPayload = {
   author?: {
@@ -40,6 +41,8 @@ export function AdminAuthorForm({ userId }: AdminAuthorFormProps) {
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [creatingArticle, setCreatingArticle] = useState(false);
+  const [articles, setArticles] = useState<OpinionArticleRow[]>([]);
+  const [articlesLoading, setArticlesLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [slug, setSlug] = useState("autor");
@@ -93,9 +96,24 @@ export function AdminAuthorForm({ userId }: AdminAuthorFormProps) {
     return true;
   }, [userId]);
 
+  const loadArticles = useCallback(async () => {
+    setArticlesLoading(true);
+    const response = await fetch(`/api/nazory/admin/authors/${encodeURIComponent(userId)}/articles`, {
+      credentials: "include",
+      cache: "no-store",
+    });
+    const payload = (await response.json()) as { articles?: OpinionArticleRow[]; error?: string };
+    setArticlesLoading(false);
+    if (!response.ok) {
+      setError(payload.error ?? "Články autora se nepodařilo načíst.");
+      return;
+    }
+    setArticles(payload.articles ?? []);
+  }, [userId]);
+
   useEffect(() => {
-    void loadAuthor().finally(() => setLoading(false));
-  }, [loadAuthor]);
+    void Promise.all([loadAuthor(), loadArticles()]).finally(() => setLoading(false));
+  }, [loadAuthor, loadArticles]);
 
   const updateField = (key: keyof typeof form, value: string) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -153,7 +171,7 @@ export function AdminAuthorForm({ userId }: AdminAuthorFormProps) {
     setMessage("Profil autora byl uložen.");
   };
 
-  const createFirstArticle = async () => {
+  const createArticle = async () => {
     setCreatingArticle(true);
     setError(null);
     const response = await fetch("/api/nazory/admin/articles", {
@@ -173,13 +191,85 @@ export function AdminAuthorForm({ userId }: AdminAuthorFormProps) {
     router.push(`/nazory/napsat/${payload.article.id}`);
   };
 
+  const articleAction = async (articleId: string, action: "hide" | "restore") => {
+    setError(null);
+    const response = await fetch("/api/nazory/admin/articles", {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ articleId, action }),
+    });
+    if (!response.ok) {
+      const payload = (await response.json()) as { error?: string };
+      setError(payload.error ?? "Akci s článkem se nepodařilo provést.");
+      return;
+    }
+    await loadArticles();
+  };
+
   if (loading) {
     return <p className="nazory-empty">Načítám profil autora…</p>;
   }
 
   return (
     <div className="nazory-profile-layout">
+      <section className="nazory-admin-section nazory-admin-articles" id="clanky">
+        <div className="nazory-admin-section-head">
+          <h2>Články autora</h2>
+          <button type="button" className="nazory-btn nazory-btn-primary" disabled={creatingArticle} onClick={() => void createArticle()}>
+            {creatingArticle ? "Vytvářím…" : "Nový článek"}
+          </button>
+        </div>
+        <p className="nazory-form-lead">
+          Zde spravujete všechny texty tohoto autora — vytváření, úpravy i skrývání. Po kliknutí na „Upravit“
+          otevřete editor jako admin.
+        </p>
+        {articlesLoading ? (
+          <p className="nazory-empty">Načítám články…</p>
+        ) : articles.length === 0 ? (
+          <p className="nazory-empty">Autor zatím nemá žádné články. Vytvořte první tlačítkem „Nový článek“.</p>
+        ) : (
+          <ul className="nazory-admin-list">
+            {articles.map((article) => (
+              <li key={article.id}>
+                <span>
+                  <strong>{article.title || "Bez názvu"}</strong>
+                  <br />
+                  <span className="nazory-admin-meta">
+                    {article.status === "published" ? "publikováno" : "koncept"}
+                    {article.deleted_at ? " · skrytý" : ""}
+                    {article.published_at
+                      ? ` · ${new Intl.DateTimeFormat("cs-CZ", { timeZone: "Europe/Prague", day: "numeric", month: "numeric", year: "numeric" }).format(new Date(article.published_at))}`
+                      : ""}
+                  </span>
+                </span>
+                <span className="nazory-admin-actions">
+                  <Link className="nazory-btn nazory-btn-primary" href={`/nazory/napsat/${article.id}`}>
+                    Upravit
+                  </Link>
+                  {article.status === "published" && !article.deleted_at ? (
+                    <Link className="nazory-btn" href={`/nazory/${article.slug}`} target="_blank" rel="noopener noreferrer">
+                      Zobrazit
+                    </Link>
+                  ) : null}
+                  {article.deleted_at ? (
+                    <button type="button" className="nazory-btn" onClick={() => void articleAction(article.id, "restore")}>
+                      Obnovit
+                    </button>
+                  ) : (
+                    <button type="button" className="nazory-btn" onClick={() => void articleAction(article.id, "hide")}>
+                      Skrýt
+                    </button>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <form className="nazory-form" onSubmit={(event) => void handleSubmit(event)}>
+        <h2 className="nazory-admin-subheading">Autorský profil</h2>
         <p className="nazory-form-lead">
           Správa autorského profilu pro{" "}
           <strong>{accountEmail ?? form.contactEmail ?? "neznámý účet"}</strong>. Autor se může přihlásit
@@ -258,9 +348,6 @@ export function AdminAuthorForm({ userId }: AdminAuthorFormProps) {
         <div className="nazory-editor-actions">
           <button type="submit" className="nazory-btn nazory-btn-primary" disabled={saving}>
             {saving ? "Ukládám…" : "Uložit profil autora"}
-          </button>
-          <button type="button" className="nazory-btn" disabled={creatingArticle} onClick={() => void createFirstArticle()}>
-            {creatingArticle ? "Vytvářím koncept…" : "Vytvořit první článek"}
           </button>
           {profileCompleted ? (
             <Link className="nazory-btn" href={`/nazory/autor/${slug}`}>
