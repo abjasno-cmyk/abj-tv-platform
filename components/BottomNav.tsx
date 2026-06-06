@@ -7,7 +7,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 const tabs = [
   { href: "/live", label: "Živě", icon: "▶" },
   { href: "/videa", label: "Videa", icon: "◧" },
-  { href: "/v-kostce", label: "V kostce", icon: "✦" },
+  { href: "/nazory", label: "Názory", icon: "✦" },
   { href: "/komunita", label: "Komunita", icon: "▩" },
   { href: "/muj-verox", label: "Můj Verox", icon: "☺" },
 ];
@@ -21,13 +21,11 @@ export function BottomNav() {
       <ul className="mx-auto flex max-w-3xl rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-2 shadow-[0_8px_32px_rgba(0,0,0,0.45)]">
         {tabs.map((tab) => {
           const isLegacyVideaPath = pathname === "/archiv" || pathname.startsWith("/archiv/") || pathname.startsWith("/feed");
-          const isLegacyVKostcePath = pathname === "/abj-x" || pathname.startsWith("/abj-x/");
           const isLegacyKomunitaPath = pathname === "/zed" || pathname.startsWith("/zed/");
           const isActive =
             pathname === tab.href ||
             pathname.startsWith(`${tab.href}/`) ||
             (tab.href === "/videa" && isLegacyVideaPath) ||
-            (tab.href === "/v-kostce" && isLegacyVKostcePath) ||
             (tab.href === "/komunita" && isLegacyKomunitaPath);
           return (
             <li key={tab.href} className="flex-1 py-2">
