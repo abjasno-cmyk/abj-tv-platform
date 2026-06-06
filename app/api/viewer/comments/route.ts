@@ -1,8 +1,14 @@
 import { AuthApiError, requireAuthenticatedUser } from "@/lib/supabase/authenticated-server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canModerateViewerComments } from "@/lib/viewer/commentAccess";
+import { loadCommentLikeStats } from "@/lib/viewer/commentLikes";
 import { mapCommentRows } from "@/lib/viewer/commentMapper";
-import { VIEWER_COMMENT_ENTITY_VIDEO } from "@/lib/viewer/comments";
+import {
+  VIEWER_COMMENT_ENTITY_VIDEO,
+  type CommentFilterMode,
+  type CommentSortMode,
+  filterCommentsForViewer,
+} from "@/lib/viewer/comments";
 import { insertComment, isSupabaseSchemaMismatch, listPublishedComments } from "@/lib/viewer/commentsDb";
 
 export const dynamic = "force-dynamic";
@@ -66,17 +72,29 @@ export async function GET(request: Request) {
     } = await supabase.auth.getUser();
     const viewerCanModerate = user ? await canModerateViewerComments(supabase, user) : false;
 
+    const filterParam = normalizeString(url.searchParams.get("filter")) as CommentFilterMode;
+    const filter: CommentFilterMode = filterParam === "mine" ? "mine" : "all";
+    const sortParam = normalizeString(url.searchParams.get("sort")) as CommentSortMode;
+    const sort: CommentSortMode = sortParam === "newest" ? "newest" : "popular";
+
     const { rows, supportsPinned, schemaReady } = await listPublishedComments(supabase, {
       entityType,
       entityId: isGlobalVideoFeed ? undefined : entityId,
       limit,
     });
 
-    const comments = await mapCommentRows(supabase, rows, { viewerCanModerate });
+    const likeStats = await loadCommentLikeStats(
+      rows.map((row) => row.id),
+      user?.id ?? null,
+    );
+    const mapped = await mapCommentRows(supabase, rows, { viewerCanModerate, likeStats });
+    const comments = filterCommentsForViewer(mapped, filter, user?.id ?? null);
 
     return Response.json({
       comments,
       scope: isGlobalVideoFeed ? "global" : "entity",
+      filter,
+      sort,
       canModerate: viewerCanModerate,
       schemaReady,
       supportsPinned,
