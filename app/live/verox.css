@@ -1256,6 +1256,19 @@
     text-underline-offset: 4px;
     text-decoration-thickness: 2px;
   }
+  /* Názory — bez oranžového pruhu vlevo (čitelnost na desktopu) */
+  .vx-live.vx-sub.nazory-page {
+    max-width: min(720px, 100%);
+    background-image: none;
+    background-color: var(--vx-white);
+  }
+  .nazory-page .kostka-nazory {
+    grid-template-columns: 72px 12px minmax(0, 1fr);
+    padding-inline: 0;
+  }
+  .nazory-page .kostka-nazory .day {
+    color: var(--vx-orange);
+  }
   .kostka-nazory .body p.kostka-nazory-perex,
   .nazory-detail-perex {
     font-size: 14pt;
@@ -1442,9 +1455,9 @@
 
 /* Názory */
 .nazory-page {
-  max-width: 920px;
+  max-width: min(720px, 100%);
   margin: 0 auto;
-  padding: 0 16px 48px;
+  padding: 0 clamp(12px, 3.5vw, 20px) 48px;
 }
 .nazory-page-head {
   margin-bottom: 24px;
@@ -1499,6 +1512,7 @@
 }
 .kostka-nazory .body p.kostka-nazory-perex {
   font-size: max(12pt, 1rem);
+  font-style: italic;
   line-height: 1.55;
   color: var(--vx-gray-dark);
   margin-bottom: 0.85em;
@@ -1516,6 +1530,7 @@
 }
 .nazory-detail-perex {
   font-size: max(12pt, 1rem);
+  font-style: italic;
   color: rgba(23, 20, 17, 0.82);
   line-height: 1.55;
 }
@@ -1617,6 +1632,12 @@
   display: grid;
   gap: 16px;
   line-height: 1.7;
+  font-size: 14px;
+}
+.nazory-prose-p {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--vx-gray-dark);
 }
 .nazory-prose-h2 {
   font-size: 1.5rem;
@@ -1633,6 +1654,7 @@
 }
 .nazory-prose-ul,
 .nazory-prose-ol {
+  font-size: 14px;
   padding-left: 1.4rem;
 }
 .nazory-prose-youtube {
