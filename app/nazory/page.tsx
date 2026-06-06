@@ -45,7 +45,6 @@ export default async function NazoryPage() {
   return (
     <div className="vx-live vx-sub nazory-page">
       <h1 className="section-h">NÁZORY</h1>
-      <p className="nazory-page-lead">Autorské texty schválených přispěvatelů VEROX.</p>
 
       {articles.length > 0 ? (
         <OpinionList articles={articles} />
