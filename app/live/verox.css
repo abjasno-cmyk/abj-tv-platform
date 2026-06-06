@@ -1587,20 +1587,55 @@
   display: grid;
   gap: 8px;
 }
+.nazory-field-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.nazory-field-counter {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: rgba(23, 20, 17, 0.55);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 .nazory-field input,
 .nazory-field textarea,
 .nazory-admin-row input {
   width: 100%;
   min-height: 48px;
   padding: 12px 14px;
-  border: 1px solid rgba(23, 20, 17, 0.18);
+  border: 2px solid rgba(23, 20, 17, 0.42);
   border-radius: 8px;
   font: inherit;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(23, 20, 17, 0.06);
+}
+.nazory-field input:focus,
+.nazory-field textarea:focus {
+  outline: none;
+  border-color: var(--vx-orange);
+  box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.18);
 }
 .nazory-field textarea,
 .nazory-editor-content .ProseMirror {
   min-height: 220px;
   line-height: 1.6;
+}
+/* Editor článku — výrazný rámeček jako u titulku a perexu */
+.nazory-editor-content .ProseMirror {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid rgba(23, 20, 17, 0.42);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(23, 20, 17, 0.06);
+}
+.nazory-editor-content .ProseMirror:focus {
+  outline: none;
+  border-color: var(--vx-orange);
+  box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.18);
 }
 .nazory-editor-toolbar {
   display: flex;
@@ -1610,7 +1645,7 @@
 .nazory-editor-toolbar button {
   min-height: 40px;
   padding: 0 12px;
-  border: 1px solid rgba(23, 20, 17, 0.14);
+  border: 2px solid rgba(23, 20, 17, 0.35);
   border-radius: 999px;
   background: #fff;
   font: inherit;

@@ -8,6 +8,7 @@ import {
   estimateReadingTimeFromContentJson,
   extractPlainTextFromTipTapJson,
 } from "@/lib/nazory/content";
+import { MAX_PEREX_LENGTH, MIN_PEREX_LENGTH } from "@/lib/nazory/limits";
 import { buildArticleSlug } from "@/lib/nazory/slug";
 import {
   OPINION_ARTICLE_COLUMNS,
@@ -19,8 +20,6 @@ import {
 } from "@/lib/nazory/types";
 
 const MIN_PUBLISH_TITLE_LENGTH = 5;
-const MIN_PUBLISH_PEREX_LENGTH = 20;
-const MAX_PUBLISH_PEREX_LENGTH = 300;
 const MIN_PUBLISH_BODY_LENGTH = 100;
 
 function trimText(value: string | undefined, maxLength?: number): string {
@@ -49,8 +48,8 @@ export function validateArticleForPublish(article: Pick<OpinionArticleRow, "titl
   if (title.length < MIN_PUBLISH_TITLE_LENGTH) {
     throw new Error("Titulek musí mít alespoň 5 znaků.");
   }
-  if (perex.length < MIN_PUBLISH_PEREX_LENGTH || perex.length > MAX_PUBLISH_PEREX_LENGTH) {
-    throw new Error("Perex musí mít 20 až 300 znaků.");
+  if (perex.length < MIN_PEREX_LENGTH || perex.length > MAX_PEREX_LENGTH) {
+    throw new Error(`Perex musí mít ${MIN_PEREX_LENGTH} až ${MAX_PEREX_LENGTH} znaků.`);
   }
   if (plainText.length < MIN_PUBLISH_BODY_LENGTH) {
     throw new Error("Obsah článku je příliš krátký.");
@@ -77,7 +76,7 @@ export async function createDraftArticle(
   const takenSlugs = await loadTakenArticleSlugs(supabase);
   const title = trimText(input.title, 300);
   const slug = buildArticleSlug(title || "koncept", takenSlugs);
-  const perex = trimText(input.perex, MAX_PUBLISH_PEREX_LENGTH);
+  const perex = trimText(input.perex, MAX_PEREX_LENGTH);
   const contentJson = input.contentJson ?? { type: "doc", content: [] };
   const seo = buildArticleSeoFields({ title, perex, content_json: contentJson });
 
@@ -121,7 +120,7 @@ export async function updateDraftArticle(
 
   const title = input.title !== undefined ? trimText(input.title, 300) : existing.title;
   const perex =
-    input.perex !== undefined ? trimText(input.perex, MAX_PUBLISH_PEREX_LENGTH) : existing.perex;
+    input.perex !== undefined ? trimText(input.perex, MAX_PEREX_LENGTH) : existing.perex;
   const contentJson = input.contentJson ?? existing.content_json;
   const slug =
     title !== existing.title
@@ -322,7 +321,7 @@ export async function updateArticleByAdmin(
 
   const title = input.title !== undefined ? trimText(input.title, 300) : existing.title;
   const perex =
-    input.perex !== undefined ? trimText(input.perex, MAX_PUBLISH_PEREX_LENGTH) : existing.perex;
+    input.perex !== undefined ? trimText(input.perex, MAX_PEREX_LENGTH) : existing.perex;
   const contentJson = input.contentJson ?? existing.content_json;
   const slug =
     title !== existing.title

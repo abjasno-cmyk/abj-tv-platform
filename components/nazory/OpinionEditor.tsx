@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Youtube } from "@/components/nazory/tiptapYoutube";
+import { MAX_PEREX_LENGTH } from "@/lib/nazory/limits";
 import { extractYoutubeVideoId } from "@/lib/nazory/youtube";
 
 type OpinionEditorProps = {
@@ -226,11 +227,16 @@ export function OpinionEditor({
         />
       </label>
       <label className="nazory-field">
-        <span>Perex</span>
+        <span className="nazory-field-label-row">
+          <span>Perex</span>
+          <span className="nazory-field-counter" aria-live="polite">
+            {perex.length} / {MAX_PEREX_LENGTH}
+          </span>
+        </span>
         <textarea
           value={perex}
-          maxLength={300}
-          rows={3}
+          maxLength={MAX_PEREX_LENGTH}
+          rows={4}
           onChange={(event) => setPerex(event.target.value)}
           readOnly={mode === "preview"}
           placeholder="Krátké shrnutí článku"
