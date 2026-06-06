@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { isStaffCommentAuthor } from "@/lib/viewer/commentsStaff";
+import type { CommentLikeStat } from "@/lib/viewer/commentLikes";
 import type { ViewerCommentRecord } from "@/lib/viewer/comments";
 import { loadCommentAuthorProfiles } from "@/lib/viewer/profileLookup";
 
@@ -22,7 +23,10 @@ type CommentRow = {
 export async function mapCommentRows(
   supabase: SupabaseClient,
   rows: CommentRow[],
-  options: { viewerCanModerate: boolean },
+  options: {
+    viewerCanModerate: boolean;
+    likeStats?: Map<string, CommentLikeStat>;
+  },
 ): Promise<ViewerCommentRecord[]> {
   const userIds = Array.from(new Set(rows.map((row) => row.user_id).filter((value) => typeof value === "string")));
   const profileById = await loadCommentAuthorProfiles(supabase, userIds);
@@ -44,6 +48,8 @@ export async function mapCommentRows(
       authorAvatarUrl: profile?.avatar_url ?? null,
       isStaffHighlight: isStaffCommentAuthor(profile),
       canModerate: options.viewerCanModerate,
+      likeCount: options.likeStats?.get(row.id)?.likeCount ?? 0,
+      likedByMe: options.likeStats?.get(row.id)?.likedByMe ?? false,
     };
   });
 }

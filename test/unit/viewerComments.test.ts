@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildCommentTree } from "@/lib/viewer/comments";
+import { buildCommentTree, sortCommentRoots } from "@/lib/viewer/comments";
 import { isStaffCommentAuthor } from "@/lib/viewer/commentsStaff";
 
 describe("buildCommentTree", () => {
@@ -21,6 +21,8 @@ describe("buildCommentTree", () => {
         authorAvatarUrl: null,
         isStaffHighlight: false,
         canModerate: false,
+        likeCount: 0,
+        likedByMe: false,
       },
       {
         id: "a",
@@ -37,6 +39,8 @@ describe("buildCommentTree", () => {
         authorAvatarUrl: null,
         isStaffHighlight: false,
         canModerate: false,
+        likeCount: 3,
+        likedByMe: false,
       },
       {
         id: "r1",
@@ -53,11 +57,61 @@ describe("buildCommentTree", () => {
         authorAvatarUrl: null,
         isStaffHighlight: false,
         canModerate: false,
+        likeCount: 0,
+        likedByMe: false,
       },
     ]);
 
     expect(tree.map((node) => node.id)).toEqual(["a", "b"]);
+    expect(tree[1]?.replies[0]?.replyToAuthorName).toBe("A");
     expect(tree[1]?.replies.map((node) => node.id)).toEqual(["r1"]);
+  });
+});
+
+describe("sortCommentRoots", () => {
+  it("ranks popular roots by likes and replies", () => {
+    const roots = sortCommentRoots(
+      buildCommentTree([
+        {
+          id: "low",
+          userId: "u1",
+          entityType: "video",
+          entityId: "v1",
+          parentId: null,
+          body: "low",
+          status: "published",
+          isPinned: false,
+          createdAt: "2026-01-02T10:00:00.000Z",
+          updatedAt: "2026-01-02T10:00:00.000Z",
+          authorName: "A",
+          authorAvatarUrl: null,
+          isStaffHighlight: false,
+          canModerate: false,
+          likeCount: 1,
+          likedByMe: false,
+        },
+        {
+          id: "high",
+          userId: "u2",
+          entityType: "video",
+          entityId: "v1",
+          parentId: null,
+          body: "high",
+          status: "published",
+          isPinned: false,
+          createdAt: "2026-01-01T10:00:00.000Z",
+          updatedAt: "2026-01-01T10:00:00.000Z",
+          authorName: "B",
+          authorAvatarUrl: null,
+          isStaffHighlight: false,
+          canModerate: false,
+          likeCount: 10,
+          likedByMe: false,
+        },
+      ]),
+      "popular",
+    );
+    expect(roots.map((node) => node.id)).toEqual(["high", "low"]);
   });
 });
 

@@ -2,14 +2,20 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { CommentLikeButton } from "@/components/auth/CommentLikeButton";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   VIEWER_COMMENT_ENTITY_VIDEO,
   buildCommentTree,
+  countThreadReplies,
   countVisibleComments,
+  sortCommentRoots,
+  type CommentFilterMode,
+  type CommentSortMode,
   type CommentTreeNode,
   type ViewerCommentRecord,
 } from "@/lib/viewer/comments";
+import { authorInitials, formatRelativeCommentTime } from "@/lib/viewer/commentTime";
 
 type CommentsSectionProps = {
   entityType?: string;
@@ -28,20 +34,14 @@ type CommentsResponse = {
 };
 
 const fetchOpts: RequestInit = { credentials: "include", cache: "no-store" };
+const REPLIES_PREVIEW_COUNT = 2;
 
-function formatCommentDate(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "teď";
-  return new Intl.DateTimeFormat("cs-CZ", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
-
-function commentsQuery(scope: "entity" | "global", entityType: string, entityId: string | null): string {
-  const params = new URLSearchParams({ entityType });
+function commentsQuery(
+  scope: "entity" | "global",
+  entityType: string,
+  entityId: string | null,
+): string {
+  const params = new URLSearchParams({ entityType, sort: "popular", filter: "all" });
   if (scope === "global") {
     params.set("scope", "global");
   } else if (entityId) {
@@ -50,106 +50,212 @@ function commentsQuery(scope: "entity" | "global", entityType: string, entityId:
   return `/api/viewer/comments?${params.toString()}`;
 }
 
-type CommentRowProps = {
+type CommentCardProps = {
   node: CommentTreeNode;
-  depth: number;
+  isReply?: boolean;
   userId: string | null;
   canModerate: boolean;
   activeVideoId: string | null;
   showVideoContext: boolean;
   replyParentId: string | null;
-  onReply: (parentId: string) => void;
-  onCancelReply: () => void;
+  onReply: (parentId: string, authorName: string) => void;
   onDeleteOwn: (commentId: string) => void;
   onModerate: (commentId: string, action: "hide" | "pin" | "unpin") => void;
 };
 
-function CommentRow({
+function CommentAvatar({ name, avatarUrl }: { name: string; avatarUrl: string | null }) {
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img className="vx-comment-avatar vx-comment-avatar--image" src={avatarUrl} alt="" />
+    );
+  }
+  return <span className="vx-comment-avatar">{authorInitials(name)}</span>;
+}
+
+function CommentCard({
   node,
-  depth,
+  isReply = false,
   userId,
   canModerate,
   activeVideoId,
   showVideoContext,
   replyParentId,
   onReply,
-  onCancelReply,
   onDeleteOwn,
   onModerate,
-}: CommentRowProps) {
-  const isReplying = replyParentId === node.id;
+}: CommentCardProps) {
   const isOwn = userId === node.userId;
+  const replyCount = countThreadReplies(node);
+  const isReplyingHere = replyParentId === node.id;
 
   return (
     <article
-      className={`vx-comment${node.isStaffHighlight ? " is-staff" : ""}${node.isPinned ? " is-pinned" : ""}`}
-      style={{ marginLeft: depth > 0 ? `${Math.min(depth, 4) * 14}px` : undefined }}
+      className={`vx-comment${isReply ? " vx-comment--reply" : ""}${node.isStaffHighlight ? " is-staff" : ""}${node.isPinned ? " is-pinned" : ""}`}
     >
-      <div className="vx-comment-head">
-        <div className="vx-comment-meta">
-          <p className="vx-comment-author">{node.authorName}</p>
-          {node.isPinned ? <span className="vx-comment-pin">Připnuto</span> : null}
-          {showVideoContext && node.entityId !== activeVideoId ? (
-            <span className="vx-comment-video" title="Video">
-              Video {node.entityId.slice(0, 8)}…
-            </span>
+      <div className="vx-comment-layout">
+        <CommentAvatar name={node.authorName} avatarUrl={node.authorAvatarUrl} />
+        <div className="vx-comment-main">
+          <div className="vx-comment-head">
+            <div className="vx-comment-meta">
+              <p className="vx-comment-author">{node.authorName}</p>
+              {node.isPinned ? <span className="vx-comment-pin">Připnuto</span> : null}
+              {showVideoContext && node.entityId !== activeVideoId ? (
+                <span className="vx-comment-video" title="Video">
+                  Video {node.entityId.slice(0, 8)}…
+                </span>
+              ) : null}
+            </div>
+            <time className="vx-comment-time" dateTime={node.createdAt}>
+              {formatRelativeCommentTime(node.createdAt)}
+            </time>
+          </div>
+
+          {node.replyToAuthorName ? (
+            <p className="vx-comment-reply-target">
+              <span aria-hidden="true">↳</span> {node.replyToAuthorName}
+            </p>
+          ) : null}
+
+          <p className="vx-comment-body">{node.body}</p>
+
+          <div className="vx-comment-footer">
+            <div className="vx-comment-metrics">
+              {replyCount > 0 && !isReply ? (
+                <span className="vx-comment-metric" aria-label={`${replyCount} odpovědí`}>
+                  <span className="vx-comment-metric-icon" aria-hidden="true">
+                    💬
+                  </span>
+                  {replyCount}
+                </span>
+              ) : null}
+              <CommentLikeButton
+                commentId={node.id}
+                initialCount={node.likeCount}
+                initialLiked={node.likedByMe}
+              />
+            </div>
+            <button type="button" className="vx-comment-reply-btn" onClick={() => onReply(node.id, node.authorName)}>
+              Odpovědět
+            </button>
+          </div>
+
+          {(isOwn || canModerate) && (
+            <div className="vx-comment-moderation">
+              {isOwn ? (
+                <button type="button" className="vx-comment-action" onClick={() => onDeleteOwn(node.id)}>
+                  Smazat
+                </button>
+              ) : null}
+              {canModerate ? (
+                <>
+                  <button
+                    type="button"
+                    className="vx-comment-action"
+                    onClick={() => onModerate(node.id, node.isPinned ? "unpin" : "pin")}
+                  >
+                    {node.isPinned ? "Odepnout" : "Připnout"}
+                  </button>
+                  <button type="button" className="vx-comment-action is-danger" onClick={() => onModerate(node.id, "hide")}>
+                    Skrýt
+                  </button>
+                </>
+              ) : null}
+            </div>
+          )}
+
+          {isReplyingHere ? (
+            <p className="vx-comment-replying-here">Píšete odpověď tomuto komentáři výše.</p>
           ) : null}
         </div>
-        <time className="vx-comment-time" dateTime={node.createdAt}>
-          {formatCommentDate(node.createdAt)}
-        </time>
       </div>
-      <p className="vx-comment-body">{node.body}</p>
-      <div className="vx-comment-actions">
-        <button type="button" className="vx-comment-action" onClick={() => onReply(node.id)}>
-          Odpovědět
-        </button>
-        {isOwn ? (
-          <button type="button" className="vx-comment-action" onClick={() => onDeleteOwn(node.id)}>
-            Smazat
-          </button>
-        ) : null}
-        {canModerate ? (
-          <>
-            <button
-              type="button"
-              className="vx-comment-action"
-              onClick={() => onModerate(node.id, node.isPinned ? "unpin" : "pin")}
-            >
-              {node.isPinned ? "Odepnout" : "Připnout"}
-            </button>
-            <button type="button" className="vx-comment-action is-danger" onClick={() => onModerate(node.id, "hide")}>
-              Skrýt
-            </button>
-          </>
-        ) : null}
-      </div>
-      {isReplying ? (
-        <button type="button" className="vx-comment-cancel-reply" onClick={onCancelReply}>
-          Zrušit odpověď
-        </button>
-      ) : null}
+    </article>
+  );
+}
+
+type CommentThreadProps = {
+  node: CommentTreeNode;
+  userId: string | null;
+  canModerate: boolean;
+  activeVideoId: string | null;
+  showVideoContext: boolean;
+  replyParentId: string | null;
+  onReply: (parentId: string, authorName: string) => void;
+  onDeleteOwn: (commentId: string) => void;
+  onModerate: (commentId: string, action: "hide" | "pin" | "unpin") => void;
+};
+
+type ReplyBranchProps = Omit<CommentThreadProps, "node"> & { reply: CommentTreeNode };
+
+function ReplyBranch({
+  reply,
+  userId,
+  canModerate,
+  activeVideoId,
+  showVideoContext,
+  replyParentId,
+  onReply,
+  onDeleteOwn,
+  onModerate,
+}: ReplyBranchProps) {
+  return (
+    <>
+      <CommentCard
+        node={reply}
+        isReply
+        userId={userId}
+        canModerate={canModerate}
+        activeVideoId={activeVideoId}
+        showVideoContext={showVideoContext}
+        replyParentId={replyParentId}
+        onReply={onReply}
+        onDeleteOwn={onDeleteOwn}
+        onModerate={onModerate}
+      />
+      {reply.replies.map((child) => (
+        <ReplyBranch
+          key={child.id}
+          reply={child}
+          userId={userId}
+          canModerate={canModerate}
+          activeVideoId={activeVideoId}
+          showVideoContext={showVideoContext}
+          replyParentId={replyParentId}
+          onReply={onReply}
+          onDeleteOwn={onDeleteOwn}
+          onModerate={onModerate}
+        />
+      ))}
+    </>
+  );
+}
+
+function CommentThread(props: CommentThreadProps) {
+  const { node, ...rest } = props;
+  const [expanded, setExpanded] = useState(false);
+  const hiddenCount = Math.max(0, node.replies.length - REPLIES_PREVIEW_COUNT);
+  const visibleReplies = expanded ? node.replies : node.replies.slice(0, REPLIES_PREVIEW_COUNT);
+
+  return (
+    <div className="vx-thread">
+      <CommentCard node={node} {...rest} />
       {node.replies.length > 0 ? (
-        <div className="vx-comment-replies">
-          {node.replies.map((reply) => (
-            <CommentRow
-              key={reply.id}
-              node={reply}
-              depth={depth + 1}
-              userId={userId}
-              canModerate={canModerate}
-              activeVideoId={activeVideoId}
-              showVideoContext={showVideoContext}
-              replyParentId={replyParentId}
-              onReply={onReply}
-              onCancelReply={onCancelReply}
-              onDeleteOwn={onDeleteOwn}
-              onModerate={onModerate}
-            />
-          ))}
+        <div className="vx-thread-replies">
+          <div className="vx-thread-line" aria-hidden="true" />
+          <div className="vx-thread-reply-list">
+            {visibleReplies.map((reply) => (
+              <ReplyBranch key={reply.id} reply={reply} {...rest} />
+            ))}
+            {hiddenCount > 0 && !expanded ? (
+              <button type="button" className="vx-thread-more" onClick={() => setExpanded(true)}>
+                Zobrazit další reakce ({hiddenCount})
+                <span aria-hidden="true"> ▾</span>
+              </button>
+            ) : null}
+          </div>
         </div>
       ) : null}
-    </article>
+    </div>
   );
 }
 
@@ -169,7 +275,10 @@ export function CommentsSection({
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [replyParentId, setReplyParentId] = useState<string | null>(null);
+  const [replyTargetName, setReplyTargetName] = useState<string | null>(null);
   const [schemaReady, setSchemaReady] = useState(true);
+  const [filter, setFilter] = useState<CommentFilterMode>("all");
+  const [sort, setSort] = useState<CommentSortMode>("popular");
 
   const isGlobal = scope === "global";
   const canLoad = isGlobal || Boolean(entityId);
@@ -211,12 +320,26 @@ export function CommentsSection({
         source: "comments_panel",
       }),
     }).catch(() => {
-      // Best-effort — komentáře fungují i bez profilu, ale bootstrap pomůže se jménem.
+      // Best-effort.
     });
   }, [isAuthenticated]);
 
-  const tree = useMemo(() => buildCommentTree(comments), [comments]);
+  const visibleComments = useMemo(
+    () =>
+      filter === "mine" && user
+        ? comments.filter((comment) => comment.userId === user.id)
+        : comments,
+    [comments, filter, user],
+  );
+  const tree = useMemo(
+    () => sortCommentRoots(buildCommentTree(visibleComments), sort),
+    [visibleComments, sort],
+  );
   const totalCount = useMemo(() => countVisibleComments(comments), [comments]);
+  const myCount = useMemo(
+    () => (user ? comments.filter((comment) => comment.userId === user.id).length : 0),
+    [comments, user],
+  );
 
   const composeEntityId = useMemo(() => {
     if (replyParentId) {
@@ -249,10 +372,9 @@ export function CommentsSection({
       error?: string;
     };
     setSaving(false);
-    const createdComment = payload.comment;
-    if (!response.ok || !createdComment) {
+    if (!response.ok || !payload.comment) {
       if (response.status === 401) {
-        setError("Přihlášení vypršelo nebo není vidět serveru. Přihlaste se prosím znovu.");
+        setError("Přihlášení vypršelo. Přihlaste se prosím znovu.");
         requestAuth(() => undefined, { reason: "Pro uložení komentáře je potřeba přihlášení." });
         return;
       }
@@ -262,6 +384,7 @@ export function CommentsSection({
 
     setDraft("");
     setReplyParentId(null);
+    setReplyTargetName(null);
     await loadComments();
   };
 
@@ -303,14 +426,18 @@ export function CommentsSection({
     }
   };
 
-  const handleReply = (parentId: string) => {
+  const handleReply = (parentId: string, authorName: string) => {
     if (!isAuthenticated) {
-      requestAuth(() => setReplyParentId(parentId), {
+      requestAuth(() => {
+        setReplyParentId(parentId);
+        setReplyTargetName(authorName);
+      }, {
         reason: "Pro odpověď na komentář se přihlaste zdarma.",
       });
       return;
     }
     setReplyParentId(parentId);
+    setReplyTargetName(authorName);
   };
 
   const shellClass = compact ? "vx-comments vx-comments--compact" : "vx-comments";
@@ -319,15 +446,47 @@ export function CommentsSection({
     <section className={shellClass} aria-label={heading}>
       <header className="vx-comments-header">
         <div>
-          <p className="vx-comments-kicker">Reakce diváků</p>
+          <p className="vx-comments-kicker">Diskuse</p>
           <h3 className="vx-comments-title">{heading}</h3>
           {videoTitle && entityId ? <p className="vx-comments-context">K videu: {videoTitle}</p> : null}
           {isGlobal ? (
-            <p className="vx-comments-context">Všechny komentáře napříč videi — nový příspěvek patří k právě sledovanému videu.</p>
+            <p className="vx-comments-context">
+              Všechny komentáře napříč videi — nový příspěvek patří k právě sledovanému videu.
+            </p>
           ) : null}
         </div>
-        <span className="vx-comments-count">{totalCount} komentářů</span>
       </header>
+
+      <div className="vx-comments-toolbar" role="toolbar" aria-label="Filtry diskuse">
+        <div className="vx-comments-tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={filter === "all"}
+            className={filter === "all" ? "is-active" : undefined}
+            onClick={() => setFilter("all")}
+          >
+            Vše <span className="vx-comments-tab-count">{totalCount}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={filter === "mine"}
+            className={filter === "mine" ? "is-active" : undefined}
+            onClick={() => setFilter("mine")}
+            disabled={!isAuthenticated}
+          >
+            Moje komentáře <span className="vx-comments-tab-count">{myCount}</span>
+          </button>
+        </div>
+        <label className="vx-comments-sort">
+          <span className="sr-only">Řazení komentářů</span>
+          <select value={sort} onChange={(event) => setSort(event.target.value as CommentSortMode)}>
+            <option value="popular">Od nejlepších</option>
+            <option value="newest">Od nejnovějších</option>
+          </select>
+        </label>
+      </div>
 
       {!isAuthenticated ? (
         <div className="vx-comments-login">
@@ -336,7 +495,7 @@ export function CommentsSection({
             type="button"
             onClick={() =>
               requestAuth(() => undefined, {
-                reason: "Komentujte, lajkujte a pokračujte tam, kde jste skončili.",
+                reason: "Komentujte, reagujte a pokračujte tam, kde jste skončili.",
               })
             }
             className="vx-comments-login-btn"
@@ -348,21 +507,40 @@ export function CommentsSection({
 
       {isAuthenticated ? (
         <div className="vx-comments-compose">
-          {replyParentId ? <p className="vx-comments-reply-hint">Odpovídáte na komentář</p> : null}
+          {replyParentId && replyTargetName ? (
+            <p className="vx-comments-reply-hint">
+              Odpovídáte uživateli <strong>{replyTargetName}</strong>
+              <button
+                type="button"
+                className="vx-comments-reply-cancel"
+                onClick={() => {
+                  setReplyParentId(null);
+                  setReplyTargetName(null);
+                }}
+              >
+                Zrušit
+              </button>
+            </p>
+          ) : null}
           {!composeEntityId ? (
             <p className="vx-comments-hint">
               Vyberte konkrétní video v sekci PRÁVĚ HRAJE nebo KANÁLY — pak zde můžete napsat komentář k němu.
             </p>
           ) : (
             <>
-              <textarea
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                rows={compact ? 2 : 3}
-                maxLength={2000}
-                placeholder={replyParentId ? "Napište odpověď..." : "Napište komentář..."}
-                className="vx-comments-input"
-              />
+              <div className="vx-comments-compose-row">
+                <span className="vx-comment-avatar vx-comment-avatar--compose" aria-hidden="true">
+                  {authorInitials(user?.email?.split("@")[0] ?? "VY")}
+                </span>
+                <textarea
+                  value={draft}
+                  onChange={(event) => setDraft(event.target.value)}
+                  rows={compact ? 2 : 3}
+                  maxLength={2000}
+                  placeholder={replyParentId ? "Napište odpověď..." : "Napište komentář"}
+                  className="vx-comments-input"
+                />
+              </div>
               <div className="vx-comments-compose-bar">
                 <span className="vx-comments-chars">{draft.trim().length}/2000</span>
                 <button
@@ -383,7 +561,7 @@ export function CommentsSection({
 
       {!schemaReady ? (
         <p className="vx-comments-schema">
-          Databáze komentářů na tomto serveru ještě není připravená. Správce musí v Supabase spustit migrace{" "}
+          Databáze komentářů na tomto serveru ještě není připravená. Spusťte migrace{" "}
           <code>004_viewer_accounts.sql</code> a <code>008_comments_pinned.sql</code>.
         </p>
       ) : null}
@@ -393,21 +571,21 @@ export function CommentsSection({
       {loading ? (
         <p className="vx-comments-empty">Načítám komentáře...</p>
       ) : tree.length === 0 ? (
-        <p className="vx-comments-empty">Diskuse je zatím prázdná. Buďte první.</p>
+        <p className="vx-comments-empty">
+          {filter === "mine" ? "Zatím jste nenapsali žádný komentář." : "Diskuse je zatím prázdná. Buďte první."}
+        </p>
       ) : (
         <div className="vx-comments-list">
           {tree.map((node) => (
-            <CommentRow
+            <CommentThread
               key={node.id}
               node={node}
-              depth={0}
               userId={user?.id ?? null}
               canModerate={canModerate}
               activeVideoId={entityId}
               showVideoContext={isGlobal}
               replyParentId={replyParentId}
               onReply={handleReply}
-              onCancelReply={() => setReplyParentId(null)}
               onDeleteOwn={(id) => {
                 void deleteComment(id);
               }}
