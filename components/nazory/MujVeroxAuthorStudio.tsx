@@ -46,6 +46,7 @@ export function MujVeroxAuthorStudio() {
   const [editingArticle, setEditingArticle] = useState<LoadedArticle | null>(null);
   const [loadingArticleId, setLoadingArticleId] = useState<string | null>(null);
   const [editorKey, setEditorKey] = useState("new");
+  const [showEditor, setShowEditor] = useState(false);
 
   const loadArticles = useCallback(async () => {
     setArticlesLoading(true);
@@ -99,6 +100,7 @@ export function MujVeroxAuthorStudio() {
     if (!isAuthenticated) {
       setStudio({ kind: "hidden" });
       setEditingArticle(null);
+      setShowEditor(false);
       setArticles([]);
       return;
     }
@@ -116,6 +118,7 @@ export function MujVeroxAuthorStudio() {
       if (!response.ok || !payload.article) return;
       setEditingArticle(payload.article);
       setEditorKey(articleId);
+      setShowEditor(true);
     } finally {
       setLoadingArticleId(null);
     }
@@ -124,6 +127,7 @@ export function MujVeroxAuthorStudio() {
   const startNewArticle = useCallback(() => {
     setEditingArticle(null);
     setEditorKey(`new-${Date.now()}`);
+    setShowEditor(true);
   }, []);
 
   const deleteArticle = useCallback(
@@ -135,7 +139,8 @@ export function MujVeroxAuthorStudio() {
       });
       if (!response.ok) return;
       if (editingArticle?.id === articleId) {
-        startNewArticle();
+        setEditingArticle(null);
+        setShowEditor(false);
       }
       await loadArticles();
     },
@@ -181,7 +186,8 @@ export function MujVeroxAuthorStudio() {
         NAPSAT ČLÁNEK
       </h2>
       <p className="mv-author-studio-lead">
-        Pište a publikujte své texty v sekci Názory. Koncept se ukládá automaticky.
+        Pište a publikujte své texty v sekci Názory.
+        {showEditor ? " Koncept se ukládá automaticky po začátku psaní." : ""}
         {displayName ? (
           <>
             {" "}
@@ -191,24 +197,27 @@ export function MujVeroxAuthorStudio() {
         ) : null}
       </p>
 
-      <OpinionEditor
-        key={editorKey}
-        articleId={editingArticle?.id}
-        initialTitle={editingArticle?.title ?? ""}
-        initialPerex={editingArticle?.perex ?? ""}
-        initialContent={editingArticle?.content_json}
-        initialStatus={editingArticle?.status ?? "draft"}
-        publishedSlug={editingArticle?.status === "published" ? editingArticle.slug : null}
-        redirectOnCreate={false}
-        previewPathPrefix="/nazory/nahled"
-        onDraftSaved={() => {
-          void loadArticles();
-        }}
-        onDeleted={() => {
-          startNewArticle();
-          void loadArticles();
-        }}
-      />
+      {showEditor ? (
+        <OpinionEditor
+          key={editorKey}
+          articleId={editingArticle?.id}
+          initialTitle={editingArticle?.title ?? ""}
+          initialPerex={editingArticle?.perex ?? ""}
+          initialContent={editingArticle?.content_json}
+          initialStatus={editingArticle?.status ?? "draft"}
+          publishedSlug={editingArticle?.status === "published" ? editingArticle.slug : null}
+          redirectOnCreate={false}
+          previewPathPrefix="/nazory/nahled"
+          onDraftSaved={() => {
+            void loadArticles();
+          }}
+          onDeleted={() => {
+            setEditingArticle(null);
+            setShowEditor(false);
+            void loadArticles();
+          }}
+        />
+      ) : null}
 
       <div className="mv-author-articles">
         <div className="mv-author-articles-head">
@@ -220,7 +229,7 @@ export function MujVeroxAuthorStudio() {
         {articlesLoading ? (
           <p className="nazory-empty">Načítám články…</p>
         ) : articles.length === 0 ? (
-          <p className="nazory-empty">Zatím nemáte žádné články. Začněte psát výše.</p>
+          <p className="nazory-empty">Zatím nemáte žádné články. Vytvořte první tlačítkem „Nový článek“.</p>
         ) : (
           <ul className="mv-author-articles-list">
             {articles.map((article) => (

@@ -4,6 +4,16 @@ type TipTapNode = {
   content?: TipTapNode[];
 };
 
+export function hasMeaningfulDraftContent(
+  title: string,
+  perex: string,
+  contentJson: unknown,
+): boolean {
+  if (title.trim().length > 0) return true;
+  if (perex.trim().length > 0) return true;
+  return extractPlainTextFromTipTapJson(contentJson).trim().length > 0;
+}
+
 export function extractPlainTextFromTipTapJson(content: unknown): string {
   if (!content || typeof content !== "object") return "";
 

@@ -7,6 +7,7 @@ import {
   estimateReadingTimeFromContentJson,
   estimateReadingTimeMinutes,
   extractPlainTextFromTipTapJson,
+  hasMeaningfulDraftContent,
 } from "@/lib/nazory/content";
 import {
   canUseAuthorFeatures,
@@ -36,6 +37,18 @@ describe("nazory slug helpers", () => {
 });
 
 describe("nazory content helpers", () => {
+  it("detects meaningful draft content", () => {
+    expect(hasMeaningfulDraftContent("", "", { type: "doc", content: [] })).toBe(false);
+    expect(hasMeaningfulDraftContent("", "", { type: "doc", content: [{ type: "paragraph" }] })).toBe(false);
+    expect(hasMeaningfulDraftContent("Titulek", "", { type: "doc", content: [] })).toBe(true);
+    expect(
+      hasMeaningfulDraftContent("", "", {
+        type: "doc",
+        content: [{ type: "paragraph", content: [{ type: "text", text: "Text" }] }],
+      }),
+    ).toBe(true);
+  });
+
   it("extracts plain text from TipTap JSON", () => {
     const text = extractPlainTextFromTipTapJson({
       type: "doc",
