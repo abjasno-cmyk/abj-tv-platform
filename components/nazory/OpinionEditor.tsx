@@ -20,6 +20,10 @@ type OpinionEditorProps = {
   initialStatus?: "draft" | "published";
   publishedSlug?: string | null;
   mode?: "edit" | "preview";
+  /** Po vytvoření konceptu nepřesměrovat na /nazory/napsat (např. v Můj VEROX). */
+  redirectOnCreate?: boolean;
+  previewPathPrefix?: string;
+  onDraftSaved?: (articleId: string) => void;
 };
 
 const EMPTY_DOC = { type: "doc", content: [{ type: "paragraph" }] };
@@ -32,6 +36,9 @@ export function OpinionEditor({
   initialStatus = "draft",
   publishedSlug = null,
   mode = "edit",
+  redirectOnCreate = true,
+  previewPathPrefix = "/nazory/nahled",
+  onDraftSaved,
 }: OpinionEditorProps) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
@@ -107,10 +114,14 @@ export function OpinionEditor({
 
     if (!currentArticleId) {
       setCurrentArticleId(body.article.id);
-      router.replace(`/nazory/napsat/${body.article.id}`);
+      if (redirectOnCreate) {
+        router.replace(`/nazory/napsat/${body.article.id}`);
+      } else {
+        onDraftSaved?.(body.article.id);
+      }
     }
     setSaveState("saved");
-  }, [currentArticleId, editor, mode, perex, router, title]);
+  }, [currentArticleId, editor, mode, onDraftSaved, perex, redirectOnCreate, router, title]);
 
   useEffect(() => {
     if (!editor || mode !== "edit") return;
@@ -296,7 +307,11 @@ export function OpinionEditor({
             {saveState === "error" ? "Uložení selhalo" : null}
           </span>
           {currentArticleId ? (
-            <button type="button" className="nazory-btn" onClick={() => router.push(`/nazory/nahled/${currentArticleId}`)}>
+            <button
+              type="button"
+              className="nazory-btn"
+              onClick={() => router.push(`${previewPathPrefix}/${currentArticleId}`)}
+            >
               Náhled
             </button>
           ) : null}
