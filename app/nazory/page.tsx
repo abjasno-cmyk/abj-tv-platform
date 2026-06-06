@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { NazoryAuthorsCarousel } from "@/components/nazory/NazoryAuthorsCarousel";
+import { NazoryAuthorsSection } from "@/components/nazory/NazoryAuthorsSection";
 import { OpinionList } from "@/components/nazory/OpinionList";
 import { listPublicAuthorsForCatalog } from "@/lib/nazory/authors";
 import {
@@ -50,10 +50,7 @@ export default async function NazoryPage() {
 
   return (
     <div className="vx-live vx-sub nazory-page">
-      <div className="hf nazory-authors-hf">
-        <div className="double-rule channels-rule" aria-hidden="true" />
-        <NazoryAuthorsCarousel authors={authors} />
-      </div>
+      <NazoryAuthorsSection authors={authors} />
 
       <h1 className="section-h">NÁZORY</h1>
 

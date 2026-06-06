@@ -3,8 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Fragment } from "react";
 
+import { NazoryAuthorsSection } from "@/components/nazory/NazoryAuthorsSection";
 import { OpinionCard } from "@/components/nazory/OpinionCard";
-import { getPublicAuthorBySlug } from "@/lib/nazory/authors";
+import { getPublicAuthorBySlug, listPublicAuthorsForCatalog } from "@/lib/nazory/authors";
 import { getAuthorDisplayName } from "@/lib/nazory/display";
 import { publicNazoryMediaUrl } from "@/lib/nazory/media";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -35,12 +36,17 @@ export default async function NazoryAuthorPage({ params }: { params: Promise<{ a
   const author = await getPublicAuthorBySlug(supabase, authorSlug);
   if (!author) notFound();
 
-  const articles = await listPublishedArticlesByAuthor(supabase, author.userId);
+  const [articles, authors] = await Promise.all([
+    listPublishedArticlesByAuthor(supabase, author.userId),
+    listPublicAuthorsForCatalog(supabase),
+  ]);
   const name = getAuthorDisplayName({ first_name: author.firstName, last_name: author.lastName });
   const avatarUrl = publicNazoryMediaUrl(author.avatarStoragePath);
 
   return (
     <div className="vx-live vx-sub nazory-page">
+      <NazoryAuthorsSection authors={authors} activeSlug={authorSlug} />
+
       <header className="nazory-author-page">
         <div className="nazory-author-page-head">
           <span className="nazory-author-avatar nazory-author-avatar--large">

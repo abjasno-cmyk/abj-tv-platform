@@ -41,6 +41,13 @@ export function NazoryAuthorsCarousel({ authors, activeSlug = null }: NazoryAuth
     };
   }, [authors.length]);
 
+  useEffect(() => {
+    if (!activeSlug || !trackRef.current) return;
+    const activeEl = trackRef.current.querySelector<HTMLElement>(".channel-card-active");
+    if (!activeEl) return;
+    activeEl.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [activeSlug, authors.length]);
+
   return (
     <section className="channels nazory-authors" aria-labelledby="hf-authors">
       <h2 id="hf-authors">AUTOŘI</h2>
