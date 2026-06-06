@@ -1,7 +1,7 @@
 import { AuthApiError, requireAuthenticatedUser } from "@/lib/supabase/authenticated-server";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { requireNazoryAdmin } from "@/lib/nazory/access";
-import { adminUpdateAuthorProfile, getAuthorProfileByUserId } from "@/lib/nazory/authors";
+import { adminUpdateAuthorProfile, deleteAuthorAccount, getAuthorProfileByUserId } from "@/lib/nazory/authors";
 import { publicNazoryMediaUrl } from "@/lib/nazory/media";
 import { enforceWriteRateLimit } from "@/lib/rateLimit";
 
@@ -108,6 +108,36 @@ export async function PATCH(
       return Response.json({ error: error.message }, { status: error.status });
     }
     const message = error instanceof Error ? error.message : "Profil autora se nepodařilo uložit.";
+    return Response.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _request: Request,
+  context: { params: Promise<{ userId: string }> },
+) {
+  try {
+    const limited = enforceWriteRateLimit(_request, "nazory-admin");
+    if (limited) return limited;
+
+    const { userId } = await context.params;
+    const { supabase, user } = await requireAuthenticatedUser();
+    await requireNazoryAdmin(supabase, user);
+
+    const author = await getAuthorProfileByUserId(supabase, userId);
+    if (!author) {
+      return Response.json({ error: "Autor nebyl nalezen." }, { status: 404 });
+    }
+
+    const elevated = createSupabaseServiceClient();
+    await deleteAuthorAccount(elevated, userId);
+
+    return Response.json({ ok: true });
+  } catch (error) {
+    if (error instanceof AuthApiError) {
+      return Response.json({ error: error.message }, { status: error.status });
+    }
+    const message = error instanceof Error ? error.message : "Autora se nepodařilo odstranit.";
     return Response.json({ error: message }, { status: 500 });
   }
 }

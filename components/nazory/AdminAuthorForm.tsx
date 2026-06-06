@@ -191,6 +191,20 @@ export function AdminAuthorForm({ userId }: AdminAuthorFormProps) {
     router.push(`/nazory/napsat/${payload.article.id}`);
   };
 
+  const deleteAuthor = async () => {
+    if (!window.confirm("Opravdu chcete tohoto autora odstranit? Smažou se i všechny jeho články.")) return;
+    const response = await fetch(`/api/nazory/admin/authors/${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const payload = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      setError(payload.error ?? "Autora se nepodařilo odstranit.");
+      return;
+    }
+    router.push("/autori");
+  };
+
   const articleAction = async (articleId: string, action: "hide" | "restore") => {
     setError(null);
     const response = await fetch("/api/nazory/admin/articles", {
@@ -257,8 +271,8 @@ export function AdminAuthorForm({ userId }: AdminAuthorFormProps) {
                       Obnovit
                     </button>
                   ) : (
-                    <button type="button" className="nazory-btn" onClick={() => void articleAction(article.id, "hide")}>
-                      Skrýt
+                    <button type="button" className="nazory-btn nazory-btn-danger" onClick={() => void articleAction(article.id, "hide")}>
+                      Smazat
                     </button>
                   )}
                 </span>
@@ -374,6 +388,12 @@ export function AdminAuthorForm({ userId }: AdminAuthorFormProps) {
       <p className="nazory-form-meta">
         Zobrazené jméno: {getAuthorDisplayName({ first_name: form.firstName, last_name: form.lastName })}
       </p>
+
+      <div className="nazory-editor-actions nazory-admin-danger-zone">
+        <button type="button" className="nazory-btn nazory-btn-danger" onClick={() => void deleteAuthor()}>
+          Odstranit autora
+        </button>
+      </div>
     </div>
   );
 }

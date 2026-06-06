@@ -58,8 +58,8 @@ export function NazoryAdmin() {
                     Obnovit
                   </button>
                 ) : (
-                  <button type="button" className="nazory-btn" onClick={() => void articleAction(article.id, "hide")}>
-                    Skrýt
+                  <button type="button" className="nazory-btn nazory-btn-danger" onClick={() => void articleAction(article.id, "hide")}>
+                    Smazat
                   </button>
                 )}
               </span>

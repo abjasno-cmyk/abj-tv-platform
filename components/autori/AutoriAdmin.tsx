@@ -54,6 +54,21 @@ export function AutoriAdmin() {
     window.location.href = `/autori/${payload.author.user_id}#clanky`;
   };
 
+  const deleteAuthor = async (userId: string, name: string) => {
+    if (!window.confirm(`Opravdu chcete odstranit autora ${name}? Smažou se i všechny jeho články.`)) return;
+    const response = await fetch(`/api/nazory/admin/authors/${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const payload = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      setError(payload.error ?? "Autora se nepodařilo odstranit.");
+      return;
+    }
+    setMessage("Autor byl odstraněn.");
+    await load();
+  };
+
   const toggleAuthor = async (userId: string, isActive: boolean) => {
     await fetch("/api/nazory/admin/authors", {
       method: "PATCH",
@@ -117,6 +132,13 @@ export function AutoriAdmin() {
                 </Link>
                 <button type="button" className="nazory-btn" onClick={() => void toggleAuthor(author.user_id, author.is_active)}>
                   {author.is_active ? "Deaktivovat" : "Obnovit"}
+                </button>
+                <button
+                  type="button"
+                  className="nazory-btn nazory-btn-danger"
+                  onClick={() => void deleteAuthor(author.user_id, getAuthorDisplayName(author))}
+                >
+                  Smazat
                 </button>
               </span>
             </li>

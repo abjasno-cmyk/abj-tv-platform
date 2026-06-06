@@ -345,6 +345,18 @@ export async function listAuthorsForAdmin(supabase: SupabaseClient) {
   return data as AuthorProfileRow[];
 }
 
+export async function deleteAuthorAccount(supabase: SupabaseClient, userId: string): Promise<void> {
+  const { error: profileDeleteError } = await supabase.from("author_profiles").delete().eq("user_id", userId);
+  if (profileDeleteError) {
+    throw new Error(profileDeleteError.message);
+  }
+
+  const { error: roleError } = await supabase.from("profiles").update({ role: "viewer" }).eq("id", userId);
+  if (roleError) {
+    throw new Error(roleError.message);
+  }
+}
+
 export async function setAuthorActiveState(
   supabase: SupabaseClient,
   userId: string,

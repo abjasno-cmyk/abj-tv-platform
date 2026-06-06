@@ -9,7 +9,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Youtube } from "@/components/nazory/tiptapYoutube";
-import { MAX_PEREX_LENGTH } from "@/lib/nazory/limits";
 import { extractYoutubeVideoId } from "@/lib/nazory/youtube";
 
 type OpinionEditorProps = {
@@ -24,6 +23,7 @@ type OpinionEditorProps = {
   redirectOnCreate?: boolean;
   previewPathPrefix?: string;
   onDraftSaved?: (articleId: string) => void;
+  onDeleted?: () => void;
 };
 
 const EMPTY_DOC = { type: "doc", content: [{ type: "paragraph" }] };
@@ -39,6 +39,7 @@ export function OpinionEditor({
   redirectOnCreate = true,
   previewPathPrefix = "/nazory/nahled",
   onDraftSaved,
+  onDeleted,
 }: OpinionEditorProps) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
@@ -47,6 +48,7 @@ export function OpinionEditor({
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const saveTimerRef = useRef<number | null>(null);
 
   const editor = useEditor({
@@ -201,6 +203,33 @@ export function OpinionEditor({
     input.click();
   };
 
+  const removeArticle = async () => {
+    if (!currentArticleId || deleting) return;
+    if (!window.confirm("Opravdu chcete tento článek odstranit? Akci nelze vrátit.")) return;
+
+    setDeleting(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/nazory/articles/${encodeURIComponent(currentArticleId)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        setError(payload.error ?? "Článek se nepodařilo odstranit.");
+        return;
+      }
+      onDeleted?.();
+      if (redirectOnCreate) {
+        router.push("/nazory/napsat");
+      }
+    } catch {
+      setError("Článek se nepodařilo odstranit.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const publish = async () => {
     if (!currentArticleId) {
       await persistDraft();
@@ -241,12 +270,11 @@ export function OpinionEditor({
         <span className="nazory-field-label-row">
           <span>Perex</span>
           <span className="nazory-field-counter" aria-live="polite">
-            {perex.length} / {MAX_PEREX_LENGTH}
+            {perex.length} znaků
           </span>
         </span>
         <textarea
           value={perex}
-          maxLength={MAX_PEREX_LENGTH}
           rows={4}
           onChange={(event) => setPerex(event.target.value)}
           readOnly={mode === "preview"}
@@ -307,13 +335,23 @@ export function OpinionEditor({
             {saveState === "error" ? "Uložení selhalo" : null}
           </span>
           {currentArticleId ? (
-            <button
-              type="button"
-              className="nazory-btn"
-              onClick={() => router.push(`${previewPathPrefix}/${currentArticleId}`)}
-            >
-              Náhled
-            </button>
+            <>
+              <button
+                type="button"
+                className="nazory-btn"
+                onClick={() => router.push(`${previewPathPrefix}/${currentArticleId}`)}
+              >
+                Náhled
+              </button>
+              <button
+                type="button"
+                className="nazory-btn nazory-btn-danger"
+                disabled={deleting}
+                onClick={() => void removeArticle()}
+              >
+                {deleting ? "Mažu…" : "Odstranit článek"}
+              </button>
+            </>
           ) : null}
           {initialStatus === "published" ? (
             <>
