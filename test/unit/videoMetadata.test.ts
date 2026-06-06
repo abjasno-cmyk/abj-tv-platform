@@ -1,13 +1,20 @@
 import { describe, expect, it } from "vitest";
 
 import { buildMyVeroxLibraryFromRows } from "@/lib/viewer/myVeroxLibrary";
-import { liveVideoHref, normalizeChannelFollowId, resolveVideoThumbnail, resolveVideoTitle } from "@/lib/viewer/videoMetadata";
+import {
+  isPlaceholderVideoTitle,
+  liveVideoHref,
+  normalizeChannelFollowId,
+  resolveVideoThumbnail,
+  resolveVideoTitle,
+} from "@/lib/viewer/videoMetadata";
 
 describe("videoMetadata", () => {
   it("builds fallback thumbnail and title", () => {
     expect(resolveVideoThumbnail("abc123", null)).toBe("https://img.youtube.com/vi/abc123/hqdefault.jpg");
     expect(resolveVideoTitle("abc123", "")).toBe("Video abc123");
     expect(resolveVideoTitle("abc123", "Rozhovor")).toBe("Rozhovor");
+    expect(isPlaceholderVideoTitle("abc123", "Video abc123")).toBe(true);
   });
 
   it("builds live deep link with title and channel", () => {
