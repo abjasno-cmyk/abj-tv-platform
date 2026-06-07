@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="VEROX">
+  <rect width="180" height="180" fill="#000000"/>
+  <circle cx="132" cy="39" r="15.5" fill="#FF6600"/>
+  <g stroke="#303030" stroke-width="21" stroke-linecap="round">
+    <line x1="48" y1="48" x2="132" y2="132"/>
+    <line x1="132" y1="48" x2="48" y2="132"/>
+  </g>
+</svg>
