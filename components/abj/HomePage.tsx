@@ -17,6 +17,7 @@ import { useViewerVideoState } from "@/lib/viewer/useViewerVideoState";
 import { normalizeChannelFollowId } from "@/lib/viewer/videoMetadata";
 import { PlayoutStage } from "@/components/abj/playout/PlayoutStage";
 import { usePlayoutLoop } from "@/components/abj/playout/usePlayoutLoop";
+import { scrollHorizontalCarousel } from "@/lib/horizontalCarouselScroll";
 import { clampSeekSeconds } from "@/lib/playerTime";
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import type { DayProgram, ProgramItem } from "@/lib/epg-types";
@@ -212,25 +213,7 @@ export function HomePage({
   const scrollChannels = (dir: -1 | 1) => {
     const el = channelTrackRef.current;
     if (!el) return;
-    const maxLeft = Math.max(0, el.scrollWidth - el.clientWidth);
-    if (maxLeft <= 6) return;
-    const currentLeft = Math.max(0, el.scrollLeft);
-    const step = el.clientWidth * 0.8;
-
-    if (dir === 1) {
-      const nextLeft = currentLeft + step;
-      el.scrollTo({
-        left: nextLeft >= maxLeft - 2 ? 0 : Math.min(maxLeft, nextLeft),
-        behavior: "smooth",
-      });
-      return;
-    }
-
-    const nextLeft = currentLeft - step;
-    el.scrollTo({
-      left: currentLeft <= 2 ? maxLeft : Math.max(0, nextLeft),
-      behavior: "smooth",
-    });
+    scrollHorizontalCarousel(el, dir, { itemSelector: ".channel-card" });
   };
 
   // Aktivní tečka = pozice scrollu napříč DOT_COUNT tečkami (carousel posun).
