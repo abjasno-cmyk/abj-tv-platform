@@ -1064,6 +1064,20 @@
 .hf .hero-save-row .vx-video-badges {
   position: static;
 }
+.hf .vx-share-video {
+  border: 2px solid var(--vx-orange);
+  background: #fff;
+  color: var(--vx-gray-dark);
+  padding: 8px 14px;
+  font-family: var(--vx-myriad);
+  font-weight: 700;
+  font-size: clamp(0.78rem, 1.2vw, 0.9rem);
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+.hf .vx-share-video:hover {
+  background: rgba(255, 102, 0, 0.08);
+}
 .hf .channel-video .cv-thumb img {
   width: 100%;
   height: 100%;

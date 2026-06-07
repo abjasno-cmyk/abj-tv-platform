@@ -58,10 +58,7 @@ export function VKostceList() {
         const title = headline || post.what?.trim() || "Bez titulku";
         // Předáme titulek + kanál do přehrávače, aby seděly s přehrávaným
         // videem i u souhrnů, které nejsou v lineárním EPG programu.
-        const href =
-          `/live?videoId=${encodeURIComponent(post.video_id)}` +
-          `&title=${encodeURIComponent(title)}` +
-          `&channel=${encodeURIComponent(post.channel_name ?? "")}`;
+        const href = `/videa/${encodeURIComponent(post.video_id)}?title=${encodeURIComponent(title)}&channel=${encodeURIComponent(post.channel_name ?? "")}`;
         // Pokud headline existuje, ukážeme „what" jako hlavní AI shrnutí níže;
         // jinak je „what" už použité jako titulek (neopakujeme).
         const aiSummary = headline ? post.what?.trim() : null;

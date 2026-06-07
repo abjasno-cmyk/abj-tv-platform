@@ -24,7 +24,7 @@ function activeKeyFor(pathname: string): VeroxNavKey | undefined {
 export function ABJNav() {
   const pathname = usePathname();
 
-  if (pathname.startsWith("/live")) {
+  if (pathname.startsWith("/live") || /^\/videa\/[^/]+/.test(pathname)) {
     return null;
   }
 

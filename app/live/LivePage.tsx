@@ -8,6 +8,7 @@ import { LiveAlert } from "@/components/abj/LiveAlert";
 import { HomePage } from "@/components/abj/HomePage";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { trackAnalyticsEvent, trackVideoProgressThrottled } from "@/lib/analytics/client";
+import { videoSharePath } from "@/lib/viewer/videoMetadata";
 
 type LivePageProps = {
   epg: DayProgram[];
@@ -100,6 +101,22 @@ export default function LivePage({
     const current = timelineItems[selectedIndex] ?? null;
     return current?.type === "vod" && Boolean(current.isABJ) && !videoId;
   }, [timelineItems, selectedIndex, videoId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (isLive || !videoId) {
+      if (window.location.pathname.startsWith("/videa/")) {
+        window.history.replaceState(null, "", "/live");
+      }
+      return;
+    }
+
+    const nextPath = videoSharePath(videoId);
+    if (window.location.pathname !== nextPath) {
+      window.history.replaceState(null, "", nextPath);
+    }
+  }, [isLive, videoId]);
 
   useEffect(() => {
     linearSourceRef.current.capturedAtMs = Date.now();

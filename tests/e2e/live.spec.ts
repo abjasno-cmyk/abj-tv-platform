@@ -19,9 +19,15 @@ test.describe("/live playout page", () => {
     await expect(page.getByText(/Application error|Internal Server Error/i)).toHaveCount(0);
   });
 
-  test("supports deep-linking a specific video via ?videoId", async ({ page }) => {
-    const response = await page.goto("/live?videoId=dQw4w9WgXcQ");
+  test("supports deep-linking a specific video via /videa/[videoId]", async ({ page }) => {
+    const response = await page.goto("/videa/dQw4w9WgXcQ");
     expect(response?.status()).toBeLessThan(500);
     await expect(page.locator('section[data-ui-version="abj-template-v1"]')).toBeVisible();
+  });
+
+  test("redirects legacy /live?videoId links to /videa/[videoId]", async ({ page }) => {
+    const response = await page.goto("/live?videoId=dQw4w9WgXcQ");
+    expect(response?.status()).toBeLessThan(500);
+    await expect(page).toHaveURL(/\/videa\/dQw4w9WgXcQ/);
   });
 });

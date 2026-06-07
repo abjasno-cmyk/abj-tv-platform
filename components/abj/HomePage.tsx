@@ -12,6 +12,7 @@ import { FollowChannelButton } from "@/components/auth/FollowChannelButton";
 import { VideoCommentsDrawer } from "@/components/auth/VideoCommentsDrawer";
 import { SaveVideoButton } from "@/components/auth/SaveVideoButton";
 import { ChannelVideoTile } from "@/components/viewer/ChannelVideoTile";
+import { ShareVideoButton } from "@/components/viewer/ShareVideoButton";
 import { ViewerVideoBadges } from "@/components/viewer/ViewerVideoBadges";
 import { useViewerVideoState } from "@/lib/viewer/useViewerVideoState";
 import { normalizeChannelFollowId } from "@/lib/viewer/videoMetadata";
@@ -574,6 +575,7 @@ export function HomePage({
               saved={savedVideoIds.has(activeCommentVideoId)}
               onSavedChange={(nextSaved) => setSaved(activeCommentVideoId, nextSaved)}
             />
+            <ShareVideoButton videoId={activeCommentVideoId} />
             <ViewerVideoBadges
               watched={watchedVideoIds.has(activeCommentVideoId)}
               saved={savedVideoIds.has(activeCommentVideoId)}

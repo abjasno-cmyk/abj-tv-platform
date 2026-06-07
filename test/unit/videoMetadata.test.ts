@@ -11,11 +11,9 @@ describe("videoMetadata", () => {
     expect(resolveVideoTitle("abc123", "Rozhovor")).toBe("Rozhovor");
   });
 
-  it("builds live deep link with title and channel", () => {
+  it("builds shareable video path", () => {
     const href = liveVideoHref({ videoId: "abc123", title: "Rozhovor", channelName: "DVTV" });
-    expect(href).toContain("videoId=abc123");
-    expect(href).toContain("title=");
-    expect(href).toContain("channel=DVTV");
+    expect(href).toBe("/videa/abc123");
   });
 
   it("normalizes channel follow id fallback", () => {

@@ -35,7 +35,7 @@ function VideoCardBase({
   publishedAt,
   featured = false,
 }: VideoCardProps) {
-  const href = `/live?videoId=${encodeURIComponent(videoId)}`;
+  const href = `/videa/${encodeURIComponent(videoId)}`;
   const publishedLabel = formatPublishedLabel(publishedAt);
   const isHero = featured;
   return (
