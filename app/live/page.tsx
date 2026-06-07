@@ -1,7 +1,11 @@
+import { redirect } from "next/navigation";
+
+import LivePage from "@/app/live/LivePage";
 import { buildEPG } from "@/lib/buildEPG";
 import { loadLiveChannelsForPage } from "@/lib/liveChannelsServer";
 import { getNowPlaying, getProgram } from "@/lib/programEngine";
-import LivePage from "@/app/live/LivePage";
+import { videoSharePath } from "@/lib/viewer/videoMetadata";
+import { isValidYouTubeVideoId } from "@/lib/viewer/videoPageServer";
 import type { DayProgram, ProgramBlock, ProgramItem } from "@/lib/epg-types";
 
 export const dynamic = "force-dynamic";
@@ -453,6 +457,15 @@ export default async function LivePageServer(
   const requestedTitleParam = (Array.isArray(rawTitle) ? rawTitle[0] : rawTitle)?.trim() || null;
   const rawChannel = resolvedSearchParams?.channel;
   const requestedChannelParam = (Array.isArray(rawChannel) ? rawChannel[0] : rawChannel)?.trim() || null;
+
+  if (requestedVideoId && isValidYouTubeVideoId(requestedVideoId)) {
+    const params = new URLSearchParams();
+    if (requestedTitleParam) params.set("title", requestedTitleParam);
+    if (requestedChannelParam) params.set("channel", requestedChannelParam);
+    const query = params.toString();
+    redirect(query ? `${videoSharePath(requestedVideoId)}?${query}` : videoSharePath(requestedVideoId));
+  }
+
   const liveChannelsPromise = loadLiveChannelsForPage();
 
   try {

@@ -323,7 +323,7 @@ export function AbjXClient() {
       return;
     }
     if (!item.videoId || typeof window === "undefined") return;
-    const url = `${window.location.origin}/live?videoId=${encodeURIComponent(item.videoId)}`;
+    const url = `${window.location.origin}/videa/${encodeURIComponent(item.videoId)}`;
     const text = `${item.headline}\n${url}`;
 
     let sharePerformed = false;

@@ -431,7 +431,7 @@ export function WallBoard({
                       Reakce na video: {post.video_title ?? "Video bez názvu"}
                     </span>
                     <Link
-                      href={`/live?videoId=${encodeURIComponent(post.video_id)}`}
+                      href={`/videa/${encodeURIComponent(post.video_id)}`}
                       className="text-[11px] font-medium text-abj-text2 underline decoration-[rgba(255,106,0,0.5)] underline-offset-2 hover:text-abj-text1"
                     >
                       Otevřít video
