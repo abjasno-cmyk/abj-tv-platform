@@ -261,7 +261,7 @@ export function MujVeroxTemplate() {
   const counter = useMemo(() => `${message.length}/${MAX_LEN}`, [message.length]);
 
   return (
-    <div className="vx-live vx-sub">
+    <div className="vx-live vx-sub muj-verox-page">
       <div className="mv">
         <h1>MŮJ VEROX</h1>
       </div>
@@ -312,137 +312,135 @@ export function MujVeroxTemplate() {
         <span />
       </div>
 
-      <form onSubmit={submit}>
-        {replyParentId && replyParentName ? (
-          <p className="mv-reply-hint">
-            Odpovídáte uživateli <strong>{replyParentName}</strong>
+      <div className="mv-discussion-block">
+        <div className="pinned">
+          <div className="filters">
             <button
               type="button"
-              className="mv-reply-cancel"
-              onClick={() => {
-                setReplyParentId(null);
-                setReplyParentName(null);
-              }}
+              className={sort === "newest" ? "active" : "inactive"}
+              onClick={() => setSort("newest")}
             >
-              Zrušit
+              NEJNOVĚJŠÍ
             </button>
-          </p>
-        ) : null}
-        <div className="form-row">
-          <label htmlFor="mv-nick">PŘEZDÍVKA</label>
-          <span />
-          <div className="field">
-            <input
-              id="mv-nick"
-              value={nick}
-              onChange={(e) => setNick(e.target.value)}
-              placeholder="Vaše přezdívka"
-              maxLength={60}
-              disabled={!isAuthenticated}
-            />
-          </div>
-        </div>
-        <div className="form-row">
-          <label htmlFor="mv-email">
-            E-MAIL
-            <small>( volitelné, nezveřejňujeme )</small>
-          </label>
-          <span />
-          <div className="field">
-            <input
-              id="mv-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="vas@email.cz"
-              disabled={!isAuthenticated}
-            />
-          </div>
-        </div>
-        <div className="form-row">
-          <label htmlFor="mv-msg">{replyParentId ? "ODPOVĚĎ" : "VZKAZ"}</label>
-          <span />
-          <div className="field">
-            <textarea
-              id="mv-msg"
-              value={message}
-              onChange={(e) => setMessage(e.target.value.slice(0, MAX_LEN))}
-              placeholder={
-                replyParentId
-                  ? "Napište odpověď..."
-                  : "Co chcete vzkázat redakci, nebo ostatním divákům?"
-              }
-              disabled={!isAuthenticated}
-            />
-          </div>
-        </div>
-        <div className="submit-row">
-          <span />
-          <span />
-          <div className="submit">
-            <button type="submit" disabled={submitting || !isAuthenticated}>
-              {submitting ? "ODESÍLÁM…" : replyParentId ? "ODESLAT ODPOVĚĎ" : "PŘIDAT VZKAZ"}
+            <button
+              type="button"
+              className={sort === "popular" ? "active" : "inactive"}
+              onClick={() => setSort("popular")}
+            >
+              POPULÁRNÍ
             </button>
-            <span className="count">{counter}</span>
+          </div>
+          <div className="col">
+            <h2>DISKUSE</h2>
+            {loading ? (
+              <div className="empty">Načítám příspěvky…</div>
+            ) : tree.length === 0 ? (
+              <div className="empty">Zatím tu žádné příspěvky nejsou. Buďte první.</div>
+            ) : (
+              <div className="mv-thread-list">
+                {tree.map((node) => (
+                  <WallThread
+                    key={node.id}
+                    node={node}
+                    replyParentId={replyParentId}
+                    likesById={likesById}
+                    reactedIds={reactedIds}
+                    reactingId={reactingId}
+                    isAuthenticated={isAuthenticated}
+                    onReply={handleReply}
+                    onLike={(id) => {
+                      void react(id);
+                    }}
+                    onRequireAuth={requireAuth}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      </form>
 
-      {notice ? (
-        <p className="mv" style={{ marginTop: "2cqw" }}>
-          <span className="sub">{notice}</span>
-        </p>
-      ) : null}
-
-      <div className="vx-strip w75">
-        <span />
-        <span />
-      </div>
-
-      <div className="pinned">
-        <div className="filters">
-          <button
-            type="button"
-            className={sort === "newest" ? "active" : "inactive"}
-            onClick={() => setSort("newest")}
-          >
-            NEJNOVĚJŠÍ
-          </button>
-          <button
-            type="button"
-            className={sort === "popular" ? "active" : "inactive"}
-            onClick={() => setSort("popular")}
-          >
-            POPULÁRNÍ
-          </button>
-        </div>
-        <div className="col">
-          <h2>DISKUSE</h2>
-          {loading ? (
-            <div className="empty">Načítám příspěvky…</div>
-          ) : tree.length === 0 ? (
-            <div className="empty">Zatím tu žádné příspěvky nejsou. Buďte první.</div>
-          ) : (
-            <div className="mv-thread-list">
-              {tree.map((node) => (
-                <WallThread
-                  key={node.id}
-                  node={node}
-                  replyParentId={replyParentId}
-                  likesById={likesById}
-                  reactedIds={reactedIds}
-                  reactingId={reactingId}
-                  isAuthenticated={isAuthenticated}
-                  onReply={handleReply}
-                  onLike={(id) => {
-                    void react(id);
+        <aside className="mv-message-panel" aria-label="Přidat vzkaz">
+          <form onSubmit={submit}>
+            {replyParentId && replyParentName ? (
+              <p className="mv-reply-hint">
+                Odpovídáte uživateli <strong>{replyParentName}</strong>
+                <button
+                  type="button"
+                  className="mv-reply-cancel"
+                  onClick={() => {
+                    setReplyParentId(null);
+                    setReplyParentName(null);
                   }}
-                  onRequireAuth={requireAuth}
+                >
+                  Zrušit
+                </button>
+              </p>
+            ) : null}
+            <div className="form-row">
+              <label htmlFor="mv-nick">PŘEZDÍVKA</label>
+              <span />
+              <div className="field">
+                <input
+                  id="mv-nick"
+                  value={nick}
+                  onChange={(e) => setNick(e.target.value)}
+                  placeholder="Vaše přezdívka"
+                  maxLength={60}
+                  disabled={!isAuthenticated}
                 />
-              ))}
+              </div>
             </div>
-          )}
-        </div>
+            <div className="form-row">
+              <label htmlFor="mv-email">
+                E-MAIL
+                <small>( volitelné, nezveřejňujeme )</small>
+              </label>
+              <span />
+              <div className="field">
+                <input
+                  id="mv-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="vas@email.cz"
+                  disabled={!isAuthenticated}
+                />
+              </div>
+            </div>
+            <div className="form-row">
+              <label htmlFor="mv-msg">{replyParentId ? "ODPOVĚĎ" : "VZKAZ"}</label>
+              <span />
+              <div className="field">
+                <textarea
+                  id="mv-msg"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value.slice(0, MAX_LEN))}
+                  placeholder={
+                    replyParentId
+                      ? "Napište odpověď..."
+                      : "Co chcete vzkázat redakci, nebo ostatním divákům?"
+                  }
+                  disabled={!isAuthenticated}
+                />
+              </div>
+            </div>
+            <div className="submit-row">
+              <span />
+              <span />
+              <div className="submit">
+                <button type="submit" disabled={submitting || !isAuthenticated}>
+                  {submitting ? "ODESÍLÁM…" : replyParentId ? "ODESLAT ODPOVĚĎ" : "PŘIDAT VZKAZ"}
+                </button>
+                <span className="count">{counter}</span>
+              </div>
+            </div>
+          </form>
+          {notice ? (
+            <p className="mv-message-notice">
+              <span className="sub">{notice}</span>
+            </p>
+          ) : null}
+        </aside>
       </div>
     </div>
   );

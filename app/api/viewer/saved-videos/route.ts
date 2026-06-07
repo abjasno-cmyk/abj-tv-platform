@@ -1,5 +1,9 @@
 import { AuthApiError, requireAuthenticatedUser } from "@/lib/supabase/authenticated-server";
-import { resolveVideoThumbnail, resolveVideoTitle } from "@/lib/viewer/videoMetadata";
+import {
+  isPlaceholderVideoTitle,
+  resolveVideoThumbnail,
+  resolveVideoTitle,
+} from "@/lib/viewer/videoMetadata";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +57,15 @@ export async function POST(request: Request) {
       return Response.json({ error: "videoId je povinné." }, { status: 400 });
     }
 
-    const title = normalizeString(payload.title, 500) || resolveVideoTitle(videoId, null);
+    const payloadTitle = normalizeString(payload.title, 500);
+    let title = payloadTitle && !isPlaceholderVideoTitle(payloadTitle) ? payloadTitle : "";
+    if (!title) {
+      const catalog = await supabase.from("videos").select("title").eq("video_id", videoId).maybeSingle();
+      title = catalog.data?.title?.trim() ?? "";
+    }
+    if (!title) {
+      title = resolveVideoTitle(videoId, null);
+    }
     const thumbnailUrl =
       normalizeString(payload.thumbnailUrl, 500) || resolveVideoThumbnail(videoId, null);
     const channelName = normalizeString(payload.channelName, 200) || null;
