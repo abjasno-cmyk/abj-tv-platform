@@ -14,9 +14,28 @@ export function resolveVideoThumbnail(videoId: string, thumbnailUrl?: string | n
   return trimmed && trimmed.length > 0 ? trimmed : youtubeThumbnailUrl(videoId);
 }
 
-export function resolveVideoTitle(videoId: string, title?: string | null): string {
+const VIDEO_ID_TITLE_PATTERN = /^Video\s+[A-Za-z0-9_-]{6,}$/;
+
+export function isPlaceholderVideoTitle(title: string | null | undefined): boolean {
   const trimmed = title?.trim();
-  return trimmed && trimmed.length > 0 ? trimmed : `Video ${videoId}`;
+  if (!trimmed) return true;
+  return VIDEO_ID_TITLE_PATTERN.test(trimmed);
+}
+
+export function resolveVideoTitle(
+  videoId: string,
+  title?: string | null,
+  catalogTitle?: string | null,
+): string {
+  const trimmed = title?.trim();
+  if (trimmed && trimmed.length > 0 && !isPlaceholderVideoTitle(trimmed)) {
+    return trimmed;
+  }
+  const catalog = catalogTitle?.trim();
+  if (catalog && catalog.length > 0) {
+    return catalog;
+  }
+  return "Bez názvu";
 }
 
 export function liveVideoHref(input: {

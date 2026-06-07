@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { SaveVideoButton } from "@/components/auth/SaveVideoButton";
@@ -106,20 +106,101 @@ function ChannelShelfCard({ channel }: { channel: ViewerLibraryChannel }) {
   );
 }
 
+function ShelfCarousel({ children }: { children: React.ReactNode[] }) {
+  const trackRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollShelf = (dir: -1 | 1) => {
+    const el = trackRef.current;
+    if (!el) return;
+    const maxLeft = Math.max(0, el.scrollWidth - el.clientWidth);
+    if (maxLeft <= 6) return;
+    const currentLeft = Math.max(0, el.scrollLeft);
+    const step = Math.max(180, el.clientWidth * 0.75);
+
+    if (dir === 1) {
+      const nextLeft = currentLeft + step;
+      el.scrollTo({
+        left: nextLeft >= maxLeft - 2 ? 0 : Math.min(maxLeft, nextLeft),
+        behavior: "smooth",
+      });
+      return;
+    }
+
+    const nextLeft = currentLeft - step;
+    el.scrollTo({
+      left: currentLeft <= 2 ? maxLeft : Math.max(0, nextLeft),
+      behavior: "smooth",
+    });
+  };
+
+  return (
+    <div className="mv-shelf-carousel">
+      <button
+        type="button"
+        className="mv-shelf-nav mv-shelf-prev"
+        onClick={() => scrollShelf(-1)}
+        aria-label="Předchozí videa"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M15 5l-7 7 7 7"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+      <div className="mv-shelf-track" ref={trackRef}>
+        {children}
+      </div>
+      <button
+        type="button"
+        className="mv-shelf-nav mv-shelf-next"
+        onClick={() => scrollShelf(1)}
+        aria-label="Další videa"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M9 5l7 7-7 7"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 function ShelfSection({
   title,
   empty,
+  carousel = false,
   children,
 }: {
   title: string;
   empty: string;
+  carousel?: boolean;
   children: React.ReactNode;
 }) {
-  const hasChildren = Array.isArray(children) ? children.length > 0 : Boolean(children);
+  const childList = Array.isArray(children) ? children : children ? [children] : [];
+  const hasChildren = childList.length > 0;
   return (
     <section className="mv-library-section">
       <h3>{title}</h3>
-      {hasChildren ? <div className="mv-library-grid">{children}</div> : <p className="mv-library-empty">{empty}</p>}
+      {hasChildren ? (
+        carousel ? (
+          <ShelfCarousel>{childList}</ShelfCarousel>
+        ) : (
+          <div className="mv-library-grid">{children}</div>
+        )
+      ) : (
+        <p className="mv-library-empty">{empty}</p>
+      )}
     </section>
   );
 }
@@ -231,13 +312,18 @@ export function MyVeroxLibrary() {
       <ShelfSection
         title="Pokračovat ve sledování"
         empty="Rozkoukaná videa se zde objeví automaticky po přihlášení a sledování na Živě."
+        carousel
       >
         {data.continueWatching.map((video) => (
           <VideoShelfCard key={`continue-${video.videoId}`} video={video} />
         ))}
       </ShelfSection>
 
-      <ShelfSection title="Zhlédnutá videa" empty="Po dohrání videa (cca 90 %) se tu zobrazí s odznakem Zhlédnuto.">
+      <ShelfSection
+        title="Zhlédnutá videa"
+        empty="Po dohrání videa (cca 90 %) se tu zobrazí s odznakem Zhlédnuto."
+        carousel
+      >
         {data.watchedVideos.map((video) => (
           <VideoShelfCard key={`watched-${video.videoId}`} video={video} />
         ))}

@@ -6,7 +6,8 @@ import { liveVideoHref, normalizeChannelFollowId, resolveVideoThumbnail, resolve
 describe("videoMetadata", () => {
   it("builds fallback thumbnail and title", () => {
     expect(resolveVideoThumbnail("abc123", null)).toBe("https://img.youtube.com/vi/abc123/hqdefault.jpg");
-    expect(resolveVideoTitle("abc123", "")).toBe("Video abc123");
+    expect(resolveVideoTitle("abc123", "")).toBe("Bez názvu");
+    expect(resolveVideoTitle("abc123", "Video abc123", "Skutečný název")).toBe("Skutečný název");
     expect(resolveVideoTitle("abc123", "Rozhovor")).toBe("Rozhovor");
   });
 

@@ -78,8 +78,8 @@ export type SavedOpinionRow = {
   created_at: string;
 };
 
-function mapSavedRow(row: SavedVideoRow): ViewerLibraryVideo {
-  const title = resolveVideoTitle(row.video_id, row.title);
+function mapSavedRow(row: SavedVideoRow, catalogTitles: Map<string, string>): ViewerLibraryVideo {
+  const title = resolveVideoTitle(row.video_id, row.title, catalogTitles.get(row.video_id));
   return {
     videoId: row.video_id,
     title,
@@ -94,8 +94,8 @@ function mapSavedRow(row: SavedVideoRow): ViewerLibraryVideo {
   };
 }
 
-function mapProgressRow(row: VideoProgressRow): ViewerLibraryVideo {
-  const title = resolveVideoTitle(row.video_id, row.title);
+function mapProgressRow(row: VideoProgressRow, catalogTitles: Map<string, string>): ViewerLibraryVideo {
+  const title = resolveVideoTitle(row.video_id, row.title, catalogTitles.get(row.video_id));
   return {
     videoId: row.video_id,
     title,
@@ -149,19 +149,39 @@ function mapSavedOpinionRow(row: SavedOpinionRow): ViewerLibraryOpinion {
   };
 }
 
+async function loadCatalogVideoTitles(
+  supabase: SupabaseClient,
+  videoIds: string[],
+): Promise<Map<string, string>> {
+  const unique = Array.from(new Set(videoIds.filter(Boolean)));
+  if (unique.length === 0) return new Map();
+
+  const { data } = await supabase.from("videos").select("video_id, title").in("video_id", unique);
+  const map = new Map<string, string>();
+  for (const row of (data ?? []) as Array<{ video_id: string; title: string | null }>) {
+    const title = row.title?.trim();
+    if (title) map.set(row.video_id, title);
+  }
+  return map;
+}
+
 export function buildMyVeroxLibraryFromRows(input: {
   savedRows: SavedVideoRow[];
   savedOpinionRows?: SavedOpinionRow[];
   progressRows: VideoProgressRow[];
   followRows: FollowRow[];
   catalog: LiveChannelGroup[];
+  catalogTitles?: Map<string, string>;
 }): MyVeroxLibraryPayload {
-  const savedVideos = input.savedRows.map(mapSavedRow);
+  const catalogTitles = input.catalogTitles ?? new Map<string, string>();
+  const savedVideos = input.savedRows.map((row) => mapSavedRow(row, catalogTitles));
   const savedOpinions = (input.savedOpinionRows ?? []).map(mapSavedOpinionRow);
-  const watchedVideos = input.progressRows.filter((row) => row.completed).map(mapProgressRow);
+  const watchedVideos = input.progressRows
+    .filter((row) => row.completed)
+    .map((row) => mapProgressRow(row, catalogTitles));
   const continueWatching = input.progressRows
     .filter((row) => !row.completed && (row.progress_percent ?? 0) >= 2)
-    .map(mapProgressRow);
+    .map((row) => mapProgressRow(row, catalogTitles));
 
   const followedChannels = input.followRows.map((row) => {
     const matched = resolveChannelFromCatalog(row.channel_id, input.catalog);
@@ -218,13 +238,22 @@ export async function loadMyVeroxLibraryForUser(
     throw new Error("Nepodařilo se načíst osobní knihovnu.");
   }
 
+  const savedRows = (savedRes.data ?? []) as SavedVideoRow[];
+  const progressRows = (progressRes.data ?? []) as VideoProgressRow[];
+  const videoIds = [
+    ...savedRows.map((row) => row.video_id),
+    ...progressRows.map((row) => row.video_id),
+  ];
+  const catalogTitles = await loadCatalogVideoTitles(supabase, videoIds);
+
   return buildMyVeroxLibraryFromRows({
-    savedRows: (savedRes.data ?? []) as SavedVideoRow[],
+    savedRows,
     savedOpinionRows: savedOpinionsRes.error
       ? []
       : ((savedOpinionsRes.data ?? []) as SavedOpinionRow[]),
-    progressRows: (progressRes.data ?? []) as VideoProgressRow[],
+    progressRows,
     followRows: (followsRes.data ?? []) as FollowRow[],
     catalog,
+    catalogTitles,
   });
 }
