@@ -5,6 +5,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { isAuthorRole, isNazoryAdminEmail, loadProfileRoleRow } from "@/lib/nazory/access";
 import { getAuthorDisplayName } from "@/lib/nazory/display";
 import { publicNazoryMediaUrl } from "@/lib/nazory/media";
+import { MAX_AUTHOR_BIO_LENGTH } from "@/lib/nazory/limits";
 import { buildAuthorSlug } from "@/lib/nazory/slug";
 import {
   AUTHOR_PROFILE_PUBLIC_COLUMNS,
@@ -136,7 +137,7 @@ export async function upsertAuthorProfile(
     first_name: firstName.slice(0, 120),
     last_name: lastName.slice(0, 120),
     slug,
-    bio: trimOrNull(input.bio, 500),
+    bio: trimOrNull(input.bio, MAX_AUTHOR_BIO_LENGTH),
     title: trimOrNull(input.title, 160),
     profession: trimOrNull(input.profession, 160),
     city: trimOrNull(input.city, 120),
@@ -240,7 +241,7 @@ export async function adminUpdateAuthorProfile(
     first_name: firstName.slice(0, 120),
     last_name: lastName.slice(0, 120),
     slug,
-    bio: trimOrNull(input.bio, 500),
+    bio: trimOrNull(input.bio, MAX_AUTHOR_BIO_LENGTH),
     title: trimOrNull(input.title, 160),
     profession: trimOrNull(input.profession, 160),
     city: trimOrNull(input.city, 120),

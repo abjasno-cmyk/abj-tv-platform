@@ -1386,6 +1386,37 @@
   color: var(--vx-orange);
   font-weight: 700;
 }
+.mv-author-studio-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  margin: 0 0 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(23, 20, 17, 0.12);
+}
+.mv-author-studio-tabs button {
+  position: relative;
+  border: 0;
+  background: transparent;
+  padding: 8px 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: rgba(23, 20, 17, 0.55);
+  cursor: pointer;
+  font-family: inherit;
+}
+.mv-author-studio-tabs button.is-active {
+  color: var(--vx-gray-dark);
+}
+.mv-author-studio-tabs button.is-active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -11px;
+  height: 2px;
+  background: var(--vx-orange);
+}
 .mv-author-articles {
   margin-top: 28px;
   padding-top: 20px;
