@@ -46,7 +46,7 @@ export function HeroAudienceIndicator() {
   if (!snapshot) return null;
 
   return (
-    <p className="hero-audience" aria-live="polite">
+    <p className="hf-audience" aria-live="polite">
       {formatAudienceLine(snapshot)}
     </p>
   );

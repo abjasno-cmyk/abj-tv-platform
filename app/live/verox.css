@@ -1272,15 +1272,12 @@
   }
   .kostka-nazory .body p.kostka-nazory-perex,
   .nazory-detail-perex {
-    font-size: 14pt;
+    font-size: var(--nazory-body-size);
   }
-  /* Názory — větší tělo textu pro pohodlné čtení na desktopu (60+) */
-  .nazory-prose,
-  .nazory-prose-p,
-  .nazory-prose-ul,
-  .nazory-prose-ol {
-    font-size: 18px;
-    line-height: 1.75;
+  /* Názory — tělo článků ≥ Můj Verox diskuse, sjednocené s komentáři */
+  .nazory-page {
+    --nazory-body-size: 18px;
+    --nazory-body-line: 1.75;
   }
 
   /* akční tlačítka V KOSTCE — kompaktní sloupec vpravo */
@@ -1710,6 +1707,10 @@
 /* Názory — mobil: odsazení; desktop: plná šířka .vx-sub jako V kostce */
 .nazory-page {
   padding: 0 clamp(12px, 3.5vw, 20px) 48px;
+  font-family: var(--vx-myriad);
+  /* Stejná velikost těla jako diskuse v Můj Verox (mv-post-body = 1rem) */
+  --nazory-body-size: 1rem;
+  --nazory-body-line: 1.45;
 }
 /* Katalog AUTOŘI — stejné styly jako KANÁLY na /live (.hf scope z handoff.css) */
 .nazory-page .hf.nazory-authors-hf {
@@ -1801,9 +1802,10 @@
   display: block;
 }
 .kostka-nazory .body p.kostka-nazory-perex {
-  font-size: max(12pt, 1rem);
+  font-family: var(--vx-myriad);
+  font-size: var(--nazory-body-size);
   font-style: italic;
-  line-height: 1.55;
+  line-height: var(--nazory-body-line);
   color: var(--vx-gray-dark);
   margin-bottom: 0.85em;
 }
@@ -1819,16 +1821,18 @@
   line-height: 1.15;
 }
 .nazory-detail-perex {
-  font-size: max(12pt, 1rem);
+  font-family: var(--vx-myriad);
+  font-size: var(--nazory-body-size);
   font-style: italic;
   color: rgba(23, 20, 17, 0.82);
-  line-height: 1.55;
+  line-height: var(--nazory-body-line);
 }
 .nazory-detail-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 10px 16px;
-  font-size: max(12pt, 0.92rem);
+  font-family: var(--vx-myriad);
+  font-size: var(--nazory-body-size);
   color: rgba(23, 20, 17, 0.62);
 }
 .nazory-detail-actions {
@@ -2004,12 +2008,14 @@
 .nazory-prose {
   display: grid;
   gap: 16px;
-  line-height: 1.7;
-  font-size: 14px;
+  font-family: var(--vx-myriad);
+  font-size: var(--nazory-body-size);
+  line-height: var(--nazory-body-line);
 }
 .nazory-prose-p {
-  font-size: 14px;
-  line-height: 1.65;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
   color: var(--vx-gray-dark);
 }
 .nazory-prose-h2 {
@@ -2021,13 +2027,18 @@
   font-weight: 700;
 }
 .nazory-prose-quote {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
   border-left: 4px solid var(--vx-orange);
   padding-left: 16px;
   color: rgba(23, 20, 17, 0.8);
 }
 .nazory-prose-ul,
 .nazory-prose-ol {
-  font-size: 14px;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
   padding-left: 1.4rem;
 }
 .nazory-prose-youtube {
@@ -2085,8 +2096,10 @@
 }
 .nazory-author-bio,
 .nazory-author-page-bio {
+  font-family: var(--vx-myriad);
+  font-size: var(--nazory-body-size);
+  line-height: var(--nazory-body-line);
   color: rgba(23, 20, 17, 0.76);
-  line-height: 1.55;
 }
 .nazory-author-count,
 .nazory-author-page-meta,
@@ -2224,6 +2237,27 @@
 }
 .nazory-comments {
   margin-top: 12px;
+  font-family: var(--vx-myriad);
+}
+/* Komentáře u článků — stejný font a velikost těla jako diskuse / prose */
+.nazory-page .nazory-comments .vx-comment-body,
+.nazory-page .nazory-comments .vx-comments-input,
+.nazory-page .nazory-comments .vx-comments-empty,
+.nazory-page .nazory-comments .vx-comments-login,
+.nazory-page .nazory-comments .vx-comments-context,
+.nazory-page .nazory-comments .vx-comments-reply-hint {
+  font-family: var(--vx-myriad);
+  font-size: var(--nazory-body-size);
+  line-height: var(--nazory-body-line);
+}
+.nazory-page .nazory-comments .vx-comment-author {
+  font-family: var(--vx-myriad);
+  font-size: calc(var(--nazory-body-size) * 0.95);
+}
+.nazory-page .nazory-comments .vx-comment-time,
+.nazory-page .nazory-comments .vx-comment-video,
+.nazory-page .nazory-comments .vx-comments-chars {
+  font-family: var(--vx-myriad);
 }
 .nazory-preview-auth-notice {
   margin-top: 12px;
