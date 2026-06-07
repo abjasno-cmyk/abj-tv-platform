@@ -1,8 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="VEROX">
-  <rect width="64" height="64" fill="#000000"/>
-  <circle cx="47" cy="14" r="5.5" fill="#FF6600"/>
-  <g stroke="#303030" stroke-width="7.5" stroke-linecap="round">
-    <line x1="17" y1="17" x2="47" y2="47"/>
-    <line x1="47" y1="17" x2="17" y2="47"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="5650 0 2100 1550" role="img" aria-label="VEROX">
+  <rect x="5650" y="0" width="2100" height="1550" fill="#000000"/>
+  <g fill="#111111" transform="translate(180 2113) scale(1 -1)">
+    <path
+      d="M0 0H470L641 256C682 317 720 378 758 439C796 378 834 317 873 256L1035 0H1518L992 773L1460 1490H1003L882 1296C841 1231 802 1165 764 1100C726 1165 688 1231 648 1296L529 1490H60L537 762Z"
+      transform="translate(5700 0) scale(0.955 1)"
+    />
   </g>
+  <circle cx="7519.69" cy="368" r="178" fill="#ED742F"/>
 </svg>

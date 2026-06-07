@@ -38,18 +38,21 @@ export function resolveVideoTitle(
   return "Bez názvu";
 }
 
+export function videoSharePath(videoId: string): string {
+  return `/videa/${encodeURIComponent(videoId.trim())}`;
+}
+
+export function videoShareUrl(videoId: string, origin?: string): string {
+  const base = origin?.replace(/\/+$/, "") ?? "";
+  return `${base}${videoSharePath(videoId)}`;
+}
+
 export function liveVideoHref(input: {
   videoId: string;
   title: string;
   channelName?: string | null;
 }): string {
-  const params = new URLSearchParams();
-  params.set("videoId", input.videoId);
-  params.set("title", input.title);
-  if (input.channelName?.trim()) {
-    params.set("channel", input.channelName.trim());
-  }
-  return `/live?${params.toString()}`;
+  return videoSharePath(input.videoId);
 }
 
 export function normalizeChannelFollowId(channelId: string | null | undefined, channelName: string): string {
