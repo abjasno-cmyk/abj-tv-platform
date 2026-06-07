@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { AuthorProfilePreview } from "@/components/nazory/AuthorProfilePreview";
 import { getAuthorDisplayName } from "@/lib/nazory/display";
+import { MAX_AUTHOR_BIO_LENGTH } from "@/lib/nazory/limits";
 import type { OpinionArticleRow } from "@/lib/nazory/types";
 
 type AdminAuthorPayload = {
@@ -314,8 +315,15 @@ export function AdminAuthorForm({ userId }: AdminAuthorFormProps) {
           <input value={form.lastName} onChange={(event) => updateField("lastName", event.target.value)} required />
         </label>
         <label className="nazory-field">
-          <span>Krátké představení</span>
-          <textarea value={form.bio} maxLength={500} rows={4} onChange={(event) => updateField("bio", event.target.value)} />
+          <span>
+            Krátké představení <small>{form.bio.length}/{MAX_AUTHOR_BIO_LENGTH}</small>
+          </span>
+          <textarea
+            value={form.bio}
+            maxLength={MAX_AUTHOR_BIO_LENGTH}
+            rows={6}
+            onChange={(event) => updateField("bio", event.target.value)}
+          />
         </label>
         <label className="nazory-field">
           <span>Titul</span>

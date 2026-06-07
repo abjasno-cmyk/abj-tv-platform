@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { AuthorProfilePreview } from "@/components/nazory/AuthorProfilePreview";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { MAX_AUTHOR_BIO_LENGTH } from "@/lib/nazory/limits";
 
 type ProfilePayload = {
   profile?: {
@@ -37,9 +38,16 @@ async function activateAuthorAccount(): Promise<boolean> {
 type AuthorProfileFormProps = {
   redirectOnComplete?: boolean;
   onProfileCompleted?: () => void;
+  onSaved?: () => void;
+  variant?: "setup" | "edit";
 };
 
-export function AuthorProfileForm({ redirectOnComplete = true, onProfileCompleted }: AuthorProfileFormProps = {}) {
+export function AuthorProfileForm({
+  redirectOnComplete = true,
+  onProfileCompleted,
+  onSaved,
+  variant = "setup",
+}: AuthorProfileFormProps = {}) {
   const router = useRouter();
   const { isAuthenticated, openLoginModal, user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -175,9 +183,10 @@ export function AuthorProfileForm({ redirectOnComplete = true, onProfileComplete
       setSlug(payload.profile.slug);
     }
     setMessage("Profil byl uložen.");
+    onSaved?.();
     if (payload.profile?.profileCompleted) {
       onProfileCompleted?.();
-      if (redirectOnComplete) {
+      if (redirectOnComplete && variant === "setup") {
         router.push("/nazory/napsat");
       }
     }
@@ -202,7 +211,9 @@ export function AuthorProfileForm({ redirectOnComplete = true, onProfileComplete
     <div className="nazory-profile-layout">
       <form className="nazory-form" onSubmit={(event) => void handleSubmit(event)}>
         <p className="nazory-form-lead">
-          Vyplňte autorskou kartu. Jméno a příjmení jsou povinné. Po uložení můžete napsat první článek.
+          {variant === "edit"
+            ? "Upravte svou autorskou kartu, fotku, krátké představení a kontaktní údaje. Jméno a příjmení jsou povinné."
+            : "Vyplňte autorskou kartu. Jméno a příjmení jsou povinné. Po uložení můžete napsat první článek."}
         </p>
         {user?.email ? <p className="nazory-form-meta">Přihlášeno jako {user.email}</p> : null}
 
@@ -230,11 +241,13 @@ export function AuthorProfileForm({ redirectOnComplete = true, onProfileComplete
           <input value={form.lastName} onChange={(event) => updateField("lastName", event.target.value)} required />
         </label>
         <label className="nazory-field">
-          <span>Krátké představení</span>
+          <span>
+            Krátké představení <small>{form.bio.length}/{MAX_AUTHOR_BIO_LENGTH}</small>
+          </span>
           <textarea
             value={form.bio}
-            maxLength={500}
-            rows={4}
+            maxLength={MAX_AUTHOR_BIO_LENGTH}
+            rows={6}
             onChange={(event) => updateField("bio", event.target.value)}
           />
         </label>
@@ -277,7 +290,7 @@ export function AuthorProfileForm({ redirectOnComplete = true, onProfileComplete
         {error ? <p className="nazory-error">{error}</p> : null}
         {message ? <p className="nazory-success">{message}</p> : null}
         <button type="submit" className="nazory-btn nazory-btn-primary" disabled={saving}>
-          {saving ? "Ukládám…" : "Uložit profil a pokračovat k psaní"}
+          {saving ? "Ukládám…" : variant === "edit" ? "Uložit profil" : "Uložit profil a pokračovat k psaní"}
         </button>
       </form>
 

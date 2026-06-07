@@ -38,6 +38,8 @@ type StudioState =
   | { kind: "profile"; profile: AuthorProfile }
   | { kind: "ready"; profile: AuthorProfile };
 
+type StudioTab = "articles" | "profile";
+
 export function MujVeroxAuthorStudio() {
   const { isAuthenticated } = useAuth();
   const [studio, setStudio] = useState<StudioState>({ kind: "hidden" });
@@ -47,6 +49,7 @@ export function MujVeroxAuthorStudio() {
   const [loadingArticleId, setLoadingArticleId] = useState<string | null>(null);
   const [editorKey, setEditorKey] = useState("new");
   const [showEditor, setShowEditor] = useState(false);
+  const [activeTab, setActiveTab] = useState<StudioTab>("articles");
 
   const loadArticles = useCallback(async () => {
     setArticlesLoading(true);
@@ -183,8 +186,39 @@ export function MujVeroxAuthorStudio() {
   return (
     <section className="mv-author-studio nazory-page" aria-labelledby="mv-author-studio">
       <h2 id="mv-author-studio" className="mv-author-studio-heading">
-        NAPSAT ČLÁNEK
+        {activeTab === "profile" ? "MŮJ AUTORSKÝ PROFIL" : "NAPSAT ČLÁNEK"}
       </h2>
+      <div className="mv-author-studio-tabs" role="tablist" aria-label="Autorská sekce">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "articles"}
+          className={activeTab === "articles" ? "is-active" : undefined}
+          onClick={() => setActiveTab("articles")}
+        >
+          Články
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "profile"}
+          className={activeTab === "profile" ? "is-active" : undefined}
+          onClick={() => setActiveTab("profile")}
+        >
+          Můj profil
+        </button>
+      </div>
+
+      {activeTab === "profile" ? (
+        <AuthorProfileForm
+          variant="edit"
+          redirectOnComplete={false}
+          onSaved={() => {
+            void loadStudio();
+          }}
+        />
+      ) : (
+        <>
       <p className="mv-author-studio-lead">
         Pište a publikujte své texty v sekci Názory.
         {showEditor ? " Koncept se ukládá automaticky po začátku psaní." : ""}
@@ -265,6 +299,8 @@ export function MujVeroxAuthorStudio() {
           </ul>
         )}
       </div>
+        </>
+      )}
     </section>
   );
 }
