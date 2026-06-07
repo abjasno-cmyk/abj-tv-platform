@@ -59,6 +59,8 @@
 }
 .hf-tagline {
   margin: 0;
+  /* M pod V: levý okraj písmene V v logu (125/3000 px v master PNG) */
+  padding-left: calc(min(62vw, 290px) * 125 / 3000);
   color: var(--vx-gray-dark);
   font-size: clamp(8px, 2.4vw, 15px);
   font-weight: 400;
@@ -1125,6 +1127,8 @@
     align-self: start;
     margin-top: 8px;
     font-size: clamp(13px, 1.05vw, 20px);
+    /* gridová buňka = šířka loga */
+    padding-left: calc(100% * 125 / 3000);
   }
   .hf-nav {
     grid-area: nav;
