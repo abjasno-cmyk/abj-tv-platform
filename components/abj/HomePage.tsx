@@ -566,7 +566,7 @@ export function HomePage({
           <h1 id="hf-featured">{displayTitle}</h1>
         <p>{displayChannel}</p>
         {activeCommentVideoId ? (
-          <div className="hero-save-row">
+          <div className="hero-save-row nazory-detail-actions">
             <SaveVideoButton
               videoId={activeCommentVideoId}
               title={displayTitle}

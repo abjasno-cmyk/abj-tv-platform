@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Fragment } from "react";
 
 import { SaveVideoButton } from "@/components/auth/SaveVideoButton";
+import { ShareVideoButton } from "@/components/viewer/ShareVideoButton";
 import { ViewerVideoBadges } from "@/components/viewer/ViewerVideoBadges";
 import type { FeedVideo } from "@/lib/dayOverview";
 import { liveVideoHref, resolveVideoThumbnail } from "@/lib/viewer/videoMetadata";
@@ -58,7 +59,7 @@ export function VideaVideoList({ videos }: VideaVideoListProps) {
                 <h3>{video.title}</h3>
                 <div className="by">{video.channel}</div>
                 {desc ? <p>{desc}</p> : null}
-                <div className="vx-videa-actions">
+                <div className="vx-videa-actions nazory-detail-actions">
                   <SaveVideoButton
                     videoId={video.video_id}
                     title={video.title}
@@ -67,6 +68,7 @@ export function VideaVideoList({ videos }: VideaVideoListProps) {
                     saved={savedVideoIds.has(video.video_id)}
                     onSavedChange={(nextSaved) => setSaved(video.video_id, nextSaved)}
                   />
+                  <ShareVideoButton videoId={video.video_id} />
                   <Link href={href} className="vx-arrow">
                     <b>Přehrát</b>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
