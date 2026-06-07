@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { HeroAudienceIndicator } from "@/components/abj/HeroAudienceIndicator";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 // Sdílená horní lišta dle návrhu Lucie Robinson („menu_listy"): velké logo
@@ -58,9 +59,11 @@ function pragueParts(d: Date): {
 
 interface VeroxHeaderProps {
   active?: VeroxNavKey;
+  /** Počítadlo „Právě sleduje" pod datem — jen na /live. */
+  showAudience?: boolean;
 }
 
-export function VeroxHeader({ active }: VeroxHeaderProps) {
+export function VeroxHeader({ active, showAudience = false }: VeroxHeaderProps) {
   const { isAuthenticated, profile, openLoginModal, signOut } = useAuth();
   const [now, setNow] = useState<Date>(() => new Date());
 
@@ -91,6 +94,7 @@ export function VeroxHeader({ active }: VeroxHeaderProps) {
               {t.day}.{MONTHS_NOM[t.monthIndex]} {t.year}
             </span>
           </p>
+          {showAudience ? <HeroAudienceIndicator /> : null}
         </div>
       </div>
       <nav className="hf-nav" aria-label="Hlavní navigace">

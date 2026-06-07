@@ -34,6 +34,7 @@ export async function GET() {
     ok: true,
     activeViewers: snapshot.activeViewers,
     displayedViewers: snapshot.displayedViewers,
+    displayBoost: snapshot.displayBoost,
   });
 }
 
@@ -68,5 +69,6 @@ export async function POST(request: Request) {
     heartbeat: true,
     activeViewers: snapshot.activeViewers,
     displayedViewers: snapshot.displayedViewers,
+    displayBoost: snapshot.displayBoost,
   });
 }

@@ -19,15 +19,21 @@ export function HeroAudienceIndicator() {
         const payload = (await response.json()) as {
           displayedViewers?: number;
           activeViewers?: number;
+          displayBoost?: number;
         };
         if (cancelled) return;
         if (
           typeof payload.displayedViewers === "number" &&
           typeof payload.activeViewers === "number"
         ) {
+          const displayBoost =
+            typeof payload.displayBoost === "number"
+              ? payload.displayBoost
+              : payload.displayedViewers - payload.activeViewers;
           setSnapshot({
             activeViewers: payload.activeViewers,
             displayedViewers: payload.displayedViewers,
+            displayBoost,
           });
         }
       } catch {
@@ -46,7 +52,7 @@ export function HeroAudienceIndicator() {
   if (!snapshot) return null;
 
   return (
-    <p className="hero-audience" aria-live="polite">
+    <p className="hf-audience" aria-live="polite">
       {formatAudienceLine(snapshot)}
     </p>
   );
