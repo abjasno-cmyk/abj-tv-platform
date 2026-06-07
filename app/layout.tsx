@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/react";
 import { Montserrat, Roboto_Condensed } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -114,6 +115,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
           <LegalFooter />
           {showEditorialDebug ? <EditorialEventDebugPanel /> : null}
         </AuthProvider>
+        {isProductionDeployment ? <Analytics /> : null}
       </body>
     </html>
   );
