@@ -12,6 +12,7 @@ import type {
   ViewerLibraryOpinion,
   ViewerLibraryVideo,
 } from "@/lib/viewer/myVeroxLibrary";
+import { scrollHorizontalCarousel } from "@/lib/horizontalCarouselScroll";
 import { publicNazoryMediaUrl } from "@/lib/nazory/media";
 
 function VideoShelfCard({
@@ -112,25 +113,7 @@ function ShelfCarousel({ children }: { children: React.ReactNode[] }) {
   const scrollShelf = (dir: -1 | 1) => {
     const el = trackRef.current;
     if (!el) return;
-    const maxLeft = Math.max(0, el.scrollWidth - el.clientWidth);
-    if (maxLeft <= 6) return;
-    const currentLeft = Math.max(0, el.scrollLeft);
-    const step = Math.max(180, el.clientWidth * 0.75);
-
-    if (dir === 1) {
-      const nextLeft = currentLeft + step;
-      el.scrollTo({
-        left: nextLeft >= maxLeft - 2 ? 0 : Math.min(maxLeft, nextLeft),
-        behavior: "smooth",
-      });
-      return;
-    }
-
-    const nextLeft = currentLeft - step;
-    el.scrollTo({
-      left: currentLeft <= 2 ? maxLeft : Math.max(0, nextLeft),
-      behavior: "smooth",
-    });
+    scrollHorizontalCarousel(el, dir, { itemSelector: ".mv-library-card" });
   };
 
   return (

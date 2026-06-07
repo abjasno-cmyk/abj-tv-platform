@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { FollowChannelButton } from "@/components/auth/FollowChannelButton";
+import { scrollHorizontalCarousel } from "@/lib/horizontalCarouselScroll";
 
 export type LiveChannelVideo = {
   videoId: string;
@@ -140,24 +141,8 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
   const scrollChannelsBy = useCallback((direction: "left" | "right") => {
     const container = channelScrollRef.current;
     if (!container) return;
-    const maxLeft = Math.max(0, container.scrollWidth - container.clientWidth);
-    if (maxLeft <= 6) return;
-    const currentLeft = Math.max(0, container.scrollLeft);
-    const step = 260;
-
-    if (direction === "right") {
-      const nextLeft = currentLeft + step;
-      container.scrollTo({
-        left: nextLeft >= maxLeft - 2 ? 0 : Math.min(maxLeft, nextLeft),
-        behavior: "smooth",
-      });
-      return;
-    }
-
-    const nextLeft = currentLeft - step;
-    container.scrollTo({
-      left: currentLeft <= 2 ? maxLeft : Math.max(0, nextLeft),
-      behavior: "smooth",
+    scrollHorizontalCarousel(container, direction === "right" ? 1 : -1, {
+      itemSelector: ".channel-card",
     });
   }, []);
 
