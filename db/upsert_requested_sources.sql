@@ -28,7 +28,9 @@ with incoming (
     ('V.O.X. NEWS', 'youtube', 'https://www.youtube.com/@vox-news', 'B', 'zprávy', 'CZ', 'cs', true, 'support', null),
     ('Kateřina Konečná', 'youtube', 'https://www.youtube.com/@KonecnaKaterina/featured', 'B', 'politika', 'CZ', 'cs', true, 'support', null),
     ('Echo Podcasty', 'youtube', 'https://www.youtube.com/@echopodcasty', 'B', 'podcast', 'CZ', 'cs', true, 'support', null),
-    ('Datarun', 'youtube', 'https://www.youtube.com/@Datarun_cz', 'B', 'analýza', 'CZ', 'cs', true, 'support', null)
+    ('Datarun', 'youtube', 'https://www.youtube.com/@Datarun_cz', 'B', 'analýza', 'CZ', 'cs', true, 'support', null),
+    ('Petr Bureš TV', 'youtube', 'https://www.youtube.com/@petrburestv', 'B', 'rozhovor', 'CZ', 'cs', true, 'support', null),
+    ('Hovory ze země', 'youtube', 'https://www.youtube.com/@hovoryzezeme', 'B', 'rozhovor', 'CZ', 'cs', true, 'support', null)
 ),
 updated as (
   update sources s

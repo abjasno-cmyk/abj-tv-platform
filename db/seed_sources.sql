@@ -59,6 +59,8 @@ insert into sources (
   ('Datarun', 'youtube', 'https://www.youtube.com/@Datarun_cz', 'B', 'analýza', 'CZ', 'cs', true, 'support', null),
   ('Tucker Carlson', 'youtube', 'https://www.youtube.com/@TuckerCarlson', 'B', 'zahraničí', 'US', 'en', true, 'support', 'chci dabing'),
   ('Jeffrey Sachs', 'youtube', 'https://www.youtube.com/@JeffreyDSachsOfficial', 'B', 'zahraničí', 'US', 'en', true, 'support', 'chci dabing'),
+  ('Petr Bureš TV', 'youtube', 'https://www.youtube.com/@petrburestv', 'B', 'rozhovor', 'CZ', 'cs', true, 'support', null),
+  ('Hovory ze země', 'youtube', 'https://www.youtube.com/@hovoryzezeme', 'B', 'rozhovor', 'CZ', 'cs', true, 'support', null),
 
   ('Doktor Vajíčko', 'youtube', 'https://www.youtube.com/@doktoregg', 'C', 'komentář', 'CZ', 'cs', true, 'filler', null),
 
