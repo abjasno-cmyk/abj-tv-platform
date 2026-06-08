@@ -1,33 +1,12 @@
 import { getProgram } from "@/lib/programEngine";
-import type { ProgramBlock } from "@/lib/epg-types";
+import { pickLiveAlertBlock, toLiveAlertCandidate, type LiveAlertCandidate } from "@/lib/liveAlert";
 
 export const dynamic = "force-dynamic";
 
 type LiveNowPayload = {
   is_live: boolean;
-  items: Array<{
-    video_id: string;
-    title: string;
-    channel: string;
-    thumbnail: string | null;
-    is_premiere: boolean;
-    started_at: string;
-  }>;
+  items: LiveAlertCandidate[];
 };
-
-function pickActiveLiveBlock(timeline: ProgramBlock[], now: Date): ProgramBlock | null {
-  const nowTs = now.getTime();
-  const active = timeline
-    .filter((block) => {
-      if (!block.videoId) return false;
-      if (block.type !== "live" && block.type !== "premiere") return false;
-      const startTs = new Date(block.start).getTime();
-      const endTs = new Date(block.end).getTime();
-      return Number.isFinite(startTs) && Number.isFinite(endTs) && startTs <= nowTs && nowTs < endTs;
-    })
-    .sort((a, b) => b.priority - a.priority || new Date(a.start).getTime() - new Date(b.start).getTime());
-  return active[0] ?? null;
-}
 
 export async function GET() {
   const fallback: LiveNowPayload = {
@@ -38,21 +17,12 @@ export async function GET() {
   try {
     const now = new Date();
     const timeline = await getProgram();
-    const block = pickActiveLiveBlock(timeline, now);
+    const block = pickLiveAlertBlock(timeline, now);
     if (!block?.videoId) return Response.json(fallback);
 
     return Response.json({
       is_live: true,
-      items: [
-        {
-          video_id: block.videoId,
-          title: block.title,
-          channel: block.channel,
-          thumbnail: block.thumbnail ?? null,
-          is_premiere: block.type === "premiere",
-          started_at: block.start,
-        },
-      ],
+      items: [toLiveAlertCandidate(block)],
     } satisfies LiveNowPayload);
   } catch {
     return Response.json(fallback);

@@ -3,16 +3,11 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
-type LiveNowItem = {
-  video_id: string;
-  title: string;
-  channel: string;
-  thumbnail?: string | null;
-};
+import { shouldShowLiveAlert, type LiveAlertCandidate } from "@/lib/liveAlert";
 
 type LiveNowResponse = {
   is_live: boolean;
-  items?: LiveNowItem[];
+  items?: LiveAlertCandidate[];
 };
 
 type LiveAlertProps = {
@@ -44,7 +39,7 @@ function writeDismissedIds(ids: Set<string>): void {
 }
 
 export function LiveAlert({ currentVideoId, onWatchLive }: LiveAlertProps) {
-  const [activeItem, setActiveItem] = useState<LiveNowItem | null>(null);
+  const [activeItem, setActiveItem] = useState<LiveAlertCandidate | null>(null);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => readDismissedIds());
 
   useEffect(() => {
@@ -63,12 +58,7 @@ export function LiveAlert({ currentVideoId, onWatchLive }: LiveAlertProps) {
           return;
         }
 
-        const firstAvailable = payload.items.find((item) => {
-          if (!item?.video_id) return false;
-          if (dismissedIds.has(item.video_id)) return false;
-          if (currentVideoId && currentVideoId === item.video_id) return false;
-          return true;
-        });
+        const firstAvailable = payload.items.find((item) => shouldShowLiveAlert(item, currentVideoId, dismissedIds));
 
         if (!cancelled) {
           setActiveItem(firstAvailable ?? null);
@@ -89,13 +79,10 @@ export function LiveAlert({ currentVideoId, onWatchLive }: LiveAlertProps) {
     };
   }, [currentVideoId, dismissedIds]);
 
-  const visible = useMemo(() => {
-    if (!activeItem) return false;
-    if (!activeItem.video_id) return false;
-    if (currentVideoId && currentVideoId === activeItem.video_id) return false;
-    if (dismissedIds.has(activeItem.video_id)) return false;
-    return true;
-  }, [activeItem, currentVideoId, dismissedIds]);
+  const visible = useMemo(
+    () => shouldShowLiveAlert(activeItem, currentVideoId, dismissedIds),
+    [activeItem, currentVideoId, dismissedIds],
+  );
 
   if (!visible || !activeItem) return null;
 
