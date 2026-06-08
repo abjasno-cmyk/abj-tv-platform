@@ -4,7 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { fetchFillGap, fetchProgramNow, fetchSafetyBridge } from "@/lib/playout/client";
 import {
+  isPlayablePlayoutBlock,
+  isValidYouTubeVideoId,
   mapMediaSourcesToFallbacks,
+  readPlayoutVideoId,
   type PlayoutBlock,
   type PlayoutFiller,
   type PlayoutSurface,
@@ -117,9 +120,14 @@ export function usePlayoutLoop({ enabled, initialBlock }: UsePlayoutLoopOptions)
       const durationMs = Math.max(1, Math.floor(filler.duration_sec || 15)) * 1000;
       switch (filler.type) {
         case "short":
-          if (filler.video_id) {
+          if (isValidYouTubeVideoId(filler.video_id)) {
             setPhase("live");
-            setSurface({ kind: "youtube", videoId: filler.video_id, startSeconds: 0, title: filler.title });
+            setSurface({
+              kind: "youtube",
+              videoId: filler.video_id!.trim(),
+              startSeconds: 0,
+              title: filler.title,
+            });
             await waitInterruptible(durationMs, token, true);
             return;
           }
@@ -157,14 +165,20 @@ export function usePlayoutLoop({ enabled, initialBlock }: UsePlayoutLoopOptions)
     };
 
     const playBlock = async (block: PlayoutBlock, offsetSec: number): Promise<void> => {
+      const videoId = readPlayoutVideoId(block);
+      if (!videoId) {
+        await playSafetyBridge();
+        return;
+      }
+
       setPhase("live");
       setSurface({
         kind: "youtube",
-        videoId: block.video_id,
+        videoId,
         startSeconds: Math.max(0, Math.floor(offsetSec || 0)),
         title: block.title,
         channel: block.channel,
-        fallbacks: mapMediaSourcesToFallbacks(block.media_sources, block.video_id),
+        fallbacks: mapMediaSourcesToFallbacks(block.media_sources, videoId),
       });
       // ZÁKLAD: časovač podle reálného konce videa; ENDED bereme jako bonus (early end).
       const realEnd = parseTimeMs(block.expected_ends_at) ?? parseTimeMs(block.ends_at);
@@ -206,16 +220,17 @@ export function usePlayoutLoop({ enabled, initialBlock }: UsePlayoutLoopOptions)
       // programu. `/program/now` voláme až PO jeho konci, takže pomalá/selhaná
       // první odpověď enginu (cold start) nezpůsobí safety-bridge (Windy) hned na
       // startu. Konec videa spolehlivě detekuje polling pozice (ne YouTube ENDED).
-      let firstSeed: PlayoutBlock | null = seed?.videoId
-        ? {
-            block_id: "seed",
-            starts_at: new Date(0).toISOString(),
-            ends_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
-            expected_ends_at: null,
-            video_id: seed.videoId,
-            title: seed.title,
-          }
-        : null;
+      let firstSeed: PlayoutBlock | null =
+        seed?.videoId && isValidYouTubeVideoId(seed.videoId)
+          ? {
+              block_id: "seed",
+              starts_at: new Date(0).toISOString(),
+              ends_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+              expected_ends_at: null,
+              video_id: seed.videoId.trim(),
+              title: seed.title,
+            }
+          : null;
       if (!firstSeed) showBridgeNow();
 
       while (!token.cancelled && enabled) {
@@ -232,8 +247,8 @@ export function usePlayoutLoop({ enabled, initialBlock }: UsePlayoutLoopOptions)
 
         const now = await fetchProgramNow();
         if (token.cancelled) return;
-        if (!now || !now.block) {
-          await playSafetyBridge(); // API/prázdno → drž obraz živý a zkus znovu
+        if (!now || !isPlayablePlayoutBlock(now.block)) {
+          await playSafetyBridge(); // API/prázdno / nehratelný blok → drž obraz živý a zkus znovu
           continue;
         }
         // playBlock přepne na reálný blok (stejné video_id = bez reloadu) a nastaví

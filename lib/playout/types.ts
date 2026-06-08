@@ -64,6 +64,25 @@ export interface PlayoutBlock {
   media_sources?: PlayoutMediaSource[];
 }
 
+const YOUTUBE_VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{6,20}$/;
+
+export function isValidYouTubeVideoId(videoId: string | null | undefined): boolean {
+  if (!videoId) return false;
+  return YOUTUBE_VIDEO_ID_PATTERN.test(videoId.trim());
+}
+
+export function readPlayoutVideoId(block: Pick<PlayoutBlock, "video_id"> | null | undefined): string | null {
+  if (!block || typeof block.video_id !== "string") return null;
+  const trimmed = block.video_id.trim();
+  return isValidYouTubeVideoId(trimmed) ? trimmed : null;
+}
+
+export function isPlayablePlayoutBlock(
+  block: PlayoutBlock | null | undefined,
+): block is PlayoutBlock & { video_id: string } {
+  return readPlayoutVideoId(block) !== null;
+}
+
 export interface ProgramNowResponse {
   server_time: string;
   block: PlayoutBlock | null;

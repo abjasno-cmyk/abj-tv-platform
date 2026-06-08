@@ -3,7 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import YouTube, { type YouTubeProps } from "react-youtube";
 
-import type { PlayerHandle, PlayoutSourceCandidate, PlayoutSurface } from "@/lib/playout/types";
+import {
+  isValidYouTubeVideoId,
+  type PlayerHandle,
+  type PlayoutSourceCandidate,
+  type PlayoutSurface,
+} from "@/lib/playout/types";
 
 interface PlayoutStageProps {
   surface: PlayoutSurface | null;
@@ -42,8 +47,8 @@ export function PlayoutStage({
   onPlayingChange,
 }: PlayoutStageProps) {
   const playerRef = useRef<PlayerHandle | null>(null);
-  const isYouTube = surface?.kind === "youtube";
-  const primaryVideoId = isYouTube ? surface.videoId : "";
+  const isYouTube = surface?.kind === "youtube" && isValidYouTubeVideoId(surface.videoId);
+  const primaryVideoId = isYouTube ? surface.videoId.trim() : "";
   const startSeconds = isYouTube ? surface.startSeconds : 0;
   const fallbacks: PlayoutSourceCandidate[] = isYouTube ? surface.fallbacks ?? [] : [];
 
@@ -150,8 +155,8 @@ export function PlayoutStage({
         setSourcesExhausted(true); // nic dalšího → krajní ident (smyčka jede dál na časovači)
         return currentIndex;
       }
-      if (next.videoId) {
-        setActiveVideoId(next.videoId);
+      if (next.videoId && isValidYouTubeVideoId(next.videoId)) {
+        setActiveVideoId(next.videoId.trim());
         setFallbackEmbedUrl(null);
       } else if (next.url) {
         setFallbackEmbedUrl(next.url);
