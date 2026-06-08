@@ -44,10 +44,9 @@ export function ChannelVideoTile({
           thumbnailUrl={thumbnail}
           channelName={channelName}
           saved={saved}
-          compact
           onSavedChange={onSavedChange}
         />
-        <VideoDiscussButton videoId={video.videoId} videoTitle={video.title} compact />
+        <VideoDiscussButton videoId={video.videoId} videoTitle={video.title} />
       </div>
     </div>
   );

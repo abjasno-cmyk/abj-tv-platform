@@ -634,10 +634,9 @@ export function HomePage({
                           channelName={it.channelName}
                           thumbnailUrl={it.thumb}
                           saved={savedVideoIds.has(it.videoId)}
-                          compact
                           onSavedChange={(nextSaved) => setSaved(it.videoId!, nextSaved)}
                         />
-                        <VideoDiscussButton videoId={it.videoId} videoTitle={it.title} compact />
+                        <VideoDiscussButton videoId={it.videoId} videoTitle={it.title} />
                       </div>
                     ) : null}
                   </div>

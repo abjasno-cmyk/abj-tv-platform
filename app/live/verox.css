@@ -71,11 +71,14 @@
 .vx-discuss-video--compact {
   padding: 4px 8px;
 }
-.vx-discuss-video-icon {
+.vx-discuss-video .vx-discuss-video-icon {
   width: 14px;
   height: 14px;
+  max-width: 14px;
+  max-height: 14px;
   display: block;
   flex-shrink: 0;
+  object-fit: contain;
 }
 .vx-discuss-video-label--compact {
   position: absolute;

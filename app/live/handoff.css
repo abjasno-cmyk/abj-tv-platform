@@ -740,7 +740,7 @@
   outline: 3px solid var(--vx-orange);
   outline-offset: -3px;
 }
-.hf .playing-image img {
+.hf .playing-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -1077,11 +1077,14 @@
 .hf .vx-discuss-video--compact {
   padding: 4px 8px;
 }
-.hf .vx-discuss-video-icon {
+.hf .vx-discuss-video .vx-discuss-video-icon {
   width: 14px;
   height: 14px;
+  max-width: 14px;
+  max-height: 14px;
   display: block;
   flex-shrink: 0;
+  object-fit: contain;
 }
 .hf .vx-discuss-video-label--compact {
   position: absolute;
