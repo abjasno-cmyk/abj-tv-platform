@@ -8,10 +8,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { VeroxHeader } from "@/components/abj/VeroxHeader";
 import { HeroPlayerBar, type PlaybackSpeed } from "@/components/abj/playout/HeroPlayerBar";
 import { FollowChannelButton } from "@/components/auth/FollowChannelButton";
-import { VideoCommentsDrawer } from "@/components/auth/VideoCommentsDrawer";
 import { SaveVideoButton } from "@/components/auth/SaveVideoButton";
 import { ChannelVideoTile } from "@/components/viewer/ChannelVideoTile";
 import { ShareVideoButton } from "@/components/viewer/ShareVideoButton";
+import { VideoCommentButton } from "@/components/viewer/VideoCommentButton";
 import { ViewerVideoBadges } from "@/components/viewer/ViewerVideoBadges";
 import { useViewerVideoState } from "@/lib/viewer/useViewerVideoState";
 import { normalizeChannelFollowId } from "@/lib/viewer/videoMetadata";
@@ -84,7 +84,6 @@ export function HomePage({
   const [stageDot, setStageDot] = useState(0);
   const [channelDot, setChannelDot] = useState(0);
   // Sekce KANÁLY: otevřený kanál + až 24 videí bez Shorts (detail panel pod lištou).
-  const [commentsOpen, setCommentsOpen] = useState(false);
   const [openChannelName, setOpenChannelName] = useState<string | null>(null);
   const [channelVideosByName, setChannelVideosByName] = useState<Record<string, LiveChannelVideo[]>>({});
   const [channelLoading, setChannelLoading] = useState<string | null>(null);
@@ -551,15 +550,14 @@ export function HomePage({
 
       {/* FEATURE SUMMARY */}
       <section className="feature-summary" aria-labelledby="hf-featured">
-        <button
-          type="button"
-          className="comment-icon-btn"
-          onClick={() => setCommentsOpen(true)}
-          aria-label="Otevřít komentáře"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="comment-icon" src="/design/icons/ikona_komentovat.png" alt="" />
-        </button>
+        {activeCommentVideoId ? (
+          <VideoCommentButton
+            videoId={activeCommentVideoId}
+            videoTitle={displayTitle}
+            variant="hero"
+            defaultView="global"
+          />
+        ) : null}
         <div className="feature-copy">
           <h1 id="hf-featured">{displayTitle}</h1>
         <p>{displayChannel}</p>
@@ -631,6 +629,9 @@ export function HomePage({
                     <span className="playing-thumb">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={it.thumb} alt="" loading="lazy" />
+                      {it.videoId ? (
+                        <VideoCommentButton videoId={it.videoId} videoTitle={it.title} />
+                      ) : null}
                     </span>
                     <span className="playing-title">{it.title}</span>
                   </button>
@@ -771,12 +772,6 @@ export function HomePage({
       </section>
       </div>
       {/* /hf-body */}
-      <VideoCommentsDrawer
-        open={commentsOpen}
-        onClose={() => setCommentsOpen(false)}
-        videoId={activeCommentVideoId}
-        videoTitle={displayTitle}
-      />
     </div>
   );
 }
