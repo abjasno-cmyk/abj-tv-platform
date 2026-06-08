@@ -41,6 +41,7 @@ export default function LivePage({
     capturedAtMs: 0,
   });
   const [videoId, setVideoId] = useState<string | null>(initialVideoId);
+  const [playingVideoId, setPlayingVideoId] = useState<string | null>(initialVideoId);
   const [title, setTitle] = useState(initialTitle);
   const [channelName, setChannelName] = useState(initialChannelName);
   // Lineární režim (živý kanál) běží defaultně; konkrétní deep-link video = VOD.
@@ -285,6 +286,9 @@ export default function LivePage({
           }
         }}
         onPlaybackSample={handlePlaybackSample}
+        onPlayingVideoChange={({ videoId: nextPlayingVideoId }) => {
+          setPlayingVideoId(nextPlayingVideoId);
+        }}
         onSelect={(item) => {
           setTitle(item.title);
           setChannelName(item.channelName);
@@ -322,8 +326,9 @@ export default function LivePage({
         reactionsSlot={null}
       />
       <LiveAlert
-        currentVideoId={videoId}
+        currentVideoId={playingVideoId ?? videoId}
         onWatchLive={({ videoId: liveVideoId, title: liveTitle, channel: liveChannel }) => {
+          setPlayingVideoId(liveVideoId);
           setVideoId(liveVideoId);
           setTitle(liveTitle);
           setChannelName(liveChannel);
