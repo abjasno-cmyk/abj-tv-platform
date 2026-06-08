@@ -67,6 +67,7 @@
   text-transform: uppercase;
   padding: 4px 10px;
   cursor: pointer;
+  text-decoration: none;
 }
 .vx-discuss-video--compact {
   padding: 4px 8px;
@@ -1905,6 +1906,9 @@
   height: 100%;
   object-fit: cover;
   display: block;
+}
+.kostka-nazory-actions {
+  margin-top: 4px;
 }
 .kostka-nazory .body p.kostka-nazory-perex {
   font-family: var(--vx-myriad);

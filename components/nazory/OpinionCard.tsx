@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { OpinionDiscussButton } from "@/components/nazory/OpinionDiscussButton";
 import { publicNazoryMediaUrl } from "@/lib/nazory/media";
 import type { OpinionArticleRow } from "@/lib/nazory/types";
 
@@ -72,6 +73,14 @@ export function OpinionCard({ article, author, commentCount = 0 }: OpinionCardPr
           </h3>
         </div>
         <div className="src">{metaParts.join("  ·  ")}</div>
+        <div className="kostka-nazory-actions nazory-detail-actions">
+          <OpinionDiscussButton
+            behavior="link"
+            articleId={article.id}
+            articleTitle={article.title}
+            slug={article.slug}
+          />
+        </div>
         {article.perex ? <p className="kostka-nazory-perex">{article.perex}</p> : null}
         <Link href={`/nazory/${article.slug}`} className="vx-arrow">
           <b>Číst celý text</b>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { CopyLinkButton } from "@/components/nazory/CopyLinkButton";
+import { OpinionDiscussButton } from "@/components/nazory/OpinionDiscussButton";
 import { OpinionLikeButton } from "@/components/nazory/OpinionLikeButton";
 import { SaveOpinionButton } from "@/components/nazory/SaveOpinionButton";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -61,6 +62,12 @@ export function OpinionDetailActions({
         onSavedChange={setSaved}
       />
       <CopyLinkButton url={shareUrl} />
+      <OpinionDiscussButton
+        behavior="scroll"
+        articleId={articleId}
+        articleTitle={title}
+        slug={slug}
+      />
       {editHref ? (
         <a className="nazory-btn" href={editHref}>
           Upravit článek
