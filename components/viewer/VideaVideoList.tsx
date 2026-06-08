@@ -5,7 +5,6 @@ import { Fragment } from "react";
 
 import { SaveVideoButton } from "@/components/auth/SaveVideoButton";
 import { ShareVideoButton } from "@/components/viewer/ShareVideoButton";
-import { VideoCommentButton } from "@/components/viewer/VideoCommentButton";
 import { VideoReleaseDateBadge } from "@/components/viewer/VideoReleaseDateBadge";
 import { ViewerVideoBadges } from "@/components/viewer/ViewerVideoBadges";
 import type { FeedVideo } from "@/lib/dayOverview";
@@ -67,7 +66,6 @@ export function VideaVideoList({ videos }: VideaVideoListProps) {
                   scheduledStartAt={video.scheduled_start_at}
                   videoType={video.video_type}
                 />
-                <VideoCommentButton videoId={video.video_id} videoTitle={video.title} />
               </Link>
               <div className="body">
                 <h3>{video.title}</h3>
@@ -83,7 +81,6 @@ export function VideaVideoList({ videos }: VideaVideoListProps) {
                     onSavedChange={(nextSaved) => setSaved(video.video_id, nextSaved)}
                   />
                   <ShareVideoButton videoId={video.video_id} />
-                  <VideoCommentButton videoId={video.video_id} videoTitle={video.title} variant="inline" />
                   <Link href={href} className="vx-arrow">
                     <b>Přehrát</b>
                     {/* eslint-disable-next-line @next/next/no-img-element */}

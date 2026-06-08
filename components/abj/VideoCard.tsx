@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { memo } from "react";
 
-import { VideoCommentButton } from "@/components/viewer/VideoCommentButton";
 import { VideoReleaseDateBadge } from "@/components/viewer/VideoReleaseDateBadge";
 import { getVideoReleaseBadgeLabel } from "@/lib/viewer/videoReleaseDate";
 
@@ -53,7 +52,6 @@ function VideoCardBase({
           scheduledStartAt={scheduledStartAt}
           videoType={videoType}
         />
-        <VideoCommentButton videoId={videoId} videoTitle={title} />
         {isHero ? (
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-3 pb-3 pt-8">
             <p className="line-clamp-2 font-[var(--font-serif)] text-[16px] leading-tight text-abj-text1">{title}</p>
