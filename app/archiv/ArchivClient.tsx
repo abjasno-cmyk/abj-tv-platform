@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import YouTube, { type YouTubeProps } from "react-youtube";
 
-import { VideoCommentButton } from "@/components/viewer/VideoCommentButton";
 import { useFeed } from "@/hooks/useFeed";
 import type { FeedPost } from "@/lib/api";
 import { VideoReleaseDateBadge } from "@/components/viewer/VideoReleaseDateBadge";
@@ -712,7 +711,6 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, edi
             unoptimized={thumbnailSrc.startsWith("http")}
           />
           <VideoReleaseDateBadge publishedAt={video.published_at} videoType="vod" />
-          {videoId ? <VideoCommentButton videoId={videoId} videoTitle={video.title} /> : null}
           {tag && !compactEditorial ? (
             <span className="absolute left-2 top-2 rounded-full border border-[#FF6A00]/35 bg-white/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#C14900]">
               {tag}
@@ -1512,7 +1510,6 @@ function ChannelDetailPanel({ channel, selectedVideo, open, loading, onClose, on
               const aspect = getVideoAspectRatio(video);
               const thumbnail = readString(video.thumbnail) ?? "/placeholder-thumb.jpg";
               const canPlay = Boolean(getYoutubeEmbedUrl(video) || getVideoExternalUrl(video));
-              const videoId = getEffectiveVideoId(video);
 
               return (
                 <button
@@ -1532,7 +1529,6 @@ function ChannelDetailPanel({ channel, selectedVideo, open, loading, onClose, on
                       }`}
                     >
                       <Image src={thumbnail} alt={video.title} fill className="object-cover" unoptimized={thumbnail.startsWith("http")} />
-                      {videoId ? <VideoCommentButton videoId={videoId} videoTitle={video.title} /> : null}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="line-clamp-2 text-sm font-medium text-abj-text1">{video.title}</p>
