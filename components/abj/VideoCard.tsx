@@ -4,28 +4,19 @@ import Image from "next/image";
 import Link from "next/link";
 import { memo } from "react";
 
+import { VideoReleaseDateBadge } from "@/components/viewer/VideoReleaseDateBadge";
+import { getVideoReleaseBadgeLabel } from "@/lib/viewer/videoReleaseDate";
+
 type VideoCardProps = {
   videoId: string;
   thumbnail: string | null;
   title: string;
   channel: string;
   publishedAt: string | null;
+  scheduledStartAt?: string | null;
+  videoType?: "vod" | "upcoming" | "live";
   featured?: boolean;
 };
-
-function formatPublishedLabel(value: string | null): string {
-  if (!value) return "čas neuveden";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "čas neuveden";
-  return new Intl.DateTimeFormat("cs-CZ", {
-    timeZone: "Europe/Prague",
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
-}
 
 function VideoCardBase({
   videoId,
@@ -33,10 +24,13 @@ function VideoCardBase({
   title,
   channel,
   publishedAt,
+  scheduledStartAt = null,
+  videoType = "vod",
   featured = false,
 }: VideoCardProps) {
   const href = `/videa/${encodeURIComponent(videoId)}`;
-  const publishedLabel = formatPublishedLabel(publishedAt);
+  const releaseSource = { publishedAt, scheduledStartAt, videoType };
+  const publishedLabel = getVideoReleaseBadgeLabel(releaseSource) ?? "čas neuveden";
   const isHero = featured;
   return (
     <Link
@@ -52,6 +46,11 @@ function VideoCardBase({
           className="object-cover transition-transform duration-200 group-hover:scale-[1.03]"
           loading="lazy"
           unoptimized={Boolean(thumbnail)}
+        />
+        <VideoReleaseDateBadge
+          publishedAt={publishedAt}
+          scheduledStartAt={scheduledStartAt}
+          videoType={videoType}
         />
         {isHero ? (
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-3 pb-3 pt-8">

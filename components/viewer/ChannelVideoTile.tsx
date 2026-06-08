@@ -2,6 +2,7 @@
 
 import type { LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import { SaveVideoButton } from "@/components/auth/SaveVideoButton";
+import { VideoReleaseDateBadge } from "@/components/viewer/VideoReleaseDateBadge";
 import { ViewerVideoBadges } from "@/components/viewer/ViewerVideoBadges";
 import { resolveVideoThumbnail } from "@/lib/viewer/videoMetadata";
 
@@ -31,6 +32,7 @@ export function ChannelVideoTile({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={thumbnail} alt="" loading="lazy" />
           <ViewerVideoBadges watched={watched} saved={saved} />
+          <VideoReleaseDateBadge publishedAt={video.publishedAt} videoType="vod" />
         </span>
         <span className="cv-title">{video.title}</span>
       </button>

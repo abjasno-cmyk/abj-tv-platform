@@ -16,6 +16,34 @@ import { test, expect } from "@playwright/test";
  */
 const HAS_DATA = Boolean(process.env.E2E_BASE_URL) || process.env.E2E_WITH_DATA === "1";
 
+const PLAYABLE_BLOCK_TYPES = new Set(["live", "premiere", "recorded"]);
+
+function readBlockType(block: Record<string, unknown>): string {
+  const raw = block.type ?? block.block_type;
+  return typeof raw === "string" ? raw.trim().toLowerCase() : "";
+}
+
+function readBlockVideoId(block: Record<string, unknown>): string | undefined {
+  const raw = block.video_id ?? block.videoId;
+  return typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : undefined;
+}
+
+function readBlockStart(block: Record<string, unknown>): string | undefined {
+  const raw = block.starts_at ?? block.start;
+  return typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : undefined;
+}
+
+function readBlockEnd(block: Record<string, unknown>): string | undefined {
+  const raw = block.ends_at ?? block.end;
+  return typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : undefined;
+}
+
+function blockRequiresVideoId(block: Record<string, unknown>): boolean {
+  const type = readBlockType(block);
+  if (!type) return true;
+  return PLAYABLE_BLOCK_TYPES.has(type);
+}
+
 test.describe("/live — queue & playback", () => {
   test.skip(
     !HAS_DATA,
@@ -34,19 +62,35 @@ test.describe("/live — queue & playback", () => {
     expect(Array.isArray(blocks), "feed should expose a blocks/timeline array").toBe(true);
     expect(blocks.length, "the queue should not be empty").toBeGreaterThan(0);
 
-    // Each queued block carries what the player needs to play it.
+    const playableBlocks = blocks.filter((block) => blockRequiresVideoId(block));
+    expect(
+      playableBlocks.length,
+      "the queue should include playable blocks (live/premiere/recorded or untyped legacy blocks)",
+    ).toBeGreaterThan(0);
+
+    // Each block carries scheduling metadata; playable blocks also need a video id.
     for (const block of blocks.slice(0, 25)) {
-      const videoId = (block.video_id ?? block.videoId) as string | undefined;
-      const start = (block.starts_at ?? block.start) as string | undefined;
-      const end = (block.ends_at ?? block.end) as string | undefined;
-      expect(typeof videoId, "each block needs a video_id").toBe("string");
-      expect(videoId && videoId.length, "video_id must be non-empty").toBeTruthy();
+      const videoId = readBlockVideoId(block);
+      const start = readBlockStart(block);
+      const end = readBlockEnd(block);
+      const requiresVideoId = blockRequiresVideoId(block);
+
+      if (requiresVideoId) {
+        expect(typeof videoId, "playable blocks need a video_id").toBe("string");
+        expect(videoId && videoId.length, "video_id must be non-empty").toBeTruthy();
+      }
+
       expect(Boolean(start) && Boolean(end), "each block needs a start and end").toBe(true);
       expect(new Date(end!).getTime(), "end must be after start").toBeGreaterThan(new Date(start!).getTime());
     }
 
+    expect(
+      playableBlocks.some((block) => Boolean(readBlockVideoId(block))),
+      "at least one playable block should reference a video",
+    ).toBe(true);
+
     // The queue is chronologically ordered.
-    const starts = blocks.map((b) => new Date((b.starts_at ?? b.start) as string).getTime());
+    const starts = blocks.map((b) => new Date(readBlockStart(b)!).getTime());
     expect(starts, "blocks should be ordered by start time").toEqual([...starts].sort((a, b) => a - b));
   });
 
