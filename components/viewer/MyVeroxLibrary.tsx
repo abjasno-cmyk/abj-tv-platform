@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { SaveVideoButton } from "@/components/auth/SaveVideoButton";
 import { SaveOpinionButton } from "@/components/nazory/SaveOpinionButton";
+import { VideoCommentButton } from "@/components/viewer/VideoCommentButton";
 import type {
   MyVeroxLibraryPayload,
   ViewerLibraryChannel,
@@ -29,6 +30,7 @@ function VideoShelfCard({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={video.thumbnailUrl} alt="" loading="lazy" />
           {video.completed ? <span className="mv-library-badge">Zhlédnuto</span> : null}
+          <VideoCommentButton videoId={video.videoId} videoTitle={video.title} />
         </span>
         <span className="mv-library-body">
           <span className="mv-library-title">{video.title}</span>

@@ -52,6 +52,67 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+.vx-video-comment-btn {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  line-height: 0;
+  cursor: pointer;
+}
+.vx-video-comment-btn--overlay {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  padding: 4px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.68);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.vx-video-comment-btn--overlay:hover,
+.vx-video-comment-btn--overlay:focus-visible {
+  background: rgba(0, 0, 0, 0.82);
+  transform: scale(1.05);
+}
+.vx-video-comment-btn--overlay .vx-video-comment-icon {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+.vx-video-comment-btn--inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(17, 17, 17, 0.16);
+  background: #fff;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.vx-video-comment-btn--inline:hover,
+.vx-video-comment-btn--inline:focus-visible {
+  border-color: var(--vx-orange);
+  transform: scale(1.03);
+}
+.vx-video-comment-btn--inline .vx-video-comment-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+.vx-video-comment-btn--hero {
+  flex: 0 0 auto;
+  background: transparent;
+}
+.vx-video-comment-btn--hero .vx-video-comment-icon {
+  width: clamp(30px, 8vw, 52px);
+  margin-top: 2px;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.vx-video-comment-btn--hero:hover .vx-video-comment-icon,
+.vx-video-comment-btn--hero:focus-visible .vx-video-comment-icon {
+  filter: brightness(0.92);
+  transform: scale(1.04);
+}
 
 .vx-live *,
 .vx-hdr * {
