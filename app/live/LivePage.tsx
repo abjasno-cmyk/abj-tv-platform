@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { LiveChannelGroup } from "@/components/abj/ChannelDirectory";
 import type { DayProgram } from "@/lib/epg-types";
-import { LiveAlert } from "@/components/abj/LiveAlert";
 import { HomePage } from "@/components/abj/HomePage";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { trackAnalyticsEvent, trackVideoProgressThrottled } from "@/lib/analytics/client";
@@ -41,7 +40,6 @@ export default function LivePage({
     capturedAtMs: 0,
   });
   const [videoId, setVideoId] = useState<string | null>(initialVideoId);
-  const [playingVideoId, setPlayingVideoId] = useState<string | null>(initialVideoId);
   const [title, setTitle] = useState(initialTitle);
   const [channelName, setChannelName] = useState(initialChannelName);
   // Lineární režim (živý kanál) běží defaultně; konkrétní deep-link video = VOD.
@@ -286,9 +284,6 @@ export default function LivePage({
           }
         }}
         onPlaybackSample={handlePlaybackSample}
-        onPlayingVideoChange={({ videoId: nextPlayingVideoId }) => {
-          setPlayingVideoId(nextPlayingVideoId);
-        }}
         onSelect={(item) => {
           setTitle(item.title);
           setChannelName(item.channelName);
@@ -324,31 +319,6 @@ export default function LivePage({
         }}
         engagementSlot={null}
         reactionsSlot={null}
-      />
-      <LiveAlert
-        currentVideoId={playingVideoId ?? videoId}
-        onWatchLive={({ videoId: liveVideoId, title: liveTitle, channel: liveChannel }) => {
-          setPlayingVideoId(liveVideoId);
-          setVideoId(liveVideoId);
-          setTitle(liveTitle);
-          setChannelName(liveChannel);
-          setStartSeconds(0);
-          setIsLive(true);
-          setContinueFromSeconds(null);
-          linearSourceRef.current = {
-            videoId: liveVideoId,
-            title: liveTitle,
-            channelName: liveChannel,
-            startSeconds: 0,
-            capturedAtMs: Date.now(),
-          };
-          trackAnalyticsEvent({
-            event_name: "live_open",
-            entity_type: "live",
-            entity_id: liveVideoId,
-            properties: { source: "live_alert" },
-          });
-        }}
       />
     </section>
   );
