@@ -2,12 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { isPlayablePlayoutBlock, isValidYouTubeVideoId, readPlayoutVideoId } from "@/lib/playout/types";
 
-function block(videoId: string) {
+function block(overrides: Partial<{ video_id: string | null }> = {}) {
   return {
     block_id: "b1",
     starts_at: "2026-06-08T10:00:00.000Z",
     ends_at: "2026-06-08T10:30:00.000Z",
-    video_id: videoId,
+    video_id: "dQw4w9WgXcQ",
+    ...overrides,
   };
 }
 
