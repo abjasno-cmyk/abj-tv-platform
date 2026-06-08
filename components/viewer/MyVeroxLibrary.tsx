@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { SaveVideoButton } from "@/components/auth/SaveVideoButton";
+import { VideoDiscussButton } from "@/components/viewer/VideoDiscussButton";
 import { SaveOpinionButton } from "@/components/nazory/SaveOpinionButton";
 import type {
   MyVeroxLibraryPayload,
@@ -38,18 +39,21 @@ function VideoShelfCard({
           ) : null}
         </span>
       </Link>
-      <SaveVideoButton
-        videoId={video.videoId}
-        title={video.title}
-        thumbnailUrl={video.thumbnailUrl}
-        channelName={video.channelName}
-        saved
-        compact
-        className="mv-library-unsave"
-        onSavedChange={(saved) => {
-          if (!saved) onUnsave?.();
-        }}
-      />
+      <div className="mv-library-card-actions nazory-detail-actions">
+        <SaveVideoButton
+          videoId={video.videoId}
+          title={video.title}
+          thumbnailUrl={video.thumbnailUrl}
+          channelName={video.channelName}
+          saved
+          compact
+          className="mv-library-unsave"
+          onSavedChange={(saved) => {
+            if (!saved) onUnsave?.();
+          }}
+        />
+        <VideoDiscussButton videoId={video.videoId} videoTitle={video.title} compact />
+      </div>
     </article>
   );
 }

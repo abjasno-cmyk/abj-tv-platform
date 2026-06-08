@@ -9,11 +9,18 @@ type VideoCommentsDrawerProps = {
   onClose: () => void;
   videoId: string | null;
   videoTitle?: string;
+  defaultView?: DrawerView;
 };
 
 type DrawerView = "global" | "video";
 
-export function VideoCommentsDrawer({ open, onClose, videoId, videoTitle }: VideoCommentsDrawerProps) {
+export function VideoCommentsDrawer({
+  open,
+  onClose,
+  videoId,
+  videoTitle,
+  defaultView = "global",
+}: VideoCommentsDrawerProps) {
   const [view, setView] = useState<DrawerView>("global");
 
   const handleKeyDown = useCallback(
@@ -35,8 +42,8 @@ export function VideoCommentsDrawer({ open, onClose, videoId, videoTitle }: Vide
   }, [handleKeyDown, open]);
 
   useEffect(() => {
-    if (open) setView("global");
-  }, [open]);
+    if (open) setView(defaultView);
+  }, [defaultView, open]);
 
   if (!open) return null;
 
