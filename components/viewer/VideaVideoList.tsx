@@ -5,9 +5,11 @@ import { Fragment } from "react";
 
 import { SaveVideoButton } from "@/components/auth/SaveVideoButton";
 import { ShareVideoButton } from "@/components/viewer/ShareVideoButton";
+import { VideoReleaseDateBadge } from "@/components/viewer/VideoReleaseDateBadge";
 import { ViewerVideoBadges } from "@/components/viewer/ViewerVideoBadges";
 import type { FeedVideo } from "@/lib/dayOverview";
 import { liveVideoHref, resolveVideoThumbnail } from "@/lib/viewer/videoMetadata";
+import { resolveVideoReleaseIso } from "@/lib/viewer/videoReleaseDate";
 import { useViewerVideoState } from "@/lib/viewer/useViewerVideoState";
 
 const MONTHS = [
@@ -31,7 +33,12 @@ export function VideaVideoList({ videos }: VideaVideoListProps) {
   return (
     <>
       {videos.map((video, i) => {
-        const { month, day } = dateParts(video.published_at);
+        const releaseIso = resolveVideoReleaseIso({
+          publishedAt: video.published_at,
+          scheduledStartAt: video.scheduled_start_at,
+          videoType: video.video_type,
+        });
+        const { month, day } = dateParts(releaseIso ?? video.published_at);
         const desc = video.tldr ?? video.context ?? "";
         const href = liveVideoHref({
           videoId: video.video_id,
@@ -53,6 +60,11 @@ export function VideaVideoList({ videos }: VideaVideoListProps) {
                 <ViewerVideoBadges
                   watched={watchedVideoIds.has(video.video_id)}
                   saved={savedVideoIds.has(video.video_id)}
+                />
+                <VideoReleaseDateBadge
+                  publishedAt={video.published_at}
+                  scheduledStartAt={video.scheduled_start_at}
+                  videoType={video.video_type}
                 />
               </Link>
               <div className="body">

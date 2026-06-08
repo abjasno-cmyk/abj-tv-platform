@@ -6,6 +6,7 @@ import YouTube, { type YouTubeProps } from "react-youtube";
 
 import { useFeed } from "@/hooks/useFeed";
 import type { FeedPost } from "@/lib/api";
+import { VideoReleaseDateBadge } from "@/components/viewer/VideoReleaseDateBadge";
 
 const EMPTY_MESSAGE = "Zatím nejsou dostupná žádná nová videa.";
 const LATEST_VIDEO_LIMIT = 16;
@@ -709,6 +710,7 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, edi
             }
             unoptimized={thumbnailSrc.startsWith("http")}
           />
+          <VideoReleaseDateBadge publishedAt={video.published_at} videoType="vod" />
           {tag && !compactEditorial ? (
             <span className="absolute left-2 top-2 rounded-full border border-[#FF6A00]/35 bg-white/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#C14900]">
               {tag}

@@ -6,6 +6,8 @@ export type FeedVideo = {
   title: string;
   channel: string;
   published_at: string;
+  scheduled_start_at?: string | null;
+  video_type?: "vod" | "upcoming" | "live";
   topics: string[];
   thumbnail: string;
   tldr?: string;
@@ -171,6 +173,8 @@ function feedVideoFromRaw(video: RawVideo): FeedVideo {
     title: video.title,
     channel: video.channel_name,
     published_at: toIsoOrEpoch(video.published_at ?? video.created_at),
+    scheduled_start_at: video.scheduled_start_at ? toIsoOrEpoch(video.scheduled_start_at) : null,
+    video_type: video.video_type ?? "vod",
     thumbnail: video.thumbnail ?? "/placeholder-thumb.jpg",
     tldr: readString(metadata?.tldr) ?? readString(metadata?.summary),
     context: readString(metadata?.context),
