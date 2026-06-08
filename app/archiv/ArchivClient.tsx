@@ -4,9 +4,12 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import YouTube, { type YouTubeProps } from "react-youtube";
 
+import { SaveVideoButton } from "@/components/auth/SaveVideoButton";
 import { useFeed } from "@/hooks/useFeed";
 import type { FeedPost } from "@/lib/api";
+import { VideoDiscussButton } from "@/components/viewer/VideoDiscussButton";
 import { VideoReleaseDateBadge } from "@/components/viewer/VideoReleaseDateBadge";
+import { useViewerVideoState } from "@/lib/viewer/useViewerVideoState";
 
 const EMPTY_MESSAGE = "Zatím nejsou dostupná žádná nová videa.";
 const LATEST_VIDEO_LIMIT = 16;
@@ -640,6 +643,7 @@ type ArchiveVideoCardProps = {
 
 function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, editorial = false }: ArchiveVideoCardProps) {
   const videoId = getEffectiveVideoId(video);
+  const { savedVideoIds, setSaved } = useViewerVideoState();
   const [expanded, setExpanded] = useState(false);
   const [startedPlayback, setStartedPlayback] = useState(false);
   const externalHref = getVideoExternalUrl(video);
@@ -758,6 +762,24 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, edi
           </div>
         ) : null}
       </button>
+
+      {videoId && !isHero ? (
+        <div
+          className={`nazory-detail-actions ${
+            compactEditorial ? "px-4 pb-4 sm:px-5" : isFeatured ? "px-3.5 pb-3.5" : "px-3 pb-3"
+          }`}
+        >
+          <SaveVideoButton
+            videoId={videoId}
+            title={video.title}
+            channelName={video.channel}
+            thumbnailUrl={thumbnailSrc}
+            saved={savedVideoIds.has(videoId)}
+            onSavedChange={(nextSaved) => setSaved(videoId, nextSaved)}
+          />
+          <VideoDiscussButton videoId={videoId} videoTitle={video.title} />
+        </div>
+      ) : null}
 
       {expanded ? (
         <div
@@ -1459,6 +1481,8 @@ type ChannelDetailPanelProps = {
 };
 
 function ChannelDetailPanel({ channel, selectedVideo, open, loading, onClose, onSelectVideo }: ChannelDetailPanelProps) {
+  const { savedVideoIds, setSaved } = useViewerVideoState();
+
   if (!open) return null;
 
   if (!channel) {
@@ -1510,36 +1534,55 @@ function ChannelDetailPanel({ channel, selectedVideo, open, loading, onClose, on
               const aspect = getVideoAspectRatio(video);
               const thumbnail = readString(video.thumbnail) ?? "/placeholder-thumb.jpg";
               const canPlay = Boolean(getYoutubeEmbedUrl(video) || getVideoExternalUrl(video));
+              const videoId = getEffectiveVideoId(video);
 
               return (
-                <button
+                <div
                   key={`channel-video-${key}`}
-                  type="button"
-                  onClick={() => onSelectVideo(key)}
-                  className={`w-full rounded-xl border p-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6A00]/55 ${
+                  className={`w-full rounded-xl border p-2 transition ${
                     active
                       ? "border-[#FF6A00]/55 bg-[rgba(255,106,0,0.08)]"
                       : "border-[var(--abj-gold-dim)] bg-white hover:border-[rgba(17,17,17,0.26)]"
                   }`}
                 >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={`relative shrink-0 overflow-hidden rounded-lg bg-[rgba(17,17,17,0.08)] ${
-                        aspect === "portrait" ? "h-24 w-[54px]" : "h-16 w-28"
-                      }`}
-                    >
-                      <Image src={thumbnail} alt={video.title} fill className="object-cover" unoptimized={thumbnail.startsWith("http")} />
+                  <button
+                    type="button"
+                    onClick={() => onSelectVideo(key)}
+                    className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6A00]/55"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`relative shrink-0 overflow-hidden rounded-lg bg-[rgba(17,17,17,0.08)] ${
+                          aspect === "portrait" ? "h-24 w-[54px]" : "h-16 w-28"
+                        }`}
+                      >
+                        <Image src={thumbnail} alt={video.title} fill className="object-cover" unoptimized={thumbnail.startsWith("http")} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-sm font-medium text-abj-text1">{video.title}</p>
+                        <p className="mt-1 text-[11px] text-abj-text2">{publishedLabel ?? "Datum neuvedeno"}</p>
+                        {video.tldr ? <p className="mt-1 line-clamp-1 text-[11px] text-abj-text3">{video.tldr}</p> : null}
+                        {!canPlay ? (
+                          <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[#C14900]">Pouze odkaz</p>
+                        ) : null}
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-sm font-medium text-abj-text1">{video.title}</p>
-                      <p className="mt-1 text-[11px] text-abj-text2">{publishedLabel ?? "Datum neuvedeno"}</p>
-                      {video.tldr ? <p className="mt-1 line-clamp-1 text-[11px] text-abj-text3">{video.tldr}</p> : null}
-                      {!canPlay ? (
-                        <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[#C14900]">Pouze odkaz</p>
-                      ) : null}
+                  </button>
+                  {videoId ? (
+                    <div className="nazory-detail-actions mt-2">
+                      <SaveVideoButton
+                        videoId={videoId}
+                        title={video.title}
+                        channelName={video.channel}
+                        thumbnailUrl={thumbnail}
+                        saved={savedVideoIds.has(videoId)}
+                        compact
+                        onSavedChange={(nextSaved) => setSaved(videoId, nextSaved)}
+                      />
+                      <VideoDiscussButton videoId={videoId} videoTitle={video.title} compact />
                     </div>
-                  </div>
-                </button>
+                  ) : null}
+                </div>
               );
             })}
           </div>

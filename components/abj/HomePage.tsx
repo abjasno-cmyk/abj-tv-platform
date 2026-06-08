@@ -8,10 +8,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { VeroxHeader } from "@/components/abj/VeroxHeader";
 import { HeroPlayerBar, type PlaybackSpeed } from "@/components/abj/playout/HeroPlayerBar";
 import { FollowChannelButton } from "@/components/auth/FollowChannelButton";
-import { VideoCommentsDrawer } from "@/components/auth/VideoCommentsDrawer";
 import { SaveVideoButton } from "@/components/auth/SaveVideoButton";
 import { ChannelVideoTile } from "@/components/viewer/ChannelVideoTile";
 import { ShareVideoButton } from "@/components/viewer/ShareVideoButton";
+import { VideoDiscussButton } from "@/components/viewer/VideoDiscussButton";
 import { ViewerVideoBadges } from "@/components/viewer/ViewerVideoBadges";
 import { useViewerVideoState } from "@/lib/viewer/useViewerVideoState";
 import { normalizeChannelFollowId } from "@/lib/viewer/videoMetadata";
@@ -73,7 +73,7 @@ export function HomePage({
   const playerRef = useRef<PlayerHandle | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const channelTrackRef = useRef<HTMLDivElement | null>(null);
-  const currentItemRef = useRef<HTMLButtonElement | null>(null);
+  const currentItemRef = useRef<HTMLDivElement | null>(null);
   // Zvuk: autoplay MUSÍ startovat muted (jinak ho prohlížeč zablokuje / video pauzne).
   // Po prvním odmutování (gesto uživatele) zvuk drží napříč všemi dalšími videi
   // (onReady aplikuje `muted` stav). Auto-odmutovat hned po načtení nelze — browser
@@ -84,7 +84,6 @@ export function HomePage({
   const [stageDot, setStageDot] = useState(0);
   const [channelDot, setChannelDot] = useState(0);
   // Sekce KANÁLY: otevřený kanál + až 24 videí bez Shorts (detail panel pod lištou).
-  const [commentsOpen, setCommentsOpen] = useState(false);
   const [openChannelName, setOpenChannelName] = useState<string | null>(null);
   const [channelVideosByName, setChannelVideosByName] = useState<Record<string, LiveChannelVideo[]>>({});
   const [channelLoading, setChannelLoading] = useState<string | null>(null);
@@ -153,6 +152,7 @@ export function HomePage({
       key: `${item.videoId}-${index}`,
       videoId: item.videoId,
       title: item.title,
+      channelName: item.channelName,
       thumb: thumbFor(item),
       onClick: () => handleSelectProgram(item),
     }));
@@ -551,15 +551,6 @@ export function HomePage({
 
       {/* FEATURE SUMMARY */}
       <section className="feature-summary" aria-labelledby="hf-featured">
-        <button
-          type="button"
-          className="comment-icon-btn"
-          onClick={() => setCommentsOpen(true)}
-          aria-label="Otevřít komentáře"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="comment-icon" src="/design/icons/ikona_komentovat.png" alt="" />
-        </button>
         <div className="feature-copy">
           <h1 id="hf-featured">{displayTitle}</h1>
         <p>{displayChannel}</p>
@@ -573,6 +564,7 @@ export function HomePage({
               saved={savedVideoIds.has(activeCommentVideoId)}
               onSavedChange={(nextSaved) => setSaved(activeCommentVideoId, nextSaved)}
             />
+            <VideoDiscussButton videoId={activeCommentVideoId} videoTitle={displayTitle} />
             <ShareVideoButton videoId={activeCommentVideoId} />
             <ViewerVideoBadges
               watched={watchedVideoIds.has(activeCommentVideoId)}
@@ -620,20 +612,34 @@ export function HomePage({
                 // „Právě hrané" = blok, který reálně běží v hero (sleduje playout smyčku).
                 const isCurrent = Boolean(currentVideoId) && it.videoId === currentVideoId;
                 return (
-                  <button
-                    type="button"
+                  <div
                     key={it.key}
                     ref={isCurrent ? currentItemRef : undefined}
                     className={`playing-image${isCurrent ? " is-current" : ""}`}
-                    onClick={it.onClick}
-                    aria-label={it.title}
                   >
-                    <span className="playing-thumb">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={it.thumb} alt="" loading="lazy" />
-                    </span>
-                    <span className="playing-title">{it.title}</span>
-                  </button>
+                    <button type="button" className="playing-thumb-btn" onClick={it.onClick} aria-label={it.title}>
+                      <span className="playing-thumb">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={it.thumb} alt="" loading="lazy" />
+                      </span>
+                    </button>
+                    <button type="button" className="playing-title" onClick={it.onClick}>
+                      {it.title}
+                    </button>
+                    {it.videoId ? (
+                      <div className="playing-image-actions nazory-detail-actions">
+                        <SaveVideoButton
+                          videoId={it.videoId}
+                          title={it.title}
+                          channelName={it.channelName}
+                          thumbnailUrl={it.thumb}
+                          saved={savedVideoIds.has(it.videoId)}
+                          onSavedChange={(nextSaved) => setSaved(it.videoId!, nextSaved)}
+                        />
+                        <VideoDiscussButton videoId={it.videoId} videoTitle={it.title} />
+                      </div>
+                    ) : null}
+                  </div>
                 );
               })
             )}
@@ -771,12 +777,6 @@ export function HomePage({
       </section>
       </div>
       {/* /hf-body */}
-      <VideoCommentsDrawer
-        open={commentsOpen}
-        onClose={() => setCommentsOpen(false)}
-        videoId={activeCommentVideoId}
-        videoTitle={displayTitle}
-      />
     </div>
   );
 }

@@ -136,7 +136,7 @@ test.describe("/live — queue & playback", () => {
     const strip = page.locator("section.playing-now");
     await expect(strip, "now-playing program strip should render").toBeVisible({ timeout: 20_000 });
     // Queue should contain at least one selectable programme tile.
-    await expect(strip.locator("button.playing-image")).not.toHaveCount(0);
+    await expect(strip.locator(".playing-image button.playing-thumb-btn")).not.toHaveCount(0);
   });
 
   test("selecting another queued item swaps the player to that video", async ({ page }) => {
@@ -171,7 +171,7 @@ test.describe("/live — queue & playback", () => {
       .toBeTruthy();
 
     // Pick a queued tile that is not the one currently playing.
-    const otherTile = page.locator("section.playing-now button.playing-image:not(.is-current)").first();
+    const otherTile = page.locator("section.playing-now .playing-image:not(.is-current) button.playing-thumb-btn").first();
     await expect(otherTile, "a non-current queued tile should exist").toBeVisible({ timeout: 20_000 });
     await otherTile.click();
 

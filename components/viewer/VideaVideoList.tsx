@@ -5,6 +5,7 @@ import { Fragment } from "react";
 
 import { SaveVideoButton } from "@/components/auth/SaveVideoButton";
 import { ShareVideoButton } from "@/components/viewer/ShareVideoButton";
+import { VideoDiscussButton } from "@/components/viewer/VideoDiscussButton";
 import { VideoReleaseDateBadge } from "@/components/viewer/VideoReleaseDateBadge";
 import { ViewerVideoBadges } from "@/components/viewer/ViewerVideoBadges";
 import type { FeedVideo } from "@/lib/dayOverview";
@@ -80,6 +81,7 @@ export function VideaVideoList({ videos }: VideaVideoListProps) {
                     saved={savedVideoIds.has(video.video_id)}
                     onSavedChange={(nextSaved) => setSaved(video.video_id, nextSaved)}
                   />
+                  <VideoDiscussButton videoId={video.video_id} videoTitle={video.title} />
                   <ShareVideoButton videoId={video.video_id} />
                   <Link href={href} className="vx-arrow">
                     <b>Přehrát</b>

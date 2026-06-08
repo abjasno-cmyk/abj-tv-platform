@@ -2,6 +2,7 @@
 
 import type { LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import { SaveVideoButton } from "@/components/auth/SaveVideoButton";
+import { VideoDiscussButton } from "@/components/viewer/VideoDiscussButton";
 import { VideoReleaseDateBadge } from "@/components/viewer/VideoReleaseDateBadge";
 import { ViewerVideoBadges } from "@/components/viewer/ViewerVideoBadges";
 import { resolveVideoThumbnail } from "@/lib/viewer/videoMetadata";
@@ -36,16 +37,17 @@ export function ChannelVideoTile({
         </span>
         <span className="cv-title">{video.title}</span>
       </button>
-      <SaveVideoButton
-        videoId={video.videoId}
-        title={video.title}
-        thumbnailUrl={thumbnail}
-        channelName={channelName}
-        saved={saved}
-        compact
-        className="channel-video-save"
-        onSavedChange={onSavedChange}
-      />
+      <div className="channel-video-actions nazory-detail-actions">
+        <SaveVideoButton
+          videoId={video.videoId}
+          title={video.title}
+          thumbnailUrl={thumbnail}
+          channelName={channelName}
+          saved={saved}
+          onSavedChange={onSavedChange}
+        />
+        <VideoDiscussButton videoId={video.videoId} videoTitle={video.title} />
+      </div>
     </div>
   );
 }
