@@ -39,7 +39,6 @@ type HomePageProps = {
   onReturnToLive: () => void;
   onContinueFromSaved?: (seconds: number) => void;
   onPlaybackSample?: (sample: { videoId: string; positionSeconds: number; durationSeconds: number }) => void;
-  onPlayingVideoChange?: (payload: { videoId: string | null }) => void;
   onSelectChannelVideo: (payload: { channelName: string; video: LiveChannelVideo }) => void;
   engagementSlot?: ReactNode;
   reactionsSlot?: ReactNode;
@@ -66,7 +65,6 @@ export function HomePage({
   onSelect,
   onReturnToLive,
   onPlaybackSample,
-  onPlayingVideoChange,
   onSelectChannelVideo: onSelectChannelVideoProp,
 }: HomePageProps) {
   const [clientChannels, setClientChannels] = useState<LiveChannelGroup[]>([]);
@@ -198,9 +196,6 @@ export function HomePage({
     return map;
   }, [days]);
   const currentVideoId = heroSurface?.kind === "youtube" ? heroSurface.videoId : null;
-  useEffect(() => {
-    onPlayingVideoChange?.({ videoId: currentVideoId });
-  }, [currentVideoId, onPlayingVideoChange]);
   const activeCommentVideoId = currentVideoId ?? videoId;
   const playerControlsEnabled = heroSurface?.kind === "youtube" && Boolean(activeCommentVideoId);
   const currentEpg = currentVideoId ? epgInfoById.get(currentVideoId) : null;
