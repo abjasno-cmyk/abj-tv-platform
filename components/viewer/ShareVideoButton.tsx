@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from "react";
 
-import { CopyLinkButton } from "@/components/nazory/CopyLinkButton";
+import { ShareMenu } from "@/components/nazory/ShareMenu";
 import { videoShareUrl } from "@/lib/viewer/videoMetadata";
 
 type ShareVideoButtonProps = {
   videoId: string;
+  title?: string;
 };
 
-export function ShareVideoButton({ videoId }: ShareVideoButtonProps) {
+export function ShareVideoButton({ videoId, title }: ShareVideoButtonProps) {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -18,5 +19,5 @@ export function ShareVideoButton({ videoId }: ShareVideoButtonProps) {
 
   if (!shareUrl) return null;
 
-  return <CopyLinkButton url={shareUrl} />;
+  return <ShareMenu url={shareUrl} title={title} />;
 }
