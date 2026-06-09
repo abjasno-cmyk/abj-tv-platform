@@ -102,7 +102,7 @@ export function VeroxHeader({ active, showAudience = false }: VeroxHeaderProps) 
           ŽIVĚ
         </Link>
         <Link className={active === "videa" ? "is-active" : undefined} href="/videa" aria-current={active === "videa" ? "page" : undefined}>
-          VIDEA
+          NEJNOVĚJŠÍ VIDEA
         </Link>
         <Link className={active === "nazory" ? "is-active" : undefined} href="/nazory" aria-current={active === "nazory" ? "page" : undefined}>
           NÁZORY

@@ -13,13 +13,13 @@ async function loadVideos(): Promise<FeedVideo[]> {
   }
 }
 
-// VIDEA podle klientské šablony: karta = datum (měsíc + velký den) + náhled + popis.
+// Nejnovější videa — karta = datum (měsíc + velký den) + náhled + popis.
 export default async function VideaPage() {
   const videos = await loadVideos();
 
   return (
     <div className="vx-live vx-sub">
-      <h1 className="section-h">VIDEA</h1>
+      <h1 className="section-h">Právě vyšlo</h1>
       {videos.length === 0 ? (
         <div className="mv">
           <div className="info">Videa se právě připravují.</div>

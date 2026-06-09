@@ -6,7 +6,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 
 const tabs = [
   { href: "/live", label: "Živě", icon: "▶" },
-  { href: "/videa", label: "Videa", icon: "◧" },
+  { href: "/videa", label: "Nejnovější videa", icon: "◧" },
   { href: "/nazory", label: "Názory", icon: "✦" },
   { href: "/komunita", label: "Komunita", icon: "▩" },
   { href: "/muj-verox", label: "Můj Verox", icon: "☺" },
