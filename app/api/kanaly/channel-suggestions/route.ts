@@ -1,3 +1,4 @@
+import { sanitizeSuggestionText } from "@/lib/kanaly/sanitizeSuggestion";
 import { enforceWriteRateLimit } from "@/lib/rateLimit";
 import { createSupabaseServerClient, createSupabaseServiceClient } from "@/lib/supabase/server";
 
@@ -35,9 +36,9 @@ export async function POST(request: Request) {
     return Response.json({ error: "Neplatný požadavek." }, { status: 400 });
   }
 
-  const channelName = normalizeString(payload.channelName, 200);
+  const channelName = sanitizeSuggestionText(normalizeString(payload.channelName, 200));
   const channelUrl = normalizeString(payload.channelUrl, 500);
-  const reason = normalizeString(payload.reason, 2000);
+  const reason = sanitizeSuggestionText(normalizeString(payload.reason, 2000));
 
   if (channelName.length < 2) {
     return Response.json({ error: "Zadejte název kanálu." }, { status: 400 });
