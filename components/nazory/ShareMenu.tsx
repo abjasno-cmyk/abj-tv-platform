@@ -4,13 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { buildSocialShareUrl, type SocialSharePlatform } from "@/lib/share/socialShare";
 
-type ShareMenuItem = {
-  id: "copy" | SocialSharePlatform;
-  label: string;
-};
-
-const SHARE_ITEMS: ShareMenuItem[] = [
-  { id: "copy", label: "Kopírovat odkaz" },
+const SOCIAL_ITEMS: Array<{ id: SocialSharePlatform; label: string }> = [
   { id: "facebook", label: "Facebook" },
   { id: "x", label: "X" },
   { id: "whatsapp", label: "WhatsApp" },
@@ -96,29 +90,25 @@ export function ShareMenu({ url, title, label = "Sdílet" }: ShareMenuProps) {
       </button>
       {open ? (
         <div id={menuId} className="nazory-share-menu-panel" role="menu" aria-label="Možnosti sdílení">
-          {SHARE_ITEMS.map((item) =>
-            item.id === "copy" ? (
-              <button
-                key={item.id}
-                type="button"
-                className="nazory-share-menu-item"
-                role="menuitem"
-                onClick={() => void handleCopy()}
-              >
-                {item.label}
-              </button>
-            ) : (
-              <button
-                key={item.id}
-                type="button"
-                className="nazory-share-menu-item"
-                role="menuitem"
-                onClick={() => handleSocialShare(item.id)}
-              >
-                {item.label}
-              </button>
-            ),
-          )}
+          <button
+            type="button"
+            className="nazory-share-menu-item"
+            role="menuitem"
+            onClick={() => void handleCopy()}
+          >
+            Kopírovat odkaz
+          </button>
+          {SOCIAL_ITEMS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className="nazory-share-menu-item"
+              role="menuitem"
+              onClick={() => handleSocialShare(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
       ) : null}
     </div>
