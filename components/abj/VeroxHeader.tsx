@@ -10,7 +10,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 // vlevo, nav svisle vpravo, hodiny + datum vpravo (desktop) / pod logem (mobil).
 // Používá ji landing (HomePage) i subpages (ABJNav) — jeden zdroj pravdy.
 
-export type VeroxNavKey = "zive" | "videa" | "nazory" | "muj";
+export type VeroxNavKey = "zive" | "videa" | "nazory" | "kanaly" | "muj";
 
 const DAYS = ["NEDĚLE", "PONDĚLÍ", "ÚTERÝ", "STŘEDA", "ČTVRTEK", "PÁTEK", "SOBOTA"];
 const MONTHS_GEN = [
@@ -106,6 +106,9 @@ export function VeroxHeader({ active, showAudience = false }: VeroxHeaderProps) 
         </Link>
         <Link className={active === "nazory" ? "is-active" : undefined} href="/nazory" aria-current={active === "nazory" ? "page" : undefined}>
           NÁZORY
+        </Link>
+        <Link className={active === "kanaly" ? "is-active" : undefined} href="/kanaly" aria-current={active === "kanaly" ? "page" : undefined}>
+          KANÁLY
         </Link>
         <Link className={active === "muj" ? "is-active" : undefined} href="/muj-verox" aria-current={active === "muj" ? "page" : undefined}>
           MŮJ VEROX

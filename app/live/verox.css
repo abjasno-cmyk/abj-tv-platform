@@ -2464,3 +2464,166 @@
     letter-spacing: normal;
   }
 }
+
+/* ============ KANÁLY (samostatná stránka) ============ */
+.kanaly-sub .kanaly-page {
+  padding-bottom: clamp(24px, 5cqw, 48px);
+}
+.kanaly-lead,
+.kanaly-empty,
+.kanaly-channel-info,
+.kanaly-channel-fallback {
+  margin: 0 var(--L1) clamp(18px, 4cqw, 28px);
+  color: var(--vx-gray-dark);
+  font-size: clamp(0.9rem, 2.4cqw, 1.05rem);
+  line-height: 1.45;
+  letter-spacing: 0.03em;
+}
+.kanaly-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--L1);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kanaly-item {
+  border: 1px solid rgba(17, 17, 17, 0.12);
+  border-radius: 4px;
+  background: #fff;
+  overflow: hidden;
+}
+.kanaly-item.is-open {
+  border-color: rgba(255, 102, 0, 0.45);
+  box-shadow: 0 8px 24px rgba(17, 17, 17, 0.06);
+}
+.kanaly-channel-trigger {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+.kanaly-channel-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #f2f2f2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+.kanaly-channel-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.kanaly-channel-avatar-fallback {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--vx-gray-light);
+}
+.kanaly-channel-name {
+  font-size: clamp(0.95rem, 2.8cqw, 1.15rem);
+  font-weight: 700;
+  color: var(--vx-gray-dark);
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+.kanaly-channel-chevron {
+  color: var(--vx-orange);
+  font-size: 0.9rem;
+  line-height: 1;
+}
+.kanaly-channel-panel {
+  border-top: 1px solid rgba(17, 17, 17, 0.08);
+  padding: 12px 0 18px;
+}
+.kanaly-channel-panel-head {
+  padding: 0 var(--L1) 12px;
+}
+.kanaly-channel-panel-label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vx-gray-light);
+}
+.kanaly-channel-panel-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+.kanaly-channel-panel-name {
+  margin: 0;
+  font-size: clamp(1rem, 2.8cqw, 1.25rem);
+  font-weight: 800;
+  color: var(--vx-gray-dark);
+}
+@media (min-width: 961px) {
+  .kanaly-channel-trigger {
+    padding: 14px 18px;
+  }
+}
+
+/* Kanály — mobil: obsah karty pod náhledem (ne vedle) */
+@media (max-width: 960px) {
+  .kanaly-channel-panel .vx-card-kanaly {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 0 clamp(12px, 3.5vw, 18px);
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .kanaly-channel-panel .vx-card-kanaly .date {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .kanaly-channel-panel .vx-card-kanaly .day {
+    font-size: clamp(1.75rem, 8vw, 2.5rem);
+  }
+
+  .kanaly-channel-panel .vx-card-kanaly .thumb {
+    grid-column: auto;
+    width: 100%;
+    max-width: 100%;
+    margin-top: 0;
+  }
+
+  .kanaly-channel-panel .vx-card-kanaly .body {
+    grid-column: auto;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .kanaly-channel-panel .vx-card-kanaly .body h3 {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .kanaly-channel-panel .vx-card-kanaly .vx-videa-actions {
+    width: 100%;
+    gap: 8px 12px;
+  }
+
+  .kanaly-channel-panel .vx-strip {
+    margin-inline: clamp(12px, 3.5vw, 18px);
+  }
+}
