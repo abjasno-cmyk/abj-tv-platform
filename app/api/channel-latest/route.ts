@@ -529,6 +529,68 @@ async function fetchChannelFeed(channelId: string, limit: number): Promise<{ ok:
   return { ok: true, status: response.status, videos: parseLatestVideosFromXml(xml, limit) };
 }
 
+async function resolveAlternateChannelId(input: {
+  channelUrl: string;
+  channelName: string;
+  apiKey: string | null;
+  excludeChannelId?: string;
+}): Promise<string> {
+  const exclude = input.excludeChannelId?.trim() ?? "";
+  let retriedChannelId = "";
+
+  if (input.channelUrl) {
+    const parsed = parseChannelUrl(input.channelUrl);
+    if (
+      parsed.directChannelId &&
+      isValidYouTubeChannelId(parsed.directChannelId) &&
+      parsed.directChannelId !== exclude
+    ) {
+      retriedChannelId = parsed.directChannelId;
+    } else {
+      if (input.apiKey && parsed.handle) {
+        retriedChannelId = (await resolveChannelIdByHandle(parsed.handle, input.apiKey)) ?? "";
+      }
+      if (!retriedChannelId && input.apiKey && parsed.username) {
+        retriedChannelId = (await resolveChannelIdByUsername(parsed.username, input.apiKey)) ?? "";
+      }
+      if (!retriedChannelId) {
+        retriedChannelId = (await resolveChannelIdFromPage(parsed)) ?? "";
+      }
+    }
+  }
+
+  if ((!retriedChannelId || retriedChannelId === exclude) && input.channelName) {
+    const fromSearch = (await resolveChannelIdBySearchQuery(input.channelName, input.apiKey)) ?? "";
+    if (fromSearch && fromSearch !== exclude) {
+      retriedChannelId = fromSearch;
+    }
+  }
+
+  return retriedChannelId && retriedChannelId !== exclude ? retriedChannelId : "";
+}
+
+async function loadRawChannelVideos(
+  channelId: string,
+  apiKey: string | null,
+  fetchBuffer: number,
+): Promise<{ rawVideos: ChannelLatestVideo[]; feedResult: { ok: boolean; status: number; videos: ChannelLatestVideo[] } }> {
+  let rawVideos: ChannelLatestVideo[] = [];
+
+  if (apiKey) {
+    rawVideos = await fetchUploadPlaylistVideos(channelId, apiKey, fetchBuffer);
+  }
+
+  const feedResult = rawVideos.length > 0
+    ? { ok: true, status: 200, videos: rawVideos }
+    : await fetchChannelFeed(channelId, fetchBuffer);
+
+  if (rawVideos.length === 0 && feedResult.ok) {
+    rawVideos = feedResult.videos;
+  }
+
+  return { rawVideos, feedResult };
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   let channelId = searchParams.get("channelId")?.trim() ?? "";
@@ -574,74 +636,37 @@ export async function GET(request: Request) {
   }
 
   try {
-    let rawVideos: ChannelLatestVideo[] = [];
+    let { rawVideos, feedResult } = await loadRawChannelVideos(channelId, apiKey, fetchBuffer);
 
-    if (apiKey) {
-      rawVideos = await fetchUploadPlaylistVideos(channelId, apiKey, fetchBuffer);
+    // Stale/missing IDs (Bazalová, Deník TO, …): znovu odvodit z URL/názvu a zkusit fetch.
+    if (rawVideos.length === 0 && (channelUrl || channelName)) {
+      const retriedChannelId = await resolveAlternateChannelId({
+        channelUrl,
+        channelName,
+        apiKey,
+        excludeChannelId: channelId,
+      });
+      if (retriedChannelId) {
+        channelId = retriedChannelId;
+        ({ rawVideos, feedResult } = await loadRawChannelVideos(channelId, apiKey, fetchBuffer));
+      }
     }
 
     if (rawVideos.length === 0) {
-      let feedResult = await fetchChannelFeed(channelId, fetchBuffer);
-
-      // Some stored source IDs are stale or not YouTube channel IDs.
-      // If feed lookup fails, resolve channel ID again from URL/name and retry once.
-      if (!feedResult.ok && (feedResult.status === 404 || feedResult.status === 400)) {
-        let retriedChannelId = "";
-        if (channelUrl) {
-          const parsed = parseChannelUrl(channelUrl);
-          if (
-            parsed.directChannelId &&
-            isValidYouTubeChannelId(parsed.directChannelId) &&
-            parsed.directChannelId !== channelId
-          ) {
-            retriedChannelId = parsed.directChannelId;
-          } else {
-            if (apiKey && parsed.handle) {
-              retriedChannelId = (await resolveChannelIdByHandle(parsed.handle, apiKey)) ?? "";
-            }
-            if (!retriedChannelId && apiKey && parsed.username) {
-              retriedChannelId = (await resolveChannelIdByUsername(parsed.username, apiKey)) ?? "";
-            }
-            if (!retriedChannelId) {
-              retriedChannelId = (await resolveChannelIdFromPage(parsed)) ?? "";
-            }
-          }
-        }
-        if (!retriedChannelId && channelName) {
-          retriedChannelId = (await resolveChannelIdBySearchQuery(channelName, apiKey)) ?? "";
-        }
-        if (retriedChannelId && retriedChannelId !== channelId) {
-          if (apiKey) {
-            rawVideos = await fetchUploadPlaylistVideos(retriedChannelId, apiKey, fetchBuffer);
-          }
-          if (rawVideos.length === 0) {
-            const retriedResult = await fetchChannelFeed(retriedChannelId, fetchBuffer);
-            if (retriedResult.ok) {
-              channelId = retriedChannelId;
-              feedResult = retriedResult;
-            }
-          } else {
-            channelId = retriedChannelId;
-          }
-        }
+      const fallbackVideos = await resolveLatestVideosBySearchQuery(channelName, apiKey, fetchBuffer);
+      if (fallbackVideos.length > 0) {
+        const videos = await finalizeChannelVideos(fallbackVideos, displayLimit, fetchBuffer, apiKey);
+        return Response.json({ videos, resolvedChannelId: channelId || null, fallback: "search" });
       }
 
-      if (rawVideos.length === 0) {
-        if (!feedResult.ok) {
-          const fallbackVideos = await resolveLatestVideosBySearchQuery(channelName, apiKey, fetchBuffer);
-          if (fallbackVideos.length > 0) {
-            const videos = await finalizeChannelVideos(fallbackVideos, displayLimit, fetchBuffer, apiKey);
-            return Response.json({ videos, resolvedChannelId: null, fallback: "search" });
-          }
-          return Response.json(
-            {
-              videos: [],
-              error: `YouTube feed unavailable (${feedResult.status}).`,
-            },
-            { status: 502 }
-          );
-        }
-        rawVideos = feedResult.videos;
+      if (!feedResult.ok) {
+        return Response.json(
+          {
+            videos: [],
+            error: `YouTube feed unavailable (${feedResult.status}).`,
+          },
+          { status: 502 },
+        );
       }
     }
 

@@ -45,6 +45,7 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
 
   const [openChannelName, setOpenChannelName] = useState<string | null>(null);
   const [videosByChannel, setVideosByChannel] = useState<Record<string, LiveChannelVideo[]>>({});
+  const [fallbackByChannel, setFallbackByChannel] = useState<Record<string, boolean>>({});
   const [loadingChannel, setLoadingChannel] = useState<string | null>(null);
   const [errorByChannel, setErrorByChannel] = useState<Record<string, string>>({});
 
@@ -64,16 +65,18 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
     setErrorByChannel((prev) => ({ ...prev, [channel.channelName]: "" }));
 
     try {
-      const videos = await fetchChannelVideosForKanaly(channel);
-      setVideosByChannel((prev) => ({ ...prev, [channel.channelName]: videos }));
-      if (videos.length === 0) {
+      const result = await fetchChannelVideosForKanaly(channel);
+      setVideosByChannel((prev) => ({ ...prev, [channel.channelName]: result.videos }));
+      setFallbackByChannel((prev) => ({ ...prev, [channel.channelName]: result.usedLatestFallback }));
+      if (result.videos.length === 0) {
         setErrorByChannel((prev) => ({
           ...prev,
-          [channel.channelName]: `Za posledních ${CHANNEL_VIDEO_LOOKBACK_DAYS} dní nejsou u tohoto kanálu dostupná videa.`,
+          [channel.channelName]: `U tohoto kanálu teď nejsou dostupná videa.`,
         }));
       }
     } catch {
       setVideosByChannel((prev) => ({ ...prev, [channel.channelName]: [] }));
+      setFallbackByChannel((prev) => ({ ...prev, [channel.channelName]: false }));
       setErrorByChannel((prev) => ({
         ...prev,
         [channel.channelName]: "Videa kanálu se nepodařilo načíst.",
@@ -98,6 +101,7 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
             const isOpen = openChannelName === channel.channelName;
             const isLoading = loadingChannel === channel.channelName;
             const videos = videosByChannel[channel.channelName] ?? [];
+            const usedFallback = fallbackByChannel[channel.channelName] === true;
 
             return (
               <li key={channel.channelName} className={`kanaly-item${isOpen ? " is-open" : ""}`}>
@@ -135,7 +139,14 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
                     {isLoading ? (
                       <p className="kanaly-channel-info">Načítám videa za posledních {CHANNEL_VIDEO_LOOKBACK_DAYS} dní…</p>
                     ) : videos.length > 0 ? (
-                      <KanalyChannelVideos videos={videos} channelName={channel.channelName} />
+                      <>
+                        {usedFallback ? (
+                          <p className="kanaly-channel-info kanaly-channel-fallback">
+                            Za posledních {CHANNEL_VIDEO_LOOKBACK_DAYS} dní bez novinek — zobrazujeme nejnovější videa kanálu.
+                          </p>
+                        ) : null}
+                        <KanalyChannelVideos videos={videos} channelName={channel.channelName} />
+                      </>
                     ) : (
                       <p className="kanaly-channel-info">
                         {errorByChannel[channel.channelName] ||

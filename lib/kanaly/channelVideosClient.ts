@@ -1,9 +1,8 @@
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import {
-  CHANNEL_VIDEO_LOOKBACK_DAYS,
   LIVE_CHANNEL_VIDEO_FETCH_BUFFER,
-  filterChannelVideosWithinDays,
-  selectLatestNonShortChannelVideos,
+  selectKanalyChannelVideos,
+  type KanalyChannelVideoSelection,
 } from "@/lib/liveChannelVideos";
 
 type ChannelLatestApiResponse = {
@@ -16,9 +15,9 @@ type ChannelLatestApiResponse = {
   error?: string;
 };
 
-function mapApiVideos(
-  payload: ChannelLatestApiResponse,
-): LiveChannelVideo[] {
+export type KanalyChannelVideosResult = KanalyChannelVideoSelection<LiveChannelVideo>;
+
+function mapApiVideos(payload: ChannelLatestApiResponse): LiveChannelVideo[] {
   return (payload.videos ?? [])
     .map((video): LiveChannelVideo | null => {
       const videoId = video.videoId?.trim();
@@ -34,19 +33,7 @@ function mapApiVideos(
     .filter((video): video is LiveChannelVideo => Boolean(video));
 }
 
-function withinLookback(videos: LiveChannelVideo[]): LiveChannelVideo[] {
-  return filterChannelVideosWithinDays(
-    selectLatestNonShortChannelVideos(videos, LIVE_CHANNEL_VIDEO_FETCH_BUFFER),
-    CHANNEL_VIDEO_LOOKBACK_DAYS,
-  );
-}
-
-export async function fetchChannelVideosForKanaly(
-  channel: LiveChannelGroup,
-): Promise<LiveChannelVideo[]> {
-  const preloaded = withinLookback(channel.videos);
-  if (preloaded.length > 0) return preloaded;
-
+async function fetchFromChannelLatest(channel: LiveChannelGroup): Promise<LiveChannelVideo[]> {
   if (!channel.channelId && !channel.channelUrl && !channel.channelName.trim()) {
     return [];
   }
@@ -63,5 +50,30 @@ export async function fetchChannelVideosForKanaly(
     throw new Error(payload.error ?? `HTTP ${response.status}`);
   }
 
-  return withinLookback(mapApiVideos(payload));
+  return mapApiVideos(payload);
+}
+
+export async function fetchChannelVideosForKanaly(
+  channel: LiveChannelGroup,
+): Promise<KanalyChannelVideosResult> {
+  const feedSelection = selectKanalyChannelVideos(channel.videos);
+  if (feedSelection.videos.length > 0 && !feedSelection.usedLatestFallback) {
+    return feedSelection;
+  }
+
+  try {
+    const apiVideos = await fetchFromChannelLatest(channel);
+    const apiSelection = selectKanalyChannelVideos(apiVideos);
+    if (apiSelection.videos.length > 0) {
+      return apiSelection;
+    }
+  } catch {
+    // Fall back to feed candidates below (e.g. when YouTube fetch fails).
+  }
+
+  if (feedSelection.videos.length > 0) {
+    return feedSelection;
+  }
+
+  return { videos: [], usedLatestFallback: false };
 }

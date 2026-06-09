@@ -1,5 +1,10 @@
 -- Viewer-submitted channel suggestions for the /kanaly page.
--- Inserts are performed server-side via service_role; no public read.
+--
+-- Run in Supabase SQL editor (or via CLI) after deploy:
+--   supabase db execute --file supabase/017_channel_suggestions.sql
+--
+-- Inserts go through app/api/kanaly/channel-suggestions (service_role).
+-- RLS is enabled with no public policies — only service_role can read/write.
 
 create table if not exists public.channel_suggestions (
   id uuid primary key default gen_random_uuid(),

@@ -36,3 +36,24 @@ export function filterChannelVideosWithinDays<T extends { publishedAt: string }>
     return Number.isFinite(ts) && ts >= cutoff;
   });
 }
+
+export type KanalyChannelVideoSelection<T extends ChannelVideoCandidate> = {
+  videos: T[];
+  /** True when nothing was published in the lookback window and older videos are shown. */
+  usedLatestFallback: boolean;
+};
+
+/** Prefer videos from the last N days; otherwise fall back to latest (same as /live). */
+export function selectKanalyChannelVideos<T extends ChannelVideoCandidate>(
+  videos: T[],
+  nowMs: number = Date.now(),
+): KanalyChannelVideoSelection<T> {
+  const nonShort = selectLatestNonShortChannelVideos(videos, LIVE_CHANNEL_VIDEO_FETCH_BUFFER);
+  const recent = filterChannelVideosWithinDays(nonShort, CHANNEL_VIDEO_LOOKBACK_DAYS, nowMs);
+  if (recent.length > 0) {
+    return { videos: recent, usedLatestFallback: false };
+  }
+
+  const latest = nonShort.slice(0, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT);
+  return { videos: latest, usedLatestFallback: latest.length > 0 };
+}
