@@ -1345,16 +1345,6 @@
     margin: 0 auto;
     padding: 0 clamp(16px, 2vw, 32px) 48px;
   }
-  .kostka-nazory .body p.kostka-nazory-perex,
-  .nazory-detail-perex {
-    font-size: var(--nazory-body-size);
-  }
-  /* Názory — tělo článků ≥ Můj Verox diskuse, sjednocené s komentáři */
-  .nazory-page {
-    --nazory-body-size: 18px;
-    --nazory-body-line: 1.75;
-  }
-
   /* akční tlačítka V KOSTCE — kompaktní sloupec vpravo */
   .kostka .actions {
     gap: 10px;
@@ -1814,9 +1804,27 @@
 .nazory-page {
   padding: 0 clamp(12px, 3.5vw, 20px) 48px;
   font-family: var(--vx-myriad);
-  /* Stejná velikost těla jako diskuse v Můj Verox (mv-post-body = 1rem) */
+  /* Stejná velikost těla jako diskuse v Můj Verox (.mv-post-body ≈ 1rem / 1.45) */
   --nazory-body-size: 1rem;
   --nazory-body-line: 1.45;
+}
+/* Názory — meta a titulky karet: stejné poměry jako .mv-post-author / .mv-post-time */
+.kostka-nazory .body .src {
+  font-size: clamp(0.75rem, 1.6cqw, 0.85rem);
+  color: var(--vx-gray-light);
+  letter-spacing: normal;
+}
+.kostka-nazory-head h3,
+.kostka-nazory-head h3 a {
+  font-size: clamp(0.9rem, 2cqw, 1rem);
+  font-weight: 700;
+  letter-spacing: normal;
+  line-height: 1.25;
+}
+.kostka-nazory .body p.kostka-nazory-perex,
+.nazory-prose,
+.nazory-detail-perex {
+  letter-spacing: normal;
 }
 /* Katalog AUTOŘI — stejné styly jako KANÁLY na /live (.hf scope z handoff.css) */
 .nazory-page .hf.nazory-authors-hf {
@@ -2411,12 +2419,14 @@
 }
 .nazory-page .nazory-comments .vx-comment-author {
   font-family: var(--vx-myriad);
-  font-size: calc(var(--nazory-body-size) * 0.95);
+  font-size: clamp(0.9rem, 2cqw, 1rem);
+  font-weight: 700;
 }
 .nazory-page .nazory-comments .vx-comment-time,
 .nazory-page .nazory-comments .vx-comment-video,
 .nazory-page .nazory-comments .vx-comments-chars {
   font-family: var(--vx-myriad);
+  font-size: clamp(0.75rem, 1.6cqw, 0.85rem);
 }
 .nazory-preview-auth-notice {
   margin-top: 12px;
@@ -2435,5 +2445,22 @@
   .nazory-card-link {
     grid-template-columns: 220px 1fr;
     align-items: start;
+  }
+}
+
+/* Názory — desktop: čitelnost těla (base tokeny výše nesmí přebít tuto sekci) */
+@media (min-width: 961px) {
+  .nazory-page {
+    --nazory-body-size: 1.125rem;
+    --nazory-body-line: 1.75;
+  }
+  .nazory-prose,
+  .nazory-detail-perex,
+  .kostka-nazory .body p.kostka-nazory-perex {
+    max-width: 42rem;
+  }
+  .nazory-detail-meta {
+    font-size: clamp(0.75rem, 1.6cqw, 0.85rem);
+    letter-spacing: normal;
   }
 }
