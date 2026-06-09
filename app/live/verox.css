@@ -2659,3 +2659,53 @@
     padding: 14px 18px;
   }
 }
+
+/* Kanály — mobil: obsah karty pod náhledem (ne vedle) */
+@media (max-width: 960px) {
+  .kanaly-channel-panel .vx-card-kanaly {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 0 clamp(12px, 3.5vw, 18px);
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .kanaly-channel-panel .vx-card-kanaly .date {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .kanaly-channel-panel .vx-card-kanaly .day {
+    font-size: clamp(1.75rem, 8vw, 2.5rem);
+  }
+
+  .kanaly-channel-panel .vx-card-kanaly .thumb {
+    grid-column: auto;
+    width: 100%;
+    max-width: 100%;
+    margin-top: 0;
+  }
+
+  .kanaly-channel-panel .vx-card-kanaly .body {
+    grid-column: auto;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .kanaly-channel-panel .vx-card-kanaly .body h3 {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .kanaly-channel-panel .vx-card-kanaly .vx-videa-actions {
+    width: 100%;
+    gap: 8px 12px;
+  }
+
+  .kanaly-channel-panel .vx-strip {
+    margin-inline: clamp(12px, 3.5vw, 18px);
+  }
+}

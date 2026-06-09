@@ -47,7 +47,7 @@ export function KanalyChannelVideos({ videos, channelName }: KanalyChannelVideos
 
         return (
           <Fragment key={video.videoId}>
-            <article className="vx-card">
+            <article className="vx-card vx-card-kanaly">
               <div className="date">
                 <div className="month">{month}</div>
                 <div className="day">{day}</div>
