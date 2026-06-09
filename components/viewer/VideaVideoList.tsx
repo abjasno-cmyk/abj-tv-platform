@@ -82,7 +82,7 @@ export function VideaVideoList({ videos }: VideaVideoListProps) {
                     onSavedChange={(nextSaved) => setSaved(video.video_id, nextSaved)}
                   />
                   <VideoDiscussButton videoId={video.video_id} videoTitle={video.title} />
-                  <ShareVideoButton videoId={video.video_id} />
+                  <ShareVideoButton videoId={video.video_id} title={video.title} />
                   <Link href={href} className="vx-arrow">
                     <b>Přehrát</b>
                     {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { CopyLinkButton } from "@/components/nazory/CopyLinkButton";
+import { ShareMenu } from "@/components/nazory/ShareMenu";
 import { OpinionDiscussButton } from "@/components/nazory/OpinionDiscussButton";
 import { OpinionLikeButton } from "@/components/nazory/OpinionLikeButton";
 import { SaveOpinionButton } from "@/components/nazory/SaveOpinionButton";
@@ -61,7 +61,7 @@ export function OpinionDetailActions({
         saved={saved}
         onSavedChange={setSaved}
       />
-      <CopyLinkButton url={shareUrl} />
+      <ShareMenu url={shareUrl} title={title} />
       <OpinionDiscussButton
         behavior="scroll"
         articleId={articleId}

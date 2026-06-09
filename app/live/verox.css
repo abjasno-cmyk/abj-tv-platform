@@ -2000,6 +2000,49 @@
   display: grid;
   gap: 14px;
 }
+.nazory-share-menu {
+  position: relative;
+  display: inline-flex;
+}
+.nazory-share-menu-trigger {
+  gap: 8px;
+}
+.nazory-share-menu-chevron {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+.nazory-share-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  display: grid;
+  min-width: 220px;
+  padding: 6px;
+  border: 1px solid rgba(23, 20, 17, 0.12);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(23, 20, 17, 0.14);
+}
+.nazory-share-menu-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.nazory-share-menu-item:hover,
+.nazory-share-menu-item:focus-visible {
+  background: rgba(255, 102, 0, 0.1);
+  outline: none;
+}
 .nazory-copy-link,
 .nazory-btn {
   display: inline-flex;

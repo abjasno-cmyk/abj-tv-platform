@@ -565,7 +565,7 @@ export function HomePage({
               onSavedChange={(nextSaved) => setSaved(activeCommentVideoId, nextSaved)}
             />
             <VideoDiscussButton videoId={activeCommentVideoId} videoTitle={displayTitle} />
-            <ShareVideoButton videoId={activeCommentVideoId} />
+            <ShareVideoButton videoId={activeCommentVideoId} title={displayTitle} />
             <ViewerVideoBadges
               watched={watchedVideoIds.has(activeCommentVideoId)}
               saved={savedVideoIds.has(activeCommentVideoId)}
