@@ -2,6 +2,7 @@
 
 import type { LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import { SaveVideoButton } from "@/components/auth/SaveVideoButton";
+import { ShareVideoButton } from "@/components/viewer/ShareVideoButton";
 import { VideoDiscussButton } from "@/components/viewer/VideoDiscussButton";
 import { VideoReleaseDateBadge } from "@/components/viewer/VideoReleaseDateBadge";
 import { ViewerVideoBadges } from "@/components/viewer/ViewerVideoBadges";
@@ -47,6 +48,7 @@ export function ChannelVideoTile({
           onSavedChange={onSavedChange}
         />
         <VideoDiscussButton videoId={video.videoId} videoTitle={video.title} />
+        <ShareVideoButton videoId={video.videoId} title={video.title} />
       </div>
     </div>
   );
