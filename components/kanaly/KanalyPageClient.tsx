@@ -4,7 +4,6 @@ import { useCallback, useMemo, useState } from "react";
 
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import { FollowChannelButton } from "@/components/auth/FollowChannelButton";
-import { ChannelSuggestionForm } from "@/components/kanaly/ChannelSuggestionForm";
 import { KanalyChannelVideos } from "@/components/kanaly/KanalyChannelVideos";
 import { CHANNEL_VIDEO_LOOKBACK_DAYS } from "@/lib/liveChannelVideos";
 import { fetchChannelVideosForKanaly } from "@/lib/kanaly/channelVideosClient";
@@ -160,8 +159,6 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
           })}
         </ul>
       )}
-
-      <ChannelSuggestionForm />
     </div>
   );
 }
