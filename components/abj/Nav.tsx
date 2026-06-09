@@ -9,6 +9,9 @@ import { VeroxHeader, type VeroxNavKey } from "@/components/abj/VeroxHeader";
 // Lišta i obsah subpage sdílí kontejner .hf-chrome (stejná šířka jako .hf).
 
 function activeKeyFor(pathname: string): VeroxNavKey | undefined {
+  if (pathname.startsWith("/kanaly")) {
+    return "kanaly";
+  }
   if (pathname.startsWith("/nazory")) {
     return "nazory";
   }
