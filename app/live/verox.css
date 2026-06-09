@@ -2451,7 +2451,7 @@
 /* Názory — desktop: čitelnost těla (base tokeny výše nesmí přebít tuto sekci) */
 @media (min-width: 961px) {
   .nazory-page {
-    --nazory-body-size: 1.125rem;
+    --nazory-body-size: 20px;
     --nazory-body-line: 1.75;
   }
   .nazory-prose,
