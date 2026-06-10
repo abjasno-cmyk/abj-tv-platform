@@ -30,7 +30,8 @@ with incoming (
     ('Echo Podcasty', 'youtube', 'https://www.youtube.com/@echopodcasty', 'B', 'podcast', 'CZ', 'cs', true, 'support', null),
     ('Datarun', 'youtube', 'https://www.youtube.com/@Datarun_cz', 'B', 'analýza', 'CZ', 'cs', true, 'support', null),
     ('Petr Bureš TV', 'youtube', 'https://www.youtube.com/@petrburestv', 'B', 'rozhovor', 'CZ', 'cs', true, 'support', null),
-    ('Hovory ze země', 'youtube', 'https://www.youtube.com/@hovoryzezeme', 'B', 'rozhovor', 'CZ', 'cs', true, 'support', null)
+    ('Hovory ze země', 'youtube', 'https://www.youtube.com/@hovoryzezeme', 'B', 'rozhovor', 'CZ', 'cs', true, 'support', null),
+    ('Miroslav Kamenský', 'youtube', 'https://www.youtube.com/@miroslavkamensky3577/videos', 'B', 'rozhovor', 'CZ', 'cs', true, 'support', null)
 ),
 updated as (
   update sources s
