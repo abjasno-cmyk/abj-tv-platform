@@ -25,6 +25,15 @@ If `PROGRAM_FEED_HMAC_SECRET` is missing, importer falls back to `SESSION_SECRET
 - `GET /api/program/v3/refresh-cache` - refresh YouTube cache and program feed import in one call
 - `GET /api/program/v3/health?includeFeedImport=1` - include program feed import diagnostics
 
+### Manual schedule without `video_id` (title-based resolution)
+
+Program engine now supports manual slots where `video_id` is omitted, as long as
+the block has `title` and valid time window. In that mode:
+
+- importer stores the slot with `title` + `time` metadata
+- engine attempts to resolve the real YouTube `videoId` from cached candidates by title
+- if no match is found, the slot is still kept in the timeline (as non-playable)
+
 ### Vercel cron schedule
 
 - `/api/program/v3/refresh-cache` every 15 minutes

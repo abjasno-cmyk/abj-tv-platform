@@ -269,19 +269,12 @@ function toManualSchedule(blocks: FeedBlock[], errors: string[]): {
       continue;
     }
 
-    if (!block.video_id) {
-      skippedBlocks += 1;
-      continue;
-    }
-
     const durationMin = Math.max(1, Math.round((end.getTime() - start.getTime()) / 60_000));
     const effectivePriority =
       block.priority + (block.is_pinned ? 1_000 : 0) + (block.is_locked ? 10_000 : 0);
     const isABJ =
       block.channel.toLowerCase().includes("abj") || block.source_type.toLowerCase().includes("abj");
-
-    items.push({
-      videoId: block.video_id,
+    const entry: ProgramManualScheduleItem = {
       date: toPragueDateKey(start),
       time: toPragueTime(start),
       durationMin,
@@ -289,7 +282,11 @@ function toManualSchedule(blocks: FeedBlock[], errors: string[]): {
       title: block.title,
       channel: block.channel,
       isABJ,
-    });
+    };
+    if (block.video_id) {
+      entry.videoId = block.video_id;
+    }
+    items.push(entry);
   }
 
   return { items, skippedBlocks };
