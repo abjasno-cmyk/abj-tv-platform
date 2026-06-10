@@ -21,7 +21,11 @@ export default defineConfig({
     environment: "node",
     globals: true,
     include: ["test/**/*.test.ts"],
-    // Live Replit tests are opt-in (network + running backend required). They
+    // Live Replit tests hit a remote backend and may legitimately take longer
+    // than Vitest's default 5s — keep fetch timeout (15s) under the test budget.
+    testTimeout: process.env.RUN_REPLIT_LIVE ? 20_000 : 5_000,
+    hookTimeout: process.env.RUN_REPLIT_LIVE ? 20_000 : 5_000,
+    // Live tests are opt-in (network + running backend required). They
     // are skipped from the default run and executed via `npm run test:live`.
     exclude: process.env.RUN_REPLIT_LIVE
       ? ["node_modules/**"]
