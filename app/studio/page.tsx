@@ -540,7 +540,11 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
           <article id="komentare" className="rounded-xl border border-[#2f3647] bg-[#0f131b] p-4">
             <h2 className="text-lg font-semibold text-white">8. Komentáře a komunita</h2>
             <p className="mt-2 text-sm text-[#b7c1d3]">
-              Skrytí/obnovení řešíme stavově s auditní stopou, nikoli fyzickým mazáním.
+              Skrytí/obnovení řešíme stavově s auditní stopou, nikoli fyzickým mazáním. Pro živé streamy ABJ použijte{" "}
+              <Link href="/studio/live-komentare" className="text-[#ffd0ad] underline hover:text-[#ff6a00]">
+                nástěnku live komentářů
+              </Link>
+              .
             </p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-lg border border-[#2f3647] bg-[#0c1018] p-3 text-sm">Nové za hodinu: {snapshot.comments.lastHourCount}</div>
