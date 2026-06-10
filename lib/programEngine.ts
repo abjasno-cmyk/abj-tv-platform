@@ -228,6 +228,15 @@ function normalizeWeekdayLabel(value: string): string {
     .toLowerCase();
 }
 
+function normalizeTitleForLookup(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
 const WEEKDAY_INDEX_BY_LABEL: Record<string, number> = {
   sunday: 0,
   sun: 0,
@@ -286,13 +295,16 @@ function getPragueWeekdayIndex(dayStart: Date): number {
 
 function normalizeManualScheduleItem(item: ProgramManualScheduleItem): ProgramManualScheduleItem | null {
   const videoId = typeof item.videoId === "string" ? item.videoId.trim() : "";
+  const title = typeof item.title === "string" ? item.title.trim() : "";
   const time = typeof item.time === "string" ? item.time.trim() : "";
-  if (!videoId || !time || !parseTimeString(time)) return null;
+  if (!time || !parseTimeString(time)) return null;
+  if (!videoId && !title) return null;
 
   const normalized: ProgramManualScheduleItem = {
-    videoId,
     time,
   };
+  if (videoId) normalized.videoId = videoId;
+  if (title) normalized.title = title;
 
   if (typeof item.weekday === "string" || typeof item.weekday === "number") {
     normalized.weekday = item.weekday;
@@ -300,9 +312,6 @@ function normalizeManualScheduleItem(item: ProgramManualScheduleItem): ProgramMa
   if (typeof item.date === "string") {
     const date = item.date.trim();
     if (/^\d{4}-\d{2}-\d{2}$/.test(date)) normalized.date = date;
-  }
-  if (typeof item.title === "string" && item.title.trim()) {
-    normalized.title = item.title.trim();
   }
   if (typeof item.channel === "string" && item.channel.trim()) {
     normalized.channel = item.channel.trim();
@@ -905,6 +914,75 @@ function shouldApplyManualSlotToday(
   return weekdayIndex === getPragueWeekdayIndex(dayStart);
 }
 
+function findCandidateByManualTitle(
+  title: string,
+  channelHint: string | undefined,
+  candidates: ProgramCandidateVideo[]
+): ProgramCandidateVideo | null {
+  const normalizedLookup = normalizeTitleForLookup(title);
+  if (!normalizedLookup) return null;
+
+  const normalizedChannelHint = channelHint ? normalizeTitleForLookup(channelHint) : "";
+  const ranked = candidates
+    .map((candidate) => {
+      const candidateTitle = normalizeTitleForLookup(candidate.title);
+      if (!candidateTitle) return null;
+
+      let score = 0;
+      if (candidateTitle === normalizedLookup) {
+        score += 600;
+      } else if (
+        candidateTitle.includes(normalizedLookup) ||
+        normalizedLookup.includes(candidateTitle)
+      ) {
+        score += 260;
+      } else {
+        return null;
+      }
+
+      if (normalizedChannelHint) {
+        const candidateChannel = normalizeTitleForLookup(candidate.channel);
+        if (
+          candidateChannel === normalizedChannelHint ||
+          candidateChannel.includes(normalizedChannelHint) ||
+          normalizedChannelHint.includes(candidateChannel)
+        ) {
+          score += 90;
+        }
+      }
+
+      const publishedAt = candidate.publishedAt
+        ? new Date(candidate.publishedAt).getTime()
+        : 0;
+      if (Number.isFinite(publishedAt) && publishedAt > 0) {
+        score += publishedAt / 1_000_000_000;
+      }
+
+      return { candidate, score };
+    })
+    .filter(
+      (entry): entry is { candidate: ProgramCandidateVideo; score: number } =>
+        entry !== null
+    )
+    .sort((a, b) => b.score - a.score);
+
+  return ranked[0]?.candidate ?? null;
+}
+
+function resolveManualScheduleCandidate(
+  item: ProgramManualScheduleItem,
+  candidates: ProgramCandidateVideo[]
+): ProgramCandidateVideo | null {
+  if (item.videoId) {
+    const byId = candidates.find((video) => video.videoId === item.videoId);
+    if (byId) return byId;
+  }
+  if (item.title) {
+    return findCandidateByManualTitle(item.title, item.channel, candidates);
+  }
+  return null;
+}
+
 function collectManualScheduleBlocks(
   overrideRules: ProgramOverrideRules,
   candidates: ProgramCandidateVideo[],
@@ -933,7 +1011,8 @@ function collectManualScheduleBlocks(
     );
     if (start.getTime() < dayStart.getTime() || start.getTime() >= dayEnd.getTime()) continue;
 
-    const candidate = candidates.find((video) => video.videoId === item.videoId);
+    const candidate = resolveManualScheduleCandidate(item, candidates);
+    const resolvedVideoId = item.videoId ?? candidate?.videoId;
     const rawDuration = item.durationMin ?? candidate?.durationMin ?? 60;
     const duration = sanitizeDurationMin(rawDuration) || 60;
     const unclampedEnd = addMinutes(start, duration);
@@ -942,14 +1021,18 @@ function collectManualScheduleBlocks(
 
     const channel = item.channel ?? candidate?.channel ?? "ABJ TV";
     const isABJ = item.isABJ ?? candidate?.isABJ ?? channel.toLowerCase().includes("abj");
+    const titleFallbackKey =
+      item.title && item.title.trim().length > 0
+        ? normalizeTitleForLookup(item.title).replace(/\s+/g, "-").slice(0, 32)
+        : `slot-${index}`;
     blocks.push({
-      id: `manual-${index}-${item.videoId}-${time.hour}-${time.minute}`,
+      id: `manual-${index}-${resolvedVideoId ?? titleFallbackKey}-${time.hour}-${time.minute}`,
       start: start.toISOString(),
       end: end.toISOString(),
       durationMin: sanitizeDurationMin(minutesDiff(start, end)),
       type: "recorded",
-      title: item.title ?? candidate?.title ?? `Ruční slot ${item.videoId}`,
-      videoId: item.videoId,
+      title: item.title ?? candidate?.title ?? `Ruční slot`,
+      ...(resolvedVideoId ? { videoId: resolvedVideoId } : {}),
       channel,
       isABJ,
       priority: item.priority ?? 950,
