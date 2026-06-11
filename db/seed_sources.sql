@@ -62,6 +62,7 @@ insert into sources (
   ('Petr Bureš TV', 'youtube', 'https://www.youtube.com/@petrburestv', 'B', 'rozhovor', 'CZ', 'cs', true, 'support', null),
   ('Hovory ze země', 'youtube', 'https://www.youtube.com/@hovoryzezeme', 'B', 'rozhovor', 'CZ', 'cs', true, 'support', null),
   ('Miroslav Kamenský', 'youtube', 'https://www.youtube.com/@miroslavkamensky3577/videos', 'B', 'rozhovor', 'CZ', 'cs', true, 'support', null),
+  ('Časopis Argument', 'youtube', 'https://www.youtube.com/@casopisargument3584', 'B', 'komentář', 'CZ', 'cs', true, 'support', null),
 
   ('Doktor Vajíčko', 'youtube', 'https://www.youtube.com/@doktoregg', 'C', 'komentář', 'CZ', 'cs', true, 'filler', null),
 
