@@ -284,8 +284,12 @@ export function HomePage({
     setChannelError((prev) => ({ ...prev, [ch.channelName]: "" }));
     try {
       const params = new URLSearchParams();
-      if (ch.channelId) params.set("channelId", ch.channelId);
-      if (ch.channelUrl) params.set("channelUrl", ch.channelUrl);
+      // URL je spolehlivější než zastaralé channel_id z DB (viz fix_all_channel_ids_by_name.sql).
+      if (ch.channelUrl) {
+        params.set("channelUrl", ch.channelUrl);
+      } else if (ch.channelId) {
+        params.set("channelId", ch.channelId);
+      }
       params.set("channelName", ch.channelName);
       params.set("limit", String(LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT));
 

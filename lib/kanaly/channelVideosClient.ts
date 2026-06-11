@@ -39,8 +39,11 @@ async function fetchFromChannelLatest(channel: LiveChannelGroup): Promise<LiveCh
   }
 
   const params = new URLSearchParams();
-  if (channel.channelId) params.set("channelId", channel.channelId);
-  if (channel.channelUrl) params.set("channelUrl", channel.channelUrl);
+  if (channel.channelUrl) {
+    params.set("channelUrl", channel.channelUrl);
+  } else if (channel.channelId) {
+    params.set("channelId", channel.channelId);
+  }
   params.set("channelName", channel.channelName);
   params.set("limit", String(LIVE_CHANNEL_VIDEO_FETCH_BUFFER));
 
@@ -57,7 +60,8 @@ export async function fetchChannelVideosForKanaly(
   channel: LiveChannelGroup,
 ): Promise<KanalyChannelVideosResult> {
   const feedSelection = selectKanalyChannelVideos(channel.videos);
-  if (feedSelection.videos.length > 0 && !feedSelection.usedLatestFallback) {
+  // Vždy použij cache z feedu, pokud něco máme — i starší než 7 dní (usedLatestFallback).
+  if (feedSelection.videos.length > 0) {
     return feedSelection;
   }
 
