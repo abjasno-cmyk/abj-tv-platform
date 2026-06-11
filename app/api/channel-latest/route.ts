@@ -4,6 +4,7 @@ import {
   selectLatestNonShortChannelVideos,
   type ChannelVideoCandidate,
 } from "@/lib/liveChannelVideos";
+import { resolveChannelIdsFromChannelUrl } from "@/lib/youtubeChannelResolve";
 import { parseIsoDurationSeconds } from "@/lib/youtubeShort";
 
 type ChannelLatestVideo = {
@@ -80,6 +81,7 @@ type YouTubePlaylistItemsPayload = {
       };
     };
   }>;
+  nextPageToken?: string;
 };
 
 const CHANNEL_ID_REGEXES = [
@@ -453,6 +455,29 @@ async function resolveUploadsPlaylistId(channelId: string, apiKey: string): Prom
   }
 }
 
+function mapPlaylistItemsToVideos(
+  items: NonNullable<YouTubePlaylistItemsPayload["items"]>,
+): ChannelLatestVideo[] {
+  return items
+    .map((item): ChannelLatestVideo | null => {
+      const videoId = item.snippet?.resourceId?.videoId?.trim();
+      const title = item.snippet?.title?.trim();
+      if (!videoId || !title) return null;
+      const thumbnail =
+        item.snippet?.thumbnails?.high?.url?.trim() ||
+        item.snippet?.thumbnails?.medium?.url?.trim() ||
+        item.snippet?.thumbnails?.default?.url?.trim() ||
+        `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`;
+      return {
+        videoId,
+        title,
+        publishedAt: item.snippet?.publishedAt?.trim() || new Date(0).toISOString(),
+        thumbnail,
+      };
+    })
+    .filter((video): video is ChannelLatestVideo => Boolean(video));
+}
+
 async function fetchUploadPlaylistVideos(
   channelId: string,
   apiKey: string,
@@ -461,35 +486,31 @@ async function fetchUploadPlaylistVideos(
   const uploadsPlaylistId = await resolveUploadsPlaylistId(channelId, apiKey);
   if (!uploadsPlaylistId) return [];
 
+  const target = Math.min(LIVE_CHANNEL_VIDEO_FETCH_BUFFER, Math.max(1, fetchLimit));
+  const videos: ChannelLatestVideo[] = [];
+  let pageToken: string | undefined;
+
   try {
-    const url = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
-    url.searchParams.set("part", "snippet");
-    url.searchParams.set("playlistId", uploadsPlaylistId);
-    url.searchParams.set("maxResults", String(Math.min(50, Math.max(1, fetchLimit))));
-    url.searchParams.set("key", apiKey);
-    const response = await fetchWithTimeout(url.toString(), 9000);
-    if (!response.ok) return [];
-    const payload = (await response.json()) as YouTubePlaylistItemsPayload;
-    return (payload.items ?? [])
-      .map((item): ChannelLatestVideo | null => {
-        const videoId = item.snippet?.resourceId?.videoId?.trim();
-        const title = item.snippet?.title?.trim();
-        if (!videoId || !title) return null;
-        const thumbnail =
-          item.snippet?.thumbnails?.high?.url?.trim() ||
-          item.snippet?.thumbnails?.medium?.url?.trim() ||
-          item.snippet?.thumbnails?.default?.url?.trim() ||
-          `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`;
-        return {
-          videoId,
-          title,
-          publishedAt: item.snippet?.publishedAt?.trim() || new Date(0).toISOString(),
-          thumbnail,
-        };
-      })
-      .filter((video): video is ChannelLatestVideo => Boolean(video));
+    while (videos.length < target) {
+      const url = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
+      url.searchParams.set("part", "snippet");
+      url.searchParams.set("playlistId", uploadsPlaylistId);
+      url.searchParams.set("maxResults", String(Math.min(50, target - videos.length)));
+      url.searchParams.set("key", apiKey);
+      if (pageToken) url.searchParams.set("pageToken", pageToken);
+
+      const response = await fetchWithTimeout(url.toString(), 9000);
+      if (!response.ok) break;
+
+      const payload = (await response.json()) as YouTubePlaylistItemsPayload;
+      videos.push(...mapPlaylistItemsToVideos(payload.items ?? []));
+      pageToken = payload.nextPageToken?.trim() || undefined;
+      if (!pageToken) break;
+    }
+
+    return videos;
   } catch {
-    return [];
+    return videos;
   }
 }
 
@@ -502,20 +523,23 @@ async function finalizeChannelVideos(
   const candidates = videos.slice(0, fetchBuffer);
   const enriched =
     apiKey && candidates.length > 0 ? await enrichVideosWithDuration(candidates, apiKey) : candidates;
-  const selected = selectLatestNonShortChannelVideos(
-    enriched.map(
-      (video): ChannelVideoCandidate => ({
-        videoId: video.videoId,
-        title: video.title,
-        thumbnail: video.thumbnail,
-        publishedAt: video.publishedAt,
-        durationMin: video.durationMin ?? null,
-        durationIso: video.durationIso ?? null,
-      }),
-    ),
-    displayLimit,
+  const mapped = enriched.map(
+    (video): ChannelVideoCandidate => ({
+      videoId: video.videoId,
+      title: video.title,
+      thumbnail: video.thumbnail,
+      publishedAt: video.publishedAt,
+      durationMin: video.durationMin ?? null,
+      durationIso: video.durationIso ?? null,
+    }),
   );
-  return selected.map(toPublicChannelVideo);
+  const selected = selectLatestNonShortChannelVideos(mapped, displayLimit);
+  if (selected.length > 0) {
+    return selected.map(toPublicChannelVideo);
+  }
+
+  // Kanály s převahou Shorts — raději zobrazit něco než prázdný panel.
+  return mapped.slice(0, displayLimit).map(toPublicChannelVideo);
 }
 
 async function fetchChannelFeed(channelId: string, limit: number): Promise<{ ok: boolean; status: number; videos: ChannelLatestVideo[] }> {
@@ -598,7 +622,7 @@ export async function GET(request: Request) {
   const channelName = searchParams.get("channelName")?.trim() ?? "";
   const requestedLimit = Number.parseInt(searchParams.get("limit") ?? String(LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT), 10);
   const displayLimit = Number.isFinite(requestedLimit)
-    ? Math.min(LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT, Math.max(1, requestedLimit))
+    ? Math.min(LIVE_CHANNEL_VIDEO_FETCH_BUFFER, Math.max(1, requestedLimit))
     : LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT;
   const fetchBuffer = Math.max(displayLimit * 3, LIVE_CHANNEL_VIDEO_FETCH_BUFFER);
   const apiKey = resolveYouTubeApiKey();
@@ -609,18 +633,26 @@ export async function GET(request: Request) {
 
   // channelUrl je spolehlivější než zastaralé channel_id z DB.
   if (channelUrl) {
-    const parsed = parseChannelUrl(channelUrl);
-    if (parsed.directChannelId && isValidYouTubeChannelId(parsed.directChannelId)) {
-      channelId = parsed.directChannelId;
-    } else {
-      if (apiKey && parsed.handle) {
-        channelId = (await resolveChannelIdByHandle(parsed.handle, apiKey)) ?? "";
+    if (apiKey) {
+      const resolved = await resolveChannelIdsFromChannelUrl(channelUrl, apiKey);
+      if (resolved?.channelId) {
+        channelId = resolved.channelId;
       }
-      if (!channelId && apiKey && parsed.username) {
-        channelId = (await resolveChannelIdByUsername(parsed.username, apiKey)) ?? "";
-      }
-      if (!channelId) {
-        channelId = (await resolveChannelIdFromPage(parsed)) ?? "";
+    }
+    if (!channelId) {
+      const parsed = parseChannelUrl(channelUrl);
+      if (parsed.directChannelId && isValidYouTubeChannelId(parsed.directChannelId)) {
+        channelId = parsed.directChannelId;
+      } else {
+        if (apiKey && parsed.handle) {
+          channelId = (await resolveChannelIdByHandle(parsed.handle, apiKey)) ?? "";
+        }
+        if (!channelId && apiKey && parsed.username) {
+          channelId = (await resolveChannelIdByUsername(parsed.username, apiKey)) ?? "";
+        }
+        if (!channelId) {
+          channelId = (await resolveChannelIdFromPage(parsed)) ?? "";
+        }
       }
     }
   } else if (staleChannelId) {

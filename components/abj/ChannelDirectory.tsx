@@ -160,8 +160,11 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
 
     try {
       const params = new URLSearchParams();
-      if (channelId) params.set("channelId", channelId);
-      if (channelUrl) params.set("channelUrl", channelUrl);
+      if (channelUrl) {
+        params.set("channelUrl", channelUrl);
+      } else if (channelId) {
+        params.set("channelId", channelId);
+      }
       params.set("channelName", channel.channelName);
       params.set("limit", "4");
 
