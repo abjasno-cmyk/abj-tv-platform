@@ -39,8 +39,11 @@ async function fetchFromChannelLatest(channel: LiveChannelGroup): Promise<LiveCh
   }
 
   const params = new URLSearchParams();
-  if (channel.channelId) params.set("channelId", channel.channelId);
-  if (channel.channelUrl) params.set("channelUrl", channel.channelUrl);
+  if (channel.channelUrl) {
+    params.set("channelUrl", channel.channelUrl);
+  } else if (channel.channelId) {
+    params.set("channelId", channel.channelId);
+  }
   params.set("channelName", channel.channelName);
   params.set("limit", String(LIVE_CHANNEL_VIDEO_FETCH_BUFFER));
 
