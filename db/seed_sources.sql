@@ -43,6 +43,7 @@ insert into sources (
   ('Angelika Bazalová', 'youtube', 'https://www.youtube.com/@emko-ab', 'B', 'rozhovor', 'CZ', 'cs', true, 'support', null),
   ('Markéta Dobiášová', 'youtube', 'https://www.youtube.com/@inFAKTAcz', 'B', 'rozhovor', 'CZ', 'cs', true, 'support', null),
   ('Incorrect CZ', 'youtube', 'https://www.youtube.com/@IncorrectCZ', 'B', 'komentář', 'CZ', 'cs', true, 'support', null),
+  ('Časopis Argument', 'youtube', 'https://www.youtube.com/@casopisargument3584', 'B', 'komentář', 'CZ', 'cs', true, 'support', null),
   ('Marker', 'youtube', 'https://www.youtube.com/@PortalMarker', 'B', 'komentář', 'SK', 'sk', true, 'support', null),
   ('Ereport', 'youtube', 'https://www.youtube.com/@eReportTV', 'B', 'politika', 'SK', 'sk', true, 'support', null),
   ('Judita Laššáková', 'youtube', 'https://www.youtube.com/@JuditaLassakova', 'B', 'politika', 'SK', 'sk', true, 'support', null),
