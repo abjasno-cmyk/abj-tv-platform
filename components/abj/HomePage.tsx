@@ -284,12 +284,8 @@ export function HomePage({
     setChannelError((prev) => ({ ...prev, [ch.channelName]: "" }));
     try {
       const params = new URLSearchParams();
-      // URL má přednost před DB channel_id — ten často zastará (Bazalová, Datarun, …).
-      if (ch.channelUrl) {
-        params.set("channelUrl", ch.channelUrl);
-      } else if (ch.channelId) {
-        params.set("channelId", ch.channelId);
-      }
+      if (ch.channelId) params.set("channelId", ch.channelId);
+      if (ch.channelUrl) params.set("channelUrl", ch.channelUrl);
       params.set("channelName", ch.channelName);
       params.set("limit", String(LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT));
 

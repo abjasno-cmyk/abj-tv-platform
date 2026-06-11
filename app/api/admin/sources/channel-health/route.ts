@@ -4,14 +4,13 @@ import { requireWallAdmin } from "@/lib/wallAdminAuth";
 export const dynamic = "force-dynamic";
 
 type ChannelLinkType = "channel-id" | "handle" | "username" | "custom" | "unknown";
-type SourceHealthIssue = "missing_channel_id" | "missing_channel_url" | "missing_uploads_playlist_id";
+type SourceHealthIssue = "missing_channel_id" | "missing_channel_url";
 
 type SourceHealthRow = {
   id: string;
   sourceName: string;
   channelId: string | null;
   channelUrl: string | null;
-  uploadsPlaylistId: string | null;
   linkType: ChannelLinkType;
   linkIdentifier: string | null;
   issues: SourceHealthIssue[];
@@ -60,7 +59,7 @@ export async function GET(request: Request) {
     const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase
       .from("sources")
-      .select("id, source_name, channel_id, channel_url, uploads_playlist_id")
+      .select("id, source_name, channel_id, channel_url")
       .eq("platform", "youtube")
       .eq("active", true)
       .order("source_name", { ascending: true });
@@ -76,18 +75,15 @@ export async function GET(request: Request) {
         if (!id || !sourceName) return null;
         const channelId = readString(row.channel_id);
         const channelUrl = readString(row.channel_url);
-        const uploadsPlaylistId = readString(row.uploads_playlist_id);
         const { linkType, linkIdentifier } = parseChannelLink(channelUrl);
         const issues: SourceHealthIssue[] = [];
         if (!channelId) issues.push("missing_channel_id");
         if (!channelUrl) issues.push("missing_channel_url");
-        if (!uploadsPlaylistId) issues.push("missing_uploads_playlist_id");
         return {
           id,
           sourceName,
           channelId,
           channelUrl,
-          uploadsPlaylistId,
           linkType,
           linkIdentifier,
           issues,
@@ -104,8 +100,6 @@ export async function GET(request: Request) {
       total: rows.length,
       missingChannelId: rows.filter((row) => row.issues.includes("missing_channel_id")).length,
       missingChannelUrl: rows.filter((row) => row.issues.includes("missing_channel_url")).length,
-      missingUploadsPlaylistId: rows.filter((row) => row.issues.includes("missing_uploads_playlist_id"))
-        .length,
       healthy: rows.filter((row) => !row.needsAttention).length,
     };
 

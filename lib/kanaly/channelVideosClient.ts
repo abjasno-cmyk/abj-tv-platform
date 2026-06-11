@@ -39,11 +39,8 @@ async function fetchFromChannelLatest(channel: LiveChannelGroup): Promise<LiveCh
   }
 
   const params = new URLSearchParams();
-  if (channel.channelUrl) {
-    params.set("channelUrl", channel.channelUrl);
-  } else if (channel.channelId) {
-    params.set("channelId", channel.channelId);
-  }
+  if (channel.channelId) params.set("channelId", channel.channelId);
+  if (channel.channelUrl) params.set("channelUrl", channel.channelUrl);
   params.set("channelName", channel.channelName);
   params.set("limit", String(LIVE_CHANNEL_VIDEO_FETCH_BUFFER));
 
@@ -60,9 +57,7 @@ export async function fetchChannelVideosForKanaly(
   channel: LiveChannelGroup,
 ): Promise<KanalyChannelVideosResult> {
   const feedSelection = selectKanalyChannelVideos(channel.videos);
-  // Vždy použij cache z feedu, pokud něco máme — i starší než 7 dní (usedLatestFallback).
-  // Jinak zbytečně voláme YouTube API a při chybě ID/Shorts zobrazíme prázdný panel.
-  if (feedSelection.videos.length > 0) {
+  if (feedSelection.videos.length > 0 && !feedSelection.usedLatestFallback) {
     return feedSelection;
   }
 

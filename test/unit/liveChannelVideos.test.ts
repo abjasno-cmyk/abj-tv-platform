@@ -51,23 +51,6 @@ describe("selectKanalyChannelVideos", () => {
     expect(result.videos.map((video) => video.videoId)).toEqual(["fresh"]);
   });
 
-  it("falls back to shorts when every candidate is classified as a short", () => {
-    const videos = [
-      {
-        videoId: "short-1",
-        title: "Krátké video",
-        thumbnail: null,
-        publishedAt: "2026-06-08T10:00:00.000Z",
-        durationIso: "PT45S",
-      },
-    ];
-
-    const result = selectKanalyChannelVideos(videos, nowMs);
-
-    expect(result.videos.map((video) => video.videoId)).toEqual(["short-1"]);
-    expect(result.usedLatestFallback).toBe(false);
-  });
-
   it("falls back to latest videos when the lookback window is empty", () => {
     const videos = [
       {

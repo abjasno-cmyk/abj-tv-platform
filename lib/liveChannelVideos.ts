@@ -44,24 +44,16 @@ export type KanalyChannelVideoSelection<T extends ChannelVideoCandidate> = {
 };
 
 /** Prefer videos from the last N days; otherwise fall back to latest (same as /live). */
-function sortVideosNewestFirst<T extends { publishedAt: string }>(videos: T[]): T[] {
-  return [...videos].sort(
-    (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
-  );
-}
-
 export function selectKanalyChannelVideos<T extends ChannelVideoCandidate>(
   videos: T[],
   nowMs: number = Date.now(),
 ): KanalyChannelVideoSelection<T> {
-  const sorted = sortVideosNewestFirst(videos);
-  const nonShort = selectLatestNonShortChannelVideos(sorted, LIVE_CHANNEL_VIDEO_FETCH_BUFFER);
-  const candidates = nonShort.length > 0 ? nonShort : sorted.slice(0, LIVE_CHANNEL_VIDEO_FETCH_BUFFER);
-  const recent = filterChannelVideosWithinDays(candidates, CHANNEL_VIDEO_LOOKBACK_DAYS, nowMs);
+  const nonShort = selectLatestNonShortChannelVideos(videos, LIVE_CHANNEL_VIDEO_FETCH_BUFFER);
+  const recent = filterChannelVideosWithinDays(nonShort, CHANNEL_VIDEO_LOOKBACK_DAYS, nowMs);
   if (recent.length > 0) {
-    return { videos: recent.slice(0, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT), usedLatestFallback: false };
+    return { videos: recent, usedLatestFallback: false };
   }
 
-  const latest = candidates.slice(0, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT);
+  const latest = nonShort.slice(0, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT);
   return { videos: latest, usedLatestFallback: latest.length > 0 };
 }

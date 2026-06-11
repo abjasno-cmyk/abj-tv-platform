@@ -61,5 +61,4 @@ where not exists (
 
 commit;
 
--- Po vložení: cron do 15 min doplní channel_id, nebo zavolej
--- GET /api/program/v3/sync-channel-ids?mode=missing&secret=<CRON_SECRET>
+-- Po vložení: cron do 15 min doplní channel_id a uploads_playlist_id.
