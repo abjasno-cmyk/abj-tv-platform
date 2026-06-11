@@ -1,3 +1,5 @@
+-- DEV ONLY: smaže všechny kanály včetně channel_id. Na produkci NIKDY nespouštět.
+-- Pro přidání kanálu použij db/add_source.sql.
 truncate table sources;
 
 insert into sources (
