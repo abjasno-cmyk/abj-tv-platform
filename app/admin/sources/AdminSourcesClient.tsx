@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-type SourceHealthIssue = "missing_channel_id" | "missing_channel_url";
+type SourceHealthIssue = "missing_channel_id" | "missing_channel_url" | "missing_uploads_playlist_id";
 type ChannelLinkType = "channel-id" | "handle" | "username" | "custom" | "unknown";
 
 type SourceHealthRow = {
@@ -10,6 +10,7 @@ type SourceHealthRow = {
   sourceName: string;
   channelId: string | null;
   channelUrl: string | null;
+  uploadsPlaylistId: string | null;
   linkType: ChannelLinkType;
   linkIdentifier: string | null;
   issues: SourceHealthIssue[];
@@ -22,6 +23,7 @@ type SourceHealthResponse = {
     total: number;
     missingChannelId: number;
     missingChannelUrl: number;
+    missingUploadsPlaylistId: number;
     healthy: number;
   };
   error?: string;
@@ -36,6 +38,7 @@ const FILTERS: Array<{ key: FilterMode; label: string }> = [
 
 function issueLabel(issue: SourceHealthIssue): string {
   if (issue === "missing_channel_id") return "chybí channel_id";
+  if (issue === "missing_uploads_playlist_id") return "chybí uploads_playlist_id";
   return "chybí channel_url";
 }
 
@@ -57,6 +60,7 @@ export function AdminSourcesClient() {
     total: 0,
     missingChannelId: 0,
     missingChannelUrl: 0,
+    missingUploadsPlaylistId: 0,
     healthy: 0,
   });
 
@@ -105,8 +109,8 @@ export function AdminSourcesClient() {
         <p className="text-[11px] uppercase tracking-[0.14em] text-abj-text2">Admin</p>
         <h1 className="mt-2 font-[var(--font-serif)] text-3xl font-semibold text-abj-text1">Health report kanálů</h1>
         <p className="mt-2 text-sm text-abj-text2">
-          Kontrola mapování YouTube zdrojů na interní `channel_id` a URL. Kanály bez `channel_id` mohou mít zpožděné načítání
-          videí.
+          Kontrola mapování YouTube zdrojů na `channel_id`, `uploads_playlist_id` a URL. Bez těchto polí cron ingest
+          videa nestahuje.
         </p>
       </header>
 
@@ -151,10 +155,13 @@ export function AdminSourcesClient() {
           </button>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3 lg:grid-cols-5">
           <p className="rounded-lg border border-[var(--abj-gold-dim)] bg-abj-panel px-3 py-2">Celkem: {summary.total}</p>
           <p className="rounded-lg border border-[rgba(209,74,42,0.35)] bg-[rgba(209,74,42,0.08)] px-3 py-2">
             Chybí channel_id: {summary.missingChannelId}
+          </p>
+          <p className="rounded-lg border border-[rgba(209,74,42,0.35)] bg-[rgba(209,74,42,0.08)] px-3 py-2">
+            Chybí uploads_playlist_id: {summary.missingUploadsPlaylistId}
           </p>
           <p className="rounded-lg border border-[rgba(209,74,42,0.35)] bg-[rgba(209,74,42,0.08)] px-3 py-2">
             Chybí channel_url: {summary.missingChannelUrl}
@@ -197,6 +204,7 @@ export function AdminSourcesClient() {
 
               <div className="mt-2 grid grid-cols-1 gap-1 text-xs text-abj-text2 sm:grid-cols-2">
                 <p>channel_id: {row.channelId ?? "—"}</p>
+                <p>uploads_playlist_id: {row.uploadsPlaylistId ?? "—"}</p>
                 <p>channel_url: {row.channelUrl ?? "—"}</p>
                 <p>typ URL: {linkTypeLabel(row.linkType)}</p>
                 <p>identifikátor: {row.linkIdentifier ?? "—"}</p>

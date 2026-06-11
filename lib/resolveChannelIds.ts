@@ -1,22 +1,12 @@
-// RUN ONCE BEFORE FIRST BUILD
+// Run manually after adding new @handle sources, or rely on refreshVideoCache auto-resolve.
 
 import { createClient } from "@supabase/supabase-js";
+import { resolveChannelIdsFromChannelUrl } from "@/lib/youtubeChannelResolve";
 
 type SourceRow = {
   id: string;
   source_name: string;
   channel_url: string;
-};
-
-type YoutubeChannelsResponse = {
-  items?: Array<{
-    id?: string;
-    contentDetails?: {
-      relatedPlaylists?: {
-        uploads?: string;
-      };
-    };
-  }>;
 };
 
 function sanitizeEnvValue(value?: string): string | undefined {
@@ -55,58 +45,19 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
-function extractHandleFromChannelUrl(channelUrl: string): string | null {
-  const normalized = channelUrl.trim();
-  if (!normalized) {
-    return null;
-  }
-
-  try {
-    const parsed = new URL(normalized);
-    const segments = parsed.pathname.split("/").filter(Boolean);
-    const handle = segments[segments.length - 1];
-    if (!handle || !handle.startsWith("@")) {
-      return null;
-    }
-    return handle;
-  } catch {
-    return null;
-  }
-}
-
-async function resolveChannelIdByHandle(
-  apiKey: string,
-  handle: string
-): Promise<{ channelId: string | null; uploadsPlaylistId: string | null }> {
-  const handleWithoutAt = handle.startsWith("@") ? handle.slice(1) : handle;
-  if (!handleWithoutAt) {
-    return { channelId: null, uploadsPlaylistId: null };
-  }
-
-  const url = new URL("https://www.googleapis.com/youtube/v3/channels");
-  url.searchParams.set("part", "id,contentDetails");
-  url.searchParams.set("forHandle", handleWithoutAt);
-  url.searchParams.set("key", apiKey);
-
-  const response = await fetch(url.toString());
-  if (!response.ok) {
-    throw new Error(`channels API failed (${response.status})`);
-  }
-
-  const data = (await response.json()) as YoutubeChannelsResponse;
-  return {
-    channelId: data.items?.[0]?.id ?? null,
-    uploadsPlaylistId:
-      data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads ?? null,
-  };
-}
-
 async function main() {
   const supabaseUrl = getRequiredEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const supabaseAnonKey = getRequiredEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  const serviceRoleKey =
+    sanitizeEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY) ??
+    sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  if (!serviceRoleKey) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY not set");
+  }
   const youtubeApiKey = getRequiredEnv("YOUTUBE_API_KEY");
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 
   const { data, error } = await supabase
     .from("sources")
@@ -121,23 +72,13 @@ async function main() {
   }
 
   const sources = (data ?? []) as SourceRow[];
-  console.log(`Found ${sources.length} channels without channel_id`);
+  console.log(`Found ${sources.length} channels without channel_id or uploads_playlist_id`);
 
   for (const source of sources) {
     try {
-      const handle = extractHandleFromChannelUrl(source.channel_url);
-      if (!handle) {
-        console.warn(`[SKIP] ${source.source_name}: invalid handle in URL`);
-        await sleep(200);
-        continue;
-      }
-
-      const { channelId, uploadsPlaylistId } = await resolveChannelIdByHandle(
-        youtubeApiKey,
-        handle
-      );
-      if (!channelId) {
-        console.warn(`[MISS] ${source.source_name}: channel not found for handle ${handle}`);
+      const resolved = await resolveChannelIdsFromChannelUrl(source.channel_url, youtubeApiKey);
+      if (!resolved) {
+        console.warn(`[MISS] ${source.source_name}: channel not found for URL ${source.channel_url}`);
         await sleep(200);
         continue;
       }
@@ -145,8 +86,8 @@ async function main() {
       const { error: updateError } = await supabase
         .from("sources")
         .update({
-          channel_id: channelId,
-          uploads_playlist_id: uploadsPlaylistId,
+          channel_id: resolved.channelId,
+          uploads_playlist_id: resolved.uploadsPlaylistId,
         })
         .eq("id", source.id);
 
@@ -154,7 +95,7 @@ async function main() {
         console.error(`[FAIL] ${source.source_name}: ${updateError.message}`);
       } else {
         console.log(
-          `[OK] ${source.source_name}: channel=${channelId} uploads=${uploadsPlaylistId ?? "null"}`
+          `[OK] ${source.source_name}: channel=${resolved.channelId} uploads=${resolved.uploadsPlaylistId}`
         );
       }
     } catch (err) {

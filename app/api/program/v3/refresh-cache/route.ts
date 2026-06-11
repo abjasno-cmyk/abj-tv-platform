@@ -58,6 +58,8 @@ export async function GET(request: Request) {
       programFeedImport,
       apiCalls: result.apiCalls,
       videosStored: result.stored,
+      resolvedSources: result.resolvedSources,
+      healedSources: result.healedSources,
       failedSources: result.failedSources,
       failedDetails: result.failedDetails,
     });

@@ -593,7 +593,7 @@ async function loadRawChannelVideos(
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  let channelId = searchParams.get("channelId")?.trim() ?? "";
+  const requestedChannelId = searchParams.get("channelId")?.trim() ?? "";
   const channelUrl = searchParams.get("channelUrl")?.trim() ?? "";
   const channelName = searchParams.get("channelName")?.trim() ?? "";
   const requestedLimit = Number.parseInt(searchParams.get("limit") ?? String(LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT), 10);
@@ -603,11 +603,12 @@ export async function GET(request: Request) {
   const fetchBuffer = Math.max(displayLimit * 3, LIVE_CHANNEL_VIDEO_FETCH_BUFFER);
   const apiKey = resolveYouTubeApiKey();
 
-  if (channelId && !isValidYouTubeChannelId(channelId)) {
-    channelId = "";
-  }
+  let channelId = "";
+  const staleChannelId =
+    requestedChannelId && isValidYouTubeChannelId(requestedChannelId) ? requestedChannelId : "";
 
-  if (!channelId && channelUrl) {
+  // channelUrl je spolehlivější než zastaralé channel_id z DB.
+  if (channelUrl) {
     const parsed = parseChannelUrl(channelUrl);
     if (parsed.directChannelId && isValidYouTubeChannelId(parsed.directChannelId)) {
       channelId = parsed.directChannelId;
@@ -622,6 +623,8 @@ export async function GET(request: Request) {
         channelId = (await resolveChannelIdFromPage(parsed)) ?? "";
       }
     }
+  } else if (staleChannelId) {
+    channelId = staleChannelId;
   }
 
   if (!channelId && channelName) {
@@ -644,7 +647,7 @@ export async function GET(request: Request) {
         channelUrl,
         channelName,
         apiKey,
-        excludeChannelId: channelId,
+        excludeChannelId: channelId || staleChannelId,
       });
       if (retriedChannelId) {
         channelId = retriedChannelId;
@@ -670,7 +673,21 @@ export async function GET(request: Request) {
       }
     }
 
-    const videos = await finalizeChannelVideos(rawVideos, displayLimit, fetchBuffer, apiKey);
+    let videos = await finalizeChannelVideos(rawVideos, displayLimit, fetchBuffer, apiKey);
+    if (videos.length === 0 && rawVideos.length > 0 && (channelUrl || channelName)) {
+      const retriedChannelId = await resolveAlternateChannelId({
+        channelUrl,
+        channelName,
+        apiKey,
+        excludeChannelId: channelId || staleChannelId,
+      });
+      if (retriedChannelId) {
+        channelId = retriedChannelId;
+        ({ rawVideos, feedResult } = await loadRawChannelVideos(channelId, apiKey, fetchBuffer));
+        videos = await finalizeChannelVideos(rawVideos, displayLimit, fetchBuffer, apiKey);
+      }
+    }
+
     return Response.json({ videos, resolvedChannelId: channelId });
   } catch (error) {
     // Detail jen do server logu; klientovi generická hláška (chybové hlášky
