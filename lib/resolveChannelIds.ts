@@ -1,13 +1,9 @@
 // Run manually after adding new @handle sources, or rely on refreshVideoCache auto-resolve.
+//   npm run resolve-channels           # jen chybějící ID
+//   npm run resolve-channels -- --all  # všechny aktivní kanály z channel_url
 
 import { createClient } from "@supabase/supabase-js";
-import { resolveChannelIdsFromChannelUrl } from "@/lib/youtubeChannelResolve";
-
-type SourceRow = {
-  id: string;
-  source_name: string;
-  channel_url: string;
-};
+import { syncSourceChannelIds } from "@/lib/syncSourceChannelIds";
 
 function sanitizeEnvValue(value?: string): string | undefined {
   if (!value) {
@@ -39,13 +35,8 @@ function getRequiredEnv(name: string): string {
   return value;
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
 async function main() {
+  const mode = process.argv.includes("--all") ? "all" : "missing";
   const supabaseUrl = getRequiredEnv("NEXT_PUBLIC_SUPABASE_URL");
   const serviceRoleKey =
     sanitizeEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY) ??
@@ -59,50 +50,24 @@ async function main() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data, error } = await supabase
-    .from("sources")
-    .select("id, source_name, channel_url")
-    .eq("platform", "youtube")
-    .or("channel_id.is.null,uploads_playlist_id.is.null")
-    .order("priority", { ascending: true })
-    .order("source_name", { ascending: true });
+  console.log(`Syncing YouTube channel IDs (mode=${mode})...`);
+  const result = await syncSourceChannelIds({
+    supabase,
+    youtubeApiKey,
+    mode,
+    throttleMs: 200,
+  });
 
-  if (error) {
-    throw new Error(`Failed to fetch sources: ${error.message}`);
-  }
+  console.log(
+    `Done. scanned=${result.scanned} updated=${result.updated} unchanged=${result.unchanged} failed=${result.failed}`
+  );
 
-  const sources = (data ?? []) as SourceRow[];
-  console.log(`Found ${sources.length} channels without channel_id or uploads_playlist_id`);
-
-  for (const source of sources) {
-    try {
-      const resolved = await resolveChannelIdsFromChannelUrl(source.channel_url, youtubeApiKey);
-      if (!resolved) {
-        console.warn(`[MISS] ${source.source_name}: channel not found for URL ${source.channel_url}`);
-        await sleep(200);
-        continue;
-      }
-
-      const { error: updateError } = await supabase
-        .from("sources")
-        .update({
-          channel_id: resolved.channelId,
-          uploads_playlist_id: resolved.uploadsPlaylistId,
-        })
-        .eq("id", source.id);
-
-      if (updateError) {
-        console.error(`[FAIL] ${source.source_name}: ${updateError.message}`);
-      } else {
-        console.log(
-          `[OK] ${source.source_name}: channel=${resolved.channelId} uploads=${resolved.uploadsPlaylistId}`
-        );
-      }
-    } catch (err) {
-      console.error(`[FAIL] ${source.source_name}:`, err);
+  for (const detail of result.details) {
+    if (detail.status === "updated") {
+      console.log(`[OK] ${detail.sourceName}: ${detail.message ?? "updated"}`);
+    } else if (detail.status === "failed" || detail.status === "skipped") {
+      console.warn(`[${detail.status.toUpperCase()}] ${detail.sourceName}: ${detail.message ?? ""}`);
     }
-
-    await sleep(200);
   }
 }
 

@@ -1,7 +1,9 @@
 begin;
 
--- Upsert requested YouTube sources without relying on a UNIQUE constraint.
--- This avoids: ERROR 42P10 (no unique/exclusion constraint for ON CONFLICT).
+-- POZOR: Nespouštěj tento soubor pro přidání jednoho kanálu — použij db/add_source.sql.
+-- Tento skript je jen pro hromadnou synchronizaci metadat kanálů, které už v DB jsou.
+-- Páruje VÝHRADNĚ podle channel_url (ne podle source_name), aby nepřepisoval cizí řádky.
+-- Při změně channel_url vynuluje channel_id a uploads_playlist_id → cron je znovu doplní z URL.
 with incoming (
   source_name,
   platform,
@@ -39,6 +41,8 @@ updated as (
   set
     source_name = i.source_name,
     channel_url = i.channel_url,
+    channel_id = case when s.channel_url is distinct from i.channel_url then null else s.channel_id end,
+    uploads_playlist_id = case when s.channel_url is distinct from i.channel_url then null else s.uploads_playlist_id end,
     priority = i.priority,
     category = i.category,
     country = i.country,
@@ -48,10 +52,7 @@ updated as (
     notes = i.notes
   from incoming i
   where s.platform = i.platform
-    and (
-      s.channel_url = i.channel_url
-      or (s.source_name = i.source_name and s.platform = 'youtube')
-    )
+    and s.channel_url = i.channel_url
   returning s.id
 )
 insert into sources (
@@ -82,17 +83,7 @@ where not exists (
   select 1
   from sources s
   where s.platform = i.platform
-    and (
-      s.channel_url = i.channel_url
-      or (s.source_name = i.source_name and s.platform = 'youtube')
-    )
+    and s.channel_url = i.channel_url
 );
-
--- Explicitly fix the known typo URL if a stale row still exists.
-update sources
-set channel_url = 'https://www.youtube.com/@RadimPanenka'
-where platform = 'youtube'
-  and source_name = 'Radim Panenka'
-  and channel_url <> 'https://www.youtube.com/@RadimPanenka';
 
 commit;
