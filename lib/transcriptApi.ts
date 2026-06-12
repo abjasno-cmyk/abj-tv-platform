@@ -1,7 +1,10 @@
 import { parseTranscriptResponse, type TranscriptResponse } from "@/lib/transcriptTypes";
 
 export const TRANSCRIPT_POLL_INTERVAL_MS = 3000;
-export const TRANSCRIPT_POLL_TIMEOUT_MS = 120_000;
+/** Po tomto čase zobrazíme „trvá déle“, ale polling pokračuje. */
+export const TRANSCRIPT_POLL_SOFT_TIMEOUT_MS = 120_000;
+/** Tvrdý strop — poté nabídneme ruční opakování. */
+export const TRANSCRIPT_POLL_HARD_TIMEOUT_MS = 600_000;
 
 export async function fetchVideoTranscript(videoId: string): Promise<TranscriptResponse | null> {
   const normalized = videoId.trim();

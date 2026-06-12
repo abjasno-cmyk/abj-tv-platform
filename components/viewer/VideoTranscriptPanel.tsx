@@ -1,13 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 
-import {
-  fetchVideoTranscript,
-  TRANSCRIPT_POLL_INTERVAL_MS,
-  TRANSCRIPT_POLL_TIMEOUT_MS,
-} from "@/lib/transcriptApi";
+import { useVideoTranscriptPoll } from "@/hooks/useVideoTranscriptPoll";
 import type { TranscriptResponse } from "@/lib/transcriptTypes";
+import { isTranscriptPending } from "@/lib/transcriptTypes";
 
 type VideoTranscriptPanelProps = {
   open: boolean;
@@ -29,17 +26,26 @@ function TranscriptParagraphs({ text }: { text: string }) {
   );
 }
 
-function panelMessage(response: TranscriptResponse | null, loading: boolean, pollTimedOut: boolean): string {
-  if (loading && !response) return "Načítáme…";
+function panelMessage(
+  response: TranscriptResponse | null,
+  phase: "idle" | "loading" | "polling" | "done",
+  softTimedOut: boolean,
+  hardTimedOut: boolean,
+): string {
+  if (phase === "loading" && !response) return "Načítáme…";
   if (!response) return "Přepis se nepodařilo načíst.";
 
   switch (response.status) {
     case "ready":
       return response.transcript?.trim() ? "" : "Přepis je prázdný.";
     case "processing":
-      return pollTimedOut
-        ? "Přepis se stále připravuje. Zkuste to za chvíli znovu."
-        : "Připravujeme přepis…";
+      if (hardTimedOut) {
+        return "Přepis se stále připravuje. Zkuste to prosím znovu za chvíli.";
+      }
+      if (softTimedOut) {
+        return "Přepis se připravuje déle než obvykle. Počkejte prosím, stále načítáme…";
+      }
+      return "Připravujeme přepis…";
     case "not_ready_live":
       return "Přepis bude po skončení vysílání.";
     case "unavailable":
@@ -50,9 +56,7 @@ function panelMessage(response: TranscriptResponse | null, loading: boolean, pol
 }
 
 export function VideoTranscriptPanel({ open, onClose, videoId, videoTitle }: VideoTranscriptPanelProps) {
-  const [response, setResponse] = useState<TranscriptResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [pollTimedOut, setPollTimedOut] = useState(false);
+  const { response, phase, softTimedOut, hardTimedOut, retry } = useVideoTranscriptPoll(videoId, open);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -72,50 +76,12 @@ export function VideoTranscriptPanel({ open, onClose, videoId, videoTitle }: Vid
     };
   }, [handleKeyDown, open]);
 
-  useEffect(() => {
-    if (!open || !videoId) return;
-
-    let cancelled = false;
-    let pollTimer: ReturnType<typeof setTimeout> | null = null;
-    const startedAt = Date.now();
-
-    const load = async () => {
-      setLoading(true);
-      const data = await fetchVideoTranscript(videoId);
-      if (cancelled) return;
-
-      setResponse(data);
-      setLoading(false);
-
-      if (!data || data.status === "ready" || data.status === "unavailable" || data.status === "not_ready_live") {
-        return;
-      }
-
-      if (data.status === "processing") {
-        if (Date.now() - startedAt >= TRANSCRIPT_POLL_TIMEOUT_MS) {
-          setPollTimedOut(true);
-          return;
-        }
-        pollTimer = setTimeout(() => {
-          void load();
-        }, TRANSCRIPT_POLL_INTERVAL_MS);
-      }
-    };
-
-    setResponse(null);
-    setPollTimedOut(false);
-    void load();
-
-    return () => {
-      cancelled = true;
-      if (pollTimer) clearTimeout(pollTimer);
-    };
-  }, [open, videoId]);
-
   if (!open) return null;
 
-  const message = panelMessage(response, loading, pollTimedOut);
+  const message = panelMessage(response, phase, softTimedOut, hardTimedOut);
   const showTranscript = response?.status === "ready" && Boolean(response.transcript?.trim());
+  const showRetry =
+    (hardTimedOut && Boolean(response && isTranscriptPending(response.status))) || (!response && phase === "done");
 
   return (
     <div className="vx-transcript-panel" role="presentation">
@@ -139,9 +105,16 @@ export function VideoTranscriptPanel({ open, onClose, videoId, videoTitle }: Vid
           {showTranscript ? (
             <TranscriptParagraphs text={response!.transcript!} />
           ) : (
-            <p className="vx-transcript-panel-message" aria-live="polite">
-              {message}
-            </p>
+            <>
+              <p className="vx-transcript-panel-message" aria-live="polite">
+                {message}
+              </p>
+              {showRetry ? (
+                <button type="button" className="vx-transcript-panel-retry" onClick={retry}>
+                  Zkusit znovu
+                </button>
+              ) : null}
+            </>
           )}
         </div>
       </aside>

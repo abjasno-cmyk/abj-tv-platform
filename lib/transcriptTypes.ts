@@ -30,20 +30,35 @@ export function isTranscriptLabelVisible(state: TranscriptState | undefined | nu
 const TRANSCRIPT_STATUSES: ReadonlySet<string> = new Set([
   "ready",
   "processing",
+  "pending",
   "not_ready_live",
   "unavailable",
 ]);
+
+function normalizeTranscriptStatus(value: string): TranscriptStatus | null {
+  const normalized = value.trim();
+  if (normalized === "pending") return "processing";
+  if (TRANSCRIPT_STATUSES.has(normalized)) {
+    return normalized as TranscriptStatus;
+  }
+  return null;
+}
+
+export function isTranscriptPending(status: TranscriptStatus | null | undefined): boolean {
+  return status === "processing";
+}
 
 export function parseTranscriptResponse(value: unknown): TranscriptResponse | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const row = value as Record<string, unknown>;
   const videoId = typeof row.video_id === "string" ? row.video_id.trim() : "";
   const statusRaw = typeof row.status === "string" ? row.status.trim() : "";
-  if (!videoId || !TRANSCRIPT_STATUSES.has(statusRaw)) return null;
+  const status = normalizeTranscriptStatus(statusRaw);
+  if (!videoId || !status) return null;
 
   return {
     video_id: videoId,
-    status: statusRaw as TranscriptStatus,
+    status,
     transcript: typeof row.transcript === "string" ? row.transcript : row.transcript === null ? null : null,
     transcript_at:
       typeof row.transcript_at === "string"
