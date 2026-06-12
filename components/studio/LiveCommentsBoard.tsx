@@ -1,8 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { LiveCommentsVideoPicker } from "@/components/studio/LiveCommentsVideoPicker";
 import type { LiveCommentBoardItem, LiveCommentsVideoContext } from "@/lib/studio/liveCommentsTypes";
 import { authorInitials, formatRelativeCommentTime } from "@/lib/viewer/commentTime";
 
@@ -12,6 +14,7 @@ type LiveCommentsResponse = {
   other?: LiveCommentBoardItem[];
   counts?: { total: number; questions: number; other: number };
   refreshedAt?: string;
+  needsVideo?: boolean;
   error?: string;
 };
 
@@ -134,6 +137,7 @@ export function LiveCommentsBoard({
   initialVideoTitle,
   autoRefreshSeconds = 8,
 }: LiveCommentsBoardProps) {
+  const router = useRouter();
   const { openLoginModal } = useAuth();
   const [videoIdInput, setVideoIdInput] = useState(initialVideoId ?? "");
   const [activeVideoId, setActiveVideoId] = useState(initialVideoId ?? "");
@@ -153,6 +157,15 @@ export function LiveCommentsBoard({
   }, [activeVideoId]);
 
   const loadComments = useCallback(async () => {
+    if (!activeVideoId.trim()) {
+      setLoading(false);
+      setQuestions([]);
+      setOther([]);
+      setCounts({ total: 0, questions: 0, other: 0 });
+      setError(null);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -187,7 +200,7 @@ export function LiveCommentsBoard({
     } finally {
       setLoading(false);
     }
-  }, [openLoginModal, queryString]);
+  }, [activeVideoId, openLoginModal, queryString]);
 
   useEffect(() => {
     void loadComments();
@@ -225,8 +238,15 @@ export function LiveCommentsBoard({
     await loadComments();
   };
 
-  const applyVideoId = () => {
-    setActiveVideoId(videoIdInput.trim());
+  const selectVideo = (videoId: string, title?: string | null) => {
+    const normalized = videoId.trim();
+    if (!normalized) return;
+    setActiveVideoId(normalized);
+    setVideoIdInput(normalized);
+    if (title?.trim()) {
+      setVideoTitle(title.trim());
+    }
+    router.replace(`/studio/live-komentare?videoId=${encodeURIComponent(normalized)}`, { scroll: false });
   };
 
   return (
@@ -248,32 +268,21 @@ export function LiveCommentsBoard({
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-end gap-3">
-          <div className="min-w-[220px] flex-1">
-            <label htmlFor="live-comments-video-id" className="block text-xs text-[#b7c1d3]">
-              YouTube video ID
-            </label>
-            <input
-              id="live-comments-video-id"
-              value={videoIdInput}
-              onChange={(event) => setVideoIdInput(event.target.value)}
-              placeholder="Např. dQw4w9WgXcQ"
-              className="mt-1 w-full rounded-md border border-[#30384a] bg-[#101625] px-3 py-2 text-sm text-[#edf2fb] outline-none focus:border-[#ff6a00]"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={applyVideoId}
-            className="rounded-md border border-[#ff6a00] bg-[#ff6a00] px-4 py-2 text-sm font-semibold text-white hover:bg-[#e95f00]"
-          >
-            Načíst video
-          </button>
+        <LiveCommentsVideoPicker
+          activeVideoId={activeVideoId}
+          videoIdInput={videoIdInput}
+          onVideoIdInputChange={setVideoIdInput}
+          onSelectVideo={selectVideo}
+        />
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={() => void loadComments()}
-            className="rounded-md border border-[#30384a] bg-[#101625] px-4 py-2 text-sm text-[#d8e2f3] hover:border-[#ff6a00]/70"
+            disabled={!activeVideoId.trim()}
+            className="rounded-md border border-[#30384a] bg-[#101625] px-4 py-2 text-sm text-[#d8e2f3] hover:border-[#ff6a00]/70 disabled:opacity-50"
           >
-            Obnovit
+            Obnovit komentáře
           </button>
           <label className="flex items-center gap-2 text-xs text-[#b7c1d3]">
             <input
@@ -307,7 +316,11 @@ export function LiveCommentsBoard({
         ) : null}
       </section>
 
-      {loading && questions.length === 0 && other.length === 0 ? (
+      {!activeVideoId.trim() ? (
+        <p className="rounded-xl border border-[#30384a] bg-[#0b0f16] px-4 py-5 text-sm text-[#b7c1d3]">
+          Vyberte video z programu nebo podle názvu. Komentáře se zobrazí po výběru.
+        </p>
+      ) : loading && questions.length === 0 && other.length === 0 ? (
         <p className="text-sm text-[#9fb0cc]">Načítám komentáře…</p>
       ) : null}
 

@@ -31,19 +31,34 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const requestedVideoId = normalize(url.searchParams.get("videoId"));
-  const videoContext = await resolveLiveCommentsVideoContext(requestedVideoId || null);
+  let videoContext = await resolveLiveCommentsVideoContext(requestedVideoId || null);
+
+  if (videoContext && !videoContext.title) {
+    const { data } = await access.supabase
+      .from("videos")
+      .select("title, channel_name")
+      .eq("video_id", videoContext.videoId)
+      .maybeSingle();
+    if (data) {
+      const row = data as { title?: string | null; channel_name?: string | null };
+      videoContext = {
+        ...videoContext,
+        title: row.title?.trim() || videoContext.title,
+        channel: row.channel_name?.trim() || videoContext.channel,
+      };
+    }
+  }
 
   if (!videoContext) {
-    return NextResponse.json(
-      {
-        error: "Žádné aktivní video. Zadejte videoId v adrese nebo spusťte živý stream.",
-        video: null,
-        comments: [],
-        questions: [],
-        other: [],
-      },
-      { status: 404 },
-    );
+    return NextResponse.json({
+      video: null,
+      comments: [],
+      questions: [],
+      other: [],
+      counts: { total: 0, questions: 0, other: 0 },
+      refreshedAt: new Date().toISOString(),
+      needsVideo: true,
+    });
   }
 
   try {
