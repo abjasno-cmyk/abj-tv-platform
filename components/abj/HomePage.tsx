@@ -14,8 +14,8 @@ import { ShareVideoButton } from "@/components/viewer/ShareVideoButton";
 import { VideoDiscussButton } from "@/components/viewer/VideoDiscussButton";
 import { VideoTranscriptLabel } from "@/components/viewer/VideoTranscriptLabel";
 import { ViewerVideoBadges } from "@/components/viewer/ViewerVideoBadges";
-import { fetchProgram } from "@/lib/api";
-import { parseTranscriptState, type TranscriptState } from "@/lib/transcriptTypes";
+import { useRegisterTranscriptStates } from "@/components/viewer/TranscriptStatesProvider";
+import type { TranscriptState } from "@/lib/transcriptTypes";
 import { useViewerVideoState } from "@/lib/viewer/useViewerVideoState";
 import { normalizeChannelFollowId } from "@/lib/viewer/videoMetadata";
 import { PlayoutStage } from "@/components/abj/playout/PlayoutStage";
@@ -95,8 +95,8 @@ export function HomePage({
   const [playerCurrentTime, setPlayerCurrentTime] = useState(0);
   const [playerDuration, setPlayerDuration] = useState(0);
   const [playerBarExpanded, setPlayerBarExpanded] = useState(false);
-  const [clientTranscriptStates, setClientTranscriptStates] = useState<Record<string, TranscriptState>>({});
   const { savedVideoIds, watchedVideoIds, setSaved } = useViewerVideoState();
+  const registerTranscriptStates = useRegisterTranscriptStates();
 
   const onSelectChannelVideo = useCallback(
     (payload: { channelName: string; video: LiveChannelVideo }) => {
@@ -140,27 +140,21 @@ export function HomePage({
     [days],
   );
 
-  useEffect(() => {
-    let cancelled = false;
-    void fetchProgram()
-      .then((data) => {
-        if (cancelled || !data) return;
-        const next: Record<string, TranscriptState> = {};
-        for (const block of data.blocks) {
-          const state = parseTranscriptState(block.transcript_state);
-          if (block.video_id && state) {
-            next[block.video_id] = state;
-          }
+  const epgTranscriptStates = useMemo(() => {
+    const next: Record<string, TranscriptState> = {};
+    for (const day of days) {
+      for (const item of day.items) {
+        if (item.videoId && item.transcriptState) {
+          next[item.videoId] = item.transcriptState;
         }
-        setClientTranscriptStates(next);
-      })
-      .catch(() => {
-        // Program bez transcript_state — štítky zůstanou jen ze serverového EPG.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+      }
+    }
+    return next;
+  }, [days]);
+
+  useEffect(() => {
+    registerTranscriptStates(epgTranscriptStates);
+  }, [epgTranscriptStates, registerTranscriptStates]);
 
   const handleSelectProgram = useCallback(
     (item: ProgramItem) => {
@@ -173,19 +167,6 @@ export function HomePage({
   // PRÁVĚ HRAJE = vždy PROGRAM (Bloky z Replitu / EPG), ne videa kanálu z hera.
   // Ukazujeme celý program dne (Replit jich servíruje ~50+), ne jen prvních pár —
   // strop 100 jen bezpečně omezí degradovaný 7denní buildEPG fallback.
-  const transcriptStateByVideoId = useMemo(() => {
-    const map = new Map<string, TranscriptState>();
-    for (const item of programItems) {
-      if (item.videoId && item.transcriptState) {
-        map.set(item.videoId, item.transcriptState);
-      }
-    }
-    for (const [videoId, state] of Object.entries(clientTranscriptStates)) {
-      map.set(videoId, state);
-    }
-    return map;
-  }, [clientTranscriptStates, programItems]);
-
   const stageItems = useMemo(() => {
     return programItems.slice(0, 100).map((item, index) => ({
       key: `${item.videoId}-${index}`,
@@ -193,10 +174,9 @@ export function HomePage({
       title: item.title,
       channelName: item.channelName,
       thumb: thumbFor(item),
-      transcriptState: item.videoId ? transcriptStateByVideoId.get(item.videoId) : undefined,
       onClick: () => handleSelectProgram(item),
     }));
-  }, [programItems, handleSelectProgram, transcriptStateByVideoId]);
+  }, [programItems, handleSelectProgram]);
 
   const offset = Math.max(0, Math.floor(startSeconds));
 
@@ -239,9 +219,6 @@ export function HomePage({
   const activeCommentVideoId = currentVideoId ?? videoId;
   const playerControlsEnabled = heroSurface?.kind === "youtube" && Boolean(activeCommentVideoId);
   const currentEpg = currentVideoId ? epgInfoById.get(currentVideoId) : null;
-  const activeTranscriptState = activeCommentVideoId
-    ? transcriptStateByVideoId.get(activeCommentVideoId)
-    : undefined;
   const displayTitle =
     (heroSurface?.kind === "youtube" ? heroSurface.title : undefined) ?? currentEpg?.title ?? title;
   const displayChannel =
@@ -612,11 +589,7 @@ export function HomePage({
               onSavedChange={(nextSaved) => setSaved(activeCommentVideoId, nextSaved)}
             />
             <VideoDiscussButton videoId={activeCommentVideoId} videoTitle={displayTitle} />
-            <VideoTranscriptLabel
-              videoId={activeCommentVideoId}
-              videoTitle={displayTitle}
-              transcriptState={activeTranscriptState}
-            />
+            <VideoTranscriptLabel videoId={activeCommentVideoId} videoTitle={displayTitle} />
             <ShareVideoButton videoId={activeCommentVideoId} title={displayTitle} />
             <ViewerVideoBadges
               watched={watchedVideoIds.has(activeCommentVideoId)}
@@ -689,12 +662,7 @@ export function HomePage({
                           onSavedChange={(nextSaved) => setSaved(it.videoId!, nextSaved)}
                         />
                         <VideoDiscussButton videoId={it.videoId} videoTitle={it.title} />
-                        <VideoTranscriptLabel
-                          videoId={it.videoId}
-                          videoTitle={it.title}
-                          transcriptState={it.transcriptState}
-                          compact
-                        />
+                        <VideoTranscriptLabel videoId={it.videoId} videoTitle={it.title} compact />
                       </div>
                     ) : null}
                   </div>

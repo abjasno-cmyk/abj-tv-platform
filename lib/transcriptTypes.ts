@@ -23,7 +23,8 @@ export function parseTranscriptState(value: unknown): TranscriptState | undefine
 }
 
 export function isTranscriptLabelVisible(state: TranscriptState | undefined | null): boolean {
-  return state === "ready" || state === "pending";
+  if (state === "not_ready_live" || state === "unavailable") return false;
+  return true;
 }
 
 const TRANSCRIPT_STATUSES: ReadonlySet<string> = new Set([
