@@ -9,6 +9,7 @@ import { ABJNav } from "@/components/abj/Nav";
 import { LegalFooter } from "@/components/abj/LegalFooter";
 import { SitePresenceReporter } from "@/components/abj/SitePresenceReporter";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { TranscriptStatesProvider } from "@/components/viewer/TranscriptStatesProvider";
 import { EditorialEventDebugPanel } from "@/components/dev/EditorialEventDebugPanel";
 import { CANONICAL_HOST, SITE_URL } from "@/lib/site";
 
@@ -109,11 +110,13 @@ export default function RootLayout({ children }: RootLayoutProps) {
         </Script>
         <SitePresenceReporter />
         <AuthProvider vercelEnv={process.env.VERCEL_ENV}>
-          {/* Single global nav only — prevents duplicate legacy header stacks. */}
-          <ABJNav />
-          <main className="min-h-[50vh]">{children}</main>
-          <LegalFooter />
-          {showEditorialDebug ? <EditorialEventDebugPanel /> : null}
+          <TranscriptStatesProvider>
+            {/* Single global nav only — prevents duplicate legacy header stacks. */}
+            <ABJNav />
+            <main className="min-h-[50vh]">{children}</main>
+            <LegalFooter />
+            {showEditorialDebug ? <EditorialEventDebugPanel /> : null}
+          </TranscriptStatesProvider>
         </AuthProvider>
         {isProductionDeployment ? <Analytics /> : null}
       </body>

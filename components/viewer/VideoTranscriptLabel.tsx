@@ -2,6 +2,7 @@
 
 import { useState, type MouseEvent } from "react";
 
+import { useTranscriptState } from "@/components/viewer/TranscriptStatesProvider";
 import { VideoTranscriptPanel } from "@/components/viewer/VideoTranscriptPanel";
 import { isTranscriptLabelVisible, type TranscriptState } from "@/lib/transcriptTypes";
 
@@ -21,8 +22,10 @@ export function VideoTranscriptLabel({
   className,
 }: VideoTranscriptLabelProps) {
   const [panelOpen, setPanelOpen] = useState(false);
+  const contextState = useTranscriptState(videoId);
+  const resolvedState = transcriptState ?? contextState;
 
-  if (!isTranscriptLabelVisible(transcriptState)) return null;
+  if (!isTranscriptLabelVisible(resolvedState)) return null;
 
   const openPanel = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();

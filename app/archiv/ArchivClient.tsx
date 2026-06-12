@@ -8,6 +8,7 @@ import { SaveVideoButton } from "@/components/auth/SaveVideoButton";
 import { useFeed } from "@/hooks/useFeed";
 import type { FeedPost } from "@/lib/api";
 import { VideoDiscussButton } from "@/components/viewer/VideoDiscussButton";
+import { VideoTranscriptLabel } from "@/components/viewer/VideoTranscriptLabel";
 import { VideoReleaseDateBadge } from "@/components/viewer/VideoReleaseDateBadge";
 import { useViewerVideoState } from "@/lib/viewer/useViewerVideoState";
 
@@ -778,6 +779,7 @@ function ArchiveVideoCard({ video, variant = "compact", tag, accent = false, edi
             onSavedChange={(nextSaved) => setSaved(videoId, nextSaved)}
           />
           <VideoDiscussButton videoId={videoId} videoTitle={video.title} />
+          <VideoTranscriptLabel videoId={videoId} videoTitle={video.title} />
         </div>
       ) : null}
 
@@ -1580,6 +1582,7 @@ function ChannelDetailPanel({ channel, selectedVideo, open, loading, onClose, on
                         onSavedChange={(nextSaved) => setSaved(videoId, nextSaved)}
                       />
                       <VideoDiscussButton videoId={videoId} videoTitle={video.title} compact />
+                      <VideoTranscriptLabel videoId={videoId} videoTitle={video.title} compact />
                     </div>
                   ) : null}
                 </div>
