@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  hasTranscriptOriginal,
   isTranscriptLabelVisible,
   parseTranscriptResponse,
   parseTranscriptState,
+  resolveDisplayedTranscript,
 } from "@/lib/transcriptTypes";
 
 describe("parseTranscriptState", () => {
@@ -35,6 +37,28 @@ describe("parseTranscriptResponse", () => {
       status: "processing",
       transcript: null,
       transcript_at: null,
+      transcript_original: null,
+      source_lang: null,
+    });
+  });
+
+  it("parses translation fields for English videos", () => {
+    expect(
+      parseTranscriptResponse({
+        video_id: "abc123XYZ-_",
+        status: "ready",
+        transcript: "Český překlad.",
+        transcript_original: "English original.",
+        transcript_at: "2026-06-12T15:00:00+02:00",
+        source_lang: "en",
+      }),
+    ).toEqual({
+      video_id: "abc123XYZ-_",
+      status: "ready",
+      transcript: "Český překlad.",
+      transcript_original: "English original.",
+      transcript_at: "2026-06-12T15:00:00+02:00",
+      source_lang: "en",
     });
   });
 
@@ -51,6 +75,8 @@ describe("parseTranscriptResponse", () => {
       status: "processing",
       transcript: null,
       transcript_at: null,
+      transcript_original: null,
+      source_lang: null,
     });
   });
 
@@ -61,11 +87,40 @@ describe("parseTranscriptResponse", () => {
 });
 
 describe("isTranscriptLabelVisible", () => {
-  it("hides the label only for not_ready_live and unavailable", () => {
+  it("shows the label only for ready and pending feed states", () => {
     expect(isTranscriptLabelVisible("ready")).toBe(true);
     expect(isTranscriptLabelVisible("pending")).toBe(true);
-    expect(isTranscriptLabelVisible(undefined)).toBe(true);
+    expect(isTranscriptLabelVisible(undefined)).toBe(false);
+    expect(isTranscriptLabelVisible(null)).toBe(false);
     expect(isTranscriptLabelVisible("not_ready_live")).toBe(false);
     expect(isTranscriptLabelVisible("unavailable")).toBe(false);
+  });
+});
+
+describe("transcript translation helpers", () => {
+  it("detects when original transcript is available", () => {
+    expect(
+      hasTranscriptOriginal({
+        video_id: "abc123XYZ-_",
+        status: "ready",
+        transcript: "Česky",
+        transcript_original: "English",
+        transcript_at: null,
+        source_lang: "en",
+      }),
+    ).toBe(true);
+  });
+
+  it("defaults to Czech translation text", () => {
+    const response = {
+      video_id: "abc123XYZ-_",
+      status: "ready" as const,
+      transcript: "Česky",
+      transcript_original: "English",
+      transcript_at: null,
+      source_lang: "en" as const,
+    };
+    expect(resolveDisplayedTranscript(response, "translation")).toBe("Česky");
+    expect(resolveDisplayedTranscript(response, "original")).toBe("English");
   });
 });
