@@ -32,13 +32,22 @@ function TranscriptParagraphs({ text }: { text: string }) {
   );
 }
 
-function panelMessage(
+function isTranscriptPreparing(
   response: TranscriptResponse | null,
   phase: "idle" | "loading" | "polling" | "done",
-  softTimedOut: boolean,
   hardTimedOut: boolean,
-): string {
-  if (phase === "loading" && !response) return "Načítáme…";
+): boolean {
+  if (hardTimedOut) return false;
+  if (phase === "loading" && !response) return true;
+  return response?.status === "processing";
+}
+
+function preparingHint(softTimedOut: boolean): string | null {
+  if (!softTimedOut) return null;
+  return "Trvá to déle než obvykle, počkejte prosím…";
+}
+
+function panelMessage(response: TranscriptResponse | null, hardTimedOut: boolean): string {
   if (!response) return "Přepis se nepodařilo načíst.";
 
   switch (response.status) {
@@ -48,10 +57,7 @@ function panelMessage(
       if (hardTimedOut) {
         return "Přepis se stále připravuje. Zkuste to prosím znovu za chvíli.";
       }
-      if (softTimedOut) {
-        return "Přepis se připravuje déle než obvykle. Počkejte prosím, stále načítáme…";
-      }
-      return "Připravujeme přepis…";
+      return "";
     case "not_ready_live":
       return "Přepis bude po skončení vysílání.";
     case "unavailable":
@@ -89,7 +95,8 @@ export function VideoTranscriptPanel({ open, onClose, videoId, videoTitle }: Vid
 
   if (!open) return null;
 
-  const message = panelMessage(response, phase, softTimedOut, hardTimedOut);
+  const preparing = isTranscriptPreparing(response, phase, hardTimedOut);
+  const message = panelMessage(response, hardTimedOut);
   const showOriginalToggle = Boolean(response && hasTranscriptOriginal(response));
   const displayedTranscript =
     response?.status === "ready" ? resolveDisplayedTranscript(response, viewMode) : "";
@@ -140,6 +147,17 @@ export function VideoTranscriptPanel({ open, onClose, videoId, videoTitle }: Vid
           ) : null}
           {showTranscript ? (
             <TranscriptParagraphs text={displayedTranscript} />
+          ) : preparing ? (
+            <div className="vx-transcript-panel-preparing" aria-live="polite" aria-busy="true">
+              <div className="vx-transcript-panel-clock" aria-hidden="true">
+                <span className="vx-transcript-panel-clock-face" />
+                <span className="vx-transcript-panel-clock-hand" />
+              </div>
+              <p className="vx-transcript-panel-preparing-title">Připravujeme pro vás</p>
+              {preparingHint(softTimedOut) ? (
+                <p className="vx-transcript-panel-preparing-hint">{preparingHint(softTimedOut)}</p>
+              ) : null}
+            </div>
           ) : (
             <>
               <p className="vx-transcript-panel-message" aria-live="polite">
