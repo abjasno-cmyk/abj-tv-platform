@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { isTranscriptLabelVisible, parseTranscriptState } from "@/lib/transcriptTypes";
+import {
+  isTranscriptLabelVisible,
+  parseTranscriptResponse,
+  parseTranscriptState,
+} from "@/lib/transcriptTypes";
 
 describe("parseTranscriptState", () => {
   it("accepts known transcript states", () => {
@@ -14,6 +18,29 @@ describe("parseTranscriptState", () => {
     expect(parseTranscriptState("processing")).toBeUndefined();
     expect(parseTranscriptState(null)).toBeUndefined();
     expect(parseTranscriptState(1)).toBeUndefined();
+  });
+});
+
+describe("parseTranscriptResponse", () => {
+  it("parses a valid transcript payload", () => {
+    expect(
+      parseTranscriptResponse({
+        video_id: "lsg3k-Wh9vU",
+        status: "processing",
+        transcript: null,
+        transcript_at: null,
+      }),
+    ).toEqual({
+      video_id: "lsg3k-Wh9vU",
+      status: "processing",
+      transcript: null,
+      transcript_at: null,
+    });
+  });
+
+  it("rejects invalid payloads", () => {
+    expect(parseTranscriptResponse({ error: "x" })).toBeNull();
+    expect(parseTranscriptResponse(null)).toBeNull();
   });
 });
 

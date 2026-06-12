@@ -1,6 +1,4 @@
-import type { TranscriptResponse } from "@/lib/transcriptTypes";
-
-const PROXY_BASE = "/api/replit";
+import { parseTranscriptResponse, type TranscriptResponse } from "@/lib/transcriptTypes";
 
 export const TRANSCRIPT_POLL_INTERVAL_MS = 3000;
 export const TRANSCRIPT_POLL_TIMEOUT_MS = 120_000;
@@ -10,11 +8,24 @@ export async function fetchVideoTranscript(videoId: string): Promise<TranscriptR
   if (!normalized) return null;
 
   try {
-    const res = await fetch(`${PROXY_BASE}/transcript/${encodeURIComponent(normalized)}`, {
+    const res = await fetch(`/api/transcript/${encodeURIComponent(normalized)}`, {
       cache: "no-store",
     });
-    if (!res.ok) return null;
-    return (await res.json()) as TranscriptResponse;
+    const text = await res.text();
+    if (!text.trim()) return null;
+
+    let payload: unknown;
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      return null;
+    }
+
+    const parsed = parseTranscriptResponse(payload);
+    if (parsed) return parsed;
+
+    // Upstream/proxy error envelope without transcript shape.
+    return null;
   } catch {
     return null;
   }
