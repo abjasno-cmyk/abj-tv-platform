@@ -1,6 +1,8 @@
 // Typy odpovědí NONSTOP PLAYOUT enginu (Replit). Viz klientská specifikace:
 // /program/now, /program/fill-gap, /program/safety-bridge.
 
+import type { TranscriptState } from "@/lib/transcriptTypes";
+
 // Minimální rozhraní YouTube IFrame přehrávače, které potřebujeme ovládat.
 export type PlayerHandle = {
   getCurrentTime: () => number;
@@ -62,6 +64,7 @@ export interface PlayoutBlock {
   title?: string;
   channel?: string;
   media_sources?: PlayoutMediaSource[];
+  transcript_state?: TranscriptState;
 }
 
 const YOUTUBE_VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{6,20}$/;

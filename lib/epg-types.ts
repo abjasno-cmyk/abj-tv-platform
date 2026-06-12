@@ -1,3 +1,5 @@
+import type { TranscriptState } from "@/lib/transcriptTypes";
+
 export type ProgramItem = {
   time: string;
   title: string;
@@ -8,6 +10,7 @@ export type ProgramItem = {
   type?: "upcoming" | "vod" | "live" | "override";
   startIso?: string;
   endIso?: string;
+  transcriptState?: TranscriptState;
 };
 
 export type DayProgram = {
@@ -57,6 +60,7 @@ export type ProgramBlock = {
   priority: number;
   alternatives?: ProgramBlock[];
   thumbnail?: string;
+  transcriptState?: TranscriptState;
 };
 
 export type ProgramOverrideRules = {

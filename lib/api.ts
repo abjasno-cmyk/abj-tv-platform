@@ -1,3 +1,5 @@
+import type { TranscriptState } from "@/lib/transcriptTypes";
+
 const BASE = process.env.NEXT_PUBLIC_REPLIT_URL ?? "";
 const PROXY_BASE = "/api/replit";
 
@@ -26,6 +28,7 @@ export interface ProgramBlock {
   context: string | null;
   impact: string | null;
   feed_version: string;
+  transcript_state?: TranscriptState;
 }
 
 export interface ProgramResponse {

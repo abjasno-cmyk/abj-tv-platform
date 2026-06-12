@@ -1108,6 +1108,48 @@
     white-space: normal;
   }
 }
+.hf .vx-transcript-label {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(209, 74, 42, 0.45);
+  border-radius: 999px;
+  background: rgba(255, 102, 0, 0.1);
+  color: #a5491d;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.hf .vx-transcript-label:hover {
+  background: rgba(255, 102, 0, 0.18);
+}
+.hf .vx-transcript-label--compact {
+  padding: 4px 8px;
+}
+.hf .vx-transcript-label-text--compact {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (min-width: 520px) {
+  .hf .vx-transcript-label-text--compact {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+}
 .hf .channel-video-actions,
 .hf .playing-image-actions {
   display: flex;
@@ -1390,6 +1432,87 @@
   overflow: auto;
   padding: 12px 14px 24px;
   flex: 1;
+}
+
+/* ---------- Video transcript panel ---------- */
+.vx-transcript-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  justify-content: flex-end;
+}
+.vx-transcript-panel-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(17, 17, 17, 0.45);
+  cursor: pointer;
+}
+.vx-transcript-panel-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 520px);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  box-shadow: -12px 0 40px rgba(17, 17, 17, 0.18);
+}
+.vx-transcript-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(17, 17, 17, 0.1);
+}
+.vx-transcript-panel-head h2 {
+  margin: 0;
+  font-family: var(--vx-impact);
+  font-size: 1.35rem;
+  color: var(--vx-orange);
+}
+.vx-transcript-panel-subtitle {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: var(--vx-gray-mid, #666);
+}
+.vx-transcript-panel-close {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(237, 116, 47, 0.12);
+  color: #a5491d;
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.vx-transcript-panel-body {
+  overflow: auto;
+  padding: 16px 18px 28px;
+  flex: 1;
+}
+.vx-transcript-panel-message {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--vx-gray-dark);
+}
+.vx-transcript-paragraphs {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.vx-transcript-paragraphs p {
+  margin: 0;
+  font-size: 0.94rem;
+  line-height: 1.65;
+  color: var(--vx-gray-dark);
+  white-space: pre-wrap;
 }
 .vx-comments-schema {
   margin: 0;
