@@ -7,6 +7,7 @@ import { getNowPlaying, getProgram } from "@/lib/programEngine";
 import { videoSharePath } from "@/lib/viewer/videoMetadata";
 import { isValidYouTubeVideoId } from "@/lib/viewer/videoPageServer";
 import type { DayProgram, ProgramBlock, ProgramItem } from "@/lib/epg-types";
+import { parseTranscriptState } from "@/lib/transcriptTypes";
 
 export const dynamic = "force-dynamic";
 const DEFAULT_PROGRAM_FEED_URL = "https://attached-assets-abjasno.replit.app/program";
@@ -187,6 +188,7 @@ function parseExternalProgramTimeline(payload: unknown): ProgramBlock[] {
       const priority = Math.round(readFiniteNumber(row.priority) ?? (isABJ ? 900 : 500));
       const videoId = readString(row.video_id) ?? readString(row.videoId);
       const thumbnail = readString(row.thumbnail);
+      const transcriptState = parseTranscriptState(row.transcript_state);
 
       return {
         id:
@@ -203,6 +205,7 @@ function parseExternalProgramTimeline(payload: unknown): ProgramBlock[] {
         priority,
         ...(videoId ? { videoId } : {}),
         ...(thumbnail ? { thumbnail } : {}),
+        ...(transcriptState ? { transcriptState } : {}),
       } satisfies ProgramBlock;
     })
     .filter((row): row is ProgramBlock => row !== null)
@@ -357,6 +360,7 @@ function mapTimelineToDays(timeline: ProgramBlock[]): DayProgram[] {
       videoId: block.videoId ?? null,
       isABJ: block.isABJ,
       type: toProgramItemType(block),
+      ...(block.transcriptState ? { transcriptState: block.transcriptState } : {}),
     });
   }
 

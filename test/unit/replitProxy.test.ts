@@ -31,7 +31,7 @@ describe("replit proxy path allowlist", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it.each(["/health", "/program", "/program/now", "/feed", "/videos", "/context/abc123"])(
+  it.each(["/health", "/program", "/program/now", "/feed", "/videos", "/context/abc123", "/transcript/abc123"])(
     "allows allowlisted path %s",
     async (path) => {
       const fetchSpy = mockFetchOnce(200, JSON.stringify({ ok: true }));

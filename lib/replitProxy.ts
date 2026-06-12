@@ -16,6 +16,7 @@ const ALLOWED_REPLIT_PATH_PATTERNS: ReadonlyArray<RegExp> = [
   /^\/videos$/,
   /^\/api\/videos$/,
   /^\/context\/[^/]+$/,
+  /^\/transcript\/[^/]+$/,
 ];
 
 function isAllowedReplitPath(upstreamPath: string): boolean {
