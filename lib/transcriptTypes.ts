@@ -26,9 +26,14 @@ export function parseTranscriptState(value: unknown): TranscriptState | undefine
   return TRANSCRIPT_STATES.has(normalized) ? normalized : undefined;
 }
 
-/** Štítek jen podle transcript_state z program feedu. */
+/**
+ * Štítek skrýváme jen při explicitním stavu z feedu.
+ * Videa mimo dnešní program (archiv, kanály, videa…) stav nemají — tam štítek zobrazíme
+ * a dostupnost ověří až /api/transcript po kliknutí.
+ */
 export function isTranscriptLabelVisible(state: TranscriptState | undefined | null): boolean {
-  return state === "ready" || state === "pending";
+  if (state === "not_ready_live" || state === "unavailable") return false;
+  return true;
 }
 
 const TRANSCRIPT_STATUSES: ReadonlySet<string> = new Set([

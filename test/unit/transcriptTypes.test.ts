@@ -87,11 +87,11 @@ describe("parseTranscriptResponse", () => {
 });
 
 describe("isTranscriptLabelVisible", () => {
-  it("shows the label only for ready and pending feed states", () => {
+  it("hides the label only for not_ready_live and unavailable", () => {
     expect(isTranscriptLabelVisible("ready")).toBe(true);
     expect(isTranscriptLabelVisible("pending")).toBe(true);
-    expect(isTranscriptLabelVisible(undefined)).toBe(false);
-    expect(isTranscriptLabelVisible(null)).toBe(false);
+    expect(isTranscriptLabelVisible(undefined)).toBe(true);
+    expect(isTranscriptLabelVisible(null)).toBe(true);
     expect(isTranscriptLabelVisible("not_ready_live")).toBe(false);
     expect(isTranscriptLabelVisible("unavailable")).toBe(false);
   });
