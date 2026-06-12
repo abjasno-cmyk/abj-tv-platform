@@ -2,30 +2,13 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
-import {
-  buildTranscriptUrlCandidates,
-  fetchFirstUpstream,
-  resolveFeedApiKey,
-} from "@/lib/programFeedProxy";
-import { parseTranscriptResponse, type TranscriptResponse } from "@/lib/transcriptTypes";
+import { fetchVideoTranscriptServer } from "@/lib/transcriptFetchServer";
+import type { TranscriptResponse } from "@/lib/transcriptTypes";
 
 const TRANSCRIPT_FETCH_TIMEOUT_MS = 4_000;
 
 async function fetchTranscriptUpstream(videoId: string): Promise<TranscriptResponse | null> {
-  const apiKey = resolveFeedApiKey();
-  if (!apiKey) return null;
-
-  const candidateUrls = buildTranscriptUrlCandidates(videoId);
-  const request = new Request(`https://verox.cz/api/transcript/${encodeURIComponent(videoId)}`);
-  const { response } = await fetchFirstUpstream(candidateUrls, request, apiKey);
-  if (!response || !response.ok) return null;
-
-  try {
-    const payload = (await response.json()) as unknown;
-    return parseTranscriptResponse(payload);
-  } catch {
-    return null;
-  }
+  return fetchVideoTranscriptServer(videoId);
 }
 
 async function fetchTranscriptWithTimeout(videoId: string): Promise<TranscriptResponse | null> {

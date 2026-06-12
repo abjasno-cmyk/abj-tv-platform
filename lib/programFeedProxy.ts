@@ -172,3 +172,108 @@ export async function fetchFirstUpstream(
 
   return { response: upstreamResponse, resolvedUrl, upstreamAttempts, lastNetworkError };
 }
+
+function isDeploymentNotLivePage(body: string, contentType: string): boolean {
+  if (contentType.toLowerCase().includes("text/html")) return true;
+  const trimmed = body.trimStart();
+  return trimmed.startsWith("<!DOCTYPE") || trimmed.startsWith("<html");
+}
+
+function jsonResponse(body: string, status = 200): Response {
+  return new Response(body, {
+    status,
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+  });
+}
+
+/**
+ * Transcript upstream: 404 from a live host means "video not in DB", not "wrong URL".
+ * Only skip to the next host when the response is a Replit deployment placeholder (HTML).
+ */
+export async function fetchTranscriptUpstream(
+  candidateUrls: string[],
+  request: Request,
+  apiKey: string,
+  videoId: string,
+): Promise<{
+  response: Response | null;
+  resolvedUrl: string;
+  upstreamAttempts: string[];
+  lastNetworkError: unknown;
+}> {
+  let lastNetworkError: unknown = null;
+  const upstreamAttempts: string[] = [];
+
+  for (const candidate of candidateUrls) {
+    const upstreamUrl = withForwardedQuery(candidate, request);
+    try {
+      const response = await fetch(upstreamUrl, {
+        headers: {
+          Accept: "application/json",
+          "X-Api-Key": apiKey,
+        },
+        cache: "no-store",
+        next: { revalidate: 0 },
+      });
+
+      const contentType = response.headers.get("content-type") ?? "";
+      const bodyText = await response.text();
+      upstreamAttempts.push(`${upstreamUrl.toString()} => ${response.status}`);
+
+      if (response.status === 404) {
+        if (isDeploymentNotLivePage(bodyText, contentType)) {
+          continue;
+        }
+
+        if (bodyText.trim()) {
+          try {
+            const payload = JSON.parse(bodyText) as unknown;
+            if (payload && typeof payload === "object") {
+              return {
+                response: jsonResponse(bodyText, 200),
+                resolvedUrl: upstreamUrl.toString(),
+                upstreamAttempts,
+                lastNetworkError: null,
+              };
+            }
+          } catch {
+            // Fall through to unavailable envelope.
+          }
+        }
+
+        return {
+          response: jsonResponse(
+            JSON.stringify({
+              video_id: videoId,
+              status: "unavailable",
+              transcript: null,
+              transcript_at: null,
+              transcript_original: null,
+              source_lang: null,
+            }),
+          ),
+          resolvedUrl: upstreamUrl.toString(),
+          upstreamAttempts,
+          lastNetworkError: null,
+        };
+      }
+
+      return {
+        response: new Response(bodyText, {
+          status: response.status,
+          headers: {
+            "Content-Type": contentType || "application/json; charset=utf-8",
+          },
+        }),
+        resolvedUrl: upstreamUrl.toString(),
+        upstreamAttempts,
+        lastNetworkError: null,
+      };
+    } catch (error) {
+      lastNetworkError = error;
+      upstreamAttempts.push(`${upstreamUrl.toString()} => network-error`);
+    }
+  }
+
+  return { response: null, resolvedUrl: "", upstreamAttempts, lastNetworkError };
+}
