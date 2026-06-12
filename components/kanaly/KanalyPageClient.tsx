@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
@@ -7,10 +8,12 @@ import { FollowChannelButton } from "@/components/auth/FollowChannelButton";
 import { KanalyChannelVideos } from "@/components/kanaly/KanalyChannelVideos";
 import { CHANNEL_VIDEO_LOOKBACK_DAYS } from "@/lib/liveChannelVideos";
 import { fetchChannelVideosForKanaly } from "@/lib/kanaly/channelVideosClient";
+import { channelSeoPath, normalizeChannelLookupKey } from "@/lib/seo/channelSlug";
 import { normalizeChannelFollowId } from "@/lib/viewer/videoMetadata";
 
 type KanalyPageClientProps = {
   channels: LiveChannelGroup[];
+  slugByChannelName: Record<string, string>;
 };
 
 function ChannelAvatar({ channelName, avatarUrl }: { channelName: string; avatarUrl: string | null }) {
@@ -36,7 +39,7 @@ function ChannelAvatar({ channelName, avatarUrl }: { channelName: string; avatar
   );
 }
 
-export function KanalyPageClient({ channels }: KanalyPageClientProps) {
+export function KanalyPageClient({ channels, slugByChannelName }: KanalyPageClientProps) {
   const orderedChannels = useMemo(
     () => [...channels].sort((a, b) => a.channelName.localeCompare(b.channelName, "cs-CZ")),
     [channels],
@@ -101,6 +104,7 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
             const isLoading = loadingChannel === channel.channelName;
             const videos = videosByChannel[channel.channelName] ?? [];
             const usedFallback = fallbackByChannel[channel.channelName] === true;
+            const channelSlug = slugByChannelName[normalizeChannelLookupKey(channel.channelName)] ?? null;
 
             return (
               <li key={channel.channelName} className={`kanaly-item${isOpen ? " is-open" : ""}`}>
@@ -112,7 +116,15 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
                   aria-controls={`kanaly-panel-${channel.channelName}`}
                 >
                   <ChannelAvatar channelName={channel.channelName} avatarUrl={channel.avatarUrl} />
-                  <span className="kanaly-channel-name">{channel.channelName}</span>
+                  <span className="kanaly-channel-name-wrap" onClick={(event) => event.stopPropagation()}>
+                    {channelSlug ? (
+                      <Link href={channelSeoPath(channelSlug)} className="kanaly-channel-name kanaly-channel-name-link">
+                        {channel.channelName}
+                      </Link>
+                    ) : (
+                      <span className="kanaly-channel-name">{channel.channelName}</span>
+                    )}
+                  </span>
                   <span className="kanaly-channel-chevron" aria-hidden="true">
                     {isOpen ? "▴" : "▾"}
                   </span>
@@ -127,7 +139,15 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
                     <div className="kanaly-channel-panel-head">
                       <p className="kanaly-channel-panel-label">Aktivní kanál</p>
                       <div className="kanaly-channel-panel-row">
-                        <p className="kanaly-channel-panel-name">{channel.channelName}</p>
+                        <p className="kanaly-channel-panel-name">
+                          {channelSlug ? (
+                            <Link href={channelSeoPath(channelSlug)} className="kanaly-channel-panel-link">
+                              {channel.channelName}
+                            </Link>
+                          ) : (
+                            channel.channelName
+                          )}
+                        </p>
                         <FollowChannelButton
                           channelId={normalizeChannelFollowId(channel.channelId, channel.channelName)}
                           channelName={channel.channelName}

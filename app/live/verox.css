@@ -2848,3 +2848,147 @@
   font-size: 0.82rem;
   color: var(--vx-gray-mid, #666);
 }
+
+.seo-channel-page {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 24px var(--L1) 48px;
+}
+.seo-channel-header h1 {
+  margin: 0 0 8px;
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
+  line-height: 1.15;
+}
+.seo-channel-identity {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.seo-channel-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: rgba(17, 17, 17, 0.06);
+}
+.seo-channel-avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--vx-gray-dark);
+}
+.seo-channel-meta,
+.seo-channel-intro,
+.seo-channel-empty,
+.seo-channel-footnote {
+  margin: 0 0 16px;
+  line-height: 1.6;
+  color: var(--vx-gray-dark);
+}
+.seo-channel-meta {
+  color: var(--vx-gray-mid, #666);
+  font-size: 0.92rem;
+}
+.seo-channel-footnote {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(17, 17, 17, 0.1);
+  font-size: 0.9rem;
+  color: var(--vx-gray-mid, #666);
+}
+.seo-channel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.seo-channel-play-link,
+.seo-channel-list-link,
+.seo-channel-source-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.seo-channel-play-link {
+  background: var(--vx-orange);
+  color: #fff;
+}
+.seo-channel-list-link,
+.seo-channel-source-link {
+  border: 1px solid rgba(17, 17, 17, 0.16);
+  color: var(--vx-gray-dark);
+}
+.seo-channel-videos h2 {
+  margin: 0 0 16px;
+  font-size: 1.2rem;
+}
+.seo-channel-video-list {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.seo-channel-video-card {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid rgba(17, 17, 17, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+.seo-channel-video-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  aspect-ratio: 16 / 9;
+}
+.seo-channel-video-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 12px;
+}
+.seo-channel-video-title {
+  font-weight: 700;
+  line-height: 1.35;
+}
+.seo-channel-video-date {
+  font-size: 0.82rem;
+  color: var(--vx-gray-mid, #666);
+}
+.seo-channel-video-player-link {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #a5491d;
+  text-decoration: underline;
+}
+.kanaly-channel-name-wrap {
+  flex: 1;
+  min-width: 0;
+}
+.kanaly-channel-name-link,
+.kanaly-channel-panel-link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

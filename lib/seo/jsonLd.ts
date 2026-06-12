@@ -1,3 +1,4 @@
+import { channelSeoPath } from "@/lib/seo/channelSlug";
 import { SITE_URL } from "@/lib/site";
 import type { VideoSeoRecord } from "@/lib/seo/videoPageData";
 
@@ -13,8 +14,10 @@ export function buildVideoPageJsonLd(input: {
   video: VideoSeoRecord;
   pageUrl: string;
   transcriptExcerpt?: string | null;
+  channelSlug?: string | null;
 }): Record<string, unknown>[] {
-  const { video, pageUrl, transcriptExcerpt } = input;
+  const { video, pageUrl, transcriptExcerpt, channelSlug } = input;
+  const channelItemUrl = channelSlug ? `${SITE_URL}${channelSeoPath(channelSlug)}` : `${SITE_URL}/kanaly`;
   const embedUrl = `https://www.youtube.com/embed/${encodeURIComponent(video.videoId)}`;
 
   const videoObject: Record<string, unknown> = {
@@ -53,7 +56,7 @@ export function buildVideoPageJsonLd(input: {
         "@type": "ListItem",
         position: 2,
         name: video.channelName || "Kanál",
-        item: `${SITE_URL}/kanaly`,
+        item: channelItemUrl,
       },
       {
         "@type": "ListItem",
