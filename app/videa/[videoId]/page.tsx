@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 
 import LivePage from "@/app/live/LivePage";
 import { loadLivePageShell } from "@/lib/livePageShell";
+import { videoSeoPath } from "@/lib/seo/slug";
+import { buildVideoMetaDescription, buildVideoSeoTitle } from "@/lib/seo/videoTitles";
+import { loadVideoSeoRecord } from "@/lib/seo/videoPageData";
 import { SITE_URL } from "@/lib/site";
 import { videoSharePath } from "@/lib/viewer/videoMetadata";
 import { isValidYouTubeVideoId, loadVideoPageMeta } from "@/lib/viewer/videoPageServer";
@@ -31,24 +34,26 @@ export async function generateMetadata({
     title: fallbackTitle,
     channelName: fallbackChannel,
   });
+  const seoRecord = await loadVideoSeoRecord(meta.videoId);
   const pageUrl = `${SITE_URL}${videoSharePath(meta.videoId)}`;
-  const description = meta.channelName
-    ? `${meta.title} — ${meta.channelName} na VEROX`
-    : `${meta.title} na VEROX`;
+  const canonicalUrl = seoRecord?.slug ? `${SITE_URL}${videoSeoPath(seoRecord.slug)}` : undefined;
+  const title = buildVideoSeoTitle(meta.title, meta.channelName);
+  const description = buildVideoMetaDescription(meta.title, meta.channelName);
 
   return {
-    title: `${meta.title} — VEROX`,
+    title,
     description,
+    alternates: canonicalUrl ? { canonical: canonicalUrl } : undefined,
     openGraph: {
-      title: meta.title,
+      title,
       description,
       type: "video.other",
-      url: pageUrl,
+      url: canonicalUrl ?? pageUrl,
       images: [{ url: meta.thumbnailUrl }],
     },
     twitter: {
       card: "summary_large_image",
-      title: meta.title,
+      title,
       description,
       images: [meta.thumbnailUrl],
     },
