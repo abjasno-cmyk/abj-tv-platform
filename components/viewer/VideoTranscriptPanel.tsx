@@ -1,10 +1,14 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useVideoTranscriptPoll } from "@/hooks/useVideoTranscriptPoll";
-import type { TranscriptResponse } from "@/lib/transcriptTypes";
-import { isTranscriptPending } from "@/lib/transcriptTypes";
+import {
+  hasTranscriptOriginal,
+  isTranscriptPending,
+  resolveDisplayedTranscript,
+  type TranscriptResponse,
+} from "@/lib/transcriptTypes";
 
 type VideoTranscriptPanelProps = {
   open: boolean;
@@ -12,6 +16,8 @@ type VideoTranscriptPanelProps = {
   videoId: string | null;
   videoTitle?: string;
 };
+
+type TranscriptViewMode = "translation" | "original";
 
 function TranscriptParagraphs({ text }: { text: string }) {
   const paragraphs = text.split(/\n\n+/).map((part) => part.trim()).filter(Boolean);
@@ -26,26 +32,32 @@ function TranscriptParagraphs({ text }: { text: string }) {
   );
 }
 
-function panelMessage(
+function isTranscriptPreparing(
   response: TranscriptResponse | null,
   phase: "idle" | "loading" | "polling" | "done",
-  softTimedOut: boolean,
   hardTimedOut: boolean,
-): string {
-  if (phase === "loading" && !response) return "Načítáme…";
+): boolean {
+  if (hardTimedOut) return false;
+  if (phase === "loading" && !response) return true;
+  return response?.status === "processing";
+}
+
+function preparingHint(softTimedOut: boolean): string | null {
+  if (!softTimedOut) return null;
+  return "Trvá to déle než obvykle, počkejte prosím…";
+}
+
+function panelMessage(response: TranscriptResponse | null, hardTimedOut: boolean): string {
   if (!response) return "Přepis se nepodařilo načíst.";
 
   switch (response.status) {
     case "ready":
-      return response.transcript?.trim() ? "" : "Přepis je prázdný.";
+      return response.transcript?.trim() || response.transcript_original?.trim() ? "" : "Přepis je prázdný.";
     case "processing":
       if (hardTimedOut) {
         return "Přepis se stále připravuje. Zkuste to prosím znovu za chvíli.";
       }
-      if (softTimedOut) {
-        return "Přepis se připravuje déle než obvykle. Počkejte prosím, stále načítáme…";
-      }
-      return "Připravujeme přepis…";
+      return "";
     case "not_ready_live":
       return "Přepis bude po skončení vysílání.";
     case "unavailable":
@@ -57,6 +69,11 @@ function panelMessage(
 
 export function VideoTranscriptPanel({ open, onClose, videoId, videoTitle }: VideoTranscriptPanelProps) {
   const { response, phase, softTimedOut, hardTimedOut, retry } = useVideoTranscriptPoll(videoId, open);
+  const [viewMode, setViewMode] = useState<TranscriptViewMode>("translation");
+
+  useEffect(() => {
+    if (open) setViewMode("translation");
+  }, [open, videoId]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -78,8 +95,12 @@ export function VideoTranscriptPanel({ open, onClose, videoId, videoTitle }: Vid
 
   if (!open) return null;
 
-  const message = panelMessage(response, phase, softTimedOut, hardTimedOut);
-  const showTranscript = response?.status === "ready" && Boolean(response.transcript?.trim());
+  const preparing = isTranscriptPreparing(response, phase, hardTimedOut);
+  const message = panelMessage(response, hardTimedOut);
+  const showOriginalToggle = Boolean(response && hasTranscriptOriginal(response));
+  const displayedTranscript =
+    response?.status === "ready" ? resolveDisplayedTranscript(response, viewMode) : "";
+  const showTranscript = response?.status === "ready" && Boolean(displayedTranscript);
   const showRetry =
     (hardTimedOut && Boolean(response && isTranscriptPending(response.status))) || (!response && phase === "done");
 
@@ -102,8 +123,41 @@ export function VideoTranscriptPanel({ open, onClose, videoId, videoTitle }: Vid
           </button>
         </header>
         <div className="vx-transcript-panel-body">
+          {showOriginalToggle ? (
+            <div className="vx-transcript-panel-toggle" role="tablist" aria-label="Jazyk přepisu">
+              <button
+                type="button"
+                role="tab"
+                className={`vx-transcript-panel-toggle-btn${viewMode === "translation" ? " is-active" : ""}`}
+                aria-selected={viewMode === "translation"}
+                onClick={() => setViewMode("translation")}
+              >
+                Překlad
+              </button>
+              <button
+                type="button"
+                role="tab"
+                className={`vx-transcript-panel-toggle-btn${viewMode === "original" ? " is-active" : ""}`}
+                aria-selected={viewMode === "original"}
+                onClick={() => setViewMode("original")}
+              >
+                Originál
+              </button>
+            </div>
+          ) : null}
           {showTranscript ? (
-            <TranscriptParagraphs text={response!.transcript!} />
+            <TranscriptParagraphs text={displayedTranscript} />
+          ) : preparing ? (
+            <div className="vx-transcript-panel-preparing" aria-live="polite" aria-busy="true">
+              <div className="vx-transcript-panel-clock" aria-hidden="true">
+                <span className="vx-transcript-panel-clock-face" />
+                <span className="vx-transcript-panel-clock-hand" />
+              </div>
+              <p className="vx-transcript-panel-preparing-title">Připravujeme pro vás</p>
+              {preparingHint(softTimedOut) ? (
+                <p className="vx-transcript-panel-preparing-hint">{preparingHint(softTimedOut)}</p>
+              ) : null}
+            </div>
           ) : (
             <>
               <p className="vx-transcript-panel-message" aria-live="polite">

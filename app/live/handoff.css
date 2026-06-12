@@ -1496,6 +1496,109 @@
   padding: 16px 18px 28px;
   flex: 1;
 }
+.vx-transcript-panel-toggle {
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(17, 17, 17, 0.06);
+}
+.vx-transcript-panel-toggle-btn {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--vx-gray-dark);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+.vx-transcript-panel-toggle-btn.is-active {
+  background: #fff;
+  color: #a5491d;
+  box-shadow: 0 1px 4px rgba(17, 17, 17, 0.08);
+}
+.vx-transcript-panel-preparing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 220px;
+  padding: 24px 12px 32px;
+  text-align: center;
+}
+.vx-transcript-panel-clock {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+.vx-transcript-panel-clock-face {
+  position: absolute;
+  inset: 0;
+  border: 3px solid rgba(237, 116, 47, 0.22);
+  border-radius: 50%;
+  background: rgba(255, 102, 0, 0.06);
+}
+.vx-transcript-panel-clock-face::before,
+.vx-transcript-panel-clock-face::after {
+  content: "";
+  position: absolute;
+  background: rgba(237, 116, 47, 0.35);
+  border-radius: 999px;
+}
+.vx-transcript-panel-clock-face::before {
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 18px;
+  transform: translate(-50%, -100%);
+}
+.vx-transcript-panel-clock-face::after {
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 2px;
+  transform: translate(-100%, -50%);
+}
+.vx-transcript-panel-clock-hand {
+  position: absolute;
+  inset: 0;
+  animation: vx-transcript-clock-spin 2.4s linear infinite;
+}
+.vx-transcript-panel-clock-hand::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 22px;
+  background: var(--vx-orange);
+  border-radius: 999px;
+  transform: translate(-50%, -100%);
+  transform-origin: 50% 100%;
+}
+@keyframes vx-transcript-clock-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.vx-transcript-panel-preparing-title {
+  margin: 0;
+  font-family: var(--vx-impact);
+  font-size: 1.1rem;
+  color: var(--vx-orange);
+}
+.vx-transcript-panel-preparing-hint {
+  margin: 0;
+  max-width: 280px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--vx-gray-mid, #666);
+}
 .vx-transcript-panel-message {
   margin: 0;
   font-size: 0.92rem;
