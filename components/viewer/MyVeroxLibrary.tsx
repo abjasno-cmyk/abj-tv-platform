@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { SaveVideoButton } from "@/components/auth/SaveVideoButton";
 import { VideoDiscussButton } from "@/components/viewer/VideoDiscussButton";
+import { VideoTranscriptLabel } from "@/components/viewer/VideoTranscriptLabel";
 import { SaveOpinionButton } from "@/components/nazory/SaveOpinionButton";
 import type {
   MyVeroxLibraryPayload,
@@ -53,6 +54,7 @@ function VideoShelfCard({
           }}
         />
         <VideoDiscussButton videoId={video.videoId} videoTitle={video.title} compact />
+        <VideoTranscriptLabel videoId={video.videoId} videoTitle={video.title} compact />
       </div>
     </article>
   );

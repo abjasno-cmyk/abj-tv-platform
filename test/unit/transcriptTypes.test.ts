@@ -38,6 +38,22 @@ describe("parseTranscriptResponse", () => {
     });
   });
 
+  it("maps pending status to processing for polling", () => {
+    expect(
+      parseTranscriptResponse({
+        video_id: "abc123",
+        status: "pending",
+        transcript: null,
+        transcript_at: null,
+      }),
+    ).toEqual({
+      video_id: "abc123",
+      status: "processing",
+      transcript: null,
+      transcript_at: null,
+    });
+  });
+
   it("rejects invalid payloads", () => {
     expect(parseTranscriptResponse({ error: "x" })).toBeNull();
     expect(parseTranscriptResponse(null)).toBeNull();
@@ -45,11 +61,11 @@ describe("parseTranscriptResponse", () => {
 });
 
 describe("isTranscriptLabelVisible", () => {
-  it("shows the label only for ready and pending", () => {
+  it("hides the label only for not_ready_live and unavailable", () => {
     expect(isTranscriptLabelVisible("ready")).toBe(true);
     expect(isTranscriptLabelVisible("pending")).toBe(true);
+    expect(isTranscriptLabelVisible(undefined)).toBe(true);
     expect(isTranscriptLabelVisible("not_ready_live")).toBe(false);
     expect(isTranscriptLabelVisible("unavailable")).toBe(false);
-    expect(isTranscriptLabelVisible(undefined)).toBe(false);
   });
 });
