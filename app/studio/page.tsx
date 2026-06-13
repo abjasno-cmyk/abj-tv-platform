@@ -523,7 +523,14 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
           </article>
 
           <article id="kanaly" className="rounded-xl border border-[#2f3647] bg-[#0f131b] p-4">
-            <h2 className="text-lg font-semibold text-white">7. Kanály</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold text-white">7. Kanály</h2>
+              {hasStudioCapability(access, "video_channel_edit") ? (
+                <Link href="/studio/kanaly" className="text-xs text-[#ffd0ad] underline hover:text-[#ff6a00]">
+                  Správa kanálů →
+                </Link>
+              ) : null}
+            </div>
             <div className="mt-3 grid gap-2 md:grid-cols-2">
               {snapshot.channels.rows.slice(0, 20).map((row) => (
                 <div key={row.channelId} className="rounded-lg border border-[#2f3647] bg-[#0c1018] p-3 text-sm">

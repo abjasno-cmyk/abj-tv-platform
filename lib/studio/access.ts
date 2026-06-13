@@ -32,6 +32,7 @@ export type StudioCapability =
   | "breaking_publish"
   | "program_override"
   | "video_channel_read"
+  | "video_channel_edit"
   | "comments_moderate"
   | "viewers_read"
   | "viewer_sensitive_read"
@@ -79,6 +80,7 @@ const CAPABILITY_MATRIX: Record<StudioCapability, InternalStudioRole[]> = {
   breaking_publish: ["senior_editor", "admin", "owner"],
   program_override: ["senior_editor", "admin", "owner"],
   video_channel_read: ["editor", "senior_editor", "analyst", "admin", "owner"],
+  video_channel_edit: ["admin", "owner"],
   comments_moderate: ["moderator", "senior_editor", "admin", "owner"],
   viewers_read: ["analyst", "admin", "owner"],
   viewer_sensitive_read: ["admin", "owner"],
