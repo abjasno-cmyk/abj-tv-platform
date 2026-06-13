@@ -143,3 +143,64 @@ export async function syncSourceChannelIds(input: {
 
   return result;
 }
+
+export async function syncSingleSourceChannelIds(input: {
+  supabase: SupabaseClient;
+  sourceId: string;
+  youtubeApiKey: string;
+}): Promise<{ status: "updated" | "unchanged" | "failed"; message?: string; channelId?: string; uploadsPlaylistId?: string }> {
+  const { data, error } = await input.supabase
+    .from("sources")
+    .select("id, source_name, channel_url, channel_id, uploads_playlist_id")
+    .eq("id", input.sourceId)
+    .eq("platform", "youtube")
+    .maybeSingle();
+
+  if (error) {
+    return { status: "failed", message: error.message };
+  }
+  if (!data) {
+    return { status: "failed", message: "Kanál nenalezen." };
+  }
+
+  const source = data as SourceChannelRow;
+  const channelUrl = source.channel_url?.trim() ?? "";
+  if (!channelUrl) {
+    return { status: "failed", message: "Chybí channel_url." };
+  }
+
+  const resolved = await resolveChannelIdsFromChannelUrl(channelUrl, input.youtubeApiKey);
+  if (!resolved) {
+    return { status: "failed", message: "Nepodařilo se vyřešit channel_id z URL." };
+  }
+
+  const alreadyCurrent =
+    source.channel_id === resolved.channelId && source.uploads_playlist_id === resolved.uploadsPlaylistId;
+
+  if (alreadyCurrent) {
+    return {
+      status: "unchanged",
+      channelId: resolved.channelId,
+      uploadsPlaylistId: resolved.uploadsPlaylistId,
+    };
+  }
+
+  const { error: updateError } = await input.supabase
+    .from("sources")
+    .update({
+      channel_id: resolved.channelId,
+      uploads_playlist_id: resolved.uploadsPlaylistId,
+    })
+    .eq("id", source.id);
+
+  if (updateError) {
+    return { status: "failed", message: updateError.message };
+  }
+
+  return {
+    status: "updated",
+    message: `${source.channel_id ?? "null"} -> ${resolved.channelId}`,
+    channelId: resolved.channelId,
+    uploadsPlaylistId: resolved.uploadsPlaylistId,
+  };
+}
