@@ -61,7 +61,6 @@ export async function fetchChannelVideosForKanaly(
 ): Promise<KanalyChannelVideosResult> {
   const feedSelection = selectKanalyChannelVideos(channel.videos);
   // Vždy použij cache z feedu, pokud něco máme — i starší než 7 dní (usedLatestFallback).
-  // Jinak zbytečně voláme YouTube API a při chybě ID/Shorts zobrazíme prázdný panel.
   if (feedSelection.videos.length > 0) {
     return feedSelection;
   }

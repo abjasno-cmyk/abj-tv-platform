@@ -304,7 +304,7 @@ export function HomePage({
     setChannelError((prev) => ({ ...prev, [ch.channelName]: "" }));
     try {
       const params = new URLSearchParams();
-      // URL má přednost před DB channel_id — ten často zastará (Bazalová, Datarun, …).
+      // URL je spolehlivější než zastaralé channel_id z DB (viz fix_all_channel_ids_by_name.sql).
       if (ch.channelUrl) {
         params.set("channelUrl", ch.channelUrl);
       } else if (ch.channelId) {

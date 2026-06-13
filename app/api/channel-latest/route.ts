@@ -598,21 +598,20 @@ async function loadRawChannelVideos(
   apiKey: string | null,
   fetchBuffer: number,
 ): Promise<{ rawVideos: ChannelLatestVideo[]; feedResult: { ok: boolean; status: number; videos: ChannelLatestVideo[] } }> {
-  let rawVideos: ChannelLatestVideo[] = [];
-
   if (apiKey) {
-    rawVideos = await fetchUploadPlaylistVideos(channelId, apiKey, fetchBuffer);
+    const rawVideos = await fetchUploadPlaylistVideos(channelId, apiKey, fetchBuffer);
+    return {
+      rawVideos,
+      feedResult: {
+        ok: rawVideos.length > 0,
+        status: rawVideos.length > 0 ? 200 : 204,
+        videos: rawVideos,
+      },
+    };
   }
 
-  const feedResult = rawVideos.length > 0
-    ? { ok: true, status: 200, videos: rawVideos }
-    : await fetchChannelFeed(channelId, fetchBuffer);
-
-  if (rawVideos.length === 0 && feedResult.ok) {
-    rawVideos = feedResult.videos;
-  }
-
-  return { rawVideos, feedResult };
+  const feedResult = await fetchChannelFeed(channelId, fetchBuffer);
+  return { rawVideos: feedResult.ok ? feedResult.videos : [], feedResult };
 }
 
 export async function GET(request: Request) {
@@ -626,6 +625,16 @@ export async function GET(request: Request) {
     : LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT;
   const fetchBuffer = Math.max(displayLimit * 3, LIVE_CHANNEL_VIDEO_FETCH_BUFFER);
   const apiKey = resolveYouTubeApiKey();
+  if (!apiKey) {
+    return Response.json(
+      {
+        videos: [],
+        error:
+          "YouTube API není dostupné (chybí YOUTUBE_API_KEY v prostředí nasazení). Nastavte klíč i pro Preview na Vercelu.",
+      },
+      { status: 503 },
+    );
+  }
 
   let channelId = "";
   const staleChannelId =
@@ -698,7 +707,7 @@ export async function GET(request: Request) {
         return Response.json(
           {
             videos: [],
-            error: `YouTube feed unavailable (${feedResult.status}).`,
+            error: "Videa kanálu se nepodařilo načíst z YouTube (zkontrolujte channel_id v Supabase).",
           },
           { status: 502 },
         );

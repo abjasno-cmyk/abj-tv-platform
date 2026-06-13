@@ -14,9 +14,7 @@
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:report": "playwright show-report",
-    "e2e:install": "playwright install --with-deps chromium",
-    "resolve-channels": "ts-node lib/resolveChannelIds.ts",
-    "resolve-channels:all": "ts-node lib/resolveChannelIds.ts -- --all"
+    "e2e:install": "playwright install --with-deps chromium"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",

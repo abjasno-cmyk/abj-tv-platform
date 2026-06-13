@@ -1,9 +1,23 @@
-// Run manually after adding new @handle sources, or rely on refreshVideoCache auto-resolve.
-//   npm run resolve-channels           # jen chybějící ID
-//   npm run resolve-channels -- --all  # všechny aktivní kanály z channel_url
+// RUN ONCE BEFORE FIRST BUILD
 
 import { createClient } from "@supabase/supabase-js";
-import { syncSourceChannelIds } from "@/lib/syncSourceChannelIds";
+
+type SourceRow = {
+  id: string;
+  source_name: string;
+  channel_url: string;
+};
+
+type YoutubeChannelsResponse = {
+  items?: Array<{
+    id?: string;
+    contentDetails?: {
+      relatedPlaylists?: {
+        uploads?: string;
+      };
+    };
+  }>;
+};
 
 function sanitizeEnvValue(value?: string): string | undefined {
   if (!value) {
@@ -35,39 +49,119 @@ function getRequiredEnv(name: string): string {
   return value;
 }
 
-async function main() {
-  const mode = process.argv.includes("--all") ? "all" : "missing";
-  const supabaseUrl = getRequiredEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const serviceRoleKey =
-    sanitizeEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY) ??
-    sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-  if (!serviceRoleKey) {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY not set");
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function extractHandleFromChannelUrl(channelUrl: string): string | null {
+  const normalized = channelUrl.trim();
+  if (!normalized) {
+    return null;
   }
+
+  try {
+    const parsed = new URL(normalized);
+    const segments = parsed.pathname.split("/").filter(Boolean);
+    const handle = segments[segments.length - 1];
+    if (!handle || !handle.startsWith("@")) {
+      return null;
+    }
+    return handle;
+  } catch {
+    return null;
+  }
+}
+
+async function resolveChannelIdByHandle(
+  apiKey: string,
+  handle: string
+): Promise<{ channelId: string | null; uploadsPlaylistId: string | null }> {
+  const handleWithoutAt = handle.startsWith("@") ? handle.slice(1) : handle;
+  if (!handleWithoutAt) {
+    return { channelId: null, uploadsPlaylistId: null };
+  }
+
+  const url = new URL("https://www.googleapis.com/youtube/v3/channels");
+  url.searchParams.set("part", "id,contentDetails");
+  url.searchParams.set("forHandle", handleWithoutAt);
+  url.searchParams.set("key", apiKey);
+
+  const response = await fetch(url.toString());
+  if (!response.ok) {
+    throw new Error(`channels API failed (${response.status})`);
+  }
+
+  const data = (await response.json()) as YoutubeChannelsResponse;
+  return {
+    channelId: data.items?.[0]?.id ?? null,
+    uploadsPlaylistId:
+      data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads ?? null,
+  };
+}
+
+async function main() {
+  const supabaseUrl = getRequiredEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const supabaseAnonKey = getRequiredEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
   const youtubeApiKey = getRequiredEnv("YOUTUBE_API_KEY");
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-  console.log(`Syncing YouTube channel IDs (mode=${mode})...`);
-  const result = await syncSourceChannelIds({
-    supabase,
-    youtubeApiKey,
-    mode,
-    throttleMs: 200,
-  });
+  const { data, error } = await supabase
+    .from("sources")
+    .select("id, source_name, channel_url")
+    .eq("platform", "youtube")
+    .or("channel_id.is.null,uploads_playlist_id.is.null")
+    .order("priority", { ascending: true })
+    .order("source_name", { ascending: true });
 
-  console.log(
-    `Done. scanned=${result.scanned} updated=${result.updated} unchanged=${result.unchanged} failed=${result.failed}`
-  );
+  if (error) {
+    throw new Error(`Failed to fetch sources: ${error.message}`);
+  }
 
-  for (const detail of result.details) {
-    if (detail.status === "updated") {
-      console.log(`[OK] ${detail.sourceName}: ${detail.message ?? "updated"}`);
-    } else if (detail.status === "failed" || detail.status === "skipped") {
-      console.warn(`[${detail.status.toUpperCase()}] ${detail.sourceName}: ${detail.message ?? ""}`);
+  const sources = (data ?? []) as SourceRow[];
+  console.log(`Found ${sources.length} channels without channel_id`);
+
+  for (const source of sources) {
+    try {
+      const handle = extractHandleFromChannelUrl(source.channel_url);
+      if (!handle) {
+        console.warn(`[SKIP] ${source.source_name}: invalid handle in URL`);
+        await sleep(200);
+        continue;
+      }
+
+      const { channelId, uploadsPlaylistId } = await resolveChannelIdByHandle(
+        youtubeApiKey,
+        handle
+      );
+      if (!channelId) {
+        console.warn(`[MISS] ${source.source_name}: channel not found for handle ${handle}`);
+        await sleep(200);
+        continue;
+      }
+
+      const { error: updateError } = await supabase
+        .from("sources")
+        .update({
+          channel_id: channelId,
+          uploads_playlist_id: uploadsPlaylistId,
+        })
+        .eq("id", source.id);
+
+      if (updateError) {
+        console.error(`[FAIL] ${source.source_name}: ${updateError.message}`);
+      } else {
+        console.log(
+          `[OK] ${source.source_name}: channel=${channelId} uploads=${uploadsPlaylistId ?? "null"}`
+        );
+      }
+    } catch (err) {
+      console.error(`[FAIL] ${source.source_name}:`, err);
     }
+
+    await sleep(200);
   }
 }
 

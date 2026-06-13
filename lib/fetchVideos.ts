@@ -2,12 +2,10 @@
 // run every 15 minutes to keep cache warm
 // Quota-safe mode: use uploads playlist + batched videos.list (avoid search.list)
 import { createClient } from "@supabase/supabase-js";
-import { resolveChannelIdsFromChannelUrl } from "@/lib/youtubeChannelResolve";
 
 type SourceRow = {
   id: string;
   source_name: string;
-  channel_url: string;
   channel_id: string;
   uploads_playlist_id: string;
   priority: "A" | "B" | "C";
@@ -97,15 +95,8 @@ type SourceMeta = {
 export type RefreshVideoCacheResult = {
   apiCalls: number;
   stored: number;
-  resolvedSources: number;
-  healedSources: number;
   failedSources: string[];
   failedDetails: Array<{ source: string; error: string }>;
-};
-
-type SourceIdUpdate = {
-  channelId: string;
-  uploadsPlaylistId: string;
 };
 
 function sanitizeEnvValue(value?: string): string | undefined {
@@ -299,155 +290,17 @@ async function upsertVideosResiliently(
   return { stored: legacyRows.length, usedLegacyFallback: true };
 }
 
-async function persistSourceYoutubeIds(
-  supabase: ReturnType<typeof createIngestClient>,
-  sourceId: string,
-  ids: SourceIdUpdate
-): Promise<boolean> {
-  const { error } = await supabase
-    .from("sources")
-    .update({
-      channel_id: ids.channelId,
-      uploads_playlist_id: ids.uploadsPlaylistId,
-    })
-    .eq("id", sourceId);
-  return !error;
-}
-
-async function ensureUnresolvedSourceIds(
-  supabase: ReturnType<typeof createIngestClient>,
-  youtubeApiKey: string
-): Promise<{ resolvedSources: number; apiCalls: number }> {
-  const { data, error } = await supabase
-    .from("sources")
-    .select("id, source_name, channel_url, channel_id, uploads_playlist_id")
-    .eq("platform", "youtube")
-    .eq("active", true)
-    .or("channel_id.is.null,uploads_playlist_id.is.null");
-
-  if (error) {
-    throw new Error(`Failed to load unresolved sources: ${error.message}`);
-  }
-
-  let resolvedSources = 0;
-  let apiCalls = 0;
-
-  for (const row of data ?? []) {
-    const sourceName = typeof row.source_name === "string" ? row.source_name : "unknown";
-    const channelUrl = typeof row.channel_url === "string" ? row.channel_url.trim() : "";
-    const sourceId = typeof row.id === "string" ? row.id : "";
-    if (!channelUrl || !sourceId) continue;
-
-    try {
-      const resolved = await resolveChannelIdsFromChannelUrl(channelUrl, youtubeApiKey);
-      apiCalls += 1;
-      if (!resolved) {
-        console.warn(`[MISS] ${sourceName}: unable to resolve channel_id from URL`);
-        await sleep(120);
-        continue;
-      }
-
-      const persisted = await persistSourceYoutubeIds(supabase, sourceId, {
-        channelId: resolved.channelId,
-        uploadsPlaylistId: resolved.uploadsPlaylistId,
-      });
-      if (!persisted) {
-        console.warn(`[FAIL] ${sourceName}: failed to persist resolved channel_id`);
-      } else {
-        resolvedSources += 1;
-        console.log(
-          `[OK] ${sourceName}: resolved channel=${resolved.channelId} uploads=${resolved.uploadsPlaylistId}`
-        );
-      }
-    } catch (err) {
-      console.error(`[FAIL] ${sourceName}:`, err);
-    }
-
-    await sleep(120);
-  }
-
-  return { resolvedSources, apiCalls };
-}
-
-/**
- * channel_url je zdroj pravdy — DB channel_id může zastarat po hromadném upsert SQL.
- * Při každém ingestu nejdřív odvodíme ID z URL a případně přepíšeme DB.
- */
-export async function resolveActiveSourceIdsFromChannelUrl(
-  supabase: ReturnType<typeof createIngestClient>,
-  source: SourceRow,
-  youtubeApiKey: string
-): Promise<{ ids: SourceIdUpdate | null; apiCalls: number; changed: boolean }> {
-  const channelUrl = source.channel_url?.trim() ?? "";
-  if (!channelUrl) {
-    if (source.channel_id && source.uploads_playlist_id) {
-      return {
-        ids: {
-          channelId: source.channel_id,
-          uploadsPlaylistId: source.uploads_playlist_id,
-        },
-        apiCalls: 0,
-        changed: false,
-      };
-    }
-    return { ids: null, apiCalls: 0, changed: false };
-  }
-
-  const resolved = await resolveChannelIdsFromChannelUrl(channelUrl, youtubeApiKey);
-  if (!resolved) {
-    if (source.channel_id && source.uploads_playlist_id) {
-      return {
-        ids: {
-          channelId: source.channel_id,
-          uploadsPlaylistId: source.uploads_playlist_id,
-        },
-        apiCalls: 1,
-        changed: false,
-      };
-    }
-    return { ids: null, apiCalls: 1, changed: false };
-  }
-
-  const changed =
-    resolved.channelId !== source.channel_id ||
-    resolved.uploadsPlaylistId !== source.uploads_playlist_id;
-
-  if (changed) {
-    const persisted = await persistSourceYoutubeIds(supabase, source.id, {
-      channelId: resolved.channelId,
-      uploadsPlaylistId: resolved.uploadsPlaylistId,
-    });
-    if (!persisted) {
-      console.warn(`[WARN] ${source.source_name}: failed to persist channel_id from channel_url`);
-    } else {
-      console.log(
-        `[OK] ${source.source_name}: synced IDs from URL (${source.channel_id ?? "null"} -> ${resolved.channelId})`
-      );
-    }
-  }
-
-  return {
-    ids: {
-      channelId: resolved.channelId,
-      uploadsPlaylistId: resolved.uploadsPlaylistId,
-    },
-    apiCalls: 1,
-    changed,
-  };
-}
-
 export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
   const youtubeApiKey = requiredEnv("YOUTUBE_API_KEY");
   const supabase = createIngestClient();
 
-  const unresolved = await ensureUnresolvedSourceIds(supabase, youtubeApiKey);
-
   const { data: sourcesData, error: sourcesError } = await supabase
     .from("sources")
-    .select("id, source_name, channel_url, channel_id, uploads_playlist_id, priority")
+    .select("id, source_name, channel_id, uploads_playlist_id, priority")
     .eq("platform", "youtube")
     .eq("active", true)
-    .not("channel_url", "is", null)
+    .not("channel_id", "is", null)
+    .not("uploads_playlist_id", "is", null)
     .order("priority", { ascending: true })
     .order("source_name", { ascending: true });
 
@@ -456,9 +309,8 @@ export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
   }
 
   const sources = (sourcesData ?? []) as SourceRow[];
-  let apiCalls = unresolved.apiCalls;
+  let apiCalls = 0;
   let stored = 0;
-  let healedSources = 0;
   const failedSources: string[] = [];
   const failedDetails: Array<{ source: string; error: string }> = [];
   const nowIso = new Date().toISOString();
@@ -466,40 +318,14 @@ export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
   const sourceByVideoId = new Map<string, SourceMeta>();
   for (const source of sources) {
     try {
-      const channelUrl = source.channel_url?.trim() ?? "";
-      if (!channelUrl) {
-        failedSources.push(source.source_name);
-        failedDetails.push({ source: source.source_name, error: "missing channel_url" });
-        continue;
-      }
-
-      const resolved = await resolveActiveSourceIdsFromChannelUrl(supabase, source, youtubeApiKey);
-      apiCalls += resolved.apiCalls;
-      if (!resolved.ids) {
-        failedSources.push(source.source_name);
-        failedDetails.push({
-          source: source.source_name,
-          error: "unable to resolve channel_id from channel_url",
-        });
-        await sleep(120);
-        continue;
-      }
-      if (resolved.changed) {
-        healedSources += 1;
-        source.channel_id = resolved.ids.channelId;
-        source.uploads_playlist_id = resolved.ids.uploadsPlaylistId;
-      }
-
-      let activeChannelId = resolved.ids.channelId;
-      let uploadsPlaylistId = resolved.ids.uploadsPlaylistId;
+      let uploadsPlaylistId = source.uploads_playlist_id;
       let videoIds: string[] = [];
-      const maxResults = maxResultsByPriority(source.priority);
-
-      const loadUploadsVideoIds = async () =>
-        fetchUploadsVideoIds(uploadsPlaylistId, youtubeApiKey, maxResults);
-
       try {
-        videoIds = await loadUploadsVideoIds();
+        videoIds = await fetchUploadsVideoIds(
+          uploadsPlaylistId,
+          youtubeApiKey,
+          maxResultsByPriority(source.priority)
+        );
         apiCalls += 1;
       } catch (err) {
         if (!isPlaylistItems404(err)) {
@@ -507,27 +333,27 @@ export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
         }
 
         console.warn(
-          `[WARN] ${source.source_name}: playlist ${uploadsPlaylistId} returned 404, resolving uploads playlist from channel_id ${activeChannelId}`
+          `[WARN] ${source.source_name}: playlist ${uploadsPlaylistId} returned 404, resolving uploads playlist from channel_id ${source.channel_id}`
         );
         const refreshedUploadsPlaylistId = await fetchUploadsPlaylistIdByChannelId(
-          activeChannelId,
+          source.channel_id,
           youtubeApiKey
         );
         apiCalls += 1;
 
         if (!refreshedUploadsPlaylistId) {
-          throw new Error(`Unable to resolve uploads playlist for channel_id ${activeChannelId}`);
+          throw new Error(`Unable to resolve uploads playlist for channel_id ${source.channel_id}`);
         }
 
         uploadsPlaylistId = refreshedUploadsPlaylistId;
         if (uploadsPlaylistId !== source.uploads_playlist_id) {
-          const persisted = await persistSourceYoutubeIds(supabase, source.id, {
-            channelId: activeChannelId,
-            uploadsPlaylistId,
-          });
-          if (!persisted) {
+          const { error: updateError } = await supabase
+            .from("sources")
+            .update({ uploads_playlist_id: uploadsPlaylistId })
+            .eq("id", source.id);
+          if (updateError) {
             console.warn(
-              `[WARN] ${source.source_name}: failed to persist refreshed uploads_playlist_id`
+              `[WARN] ${source.source_name}: failed to persist refreshed uploads_playlist_id (${updateError.message})`
             );
           } else {
             source.uploads_playlist_id = uploadsPlaylistId;
@@ -537,15 +363,16 @@ export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
           }
         }
 
-        videoIds = await loadUploadsVideoIds();
+        videoIds = await fetchUploadsVideoIds(
+          uploadsPlaylistId,
+          youtubeApiKey,
+          maxResultsByPriority(source.priority)
+        );
         apiCalls += 1;
       }
 
       if (videoIds.length === 0) {
-        const message = "no videos from uploads playlist";
-        failedSources.push(source.source_name);
-        failedDetails.push({ source: source.source_name, error: message });
-        console.log(`[MISS] ${source.source_name}: ${message}`);
+        console.log(`[MISS] ${source.source_name}: no videos from uploads playlist`);
         await sleep(120);
         continue;
       }
@@ -556,7 +383,7 @@ export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
             sourceId: source.id,
             sourceName: source.source_name,
             sourcePriority: source.priority,
-            channelId: activeChannelId,
+            channelId: source.channel_id,
           });
         }
       }
@@ -666,8 +493,6 @@ export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
   return {
     apiCalls,
     stored,
-    resolvedSources: unresolved.resolvedSources,
-    healedSources,
     failedSources,
     failedDetails,
   };
