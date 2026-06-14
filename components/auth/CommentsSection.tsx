@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { CommentLikeButton } from "@/components/auth/CommentLikeButton";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { PostCommentSharePrompt } from "@/components/viewer/PostCommentSharePrompt";
 import {
   VIEWER_COMMENT_ENTITY_VIDEO,
   buildCommentTree,
@@ -16,11 +17,13 @@ import {
   type ViewerCommentRecord,
 } from "@/lib/viewer/comments";
 import { authorInitials, formatRelativeCommentTime } from "@/lib/viewer/commentTime";
+import { buildCommentEngagementHref } from "@/lib/viewer/commentLinks";
 
 type CommentsSectionProps = {
   entityType?: string;
   entityId: string | null;
   videoTitle?: string;
+  opinionSlug?: string | null;
   scope?: "entity" | "global";
   heading?: string;
   compact?: boolean;
@@ -263,6 +266,7 @@ export function CommentsSection({
   entityType = VIEWER_COMMENT_ENTITY_VIDEO,
   entityId,
   videoTitle,
+  opinionSlug = null,
   scope = "entity",
   heading = "Diskuse diváků",
   compact = false,
@@ -279,6 +283,8 @@ export function CommentsSection({
   const [schemaReady, setSchemaReady] = useState(true);
   const [filter, setFilter] = useState<CommentFilterMode>("all");
   const [sort, setSort] = useState<CommentSortMode>("popular");
+  const [thankMessage, setThankMessage] = useState<string | null>(null);
+  const [sharePrompt, setSharePrompt] = useState<{ url: string; title?: string } | null>(null);
 
   const isGlobal = scope === "global";
   const canLoad = isGlobal || Boolean(entityId);
@@ -352,6 +358,18 @@ export function CommentsSection({
   const canSubmit = useMemo(() => draft.trim().length >= 2 && draft.trim().length <= 2000, [draft]);
   const canPost = Boolean(composeEntityId) && isAuthenticated && schemaReady;
 
+  const resolveShareTarget = useCallback(
+    (targetEntityId: string) => {
+      const path = buildCommentEngagementHref(entityType, targetEntityId, opinionSlug);
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      return {
+        url: `${origin}${path}`,
+        title: videoTitle?.trim() || undefined,
+      };
+    },
+    [entityType, opinionSlug, videoTitle],
+  );
+
   const addComment = async () => {
     if (!canSubmit || !composeEntityId) return;
     setSaving(true);
@@ -369,6 +387,7 @@ export function CommentsSection({
     });
     const payload = (await response.json().catch(() => ({}))) as {
       comment?: ViewerCommentRecord;
+      engagement?: { thankMessage?: string; shareSuggested?: boolean };
       error?: string;
     };
     setSaving(false);
@@ -383,8 +402,15 @@ export function CommentsSection({
     }
 
     setDraft("");
+    const wasReply = Boolean(replyParentId);
     setReplyParentId(null);
     setReplyTargetName(null);
+    setThankMessage(payload.engagement?.thankMessage?.trim() || null);
+    if (payload.engagement?.shareSuggested && !wasReply && composeEntityId) {
+      setSharePrompt(resolveShareTarget(composeEntityId));
+    } else {
+      setSharePrompt(null);
+    }
     await loadComments();
   };
 
@@ -567,6 +593,24 @@ export function CommentsSection({
       ) : null}
 
       {error ? <p className="vx-comments-error">{error}</p> : null}
+
+      {thankMessage ? (
+        <div className="vx-comment-thank" role="status">
+          <p>{thankMessage}</p>
+          <p className="vx-comment-thank-sub">
+            Sledujte reakce na své komentáře v sekci{" "}
+            <a href="/muj-verox">Můj Verox</a>.
+          </p>
+        </div>
+      ) : null}
+
+      {sharePrompt ? (
+        <PostCommentSharePrompt
+          shareUrl={sharePrompt.url}
+          shareTitle={sharePrompt.title}
+          onDismiss={() => setSharePrompt(null)}
+        />
+      ) : null}
 
       {loading ? (
         <p className="vx-comments-empty">Načítám komentáře...</p>

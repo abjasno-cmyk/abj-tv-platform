@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { MujVeroxAuthorStudio } from "@/components/nazory/MujVeroxAuthorStudio";
+import { MyVeroxEngagement } from "@/components/viewer/MyVeroxEngagement";
 import { MyVeroxLibrary } from "@/components/viewer/MyVeroxLibrary";
 import { buildWallTree, formatWallPostTime, type WallTreeNode } from "@/lib/wallThread";
 import type { WallPost } from "@/lib/wallTypes";
@@ -299,6 +300,13 @@ export function MujVeroxTemplate() {
           </p>
         )}
       </div>
+
+      <div className="vx-strip w75">
+        <span />
+        <span />
+      </div>
+
+      <MyVeroxEngagement />
 
       <div className="vx-strip w75">
         <span />
