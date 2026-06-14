@@ -247,7 +247,7 @@ async function loadVideosFromSupabase(): Promise<RawVideo[]> {
       "id, source_id, channel_id, video_id, title, thumbnail, published_at, scheduled_start_at, video_type, channel_name, is_abj, duration_min, metadata, created_at"
     )
     .order("published_at", { ascending: false })
-    .limit(260);
+    .limit(720);
 
   if (!canonical.error) {
     return (canonical.data ?? []) as RawVideo[];
@@ -262,7 +262,7 @@ async function loadVideosFromSupabase(): Promise<RawVideo[]> {
     .from("videos")
     .select("id, source_id, channel_id, video_id, title, thumbnail, published_at, scheduled_start_time, kind, raw, created_at")
     .order("published_at", { ascending: false })
-    .limit(260);
+    .limit(720);
 
   if (legacy.error) {
     throw new Error(`Feed legacy query failed: ${legacy.error.message}`);

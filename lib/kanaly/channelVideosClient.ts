@@ -1,7 +1,10 @@
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import {
   LIVE_CHANNEL_VIDEO_FETCH_BUFFER,
+  LIVE_CHANNEL_VIDEO_MIN_FROM_CACHE,
+  mergeChannelVideosByVideoId,
   selectKanalyChannelVideos,
+  shouldSupplementChannelVideosFromApi,
   type KanalyChannelVideoSelection,
 } from "@/lib/liveChannelVideos";
 
@@ -60,17 +63,16 @@ export async function fetchChannelVideosForKanaly(
   channel: LiveChannelGroup,
 ): Promise<KanalyChannelVideosResult> {
   const feedSelection = selectKanalyChannelVideos(channel.videos);
-  // Vždy použij cache z feedu, pokud něco máme — i starší než 7 dní (usedLatestFallback).
-  // Jinak zbytečně voláme YouTube API a při chybě ID/Shorts zobrazíme prázdný panel.
-  if (feedSelection.videos.length > 0) {
+  if (!shouldSupplementChannelVideosFromApi(feedSelection.videos.length, LIVE_CHANNEL_VIDEO_MIN_FROM_CACHE)) {
     return feedSelection;
   }
 
   try {
     const apiVideos = await fetchFromChannelLatest(channel);
-    const apiSelection = selectKanalyChannelVideos(apiVideos);
-    if (apiSelection.videos.length > 0) {
-      return apiSelection;
+    const merged = mergeChannelVideosByVideoId(channel.videos, apiVideos);
+    const mergedSelection = selectKanalyChannelVideos(merged);
+    if (mergedSelection.videos.length > 0) {
+      return mergedSelection;
     }
   } catch {
     // Fall back to feed candidates below (e.g. when YouTube fetch fails).

@@ -1,6 +1,12 @@
 "use client";
 
-import { LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT } from "@/lib/liveChannelVideos";
+import {
+  LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT,
+  LIVE_CHANNEL_VIDEO_MIN_FROM_CACHE,
+  mergeChannelVideosByVideoId,
+  selectLatestNonShortChannelVideos,
+  shouldSupplementChannelVideosFromApi,
+} from "@/lib/liveChannelVideos";
 
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -289,15 +295,31 @@ export function HomePage({
     }
     setOpenChannelName(ch.channelName);
 
-    if (ch.videos.length > 0) {
+    const cachedVideos = ch.videos.slice(0, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT);
+    const hasEnoughCache = !shouldSupplementChannelVideosFromApi(
+      cachedVideos.length,
+      LIVE_CHANNEL_VIDEO_MIN_FROM_CACHE,
+    );
+
+    if (hasEnoughCache) {
       setChannelVideosByName((prev) => ({
         ...prev,
-        [ch.channelName]: ch.videos.slice(0, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT),
+        [ch.channelName]: cachedVideos,
       }));
       setPlayerBarExpanded(true);
       return;
     }
-    if (channelVideosByName[ch.channelName]) return; // už načteno
+
+    if (cachedVideos.length > 0) {
+      setChannelVideosByName((prev) => ({
+        ...prev,
+        [ch.channelName]: cachedVideos,
+      }));
+      setPlayerBarExpanded(true);
+    } else if (channelVideosByName[ch.channelName]) {
+      return; // už načteno
+    }
+
     if (!ch.channelId && !ch.channelUrl && !ch.channelName.trim()) return;
 
     setChannelLoading(ch.channelName);
@@ -317,7 +339,7 @@ export function HomePage({
       const payload = (await response.json().catch(() => ({}))) as {
         videos?: Array<{ videoId?: string; title?: string; thumbnail?: string; publishedAt?: string }>;
       };
-      const videos = (payload.videos ?? [])
+      const apiVideos = (payload.videos ?? [])
         .map((video): LiveChannelVideo | null => {
           const videoId = video.videoId?.trim();
           const title = video.title?.trim();
@@ -329,8 +351,9 @@ export function HomePage({
             publishedAt: video.publishedAt?.trim() || new Date(0).toISOString(),
           };
         })
-        .filter((video): video is LiveChannelVideo => Boolean(video))
-        .slice(0, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT);
+        .filter((video): video is LiveChannelVideo => Boolean(video));
+      const merged = mergeChannelVideosByVideoId(ch.videos, apiVideos);
+      const videos = selectLatestNonShortChannelVideos(merged, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT);
       setChannelVideosByName((prev) => ({ ...prev, [ch.channelName]: videos }));
       if (videos.length > 0) setPlayerBarExpanded(true);
       if (videos.length === 0) {

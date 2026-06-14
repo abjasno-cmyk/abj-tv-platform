@@ -9,6 +9,9 @@ export const LIVE_CHANNEL_VIDEO_FETCH_BUFFER = 72;
 /** Lookback window for the standalone /kanaly page. */
 export const CHANNEL_VIDEO_LOOKBACK_DAYS = 7;
 
+/** Below this count, supplement cached feed videos with a live YouTube fetch. */
+export const LIVE_CHANNEL_VIDEO_MIN_FROM_CACHE = LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT;
+
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export type ChannelVideoCandidate = ShortDetectionInput & {
@@ -23,6 +26,36 @@ export function selectLatestNonShortChannelVideos<T extends ChannelVideoCandidat
   displayLimit: number = LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT,
 ): T[] {
   return filterNonShortVideos(videos).slice(0, Math.max(1, displayLimit));
+}
+
+export function mergeChannelVideosByVideoId<T extends { videoId: string; publishedAt: string }>(
+  ...groups: T[][]
+): T[] {
+  const byId = new Map<string, T>();
+  for (const group of groups) {
+    for (const video of group) {
+      const videoId = video.videoId.trim();
+      if (!videoId) continue;
+      const existing = byId.get(videoId);
+      if (!existing) {
+        byId.set(videoId, video);
+        continue;
+      }
+      if (new Date(video.publishedAt).getTime() > new Date(existing.publishedAt).getTime()) {
+        byId.set(videoId, video);
+      }
+    }
+  }
+  return [...byId.values()].sort(
+    (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+  );
+}
+
+export function shouldSupplementChannelVideosFromApi(
+  cachedCount: number,
+  minFromCache: number = LIVE_CHANNEL_VIDEO_MIN_FROM_CACHE,
+): boolean {
+  return cachedCount < minFromCache;
 }
 
 export function filterChannelVideosWithinDays<T extends { publishedAt: string }>(
