@@ -1710,6 +1710,10 @@
   color: var(--vx-gray-light);
 }
 
+.mv-account-settings-wrap {
+  padding: 0 var(--L1) 2cqw;
+}
+
 .mv-account-delete {
   padding: 0 var(--L1) 2cqw;
   text-align: left;

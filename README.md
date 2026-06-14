@@ -38,3 +38,20 @@ the block has `title` and valid time window. In that mode:
 
 - `/api/program/v3/refresh-cache` every 15 minutes
 - `/api/program/v3/import-feed` every 5 minutes
+- `/api/newsletter/daily` every day at 06:00 UTC (~07:00 Prague time)
+
+### Daily newsletter (Resend)
+
+Required for real sends:
+
+- `RESEND_API_KEY` — API key from [Resend](https://resend.com)
+- `NEWSLETTER_FROM_EMAIL` — e.g. `Verox <newsletter@verox.cz>` (domain must be verified in Resend)
+- `CRON_SECRET` — protects `/api/newsletter/daily` (same as other cron routes)
+
+Optional:
+
+- `NEWSLETTER_ENABLED=false` — force dry-run even when API key is set
+
+Recipients are users whose **latest** `consents.newsletter` row is `granted=true` and who have an e-mail in `profiles`.
+
+Run migration `supabase/018_newsletter_sends.sql` for per-day send logging/idempotency.
