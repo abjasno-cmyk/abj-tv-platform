@@ -195,7 +195,7 @@ export async function POST(request: Request) {
 
     const profiles = await loadCommentAuthorProfiles(supabase, [user.id]);
     const commenterProfile = profiles.get(user.id) ?? null;
-    const engagement = buildCommentEngagementResponse(body, parentId);
+    const engagement = buildCommentEngagementResponse(body, parentId, row.id);
 
     if (parentRow) {
       await notifyCommentAuthor({

@@ -171,7 +171,7 @@ export async function maybeSendAutoThank(
       entity_type: comment.entity_type,
       entity_id: comment.entity_id,
       parent_id: comment.id,
-      body: buildAutoThankReply(comment.body),
+      body: buildAutoThankReply(comment.body, comment.id),
     });
 
     await service.from("viewer_activity").insert({
