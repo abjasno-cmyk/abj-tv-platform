@@ -16,7 +16,15 @@ export default function DataDeletionPage() {
 
       <section className="space-y-2">
         <h2 className="text-lg font-bold text-white">Jak požádat o smazání účtu</h2>
-        <p>Pokud chcete smazat svůj účet VEROX, napište nám na e-mail:</p>
+        <p>
+          Pokud jste přihlášeni, můžete účet smazat přímo na stránce{" "}
+          <a href="/muj-verox" className="text-[#FFB782] hover:text-[#FFD8BC]">
+            Můj Verox
+          </a>{" "}
+          — sekce „Nastavení a zrušení účtu“. Systém vás upozorní, že Verox je zdarma, a nechá vás potvrdit smazání
+          slovem SMAZAT.
+        </p>
+        <p>Účet lze také smazat e-mailem na adresu:</p>
         <p>
           <a href="mailto:lipovska.hana@seznam.cz" className="text-[#FFB782] hover:text-[#FFD8BC]">
             lipovska.hana@seznam.cz
