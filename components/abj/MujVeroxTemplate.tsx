@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { DeleteAccountPanel } from "@/components/auth/DeleteAccountPanel";
 import { MujVeroxAuthorStudio } from "@/components/nazory/MujVeroxAuthorStudio";
 import { MyVeroxEngagement } from "@/components/viewer/MyVeroxEngagement";
 import { MyVeroxLibrary } from "@/components/viewer/MyVeroxLibrary";
@@ -314,6 +315,13 @@ export function MujVeroxTemplate() {
       </div>
 
       <MyVeroxLibrary />
+
+      <div className="vx-strip w75">
+        <span />
+        <span />
+      </div>
+
+      <DeleteAccountPanel />
 
       <div className="vx-strip w75">
         <span />
