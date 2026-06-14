@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   CHANNEL_VIDEO_LOOKBACK_DAYS,
   filterChannelVideosWithinDays,
+  mergeChannelVideosByVideoId,
   selectKanalyChannelVideos,
+  shouldSupplementChannelVideosFromApi,
 } from "@/lib/liveChannelVideos";
 
 describe("filterChannelVideosWithinDays", () => {
@@ -82,5 +84,27 @@ describe("selectKanalyChannelVideos", () => {
 
     expect(result.usedLatestFallback).toBe(true);
     expect(result.videos.map((video) => video.videoId)).toEqual(["old"]);
+  });
+});
+
+describe("mergeChannelVideosByVideoId", () => {
+  it("deduplicates by videoId and keeps the newest publish date", () => {
+    const merged = mergeChannelVideosByVideoId(
+      [{ videoId: "a", publishedAt: "2026-06-01T10:00:00.000Z" }],
+      [
+        { videoId: "a", publishedAt: "2026-06-02T10:00:00.000Z" },
+        { videoId: "b", publishedAt: "2026-06-03T10:00:00.000Z" },
+      ],
+    );
+
+    expect(merged.map((video) => video.videoId)).toEqual(["b", "a"]);
+    expect(merged[1]?.publishedAt).toBe("2026-06-02T10:00:00.000Z");
+  });
+});
+
+describe("shouldSupplementChannelVideosFromApi", () => {
+  it("requests API supplementation when cache is below the display limit", () => {
+    expect(shouldSupplementChannelVideosFromApi(2)).toBe(true);
+    expect(shouldSupplementChannelVideosFromApi(24)).toBe(false);
   });
 });

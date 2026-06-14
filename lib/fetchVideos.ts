@@ -162,9 +162,9 @@ function parseDurationToMinutes(value?: string): number {
 }
 
 function maxResultsByPriority(priority: "A" | "B" | "C"): number {
-  if (priority === "A") return 6;
-  if (priority === "B") return 4;
-  return 3;
+  if (priority === "A") return 24;
+  if (priority === "B") return 16;
+  return 12;
 }
 
 async function fetchUploadsVideoIds(
