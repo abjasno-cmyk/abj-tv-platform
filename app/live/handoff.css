@@ -1769,6 +1769,55 @@
   font-size: 0.85rem;
   color: #d14a2a;
 }
+.vx-comment-thank {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 102, 0, 0.22);
+  background: rgba(255, 244, 235, 0.95);
+  font-size: 0.9rem;
+}
+.vx-comment-thank p {
+  margin: 0;
+}
+.vx-comment-thank-sub {
+  margin-top: 6px !important;
+  font-size: 0.82rem;
+  color: rgba(23, 20, 17, 0.68);
+}
+.vx-comment-thank a {
+  color: var(--vx-orange, #ff6600);
+  font-weight: 700;
+}
+.vx-comment-share-prompt {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px dashed rgba(23, 20, 17, 0.16);
+  background: #fff;
+  display: grid;
+  gap: 10px;
+}
+.vx-comment-share-prompt-text {
+  margin: 0;
+  font-size: 0.88rem;
+  color: rgba(23, 20, 17, 0.78);
+}
+.vx-comment-share-prompt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.vx-comment-share-prompt-dismiss {
+  border: none;
+  background: transparent;
+  color: rgba(23, 20, 17, 0.55);
+  font-size: 0.82rem;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: underline;
+}
 .vx-comments-empty {
   margin: 0;
   font-size: 0.9rem;

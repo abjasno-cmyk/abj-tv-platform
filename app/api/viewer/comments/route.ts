@@ -11,6 +11,12 @@ import {
 } from "@/lib/viewer/comments";
 import { enforceWriteRateLimit } from "@/lib/rateLimit";
 import { insertComment, isSupabaseSchemaMismatch, listPublishedComments } from "@/lib/viewer/commentsDb";
+import { buildCommentEngagementResponse } from "@/lib/viewer/autoThank";
+import {
+  maybeSendAutoThank,
+  notifyCommentAuthor,
+} from "@/lib/viewer/commentEngagement";
+import { loadCommentAuthorProfiles } from "@/lib/viewer/profileLookup";
 
 export const dynamic = "force-dynamic";
 
@@ -130,10 +136,18 @@ export async function POST(request: Request) {
       return Response.json({ error: "Komentář je příliš dlouhý (max. 2000 znaků)." }, { status: 400 });
     }
 
+    let parentRow: {
+      id: string;
+      user_id: string;
+      entity_type: string;
+      entity_id: string;
+      body: string;
+    } | null = null;
+
     if (parentId) {
       const parent = await supabase
         .from("comments")
-        .select("id, entity_type, entity_id, status")
+        .select("id, user_id, entity_type, entity_id, body, status")
         .eq("id", parentId)
         .maybeSingle();
       if (parent.error || !parent.data) {
@@ -142,6 +156,13 @@ export async function POST(request: Request) {
       if (parent.data.status !== "published") {
         return Response.json({ error: "Na tento komentář nelze odpovědět." }, { status: 400 });
       }
+      parentRow = {
+        id: parent.data.id as string,
+        user_id: parent.data.user_id as string,
+        entity_type: parent.data.entity_type as string,
+        entity_id: parent.data.entity_id as string,
+        body: parent.data.body as string,
+      };
     }
 
     let viewerCanModerate = false;
@@ -172,7 +193,25 @@ export async function POST(request: Request) {
 
     const [comment] = await mapCommentRows(supabase, [row], { viewerCanModerate });
 
-    return Response.json({ ok: true, comment }, { status: 201 });
+    const profiles = await loadCommentAuthorProfiles(supabase, [user.id]);
+    const commenterProfile = profiles.get(user.id) ?? null;
+    const engagement = buildCommentEngagementResponse(body, parentId);
+
+    if (parentRow) {
+      await notifyCommentAuthor({
+        recipientUserId: parentRow.user_id,
+        actorUserId: user.id,
+        commentId: parentRow.id,
+        entityType: parentRow.entity_type,
+        entityId: parentRow.entity_id,
+        commentBody: parentRow.body,
+        type: "comment_replied",
+      });
+    } else {
+      void maybeSendAutoThank(supabase, row, commenterProfile);
+    }
+
+    return Response.json({ ok: true, comment, engagement }, { status: 201 });
   } catch (error) {
     if (error instanceof AuthApiError) {
       return Response.json({ error: error.message }, { status: error.status });

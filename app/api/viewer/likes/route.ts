@@ -1,5 +1,7 @@
 import { AuthApiError, requireAuthenticatedUser } from "@/lib/supabase/authenticated-server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { VIEWER_COMMENT_LIKE_ENTITY } from "@/lib/viewer/comments";
+import { notifyCommentAuthor } from "@/lib/viewer/commentEngagement";
 
 export const dynamic = "force-dynamic";
 
@@ -76,6 +78,25 @@ export async function POST(request: Request) {
       entity_id: entity.entityId,
       metadata: {},
     });
+
+    if (entity.entityType === VIEWER_COMMENT_LIKE_ENTITY) {
+      const comment = await supabase
+        .from("comments")
+        .select("id, user_id, entity_type, entity_id, body")
+        .eq("id", entity.entityId)
+        .maybeSingle();
+      if (comment.data) {
+        await notifyCommentAuthor({
+          recipientUserId: comment.data.user_id as string,
+          actorUserId: user.id,
+          commentId: comment.data.id as string,
+          entityType: comment.data.entity_type as string,
+          entityId: comment.data.entity_id as string,
+          commentBody: comment.data.body as string,
+          type: "comment_liked",
+        });
+      }
+    }
 
     return Response.json({ ok: true, liked: true });
   } catch (error) {

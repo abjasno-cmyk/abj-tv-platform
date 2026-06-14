@@ -61,7 +61,7 @@ export function OpinionDetail({ article, author, shareUrl, commentCount = 0, edi
 
       <AuthorCard author={author} />
 
-      <CommentsBlock articleId={article.id} articleTitle={article.title} />
+      <CommentsBlock articleId={article.id} articleTitle={article.title} articleSlug={article.slug} />
     </article>
   );
 }
