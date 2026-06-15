@@ -1,18 +1,25 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
+vi.mock("@/lib/transcriptYouTubeFallback", () => ({
+  fetchYouTubeTranscriptResponse: vi.fn(async () => null),
+}));
+
 import { fetchVideoTranscriptServer, TranscriptProviderError } from "@/lib/transcriptFetchServer";
+import { fetchYouTubeTranscriptResponse } from "@/lib/transcriptYouTubeFallback";
 
 describe("fetchVideoTranscriptServer", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.VEROX_TRANSCRIPTS_BASE_URL = "https://attached-assets-abjasno.replit.app/transcripts/verox-news";
     process.env.VEROX_TRANSCRIPTS_API_KEY = "test-provider-key";
+    delete process.env.FEED_API_KEY;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
     delete process.env.VEROX_TRANSCRIPTS_BASE_URL;
     delete process.env.VEROX_TRANSCRIPTS_API_KEY;
+    delete process.env.FEED_API_KEY;
   });
 
   it("returns ready provider transcript and maps transcript_orig", async () => {
@@ -152,6 +159,62 @@ describe("fetchVideoTranscriptServer", () => {
       source_lang: null,
     });
     expect(fetchMock).toHaveBeenCalled();
+  });
+
+  it("falls back to legacy upstream when provider stays unavailable", async () => {
+    process.env.FEED_API_KEY = "legacy-feed-key";
+    const youtubeFallbackMock = vi.mocked(fetchYouTubeTranscriptResponse);
+    youtubeFallbackMock.mockResolvedValueOnce(null);
+
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("/transcripts/verox-news/dQw4w9WgXcQ")) {
+        return new Response(
+          JSON.stringify({
+            video_id: "dQw4w9WgXcQ",
+            status: "unavailable",
+            transcript: null,
+            transcript_at: null,
+            transcript_orig: null,
+            source_lang: null,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (url.includes("/transcripts/verox-news/status?")) {
+        return new Response(
+          JSON.stringify({
+            items: [{ video_id: "dQw4w9WgXcQ", status: "unavailable", has_transcript: false }],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (url.includes("/transcript/dQw4w9WgXcQ")) {
+        return new Response(
+          JSON.stringify({
+            video_id: "dQw4w9WgXcQ",
+            status: "ready",
+            transcript: "Legacy upstream transcript is available.",
+            transcript_at: "2026-06-15T11:30:00.000Z",
+            transcript_original: null,
+            source_lang: "cs",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      return new Response("not found", { status: 404 });
+    });
+
+    const result = await fetchVideoTranscriptServer("dQw4w9WgXcQ");
+    expect(result).toEqual({
+      video_id: "dQw4w9WgXcQ",
+      status: "ready",
+      transcript: "Legacy upstream transcript is available.",
+      transcript_at: "2026-06-15T11:30:00.000Z",
+      transcript_original: null,
+      source_lang: "cs",
+    });
+    expect(fetchMock.mock.calls.every(([input]) => !String(input).includes("/enqueue"))).toBe(true);
   });
 
   it("throws config error when provider env vars are missing", async () => {

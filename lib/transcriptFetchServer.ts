@@ -1,6 +1,12 @@
 import "server-only";
 
+import {
+  buildTranscriptUrlCandidates,
+  fetchTranscriptUpstream,
+  resolveFeedApiKey,
+} from "@/lib/programFeedProxy";
 import { parseTranscriptResponse, type TranscriptResponse } from "@/lib/transcriptTypes";
+import { fetchYouTubeTranscriptResponse } from "@/lib/transcriptYouTubeFallback";
 
 type TranscriptProviderErrorCode =
   | "provider_config_missing"
@@ -73,6 +79,44 @@ function processingEnvelope(videoId: string): TranscriptResponse {
 }
 
 type ProviderTranscriptStatus = TranscriptResponse["status"] | "unknown";
+
+function hasUsableTranscript(payload: TranscriptResponse): boolean {
+  return Boolean(payload.transcript?.trim() || payload.transcript_original?.trim());
+}
+
+function shouldUseLegacyResponse(payload: TranscriptResponse): boolean {
+  if (payload.status === "ready" && hasUsableTranscript(payload)) return true;
+  if (payload.status === "processing" || payload.status === "not_ready_live") return true;
+  return false;
+}
+
+async function fetchLegacyTranscript(videoId: string, request: Request): Promise<TranscriptResponse | null> {
+  const apiKey = resolveFeedApiKey();
+  if (!apiKey) return null;
+
+  const candidateUrls = buildTranscriptUrlCandidates(videoId);
+  const { response: upstreamResponse } = await fetchTranscriptUpstream(candidateUrls, request, apiKey, videoId);
+  if (!upstreamResponse) return null;
+
+  try {
+    const payload = (await upstreamResponse.json()) as unknown;
+    return parseTranscriptResponse(payload);
+  } catch {
+    return null;
+  }
+}
+
+async function fetchLegacyFallback(videoId: string, request: Request): Promise<TranscriptResponse | null> {
+  const upstream = await fetchLegacyTranscript(videoId, request);
+  if (upstream && shouldUseLegacyResponse(upstream)) {
+    return upstream;
+  }
+
+  const youtube = await fetchYouTubeTranscriptResponse(videoId);
+  if (youtube && hasUsableTranscript(youtube)) return youtube;
+
+  return null;
+}
 
 function mapProviderPayload(payload: unknown): TranscriptResponse | null {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
@@ -230,6 +274,8 @@ export async function fetchVideoTranscriptServer(
     if (statusFromProvider === "not_ready_live") {
       return { ...processingEnvelope(normalized), status: "not_ready_live" };
     }
+    const legacyFallback = await fetchLegacyFallback(normalized, request);
+    if (legacyFallback) return legacyFallback;
     return unavailableEnvelope(normalized);
   }
   if (!response.ok) {
@@ -266,6 +312,8 @@ export async function fetchVideoTranscriptServer(
     if (statusFromProvider === "not_ready_live") {
       return { ...processingEnvelope(normalized), status: "not_ready_live" };
     }
+    const legacyFallback = await fetchLegacyFallback(normalized, request);
+    if (legacyFallback) return legacyFallback;
   }
 
   return payload;
