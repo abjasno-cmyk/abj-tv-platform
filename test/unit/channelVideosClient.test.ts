@@ -1,9 +1,19 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { LiveChannelGroup } from "@/components/abj/ChannelDirectory";
 import { fetchChannelVideosForKanaly } from "@/lib/kanaly/channelVideosClient";
 
 describe("fetchChannelVideosForKanaly", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-14T10:00:00.000Z"));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
   it("supplements thin cached feed from channel-latest API", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -46,8 +56,6 @@ describe("fetchChannelVideosForKanaly", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(result.videos.map((video) => video.videoId)).toEqual(["api-1", "api-2"]);
     expect(result.usedLatestFallback).toBe(false);
-
-    vi.unstubAllGlobals();
   });
 
   it("uses cached feed when enough videos are already available", async () => {
@@ -72,7 +80,5 @@ describe("fetchChannelVideosForKanaly", () => {
     expect(fetchMock).not.toHaveBeenCalled();
     expect(result.videos).toHaveLength(24);
     expect(result.usedLatestFallback).toBe(false);
-
-    vi.unstubAllGlobals();
   });
 });
