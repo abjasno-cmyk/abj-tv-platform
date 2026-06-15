@@ -5,7 +5,6 @@ import { fetchVideoTranscriptServer, TranscriptProviderError } from "@/lib/trans
 describe("fetchVideoTranscriptServer", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (globalThis as { __veroxTranscriptEnqueueCache?: Map<string, number> }).__veroxTranscriptEnqueueCache?.clear();
     process.env.VEROX_TRANSCRIPTS_BASE_URL = "https://attached-assets-abjasno.replit.app/transcripts/verox-news";
     process.env.VEROX_TRANSCRIPTS_API_KEY = "test-provider-key";
   });
@@ -64,7 +63,7 @@ describe("fetchVideoTranscriptServer", () => {
     expect(result?.status).toBe("processing");
   });
 
-  it("enqueues transcript when provider reports unavailable", async () => {
+  it("returns processing when provider reports unavailable but status is processing", async () => {
     let callCount = 0;
     const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
       callCount += 1;
@@ -85,17 +84,16 @@ describe("fetchVideoTranscriptServer", () => {
       if (url.includes("/status?")) {
         return new Response(
           JSON.stringify({
-            video_id: "dQw4w9WgXcQ",
-            status: "unavailable",
+            items: [
+              {
+                video_id: "dQw4w9WgXcQ",
+                status: "processing",
+                has_transcript: false,
+              },
+            ],
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },
         );
-      }
-      if (url.includes("/enqueue")) {
-        return new Response(JSON.stringify({ accepted: true }), {
-          status: 202,
-          headers: { "Content-Type": "application/json" },
-        });
       }
       return new Response("not found", { status: 404 });
     });
@@ -109,18 +107,22 @@ describe("fetchVideoTranscriptServer", () => {
       transcript_original: null,
       source_lang: null,
     });
-    expect(callCount).toBeGreaterThanOrEqual(3);
-    const enqueueRequest = fetchMock.mock.calls.find(([input]) => String(input).includes("/enqueue"));
-    expect(enqueueRequest).toBeTruthy();
-    expect(String(enqueueRequest?.[0])).not.toContain("test-provider-key");
+    expect(callCount).toBe(2);
+    expect(fetchMock.mock.calls.every(([input]) => !String(input).includes("/enqueue"))).toBe(true);
   });
 
-  it("enqueues transcript when provider GET endpoint returns 404", async () => {
+  it("returns processing for 404 transcript when status endpoint returns unknown", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(new Response("not found", { status: 404 }))
-      .mockResolvedValueOnce(new Response("not found", { status: 404 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ queued: true }), { status: 200 }));
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            items: [{ video_id: "5Qou0b8fPwQ", status: "unknown", has_transcript: false }],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      );
 
     const result = await fetchVideoTranscriptServer("5Qou0b8fPwQ");
     expect(result).toEqual({
@@ -131,11 +133,14 @@ describe("fetchVideoTranscriptServer", () => {
       transcript_original: null,
       source_lang: null,
     });
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("returns unavailable envelope when provider returns 404", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("not found", { status: 404 }));
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response("not found", { status: 404 }))
+      .mockResolvedValueOnce(new Response("not found", { status: 404 }));
 
     const result = await fetchVideoTranscriptServer("a1b2c3d4e5F");
     expect(result).toEqual({
