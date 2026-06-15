@@ -80,6 +80,44 @@ describe("parseTranscriptResponse", () => {
     });
   });
 
+  it("maps queued status to processing for polling", () => {
+    expect(
+      parseTranscriptResponse({
+        video_id: "abc123",
+        status: "queued",
+        transcript: null,
+        transcript_at: null,
+      }),
+    ).toEqual({
+      video_id: "abc123",
+      status: "processing",
+      transcript: null,
+      transcript_at: null,
+      transcript_original: null,
+      source_lang: null,
+    });
+  });
+
+  it("accepts transcript_orig from provider and maps it to transcript_original", () => {
+    expect(
+      parseTranscriptResponse({
+        video_id: "abc123XYZ-_",
+        status: "ready",
+        transcript: "Český překlad.",
+        transcript_orig: "English original.",
+        transcript_at: "2026-06-12T15:00:00+02:00",
+        source_lang: "en",
+      }),
+    ).toEqual({
+      video_id: "abc123XYZ-_",
+      status: "ready",
+      transcript: "Český překlad.",
+      transcript_original: "English original.",
+      transcript_at: "2026-06-12T15:00:00+02:00",
+      source_lang: "en",
+    });
+  });
+
   it("rejects invalid payloads", () => {
     expect(parseTranscriptResponse({ error: "x" })).toBeNull();
     expect(parseTranscriptResponse(null)).toBeNull();

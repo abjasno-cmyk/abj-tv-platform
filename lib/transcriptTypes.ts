@@ -40,6 +40,7 @@ const TRANSCRIPT_STATUSES: ReadonlySet<string> = new Set([
   "ready",
   "processing",
   "pending",
+  "queued",
   "not_ready_live",
   "unavailable",
 ]);
@@ -48,7 +49,7 @@ const TRANSCRIPT_SOURCE_LANGS: ReadonlySet<string> = new Set(["en", "cs", "sk"])
 
 function normalizeTranscriptStatus(value: string): TranscriptStatus | null {
   const normalized = value.trim();
-  if (normalized === "pending") return "processing";
+  if (normalized === "pending" || normalized === "queued") return "processing";
   if (TRANSCRIPT_STATUSES.has(normalized)) {
     return normalized as TranscriptStatus;
   }
@@ -106,9 +107,11 @@ export function parseTranscriptResponse(value: unknown): TranscriptResponse | nu
     transcript_original:
       typeof row.transcript_original === "string"
         ? row.transcript_original
-        : row.transcript_original === null
-          ? null
-          : null,
+        : typeof row.transcript_orig === "string"
+          ? row.transcript_orig
+          : row.transcript_original === null || row.transcript_orig === null
+            ? null
+            : null,
     source_lang: parseSourceLang(row.source_lang),
   };
 }
