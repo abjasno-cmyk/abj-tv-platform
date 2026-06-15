@@ -20,6 +20,20 @@ export class TranscriptProviderError extends Error {
   }
 }
 
+const ENQUEUE_COOLDOWN_MS = 2 * 60 * 1000;
+
+type GlobalEnqueueCache = typeof globalThis & {
+  __veroxTranscriptEnqueueCache?: Map<string, number>;
+};
+
+function getEnqueueCache(): Map<string, number> {
+  const globalWithCache = globalThis as GlobalEnqueueCache;
+  if (!globalWithCache.__veroxTranscriptEnqueueCache) {
+    globalWithCache.__veroxTranscriptEnqueueCache = new Map<string, number>();
+  }
+  return globalWithCache.__veroxTranscriptEnqueueCache;
+}
+
 function sanitizeEnvValue(value?: string): string | undefined {
   if (!value) return undefined;
   const trimmed = value.trim();
@@ -61,6 +75,17 @@ function unavailableEnvelope(videoId: string): TranscriptResponse {
   };
 }
 
+function processingEnvelope(videoId: string): TranscriptResponse {
+  return {
+    video_id: videoId,
+    status: "processing",
+    transcript: null,
+    transcript_at: null,
+    transcript_original: null,
+    source_lang: null,
+  };
+}
+
 function mapProviderPayload(payload: unknown): TranscriptResponse | null {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
   const row = payload as Record<string, unknown>;
@@ -76,23 +101,20 @@ function mapProviderPayload(payload: unknown): TranscriptResponse | null {
   return parseTranscriptResponse(normalized);
 }
 
-export async function fetchVideoTranscriptServer(
+async function fetchProviderTranscript(
+  baseUrl: string,
+  apiKey: string,
   videoId: string,
-  request = new Request(`https://verox.cz/api/transcript/${encodeURIComponent(videoId)}`),
-): Promise<TranscriptResponse | null> {
-  const normalized = videoId.trim();
-  if (!normalized) return null;
-
-  const { baseUrl, apiKey } = resolveTranscriptProviderConfig();
-  const providerUrl = new URL(`${baseUrl}/${encodeURIComponent(normalized)}`);
+  request: Request,
+): Promise<Response> {
+  const providerUrl = new URL(`${baseUrl}/${encodeURIComponent(videoId)}`);
   const incoming = new URL(request.url);
   incoming.searchParams.forEach((value, key) => {
     providerUrl.searchParams.append(key, value);
   });
 
-  let response: Response;
   try {
-    response = await fetch(providerUrl.toString(), {
+    return await fetch(providerUrl.toString(), {
       method: "GET",
       headers: {
         Accept: "application/json",
@@ -107,6 +129,79 @@ export async function fetchVideoTranscriptServer(
       "Transcript provider request failed.",
     );
   }
+}
+
+function recentlyEnqueued(videoId: string): boolean {
+  const cache = getEnqueueCache();
+  const expiresAt = cache.get(videoId);
+  if (!expiresAt) return false;
+  if (Date.now() >= expiresAt) {
+    cache.delete(videoId);
+    return false;
+  }
+  return true;
+}
+
+function markEnqueued(videoId: string) {
+  const cache = getEnqueueCache();
+  cache.set(videoId, Date.now() + ENQUEUE_COOLDOWN_MS);
+}
+
+async function enqueueProviderTranscript(baseUrl: string, apiKey: string, videoId: string): Promise<boolean> {
+  const endpoint = `${baseUrl}/enqueue`;
+  const payloadCandidates: Array<Record<string, unknown>> = [
+    { video_ids: [videoId] },
+    { video_id: videoId },
+  ];
+
+  for (let idx = 0; idx < payloadCandidates.length; idx += 1) {
+    const body = payloadCandidates[idx];
+    let response: Response;
+    try {
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "X-Api-Key": apiKey,
+        },
+        body: JSON.stringify(body),
+        cache: "no-store",
+        next: { revalidate: 0 },
+      });
+    } catch {
+      return false;
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      throw new TranscriptProviderError(
+        "provider_auth_failed",
+        "Transcript provider authorization failed.",
+        response.status,
+      );
+    }
+    if (response.ok || response.status === 409) {
+      return true;
+    }
+
+    const isValidationError = response.status === 400 || response.status === 404 || response.status === 422;
+    if (idx < payloadCandidates.length - 1 && isValidationError) {
+      continue;
+    }
+  }
+
+  return false;
+}
+
+export async function fetchVideoTranscriptServer(
+  videoId: string,
+  request = new Request(`https://verox.cz/api/transcript/${encodeURIComponent(videoId)}`),
+): Promise<TranscriptResponse | null> {
+  const normalized = videoId.trim();
+  if (!normalized) return null;
+
+  const { baseUrl, apiKey } = resolveTranscriptProviderConfig();
+  const response = await fetchProviderTranscript(baseUrl, apiKey, normalized, request);
 
   if (response.status === 401 || response.status === 403) {
     throw new TranscriptProviderError(
@@ -116,6 +211,14 @@ export async function fetchVideoTranscriptServer(
     );
   }
   if (response.status === 404) {
+    if (recentlyEnqueued(normalized)) {
+      return processingEnvelope(normalized);
+    }
+    const enqueued = await enqueueProviderTranscript(baseUrl, apiKey, normalized);
+    if (enqueued) {
+      markEnqueued(normalized);
+      return processingEnvelope(normalized);
+    }
     return unavailableEnvelope(normalized);
   }
   if (!response.ok) {
@@ -142,6 +245,17 @@ export async function fetchVideoTranscriptServer(
       "provider_invalid_response",
       "Transcript provider payload does not match transcript contract.",
     );
+  }
+
+  if (payload.status === "unavailable") {
+    if (recentlyEnqueued(normalized)) {
+      return processingEnvelope(normalized);
+    }
+    const enqueued = await enqueueProviderTranscript(baseUrl, apiKey, normalized);
+    if (enqueued) {
+      markEnqueued(normalized);
+      return processingEnvelope(normalized);
+    }
   }
 
   return payload;
