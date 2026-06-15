@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { DeleteAccountPanel } from "@/components/auth/DeleteAccountPanel";
+import { MyVeroxAccountSettings } from "@/components/viewer/MyVeroxAccountSettings";
 import { MujVeroxAuthorStudio } from "@/components/nazory/MujVeroxAuthorStudio";
 import { MyVeroxEngagement } from "@/components/viewer/MyVeroxEngagement";
 import { MyVeroxLibrary } from "@/components/viewer/MyVeroxLibrary";
@@ -322,6 +323,8 @@ export function MujVeroxTemplate() {
       </div>
 
       <DeleteAccountPanel />
+
+      <MyVeroxAccountSettings />
 
       <div className="vx-strip w75">
         <span />
