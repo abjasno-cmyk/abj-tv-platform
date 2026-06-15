@@ -147,25 +147,127 @@ function markEnqueued(videoId: string) {
   cache.set(videoId, Date.now() + ENQUEUE_COOLDOWN_MS);
 }
 
+function normalizeProviderStatus(value: unknown): TranscriptResponse["status"] | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "queued" || normalized === "pending" || normalized === "processing") return "processing";
+  if (normalized === "ready") return "ready";
+  if (normalized === "not_ready_live") return "not_ready_live";
+  if (normalized === "unavailable") return "unavailable";
+  return null;
+}
+
+function extractStatusFromStatusPayload(payload: unknown, videoId: string): TranscriptResponse["status"] | null {
+  if (!payload || typeof payload !== "object") return null;
+  if (Array.isArray(payload)) {
+    for (const row of payload) {
+      if (!row || typeof row !== "object" || Array.isArray(row)) continue;
+      const entry = row as Record<string, unknown>;
+      const candidateId =
+        typeof entry.video_id === "string"
+          ? entry.video_id.trim()
+          : typeof entry.videoId === "string"
+            ? entry.videoId.trim()
+            : typeof entry.id === "string"
+              ? entry.id.trim()
+              : "";
+      if (candidateId && candidateId !== videoId) continue;
+      const status = normalizeProviderStatus(entry.status);
+      if (status) return status;
+    }
+    return null;
+  }
+
+  const root = payload as Record<string, unknown>;
+  const nestedCandidates = [root.videos, root.items, root.results, root.data];
+  for (const nested of nestedCandidates) {
+    const status = extractStatusFromStatusPayload(nested, videoId);
+    if (status) return status;
+  }
+
+  const directByVideoId = root[videoId];
+  if (directByVideoId && typeof directByVideoId === "object" && !Array.isArray(directByVideoId)) {
+    const status = normalizeProviderStatus((directByVideoId as Record<string, unknown>).status);
+    if (status) return status;
+  }
+
+  return normalizeProviderStatus(root.status);
+}
+
+async function fetchProviderStatus(baseUrl: string, apiKey: string, videoId: string): Promise<TranscriptResponse["status"] | null> {
+  const statusUrl = new URL(`${baseUrl}/status`);
+  statusUrl.searchParams.set("video_ids", videoId);
+
+  let response: Response;
+  try {
+    response = await fetch(statusUrl.toString(), {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "X-Api-Key": apiKey,
+      },
+      cache: "no-store",
+      next: { revalidate: 0 },
+    });
+  } catch {
+    return null;
+  }
+
+  if (response.status === 401 || response.status === 403) {
+    throw new TranscriptProviderError(
+      "provider_auth_failed",
+      "Transcript provider authorization failed.",
+      response.status,
+    );
+  }
+  if (!response.ok) return null;
+
+  let payload: unknown;
+  try {
+    payload = (await response.json()) as unknown;
+  } catch {
+    return null;
+  }
+
+  return extractStatusFromStatusPayload(payload, videoId);
+}
+
 async function enqueueProviderTranscript(baseUrl: string, apiKey: string, videoId: string): Promise<boolean> {
   const endpoint = `${baseUrl}/enqueue`;
-  const payloadCandidates: Array<Record<string, unknown>> = [
-    { video_ids: [videoId] },
-    { video_id: videoId },
+  const endpointWithVideoIds = `${endpoint}?video_ids=${encodeURIComponent(videoId)}`;
+  const endpointWithVideoId = `${endpoint}?video_id=${encodeURIComponent(videoId)}`;
+
+  const requestCandidates: Array<{
+    url: string;
+    body?: string;
+    contentType?: string;
+  }> = [
+    { url: endpointWithVideoIds },
+    { url: endpointWithVideoId },
+    { url: endpoint, body: JSON.stringify({ video_ids: [videoId] }), contentType: "application/json" },
+    { url: endpoint, body: JSON.stringify({ video_ids: videoId }), contentType: "application/json" },
+    { url: endpoint, body: JSON.stringify({ video_id: videoId }), contentType: "application/json" },
+    { url: endpoint, body: JSON.stringify({ videoIds: [videoId] }), contentType: "application/json" },
+    { url: endpoint, body: JSON.stringify({ videoId: videoId }), contentType: "application/json" },
+    { url: endpoint, body: `video_ids=${encodeURIComponent(videoId)}`, contentType: "application/x-www-form-urlencoded" },
   ];
 
-  for (let idx = 0; idx < payloadCandidates.length; idx += 1) {
-    const body = payloadCandidates[idx];
+  for (let idx = 0; idx < requestCandidates.length; idx += 1) {
+    const candidate = requestCandidates[idx];
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+      "X-Api-Key": apiKey,
+    };
+    if (candidate.contentType) {
+      headers["Content-Type"] = candidate.contentType;
+    }
+
     let response: Response;
     try {
-      response = await fetch(endpoint, {
+      response = await fetch(candidate.url, {
         method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          "X-Api-Key": apiKey,
-        },
-        body: JSON.stringify(body),
+        headers,
+        body: candidate.body,
         cache: "no-store",
         next: { revalidate: 0 },
       });
@@ -185,7 +287,7 @@ async function enqueueProviderTranscript(baseUrl: string, apiKey: string, videoI
     }
 
     const isValidationError = response.status === 400 || response.status === 404 || response.status === 422;
-    if (idx < payloadCandidates.length - 1 && isValidationError) {
+    if (idx < requestCandidates.length - 1 && isValidationError) {
       continue;
     }
   }
@@ -250,6 +352,17 @@ export async function fetchVideoTranscriptServer(
   if (payload.status === "unavailable") {
     if (recentlyEnqueued(normalized)) {
       return processingEnvelope(normalized);
+    }
+    const statusFromProvider = await fetchProviderStatus(baseUrl, apiKey, normalized);
+    if (statusFromProvider === "processing") {
+      markEnqueued(normalized);
+      return processingEnvelope(normalized);
+    }
+    if (statusFromProvider === "not_ready_live") {
+      return {
+        ...processingEnvelope(normalized),
+        status: "not_ready_live",
+      };
     }
     const enqueued = await enqueueProviderTranscript(baseUrl, apiKey, normalized);
     if (enqueued) {
