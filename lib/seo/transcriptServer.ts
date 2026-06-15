@@ -8,7 +8,11 @@ import type { TranscriptResponse } from "@/lib/transcriptTypes";
 const TRANSCRIPT_FETCH_TIMEOUT_MS = 4_000;
 
 async function fetchTranscriptUpstream(videoId: string): Promise<TranscriptResponse | null> {
-  return fetchVideoTranscriptServer(videoId);
+  try {
+    return await fetchVideoTranscriptServer(videoId);
+  } catch {
+    return null;
+  }
 }
 
 async function fetchTranscriptWithTimeout(videoId: string): Promise<TranscriptResponse | null> {

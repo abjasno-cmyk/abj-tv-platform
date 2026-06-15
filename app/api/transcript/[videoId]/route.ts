@@ -1,5 +1,5 @@
-import { fetchVideoTranscriptServer } from "@/lib/transcriptFetchServer";
-import { isValidYouTubeVideoId } from "@/lib/viewer/videoPageServer";
+import { fetchVideoTranscriptServer, TranscriptProviderError } from "@/lib/transcriptFetchServer";
+import type { TranscriptResponse } from "@/lib/transcriptTypes";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +10,7 @@ type RouteContext = {
 async function resolveVideoId(context: RouteContext): Promise<string | null> {
   const resolved = await Promise.resolve(context.params);
   const raw = resolved.videoId?.trim();
-  if (!raw || !isValidYouTubeVideoId(raw)) return null;
+  if (!raw || !/^[A-Za-z0-9_-]{11}$/.test(raw)) return null;
   return raw;
 }
 
@@ -20,7 +20,22 @@ export async function GET(request: Request, context: RouteContext) {
     return Response.json({ error: "Invalid video id." }, { status: 400 });
   }
 
-  const payload = await fetchVideoTranscriptServer(videoId, request);
+  let payload: TranscriptResponse | null;
+  try {
+    payload = await fetchVideoTranscriptServer(videoId, request);
+  } catch (error) {
+    if (error instanceof TranscriptProviderError) {
+      if (error.code === "provider_config_missing") {
+        return Response.json({ error: "Transcript provider is not configured." }, { status: 503 });
+      }
+      if (error.code === "provider_auth_failed") {
+        return Response.json({ error: "Transcript provider authorization failed." }, { status: 503 });
+      }
+      return Response.json({ error: "Transcript provider is unavailable." }, { status: 502 });
+    }
+    return Response.json({ error: "Transcript request failed." }, { status: 502 });
+  }
+
   if (!payload) {
     return Response.json(
       {

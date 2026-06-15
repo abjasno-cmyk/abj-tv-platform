@@ -1,126 +1,243 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
-import { fetchVideoTranscriptServer } from "@/lib/transcriptFetchServer";
-import type { TranscriptResponse } from "@/lib/transcriptTypes";
-
-vi.mock("@/lib/programFeedProxy", () => ({
-  buildTranscriptUrlCandidates: vi.fn(() => ["https://feed.example/transcript/abc123XYZ-_"]),
-  fetchTranscriptUpstream: vi.fn(),
-  resolveFeedApiKey: vi.fn(() => "test-key"),
-}));
-
 vi.mock("@/lib/transcriptYouTubeFallback", () => ({
-  fetchYouTubeTranscriptResponse: vi.fn(),
+  fetchYouTubeTranscriptResponse: vi.fn(async () => null),
 }));
 
-import { fetchTranscriptUpstream } from "@/lib/programFeedProxy";
+import { fetchVideoTranscriptServer, TranscriptProviderError } from "@/lib/transcriptFetchServer";
 import { fetchYouTubeTranscriptResponse } from "@/lib/transcriptYouTubeFallback";
-
-const mockedFetchTranscriptUpstream = vi.mocked(fetchTranscriptUpstream);
-const mockedFetchYouTube = vi.mocked(fetchYouTubeTranscriptResponse);
-
-function jsonResponse(payload: TranscriptResponse, status = 200): Response {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
 
 describe("fetchVideoTranscriptServer", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.VEROX_TRANSCRIPTS_BASE_URL = "https://attached-assets-abjasno.replit.app/transcripts/verox-news";
+    process.env.VEROX_TRANSCRIPTS_API_KEY = "test-provider-key";
+    delete process.env.FEED_API_KEY;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    delete process.env.VEROX_TRANSCRIPTS_BASE_URL;
+    delete process.env.VEROX_TRANSCRIPTS_API_KEY;
+    delete process.env.FEED_API_KEY;
   });
 
-  it("returns ready upstream transcript without calling YouTube fallback", async () => {
-    mockedFetchTranscriptUpstream.mockResolvedValue({
-      response: jsonResponse({
-        video_id: "abc123XYZ-_",
-        status: "ready",
-        transcript: "Hotový přepis z feedu.",
-        transcript_at: "2026-06-12T10:00:00.000Z",
-        transcript_original: null,
-        source_lang: null,
-      }),
-      resolvedUrl: "https://feed.example/transcript/abc123XYZ-_",
-      upstreamAttempts: [],
-      lastNetworkError: null,
-    });
+  it("returns ready provider transcript and maps transcript_orig", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          video_id: "abc123XYZ-_",
+          status: "ready",
+          transcript: "Hotový přepis z provideru.",
+          transcript_orig: "Original transcript text.",
+          transcript_at: "2026-06-12T10:00:00.000Z",
+          source_lang: "en",
+          char_count: 1234,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
 
     const result = await fetchVideoTranscriptServer("abc123XYZ-_");
     expect(result?.status).toBe("ready");
-    expect(result?.transcript).toContain("feedu");
-    expect(mockedFetchYouTube).not.toHaveBeenCalled();
+    expect(result?.transcript).toContain("provideru");
+    expect(result?.transcript_original).toBe("Original transcript text.");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps processing upstream response for polling", async () => {
-    mockedFetchTranscriptUpstream.mockResolvedValue({
-      response: jsonResponse({
-        video_id: "abc123XYZ-_",
-        status: "processing",
-        transcript: null,
-        transcript_at: null,
-        transcript_original: null,
-        source_lang: null,
-      }),
-      resolvedUrl: "https://feed.example/transcript/abc123XYZ-_",
-      upstreamAttempts: [],
-      lastNetworkError: null,
-    });
+  it("maps queued provider status to processing", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          video_id: "abc123XYZ-_",
+          status: "queued",
+          transcript: null,
+          transcript_at: null,
+          transcript_orig: null,
+          source_lang: null,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
 
     const result = await fetchVideoTranscriptServer("abc123XYZ-_");
     expect(result?.status).toBe("processing");
-    expect(mockedFetchYouTube).not.toHaveBeenCalled();
   });
 
-  it("falls back to YouTube when upstream transcript is unavailable", async () => {
-    mockedFetchTranscriptUpstream.mockResolvedValue({
-      response: jsonResponse({
-        video_id: "abc123XYZ-_",
-        status: "unavailable",
-        transcript: null,
-        transcript_at: null,
-        transcript_original: null,
-        source_lang: null,
-      }),
-      resolvedUrl: "https://feed.example/transcript/abc123XYZ-_",
-      upstreamAttempts: [],
-      lastNetworkError: null,
-    });
-    mockedFetchYouTube.mockResolvedValue({
-      video_id: "abc123XYZ-_",
-      status: "ready",
-      transcript: "Přepis z YouTube.",
-      transcript_at: "2026-06-12T11:00:00.000Z",
-      transcript_original: null,
-      source_lang: null,
+  it("returns processing when provider reports unavailable but status is processing", async () => {
+    let callCount = 0;
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      callCount += 1;
+      const url = String(input);
+      if (url.endsWith("/dQw4w9WgXcQ")) {
+        return new Response(
+          JSON.stringify({
+            video_id: "dQw4w9WgXcQ",
+            status: "unavailable",
+            transcript: null,
+            transcript_at: null,
+            transcript_orig: null,
+            source_lang: null,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (url.includes("/status?")) {
+        return new Response(
+          JSON.stringify({
+            items: [
+              {
+                video_id: "dQw4w9WgXcQ",
+                status: "processing",
+                has_transcript: false,
+              },
+            ],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      return new Response("not found", { status: 404 });
     });
 
-    const result = await fetchVideoTranscriptServer("abc123XYZ-_");
-    expect(mockedFetchYouTube).toHaveBeenCalledWith("abc123XYZ-_");
-    expect(result?.transcript).toBe("Přepis z YouTube.");
-  });
-
-  it("falls back to YouTube when upstream hosts all return 404", async () => {
-    mockedFetchTranscriptUpstream.mockResolvedValue({
-      response: null,
-      resolvedUrl: "",
-      upstreamAttempts: ["https://feed.example/transcript/abc123XYZ-_ => 404"],
-      lastNetworkError: null,
-    });
-    mockedFetchYouTube.mockResolvedValue({
-      video_id: "abc123XYZ-_",
-      status: "ready",
-      transcript: "Záložní přepis.",
+    const result = await fetchVideoTranscriptServer("dQw4w9WgXcQ");
+    expect(result).toEqual({
+      video_id: "dQw4w9WgXcQ",
+      status: "processing",
+      transcript: null,
       transcript_at: null,
       transcript_original: null,
       source_lang: null,
     });
+    expect(callCount).toBe(2);
+    expect(fetchMock.mock.calls.every(([input]) => !String(input).includes("/enqueue"))).toBe(true);
+  });
 
-    const result = await fetchVideoTranscriptServer("abc123XYZ-_");
-    expect(result?.transcript).toBe("Záložní přepis.");
+  it("returns processing for 404 transcript when status endpoint returns unknown", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response("not found", { status: 404 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            items: [{ video_id: "5Qou0b8fPwQ", status: "unknown", has_transcript: false }],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      );
+
+    const result = await fetchVideoTranscriptServer("5Qou0b8fPwQ");
+    expect(result).toEqual({
+      video_id: "5Qou0b8fPwQ",
+      status: "processing",
+      transcript: null,
+      transcript_at: null,
+      transcript_original: null,
+      source_lang: null,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns unavailable envelope when provider returns 404", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response("not found", { status: 404 }))
+      .mockResolvedValueOnce(new Response("not found", { status: 404 }));
+
+    const result = await fetchVideoTranscriptServer("a1b2c3d4e5F");
+    expect(result).toEqual({
+      video_id: "a1b2c3d4e5F",
+      status: "unavailable",
+      transcript: null,
+      transcript_at: null,
+      transcript_original: null,
+      source_lang: null,
+    });
+    expect(fetchMock).toHaveBeenCalled();
+  });
+
+  it("falls back to legacy upstream when provider stays unavailable", async () => {
+    process.env.FEED_API_KEY = "legacy-feed-key";
+    const youtubeFallbackMock = vi.mocked(fetchYouTubeTranscriptResponse);
+    youtubeFallbackMock.mockResolvedValueOnce(null);
+
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("/transcripts/verox-news/dQw4w9WgXcQ")) {
+        return new Response(
+          JSON.stringify({
+            video_id: "dQw4w9WgXcQ",
+            status: "unavailable",
+            transcript: null,
+            transcript_at: null,
+            transcript_orig: null,
+            source_lang: null,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (url.includes("/transcripts/verox-news/status?")) {
+        return new Response(
+          JSON.stringify({
+            items: [{ video_id: "dQw4w9WgXcQ", status: "unavailable", has_transcript: false }],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (url.includes("/transcript/dQw4w9WgXcQ")) {
+        return new Response(
+          JSON.stringify({
+            video_id: "dQw4w9WgXcQ",
+            status: "ready",
+            transcript: "Legacy upstream transcript is available.",
+            transcript_at: "2026-06-15T11:30:00.000Z",
+            transcript_original: null,
+            source_lang: "cs",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      return new Response("not found", { status: 404 });
+    });
+
+    const result = await fetchVideoTranscriptServer("dQw4w9WgXcQ");
+    expect(result).toEqual({
+      video_id: "dQw4w9WgXcQ",
+      status: "ready",
+      transcript: "Legacy upstream transcript is available.",
+      transcript_at: "2026-06-15T11:30:00.000Z",
+      transcript_original: null,
+      source_lang: "cs",
+    });
+    expect(fetchMock.mock.calls.every(([input]) => !String(input).includes("/enqueue"))).toBe(true);
+  });
+
+  it("throws config error when provider env vars are missing", async () => {
+    delete process.env.VEROX_TRANSCRIPTS_BASE_URL;
+    delete process.env.VEROX_TRANSCRIPTS_API_KEY;
+
+    await expect(fetchVideoTranscriptServer("abc123XYZ-_")).rejects.toMatchObject<
+      Partial<TranscriptProviderError>
+    >({
+      code: "provider_config_missing",
+    });
+  });
+
+  it("throws auth error when provider returns 403", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("forbidden", { status: 403 }),
+    );
+
+    await expect(fetchVideoTranscriptServer("abc123XYZ-_")).rejects.toMatchObject<
+      Partial<TranscriptProviderError>
+    >({
+      code: "provider_auth_failed",
+      providerStatus: 403,
+    });
   });
 });
