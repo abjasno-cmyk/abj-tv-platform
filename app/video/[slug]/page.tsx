@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { JsonLd } from "@/components/seo/JsonLd";
 import { VideoSeoPageContent } from "@/components/seo/VideoSeoPageContent";
+import { resolveChannelSlugForName } from "@/lib/seo/channelPageData";
 import { buildVideoPageJsonLd } from "@/lib/seo/jsonLd";
 import { parseVideoSlug, videoSeoPath } from "@/lib/seo/slug";
 import { loadCachedVideoTranscript } from "@/lib/seo/transcriptServer";
@@ -58,9 +59,10 @@ export default async function VideoSeoPage({ params }: PageProps) {
   const video = await loadVideoSeoRecord(parsed.videoId);
   if (!video?.slug || video.slug !== slug.trim()) notFound();
 
-  const [relatedVideos, transcript] = await Promise.all([
+  const [relatedVideos, transcript, channelSlug] = await Promise.all([
     loadRelatedChannelVideos(video.channelName, video.videoId),
     loadCachedVideoTranscript(video.videoId),
+    resolveChannelSlugForName(video.channelName),
   ]);
 
   const transcriptText =
@@ -70,12 +72,18 @@ export default async function VideoSeoPage({ params }: PageProps) {
     video,
     pageUrl,
     transcriptExcerpt: transcriptText,
+    channelSlug,
   });
 
   return (
     <>
       <JsonLd data={jsonLd} />
-      <VideoSeoPageContent video={video} relatedVideos={relatedVideos} transcriptText={transcriptText} />
+      <VideoSeoPageContent
+        video={video}
+        relatedVideos={relatedVideos}
+        transcriptText={transcriptText}
+        channelSlug={channelSlug}
+      />
     </>
   );
 }

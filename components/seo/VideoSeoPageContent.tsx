@@ -3,6 +3,7 @@ import Link from "next/link";
 import { VideoSeoTranscriptExpand } from "@/components/seo/VideoSeoTranscriptExpand";
 import { YouTubeEmbed } from "@/components/seo/YouTubeEmbed";
 import { splitTranscriptParagraphs, truncateTranscriptForSsr } from "@/lib/seo/escape";
+import { channelSeoPath } from "@/lib/seo/channelSlug";
 import { videoSeoPath } from "@/lib/seo/slug";
 import type { RelatedVideoSeo, VideoSeoRecord } from "@/lib/seo/videoPageData";
 import { videoSharePath } from "@/lib/viewer/videoMetadata";
@@ -23,9 +24,12 @@ type VideoSeoPageContentProps = {
   video: VideoSeoRecord;
   relatedVideos: RelatedVideoSeo[];
   transcriptText: string | null;
+  channelSlug?: string | null;
 };
 
-export function VideoSeoPageContent({ video, relatedVideos, transcriptText }: VideoSeoPageContentProps) {
+export function VideoSeoPageContent({ video, relatedVideos, transcriptText, channelSlug }: VideoSeoPageContentProps) {
+  const channelHref = channelSlug ? channelSeoPath(channelSlug) : "/kanaly";
+  const channelLabel = video.channelName || "Kanály";
   const transcript = transcriptText?.trim() ?? "";
   const transcriptParts = transcript
     ? truncateTranscriptForSsr(transcript)
@@ -39,7 +43,7 @@ export function VideoSeoPageContent({ video, relatedVideos, transcriptText }: Vi
       <nav className="seo-breadcrumbs" aria-label="Drobečková navigace">
         <Link href="/">Verox</Link>
         <span aria-hidden="true"> / </span>
-        <Link href="/kanaly">{video.channelName || "Kanály"}</Link>
+        <Link href={channelHref}>{channelLabel}</Link>
         <span aria-hidden="true"> / </span>
         <span>{video.title}</span>
       </nav>
