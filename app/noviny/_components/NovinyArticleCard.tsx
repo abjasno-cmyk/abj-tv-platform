@@ -7,7 +7,7 @@ import {
   getArticleSummaryBullets,
   getDisplayTags,
   getVisibleArticleTitle,
-  isCzechOrSlovak,
+  shouldUseAutoTranslation,
   sourceLabel,
 } from "@/lib/noviny/public";
 import type { NovinyArticleWithRelations } from "@/lib/noviny/types";
@@ -22,7 +22,7 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
   const author = getArticleAuthor(article);
   const tags = getDisplayTags(article);
   const bullets = getArticleSummaryBullets(article);
-  const translatedView = !isCzechOrSlovak(article.language);
+  const translatedView = shouldUseAutoTranslation(article);
   const outboundUrl = translatedView ? buildTranslateToCzechUrl(article.original_url) : article.original_url;
   const outboundLabel = translatedView ? "Otevřít originál (automatický CZ překlad)" : "Přejít na původní článek";
 

@@ -217,7 +217,7 @@ export async function listPublicNovinyArticles(
 
   const [sourcesRes, categoriesRes] = await Promise.all([
     sourceIds.length > 0
-      ? supabase.from("noviny_sources").select("id,name,slug,homepage_url").in("id", sourceIds)
+      ? supabase.from("noviny_sources").select("id,name,slug,homepage_url,language,country").in("id", sourceIds)
       : Promise.resolve({ data: [], error: null }),
     categoryIds.length > 0
       ? supabase.from("noviny_categories").select("id,slug,name").in("id", categoryIds)
@@ -270,7 +270,7 @@ export async function listAdminNovinyArticles(
 
   const [sourcesRes, categoriesRes] = await Promise.all([
     sourceIds.length > 0
-      ? supabase.from("noviny_sources").select("id,name,slug,homepage_url").in("id", sourceIds)
+      ? supabase.from("noviny_sources").select("id,name,slug,homepage_url,language,country").in("id", sourceIds)
       : Promise.resolve({ data: [], error: null }),
     categoryIds.length > 0
       ? supabase.from("noviny_categories").select("id,slug,name").in("id", categoryIds)

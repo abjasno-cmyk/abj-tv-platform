@@ -6,6 +6,8 @@ import {
   getVisibleArticlePerex,
   getVisibleArticleTitle,
   isCzechOrSlovak,
+  languagePriority,
+  shouldUseAutoTranslation,
 } from "@/lib/noviny/public";
 
 describe("noviny public text rendering", () => {
@@ -30,6 +32,15 @@ describe("noviny public text rendering", () => {
     expect(isCzechOrSlovak("sk")).toBe(true);
     expect(isCzechOrSlovak("en")).toBe(false);
     expect(buildTranslateToCzechUrl("https://example.com/a b")).toContain("tl=cs");
+    expect(languagePriority("cs")).toBe(0);
+    expect(languagePriority("sk")).toBe(1);
+    expect(languagePriority("en")).toBe(2);
+    expect(
+      shouldUseAutoTranslation({
+        language: "en",
+        source: { id: "s1", name: "X", slug: "x", homepage_url: null, language: "en", country: "US" },
+      }),
+    ).toBe(true);
   });
 
   it("returns 3-5 summary bullets", () => {

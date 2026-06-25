@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 
 import { NovinyArticleCard } from "@/app/noviny/_components/NovinyArticleCard";
-import { getVisibleArticlePerex, getVisibleArticleTitle, isCzechOrSlovak } from "@/lib/noviny/public";
+import {
+  getVisibleArticlePerex,
+  getVisibleArticleTitle,
+  languagePriority,
+  resolveArticleLanguage,
+  shouldUseAutoTranslation,
+} from "@/lib/noviny/public";
 import { listPublicNovinyArticles, createNovinyPublicClient } from "@/lib/noviny/repository";
 import { rankNovinyArticles } from "@/lib/noviny/ranking";
 import { runNovinyImport } from "@/lib/noviny/importer";
@@ -28,7 +34,7 @@ export const metadata: Metadata = {
 async function localizeArticlesToCzech(articles: NovinyArticleWithRelations[]): Promise<NovinyArticleWithRelations[]> {
   return Promise.all(
     articles.map(async (article) => {
-      if (isCzechOrSlovak(article.language)) return article;
+      if (!shouldUseAutoTranslation(article)) return article;
       if (article.edited_title?.trim() || article.edited_perex?.trim()) return article;
 
       const titleInput = getVisibleArticleTitle(article);
@@ -45,6 +51,20 @@ async function localizeArticlesToCzech(articles: NovinyArticleWithRelations[]): 
       };
     }),
   );
+}
+
+function applyLanguageHierarchy(ranked: ReturnType<typeof rankNovinyArticles>) {
+  return [...ranked].sort((a, b) => {
+    const langA = resolveArticleLanguage(a);
+    const langB = resolveArticleLanguage(b);
+    const pA = languagePriority(langA);
+    const pB = languagePriority(langB);
+    if (pA !== pB) return pA - pB;
+    if (b.ranking.total !== a.ranking.total) return b.ranking.total - a.ranking.total;
+    const tsA = new Date(a.published_at ?? 0).getTime();
+    const tsB = new Date(b.published_at ?? 0).getTime();
+    return tsB - tsA;
+  });
 }
 
 export default async function NovinyPage() {
@@ -69,7 +89,7 @@ export default async function NovinyPage() {
   }
 
   const localizedArticles = await localizeArticlesToCzech(articles);
-  const ranked = rankNovinyArticles(localizedArticles);
+  const ranked = applyLanguageHierarchy(rankNovinyArticles(localizedArticles));
   const lead = ranked[0] ?? null;
   const secondary = ranked.slice(1, 5);
   const deepRead = ranked.slice(5, 24);
