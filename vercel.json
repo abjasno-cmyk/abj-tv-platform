@@ -18,6 +18,10 @@
     {
       "path": "/api/noviny/context/analyze",
       "schedule": "7 * * * *"
+    },
+    {
+      "path": "/api/noviny/enrich",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

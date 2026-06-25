@@ -8,7 +8,6 @@ import {
   getArticleAuthor,
   getArticlePreviewDescription,
   getArticlePreviewTitle,
-  getArticleSummaryBullets,
   getDisplayTags,
   getVisibleArticlePerex,
   getVisibleArticleTitle,
@@ -29,9 +28,11 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
   const perex = getVisibleArticlePerex(article);
   const author = getArticleAuthor(article);
   const tags = Array.from(new Set([...getDisplayTags(article), ...(article.context?.suggested_tags ?? [])])).slice(0, 8);
-  const bullets = getArticleSummaryBullets(article);
-  const contextSummary = article.context?.safe_attribution ?? article.context?.short_summary ?? null;
-  const whyImportant = article.context?.why_important ?? null;
+  const approvedEnrichment = article.enrichment?.ai_status === "approved" ? article.enrichment : null;
+  const bullets = approvedEnrichment?.ai_summary_5_points ?? [];
+  const enrichmentAttribution = approvedEnrichment
+    ? `Podle serveru ${article.source?.name ?? "původního zdroje"} článek uvádí:`
+    : null;
   const shareUrl = `${SITE_URL}/noviny#noviny-article-${article.id}`;
   const previewImageUrl = article.image_url ? article.image_url.replace(/"/g, "%22") : null;
   let articleHost = "";
@@ -80,14 +81,6 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
         </p>
       ) : null}
 
-      {contextSummary || whyImportant ? (
-        <section className="mt-3 rounded-2xl border border-[#FF6A00]/20 bg-[#FF6A00]/5 p-3 text-sm leading-6 text-abj-text1/90">
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#B04A00]">Kontext</p>
-          {contextSummary ? <p className="mt-1">{contextSummary}</p> : null}
-          {!compact && whyImportant ? <p className="mt-2 text-abj-text2">{whyImportant}</p> : null}
-        </section>
-      ) : null}
-
       {tags.length > 0 ? (
         <ul className="mt-3 flex flex-wrap gap-2">
           {tags.map((tag) => (
@@ -101,15 +94,21 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
         </ul>
       ) : null}
 
-      {bullets.length > 0 ? (
-        <ul className={`mt-3 space-y-2 text-abj-text1/90 ${compact ? "text-sm md:text-base" : "text-base md:text-lg"}`}>
-          {bullets.slice(0, compact ? 3 : 5).map((bullet) => (
-            <li key={`${article.id}-${bullet.slice(0, 24)}`} className="flex gap-2 leading-7">
-              <span className="mt-[0.45rem] h-1.5 w-1.5 flex-none rounded-full bg-[#FF6A00]" aria-hidden="true" />
-              <span>{bullet}</span>
-            </li>
-          ))}
-        </ul>
+      {approvedEnrichment && bullets.length === 5 && enrichmentAttribution ? (
+        <section className="mt-3 rounded-2xl border border-[#FF6A00]/20 bg-[#FF6A00]/5 p-3">
+          <p className="text-sm font-semibold text-[#B04A00]">{enrichmentAttribution}</p>
+          <ul className={`mt-2 space-y-2 text-abj-text1/90 ${compact ? "text-sm md:text-base" : "text-base md:text-lg"}`}>
+            {bullets.map((bullet) => (
+              <li key={`${article.id}-${bullet.slice(0, 24)}`} className="flex gap-2 leading-7">
+                <span className="mt-[0.45rem] h-1.5 w-1.5 flex-none rounded-full bg-[#FF6A00]" aria-hidden="true" />
+                <span>{bullet}</span>
+              </li>
+            ))}
+          </ul>
+          {approvedEnrichment.ai_why_it_matters && !compact ? (
+            <p className="mt-3 text-sm leading-6 text-abj-text2">{approvedEnrichment.ai_why_it_matters}</p>
+          ) : null}
+        </section>
       ) : null}
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -120,7 +119,7 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
           rel="noopener noreferrer nofollow"
           className="inline-flex min-h-11 items-center rounded-xl border border-[#FF6A00]/40 bg-[#FF6A00]/10 px-4 py-2 text-base font-bold text-[#B04A00] hover:bg-[#FF6A00]/15"
         >
-          Přejít na původní článek
+          Číst původní článek
         </Link>
       </div>
       <NovinyArticleActions

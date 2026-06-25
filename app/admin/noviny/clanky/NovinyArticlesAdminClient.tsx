@@ -134,6 +134,52 @@ export function NovinyArticlesAdminClient() {
     }
   };
 
+  const enrichArticle = async (article: NovinyArticleWithRelations) => {
+    setPendingId(article.id);
+    setError(null);
+    setStatus(null);
+    try {
+      const response = await fetch(`/api/admin/noviny/articles/${encodeURIComponent(article.id)}/enrich`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const payload = (await response.json().catch(() => ({}))) as { result?: string; error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Obohacení článku selhalo.");
+      }
+      setStatus(`Enrichment dokončen se stavem: ${payload.result ?? "neznámý"}.`);
+      await load();
+    } catch (enrichError) {
+      setError(enrichError instanceof Error ? enrichError.message : "Obohacení článku selhalo.");
+    } finally {
+      setPendingId(null);
+    }
+  };
+
+  const setEnrichmentStatus = async (article: NovinyArticleWithRelations, aiStatus: "approved" | "rejected") => {
+    setPendingId(article.id);
+    setError(null);
+    setStatus(null);
+    try {
+      const response = await fetch(`/api/admin/noviny/articles/${encodeURIComponent(article.id)}/enrichment`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aiStatus }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Stav AI shrnutí se nepodařilo uložit.");
+      }
+      setStatus(aiStatus === "approved" ? "AI shrnutí bylo schváleno." : "AI shrnutí bylo zamítnuto.");
+      await load();
+    } catch (statusError) {
+      setError(statusError instanceof Error ? statusError.message : "Stav AI shrnutí se nepodařilo uložit.");
+    } finally {
+      setPendingId(null);
+    }
+  };
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6">
       <nav className="text-sm text-abj-text2">
@@ -203,6 +249,77 @@ export function NovinyArticlesAdminClient() {
                   {article.source?.name ?? "Neznámý zdroj"} · {formatNovinyDate(article.published_at)}
                 </p>
                 <p className="mt-2 text-sm text-abj-text1/90">{getVisibleArticlePerex(article) ?? "Perex není vyplněn."}</p>
+
+                <section className="mt-3 rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.12em] text-abj-text2">Article enrichment</p>
+                      <p className="mt-1 text-sm text-abj-text1">
+                        Fetch: {article.enrichment?.fetch_status ?? "pending"} · AI: {article.enrichment?.ai_status ?? "pending"}
+                      </p>
+                      {article.enrichment?.extracted_text_length ? (
+                        <p className="text-xs text-abj-text2">
+                          Extrahováno znaků: {article.enrichment.extracted_text_length} · metoda:{" "}
+                          {article.enrichment.extraction_method ?? "—"}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={pendingId === article.id}
+                        onClick={() => {
+                          void enrichArticle(article);
+                        }}
+                        className="rounded-lg border border-[#FF6A00]/35 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[#B04A00] disabled:opacity-60"
+                      >
+                        {article.enrichment ? "Znovu obohatit" : "Obohatit článek"}
+                      </button>
+                      {article.enrichment?.ai_summary_5_points?.length === 5 ? (
+                        <>
+                          <button
+                            type="button"
+                            disabled={pendingId === article.id}
+                            onClick={() => {
+                              void setEnrichmentStatus(article, "approved");
+                            }}
+                            className="rounded-lg border border-[#2E6548]/35 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[#2E6548] disabled:opacity-60"
+                          >
+                            Schválit
+                          </button>
+                          <button
+                            type="button"
+                            disabled={pendingId === article.id}
+                            onClick={() => {
+                              void setEnrichmentStatus(article, "rejected");
+                            }}
+                            className="rounded-lg border border-[#D14A2A]/35 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[#B13A22] disabled:opacity-60"
+                          >
+                            Zamítnout
+                          </button>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                  {article.enrichment?.error_message ? (
+                    <p className="mt-2 text-sm text-[#D14A2A]">{article.enrichment.error_message}</p>
+                  ) : null}
+                  {article.enrichment?.ai_summary_5_points?.length ? (
+                    <div className="mt-3 rounded-lg bg-white p-3">
+                      <p className="text-sm font-semibold text-abj-text1">
+                        Podle serveru {article.source?.name ?? "původního zdroje"} článek uvádí:
+                      </p>
+                      <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-abj-text1/90">
+                        {article.enrichment.ai_summary_5_points.map((point) => (
+                          <li key={`${article.id}-${point.slice(0, 24)}`}>{point}</li>
+                        ))}
+                      </ul>
+                      {article.enrichment.ai_why_it_matters ? (
+                        <p className="mt-2 text-sm text-abj-text2">{article.enrichment.ai_why_it_matters}</p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </section>
 
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   <label className="space-y-1 text-sm">

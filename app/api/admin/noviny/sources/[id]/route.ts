@@ -15,6 +15,12 @@ type UpdatePayload = {
   categoryId?: unknown;
   allowImages?: unknown;
   legalNote?: unknown;
+  enrichmentEnabled?: unknown;
+  enrichmentMode?: unknown;
+  fetchDelaySeconds?: unknown;
+  maxArticlesPerDay?: unknown;
+  respectRobots?: unknown;
+  enrichmentNotes?: unknown;
   isActive?: unknown;
 };
 
@@ -22,6 +28,12 @@ function asTrimmedString(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function asPositiveInt(value: unknown, min: number, max: number): number | null {
+  const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
+  if (!Number.isFinite(parsed)) return null;
+  return Math.max(min, Math.min(max, Math.floor(parsed)));
 }
 
 export async function PATCH(
@@ -65,6 +77,25 @@ export async function PATCH(
     if (payload.categoryId !== undefined) updateInput.category_id = asTrimmedString(payload.categoryId);
     if (payload.allowImages !== undefined) updateInput.allow_images = payload.allowImages === true;
     if (payload.legalNote !== undefined) updateInput.legal_note = asTrimmedString(payload.legalNote);
+    if (payload.enrichmentEnabled !== undefined) updateInput.enrichment_enabled = payload.enrichmentEnabled === true;
+    if (payload.enrichmentMode !== undefined) {
+      if (payload.enrichmentMode !== "off" && payload.enrichmentMode !== "manual" && payload.enrichmentMode !== "automatic") {
+        return Response.json({ error: "Režim enrichmentu je neplatný." }, { status: 400 });
+      }
+      updateInput.enrichment_mode = payload.enrichmentMode;
+    }
+    if (payload.fetchDelaySeconds !== undefined) {
+      const value = asPositiveInt(payload.fetchDelaySeconds, 30, 3600);
+      if (value === null) return Response.json({ error: "fetchDelaySeconds je neplatné číslo." }, { status: 400 });
+      updateInput.fetch_delay_seconds = value;
+    }
+    if (payload.maxArticlesPerDay !== undefined) {
+      const value = asPositiveInt(payload.maxArticlesPerDay, 0, 500);
+      if (value === null) return Response.json({ error: "maxArticlesPerDay je neplatné číslo." }, { status: 400 });
+      updateInput.max_articles_per_day = value;
+    }
+    if (payload.respectRobots !== undefined) updateInput.respect_robots = payload.respectRobots === true;
+    if (payload.enrichmentNotes !== undefined) updateInput.enrichment_notes = asTrimmedString(payload.enrichmentNotes);
     if (payload.isActive !== undefined) updateInput.is_active = payload.isActive === true;
 
     if (Object.keys(updateInput).length === 0) {

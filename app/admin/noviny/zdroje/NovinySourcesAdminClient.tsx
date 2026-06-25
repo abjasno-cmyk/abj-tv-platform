@@ -20,6 +20,12 @@ type CreateSourceForm = {
   categoryId: string;
   allowImages: boolean;
   legalNote: string;
+  enrichmentEnabled: boolean;
+  enrichmentMode: "off" | "manual" | "automatic";
+  fetchDelaySeconds: string;
+  maxArticlesPerDay: string;
+  respectRobots: boolean;
+  enrichmentNotes: string;
 };
 
 const INITIAL_FORM: CreateSourceForm = {
@@ -31,6 +37,12 @@ const INITIAL_FORM: CreateSourceForm = {
   categoryId: "",
   allowImages: false,
   legalNote: "",
+  enrichmentEnabled: true,
+  enrichmentMode: "automatic",
+  fetchDelaySeconds: "45",
+  maxArticlesPerDay: "50",
+  respectRobots: true,
+  enrichmentNotes: "",
 };
 
 function formatDate(value: string | null): string {
@@ -165,6 +177,37 @@ export function NovinySourcesAdminClient() {
     }
   };
 
+  const saveEnrichmentSettings = async (source: NovinySourceRow, formData: FormData) => {
+    setPendingSourceId(source.id);
+    setError(null);
+    setStatus(null);
+    try {
+      const response = await fetch(`/api/admin/noviny/sources/${encodeURIComponent(source.id)}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          enrichmentEnabled: formData.get("enrichmentEnabled") === "on",
+          enrichmentMode: String(formData.get("enrichmentMode") ?? "automatic"),
+          fetchDelaySeconds: Number(formData.get("fetchDelaySeconds") ?? 45),
+          maxArticlesPerDay: Number(formData.get("maxArticlesPerDay") ?? 50),
+          respectRobots: formData.get("respectRobots") === "on",
+          enrichmentNotes: String(formData.get("enrichmentNotes") ?? ""),
+        }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Nastavení enrichmentu se nepodařilo uložit.");
+      }
+      setStatus("Nastavení enrichmentu bylo uloženo.");
+      await load();
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Nastavení enrichmentu se nepodařilo uložit.");
+    } finally {
+      setPendingSourceId(null);
+    }
+  };
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6">
       <nav className="text-sm text-abj-text2">
@@ -261,6 +304,65 @@ export function NovinySourcesAdminClient() {
             />
             U tohoto zdroje povolit import obrázků (jen pokud je to právně bezpečné)
           </label>
+          <div className="grid gap-3 rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel p-3 md:col-span-2 md:grid-cols-3">
+            <label className="inline-flex items-center gap-2 text-sm text-abj-text1">
+              <input
+                type="checkbox"
+                checked={form.enrichmentEnabled}
+                onChange={(event) => setForm((prev) => ({ ...prev, enrichmentEnabled: event.target.checked }))}
+              />
+              Povolit article enrichment
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="font-medium text-abj-text1">Režim enrichmentu</span>
+              <select
+                value={form.enrichmentMode}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, enrichmentMode: event.target.value as CreateSourceForm["enrichmentMode"] }))
+                }
+                className="w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2"
+              >
+                <option value="off">Vypnuto</option>
+                <option value="manual">Ručně</option>
+                <option value="automatic">Automaticky</option>
+              </select>
+            </label>
+            <label className="inline-flex items-center gap-2 text-sm text-abj-text1">
+              <input
+                type="checkbox"
+                checked={form.respectRobots}
+                onChange={(event) => setForm((prev) => ({ ...prev, respectRobots: event.target.checked }))}
+              />
+              Respektovat robots.txt
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="font-medium text-abj-text1">Odstup fetchů (s)</span>
+              <input
+                value={form.fetchDelaySeconds}
+                onChange={(event) => setForm((prev) => ({ ...prev, fetchDelaySeconds: event.target.value }))}
+                className="w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2"
+                inputMode="numeric"
+              />
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="font-medium text-abj-text1">Max článků/den</span>
+              <input
+                value={form.maxArticlesPerDay}
+                onChange={(event) => setForm((prev) => ({ ...prev, maxArticlesPerDay: event.target.value }))}
+                className="w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2"
+                inputMode="numeric"
+              />
+            </label>
+            <label className="space-y-1 text-sm md:col-span-3">
+              <span className="font-medium text-abj-text1">Poznámky k enrichmentu</span>
+              <input
+                value={form.enrichmentNotes}
+                onChange={(event) => setForm((prev) => ({ ...prev, enrichmentNotes: event.target.value }))}
+                className="w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2"
+                placeholder="Např. obohacovat jen ručně kvůli licenci."
+              />
+            </label>
+          </div>
         </div>
 
         <button
@@ -309,7 +411,73 @@ export function NovinySourcesAdminClient() {
                 <p>Poslední fetch: {formatDate(source.last_fetched_at)}</p>
                 <p>Poslední úspěch: {formatDate(source.last_success_at)}</p>
                 <p>Obrázky: {source.allow_images ? "Povoleny" : "Zakázány"}</p>
+                <p>
+                  Enrichment: {source.enrichment_enabled ? source.enrichment_mode : "vypnuto"} · robots{" "}
+                  {source.respect_robots ? "ano" : "ne"}
+                </p>
               </div>
+
+              <form
+                className="mt-3 grid gap-2 rounded-xl border border-[var(--abj-gold-dim)] bg-abj-panel p-3 text-sm md:grid-cols-3"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void saveEnrichmentSettings(source, new FormData(event.currentTarget));
+                }}
+              >
+                <label className="inline-flex items-center gap-2 text-abj-text1">
+                  <input name="enrichmentEnabled" type="checkbox" defaultChecked={source.enrichment_enabled} />
+                  Povolit enrichment
+                </label>
+                <label className="space-y-1">
+                  <span className="font-medium text-abj-text1">Režim</span>
+                  <select
+                    name="enrichmentMode"
+                    defaultValue={source.enrichment_mode}
+                    className="w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2"
+                  >
+                    <option value="off">Vypnuto</option>
+                    <option value="manual">Ručně</option>
+                    <option value="automatic">Automaticky</option>
+                  </select>
+                </label>
+                <label className="inline-flex items-center gap-2 text-abj-text1">
+                  <input name="respectRobots" type="checkbox" defaultChecked={source.respect_robots} />
+                  Respektovat robots.txt
+                </label>
+                <label className="space-y-1">
+                  <span className="font-medium text-abj-text1">Odstup fetchů (s)</span>
+                  <input
+                    name="fetchDelaySeconds"
+                    defaultValue={source.fetch_delay_seconds}
+                    className="w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2"
+                    inputMode="numeric"
+                  />
+                </label>
+                <label className="space-y-1">
+                  <span className="font-medium text-abj-text1">Max článků/den</span>
+                  <input
+                    name="maxArticlesPerDay"
+                    defaultValue={source.max_articles_per_day}
+                    className="w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2"
+                    inputMode="numeric"
+                  />
+                </label>
+                <label className="space-y-1 md:col-span-3">
+                  <span className="font-medium text-abj-text1">Poznámky</span>
+                  <input
+                    name="enrichmentNotes"
+                    defaultValue={source.enrichment_notes ?? ""}
+                    className="w-full rounded-lg border border-[var(--abj-gold-dim)] px-3 py-2"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={pendingSourceId === source.id}
+                  className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[#FF6A00]/45 bg-white px-4 py-2 text-sm font-bold text-[#B04A00] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Uložit enrichment
+                </button>
+              </form>
 
               <div className="mt-3 flex flex-wrap gap-2">
                 <button

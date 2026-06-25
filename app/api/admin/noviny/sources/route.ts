@@ -21,12 +21,28 @@ type SourcePayload = {
   categoryId?: unknown;
   allowImages?: unknown;
   legalNote?: unknown;
+  enrichmentEnabled?: unknown;
+  enrichmentMode?: unknown;
+  fetchDelaySeconds?: unknown;
+  maxArticlesPerDay?: unknown;
+  respectRobots?: unknown;
+  enrichmentNotes?: unknown;
 };
 
 function asTrimmedString(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function asPositiveInt(value: unknown, fallback: number, min: number, max: number): number {
+  const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(min, Math.min(max, Math.floor(parsed)));
+}
+
+function asEnrichmentMode(value: unknown): "off" | "manual" | "automatic" {
+  return value === "off" || value === "manual" || value === "automatic" ? value : "automatic";
 }
 
 export async function GET() {
@@ -80,6 +96,12 @@ export async function POST(request: Request) {
       categoryId: asTrimmedString(payload.categoryId),
       allowImages: payload.allowImages === true,
       legalNote: asTrimmedString(payload.legalNote),
+      enrichmentEnabled: payload.enrichmentEnabled !== false,
+      enrichmentMode: asEnrichmentMode(payload.enrichmentMode),
+      fetchDelaySeconds: asPositiveInt(payload.fetchDelaySeconds, 45, 30, 3600),
+      maxArticlesPerDay: asPositiveInt(payload.maxArticlesPerDay, 50, 0, 500),
+      respectRobots: payload.respectRobots !== false,
+      enrichmentNotes: asTrimmedString(payload.enrichmentNotes),
     });
 
     return Response.json({ source }, { status: 201 });

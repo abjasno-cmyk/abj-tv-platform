@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseAnonServerClient, createSupabaseServiceClient } from "@/lib/supabase/server";
 import type {
   NovinyArticleContextRow,
+  NovinyArticleEnrichmentRow,
   NovinyArticleRow,
   NovinyArticleWithRelations,
   NovinyCategoryRow,
@@ -29,6 +30,12 @@ type CreateSourceInput = {
   categoryId: string | null;
   allowImages: boolean;
   legalNote: string | null;
+  enrichmentEnabled?: boolean;
+  enrichmentMode?: "off" | "manual" | "automatic";
+  fetchDelaySeconds?: number;
+  maxArticlesPerDay?: number;
+  respectRobots?: boolean;
+  enrichmentNotes?: string | null;
 };
 
 type UpdateSourceInput = {
@@ -40,6 +47,12 @@ type UpdateSourceInput = {
   category_id?: string | null;
   allow_images?: boolean;
   legal_note?: string | null;
+  enrichment_enabled?: boolean;
+  enrichment_mode?: "off" | "manual" | "automatic";
+  fetch_delay_seconds?: number;
+  max_articles_per_day?: number;
+  respect_robots?: boolean;
+  enrichment_notes?: string | null;
   is_active?: boolean;
   last_fetched_at?: string;
   last_success_at?: string;
@@ -64,6 +77,9 @@ const ARTICLE_SELECT =
 const SOURCE_SELECT =
   "id,slug,name,homepage_url,rss_url,language,country,category_id,is_active,allow_images,legal_note,last_fetched_at,last_success_at,created_at,updated_at";
 
+const SOURCE_ENRICHMENT_SELECT =
+  "id,enrichment_enabled,enrichment_mode,fetch_delay_seconds,max_articles_per_day,respect_robots,enrichment_notes";
+
 const CATEGORY_SELECT = "id,slug,name,description,created_at";
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -72,7 +88,19 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 function asSourceRow(row: unknown): NovinySourceRow {
-  return asRecord(row) as unknown as NovinySourceRow;
+  const record = asRecord(row);
+  return {
+    ...record,
+    enrichment_enabled: typeof record.enrichment_enabled === "boolean" ? record.enrichment_enabled : true,
+    enrichment_mode:
+      record.enrichment_mode === "off" || record.enrichment_mode === "manual" || record.enrichment_mode === "automatic"
+        ? record.enrichment_mode
+        : "automatic",
+    fetch_delay_seconds: typeof record.fetch_delay_seconds === "number" ? record.fetch_delay_seconds : 45,
+    max_articles_per_day: typeof record.max_articles_per_day === "number" ? record.max_articles_per_day : 50,
+    respect_robots: typeof record.respect_robots === "boolean" ? record.respect_robots : true,
+    enrichment_notes: typeof record.enrichment_notes === "string" ? record.enrichment_notes : null,
+  } as unknown as NovinySourceRow;
 }
 
 function asCategoryRow(row: unknown): NovinyCategoryRow {
@@ -159,6 +187,53 @@ async function loadArticleContextsMap(
   }
 }
 
+async function loadArticleEnrichmentMap(
+  supabase: SupabaseClient,
+  articleIds: string[],
+): Promise<Map<string, NovinyArticleEnrichmentRow>> {
+  const uniqueArticleIds = Array.from(new Set(articleIds));
+  if (uniqueArticleIds.length === 0) return new Map();
+
+  try {
+    const { data, error } = await supabase
+      .from("noviny_article_enrichment")
+      .select(
+        "id,article_id,source_id,fetch_status,fetched_at,extracted_text_hash,extracted_text_length,extraction_method,internal_debug_excerpt,ai_summary_5_points,ai_why_it_matters,ai_entities,ai_topics,ai_content_type,ai_relevance_score,ai_risk_score,ai_status,error_message,retry_count,created_at,updated_at",
+      )
+      .in("article_id", uniqueArticleIds);
+    if (error) return new Map();
+
+    return new Map(
+      (data ?? []).map((row) => [
+        String((row as Record<string, unknown>).article_id),
+        row as unknown as NovinyArticleEnrichmentRow,
+      ]),
+    );
+  } catch {
+    return new Map();
+  }
+}
+
+async function augmentSourcesWithEnrichmentSettings(
+  supabase: SupabaseClient,
+  sources: NovinySourceRow[],
+): Promise<NovinySourceRow[]> {
+  if (sources.length === 0) return sources;
+  try {
+    const { data, error } = await supabase
+      .from("noviny_sources")
+      .select(SOURCE_ENRICHMENT_SELECT)
+      .in("id", sources.map((source) => source.id));
+    if (error) return sources;
+    const settingsById = new Map(
+      (data ?? []).map((row) => [String((row as Record<string, unknown>).id), asRecord(row)]),
+    );
+    return sources.map((source) => asSourceRow({ ...source, ...(settingsById.get(source.id) ?? {}) }));
+  } catch {
+    return sources;
+  }
+}
+
 export function createNovinyPublicClient(): SupabaseClient {
   return createSupabaseAnonServerClient();
 }
@@ -188,7 +263,7 @@ export async function listPublicNovinySources(
     .order("name", { ascending: true })
     .limit(limit);
   if (error) throw error;
-  return (data ?? []).map(asSourceRow);
+  return augmentSourcesWithEnrichmentSettings(supabase, (data ?? []).map(asSourceRow));
 }
 
 export async function listAdminNovinySources(supabase: SupabaseClient): Promise<NovinySourceRow[]> {
@@ -197,7 +272,7 @@ export async function listAdminNovinySources(supabase: SupabaseClient): Promise<
     .select(SOURCE_SELECT)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []).map(asSourceRow);
+  return augmentSourcesWithEnrichmentSettings(supabase, (data ?? []).map(asSourceRow));
 }
 
 export async function getPublicSourceBySlug(
@@ -211,13 +286,17 @@ export async function getPublicSourceBySlug(
     .eq("is_active", true)
     .maybeSingle();
   if (error) throw error;
-  return data ? asSourceRow(data) : null;
+  if (!data) return null;
+  const [source] = await augmentSourcesWithEnrichmentSettings(supabase, [asSourceRow(data)]);
+  return source ?? asSourceRow(data);
 }
 
 export async function getSourceById(supabase: SupabaseClient, sourceId: string): Promise<NovinySourceRow | null> {
   const { data, error } = await supabase.from("noviny_sources").select(SOURCE_SELECT).eq("id", sourceId).maybeSingle();
   if (error) throw error;
-  return data ? asSourceRow(data) : null;
+  if (!data) return null;
+  const [source] = await augmentSourcesWithEnrichmentSettings(supabase, [asSourceRow(data)]);
+  return source ?? asSourceRow(data);
 }
 
 export async function listPublicNovinyArticles(
@@ -276,6 +355,10 @@ export async function listPublicNovinyArticles(
     supabase,
     articles.map((article) => article.id),
   );
+  const enrichmentByArticle = await loadArticleEnrichmentMap(
+    supabase,
+    articles.map((article) => article.id),
+  );
 
   return articles.map((article) => ({
     ...article,
@@ -285,6 +368,7 @@ export async function listPublicNovinyArticles(
       : null,
     tags: tagsByArticle.get(article.id) ?? [],
     context: contextsByArticle.get(article.id) ?? null,
+    enrichment: enrichmentByArticle.get(article.id) ?? null,
   }));
 }
 
@@ -333,6 +417,10 @@ export async function listAdminNovinyArticles(
     supabase,
     rows.map((article) => article.id),
   );
+  const enrichmentByArticle = await loadArticleEnrichmentMap(
+    supabase,
+    rows.map((article) => article.id),
+  );
 
   return rows.map((article) => ({
     ...article,
@@ -342,6 +430,7 @@ export async function listAdminNovinyArticles(
       : null,
     tags: tagsByArticle.get(article.id) ?? [],
     context: contextsByArticle.get(article.id) ?? null,
+    enrichment: enrichmentByArticle.get(article.id) ?? null,
   }));
 }
 
@@ -372,6 +461,12 @@ export async function createNovinySource(
     category_id: input.categoryId,
     allow_images: input.allowImages,
     legal_note: input.legalNote,
+    enrichment_enabled: input.enrichmentEnabled ?? true,
+    enrichment_mode: input.enrichmentMode ?? "automatic",
+    fetch_delay_seconds: input.fetchDelaySeconds ?? 45,
+    max_articles_per_day: input.maxArticlesPerDay ?? 50,
+    respect_robots: input.respectRobots ?? true,
+    enrichment_notes: input.enrichmentNotes ?? null,
     is_active: true,
   };
   const { data, error } = await supabase.from("noviny_sources").insert(payload).select(SOURCE_SELECT).single();
@@ -459,7 +554,38 @@ export async function upsertNovinyArticlesFromRss(
   });
   if (error) throw error;
 
+  if (source.enrichment_enabled && source.enrichment_mode !== "off") {
+    await createPendingEnrichmentRows(supabase, source, canonicalUrls);
+  }
+
   return { imported: toInsert.length, deduplicated, skipped: 0 };
+}
+
+async function createPendingEnrichmentRows(
+  supabase: SupabaseClient,
+  source: NovinySourceRow,
+  canonicalUrls: string[],
+): Promise<void> {
+  try {
+    const { data, error } = await supabase
+      .from("noviny_articles")
+      .select("id, source_id")
+      .in("canonical_url", canonicalUrls);
+    if (error) return;
+    const rows = (data ?? []) as Array<{ id: string; source_id: string }>;
+    if (rows.length === 0) return;
+    await supabase.from("noviny_article_enrichment").upsert(
+      rows.map((row) => ({
+        article_id: row.id,
+        source_id: row.source_id || source.id,
+        fetch_status: "pending",
+        ai_status: "pending",
+      })),
+      { onConflict: "article_id", ignoreDuplicates: true },
+    );
+  } catch {
+    // Enrichment je volitelná vrstva; RSS import nesmí spadnout kvůli chybě SQL 022.
+  }
 }
 
 export async function insertNovinyFetchLog(

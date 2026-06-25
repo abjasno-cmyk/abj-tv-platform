@@ -18,6 +18,12 @@ export type NovinySourceRow = {
   is_active: boolean;
   allow_images: boolean;
   legal_note: string | null;
+  enrichment_enabled: boolean;
+  enrichment_mode: "off" | "manual" | "automatic";
+  fetch_delay_seconds: number;
+  max_articles_per_day: number;
+  respect_robots: boolean;
+  enrichment_notes: string | null;
   last_fetched_at: string | null;
   last_success_at: string | null;
   created_at: string;
@@ -75,6 +81,7 @@ export type NovinyArticleWithRelations = NovinyArticleRow & {
   category: Pick<NovinyCategoryRow, "id" | "slug" | "name"> | null;
   tags: string[];
   context?: NovinyArticleContextRow | null;
+  enrichment?: NovinyArticleEnrichmentRow | null;
 };
 
 export type NovinyRssArticleInput = {
@@ -140,6 +147,30 @@ export type NovinyArticleContextRow = {
   analysis_version: string;
   analyzed_at: string;
   metadata: Record<string, unknown>;
+};
+
+export type NovinyArticleEnrichmentRow = {
+  id: string;
+  article_id: string;
+  source_id: string;
+  fetch_status: "pending" | "fetched" | "blocked" | "failed" | "paywalled" | "skipped";
+  fetched_at: string | null;
+  extracted_text_hash: string | null;
+  extracted_text_length: number;
+  extraction_method: string | null;
+  internal_debug_excerpt: string | null;
+  ai_summary_5_points: string[];
+  ai_why_it_matters: string | null;
+  ai_entities: unknown[];
+  ai_topics: string[];
+  ai_content_type: string | null;
+  ai_relevance_score: number | null;
+  ai_risk_score: number | null;
+  ai_status: "pending" | "generated" | "approved" | "rejected";
+  error_message: string | null;
+  retry_count: number;
+  created_at: string;
+  updated_at: string;
 };
 
 export type NovinyContextTopicSummary = Pick<
