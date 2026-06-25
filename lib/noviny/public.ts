@@ -160,6 +160,27 @@ function extractMetadataSummaryText(article: NovinyArticleWithRelations): string
   return normalizeWhitespace(decodeHtmlEntities(maybe));
 }
 
+function extractMetadataString(article: NovinyArticleWithRelations, key: string): string | null {
+  const metadata = article.metadata ?? {};
+  const value = metadata[key];
+  if (typeof value !== "string") return null;
+  const normalized = normalizeWhitespace(decodeHtmlEntities(value));
+  return normalized.length > 0 ? normalized : null;
+}
+
+export function getArticlePreviewTitle(article: NovinyArticleWithRelations): string {
+  return extractMetadataString(article, "preview_title") ?? getVisibleArticleTitle(article);
+}
+
+export function getArticlePreviewDescription(article: NovinyArticleWithRelations): string | null {
+  const metadataDescription = extractMetadataString(article, "preview_description");
+  if (metadataDescription) return metadataDescription;
+  const perex = getVisibleArticlePerex(article);
+  if (perex) return perex;
+  const summary = extractMetadataSummaryText(article).slice(0, 220).trim();
+  return summary.length > 0 ? summary : null;
+}
+
 export function getArticleSummaryBullets(article: NovinyArticleWithRelations): string[] {
   const title = getVisibleArticleTitle(article);
   const detailsFromMetadata = extractMetadataSummaryText(article);

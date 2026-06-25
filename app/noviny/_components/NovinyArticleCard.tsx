@@ -4,6 +4,8 @@ import {
   buildTranslateToCzechUrl,
   formatNovinyDate,
   getArticleAuthor,
+  getArticlePreviewDescription,
+  getArticlePreviewTitle,
   getArticleSummaryBullets,
   getDisplayTags,
   getVisibleArticleTitle,
@@ -19,6 +21,8 @@ type NovinyArticleCardProps = {
 
 export function NovinyArticleCard({ article, compact = false }: NovinyArticleCardProps) {
   const title = getVisibleArticleTitle(article);
+  const previewTitle = getArticlePreviewTitle(article);
+  const previewDescription = getArticlePreviewDescription(article);
   const author = getArticleAuthor(article);
   const tags = getDisplayTags(article);
   const bullets = getArticleSummaryBullets(article);
@@ -62,6 +66,8 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
         />
         <div className="border-t border-[var(--abj-gold-dim)] px-3 py-2 text-xs text-abj-text2">
           <p className="font-semibold uppercase tracking-[0.08em]">Náhled originálního článku</p>
+          <p className="mt-1 line-clamp-2 text-sm font-semibold text-abj-text1">{previewTitle}</p>
+          {previewDescription ? <p className="mt-1 line-clamp-3 text-xs text-abj-text2">{previewDescription}</p> : null}
           <p className="mt-0.5 truncate">{articleHost || article.original_url}</p>
         </div>
       </section>

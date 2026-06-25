@@ -8,6 +8,7 @@ import {
   resolveArticleLanguage,
   shouldUseAutoTranslation,
 } from "@/lib/noviny/public";
+import { fetchOriginMetadata } from "@/lib/noviny/originMetadata";
 import { listPublicNovinyArticles, createNovinyPublicClient } from "@/lib/noviny/repository";
 import { rankNovinyArticles } from "@/lib/noviny/ranking";
 import { runNovinyImport } from "@/lib/noviny/importer";
@@ -53,6 +54,48 @@ async function localizeArticlesToCzech(articles: NovinyArticleWithRelations[]): 
   );
 }
 
+function hasUsefulSourceText(article: NovinyArticleWithRelations): boolean {
+  const metadata = article.metadata ?? {};
+  const sourceText = typeof metadata.summary_source_text === "string" ? metadata.summary_source_text.trim() : "";
+  return sourceText.length >= 180;
+}
+
+async function enrichArticlesFromOrigin(articles: NovinyArticleWithRelations[]): Promise<NovinyArticleWithRelations[]> {
+  const maxToEnrich = 90;
+  const targets = articles
+    .filter((article) => !hasUsefulSourceText(article))
+    .slice(0, maxToEnrich)
+    .map((article) => article.id);
+  if (targets.length === 0) return articles;
+  const targetSet = new Set(targets);
+
+  return Promise.all(
+    articles.map(async (article) => {
+      if (!targetSet.has(article.id)) return article;
+      const metadata = await fetchOriginMetadata(article.original_url);
+      if (!metadata) return article;
+
+      const mergedMeta = { ...(article.metadata ?? {}) } as Record<string, unknown>;
+      if (metadata.title) mergedMeta.preview_title = metadata.title;
+      if (metadata.description) mergedMeta.preview_description = metadata.description;
+
+      const currentSourceText =
+        typeof mergedMeta.summary_source_text === "string" ? String(mergedMeta.summary_source_text) : "";
+      const candidateSource = metadata.sourceText ?? metadata.description ?? "";
+      if (candidateSource && candidateSource.length > currentSourceText.length) {
+        mergedMeta.summary_source_text = candidateSource;
+      }
+
+      return {
+        ...article,
+        external_author: article.external_author ?? metadata.author,
+        perex: article.perex ?? metadata.description,
+        metadata: mergedMeta,
+      };
+    }),
+  );
+}
+
 function applyLanguageHierarchy(ranked: ReturnType<typeof rankNovinyArticles>) {
   return [...ranked].sort((a, b) => {
     const langA = resolveArticleLanguage(a);
@@ -88,7 +131,8 @@ export default async function NovinyPage() {
     articlesError = firstArticlesResult.reason instanceof Error ? firstArticlesResult.reason.message : "Články se nepodařilo načíst.";
   }
 
-  const localizedArticles = await localizeArticlesToCzech(articles);
+  const enrichedArticles = await enrichArticlesFromOrigin(articles);
+  const localizedArticles = await localizeArticlesToCzech(enrichedArticles);
   const ranked = applyLanguageHierarchy(rankNovinyArticles(localizedArticles));
   const lead = ranked[0] ?? null;
   const secondary = ranked.slice(1, 7);
