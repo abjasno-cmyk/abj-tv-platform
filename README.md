@@ -38,3 +38,17 @@ the block has `title` and valid time window. In that mode:
 
 - `/api/program/v3/refresh-cache` every 15 minutes
 - `/api/program/v3/import-feed` every 5 minutes
+- `/api/noviny/import` every 20 minutes
+
+## Noviny (MVP)
+
+Sekce Noviny je oddělená od živého vysílání/programu a používá vlastní tabulky
+`noviny_*` + vlastní API:
+
+- `GET /api/noviny/import` — cron import veřejných RSS zdrojů
+- `/admin/noviny` — dashboard
+- `/admin/noviny/zdroje` — správa RSS zdrojů (přidat/vypnout/ruční refresh)
+- `/admin/noviny/clanky` — úprava metadata článků (titulek, perex, kategorie, skrytí)
+
+Import pracuje pouze s metadaty článku (titulek, perex, URL, zdroj, datum) a
+deduplikuje podle canonical URL.
