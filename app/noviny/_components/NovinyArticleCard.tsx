@@ -8,6 +8,7 @@ import {
   getArticlePreviewTitle,
   getArticleSummaryBullets,
   getDisplayTags,
+  getVisibleArticlePerex,
   getVisibleArticleTitle,
   shouldUseAutoTranslation,
   sourceLabel,
@@ -23,6 +24,7 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
   const title = getVisibleArticleTitle(article);
   const previewTitle = getArticlePreviewTitle(article);
   const previewDescription = getArticlePreviewDescription(article);
+  const perex = getVisibleArticlePerex(article);
   const author = getArticleAuthor(article);
   const tags = getDisplayTags(article);
   const bullets = getArticleSummaryBullets(article);
@@ -48,29 +50,30 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
 
       <h2 className={`mt-3 font-bold leading-tight text-abj-text1 ${compact ? "text-xl md:text-2xl" : "text-2xl md:text-3xl"}`}>{title}</h2>
 
-      <section className="mt-3 overflow-hidden rounded-2xl border border-[var(--abj-gold-dim)] bg-[var(--abj-panel)]">
-        <div
-          className="h-28 w-full md:h-36"
-          style={
-            previewImageUrl
-              ? {
-                  backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.12), rgba(0,0,0,0.45)), url("${previewImageUrl}")`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }
-              : {
-                  background:
-                    "linear-gradient(130deg, rgba(255,106,0,0.24), rgba(31,79,156,0.18) 50%, rgba(17,24,39,0.08))",
-                }
-          }
-        />
-        <div className="border-t border-[var(--abj-gold-dim)] px-3 py-2 text-xs text-abj-text2">
-          <p className="font-semibold uppercase tracking-[0.08em]">Náhled originálního článku</p>
-          <p className="mt-1 line-clamp-2 text-sm font-semibold text-abj-text1">{previewTitle}</p>
-          {previewDescription ? <p className="mt-1 line-clamp-3 text-xs text-abj-text2">{previewDescription}</p> : null}
-          <p className="mt-0.5 truncate">{articleHost || article.original_url}</p>
-        </div>
-      </section>
+      {previewImageUrl ? (
+        <section className="mt-3 overflow-hidden rounded-2xl border border-[var(--abj-gold-dim)] bg-[var(--abj-panel)]">
+          <div
+            className="h-28 w-full md:h-36"
+            style={{
+              backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.12), rgba(0,0,0,0.45)), url("${previewImageUrl}")`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          />
+          <div className="border-t border-[var(--abj-gold-dim)] px-3 py-2 text-xs text-abj-text2">
+            <p className="font-semibold uppercase tracking-[0.08em]">Náhled originálního článku</p>
+            <p className="mt-1 line-clamp-2 text-sm font-semibold text-abj-text1">{previewTitle}</p>
+            {previewDescription ? <p className="mt-1 line-clamp-3 text-xs text-abj-text2">{previewDescription}</p> : null}
+            <p className="mt-0.5 truncate">{articleHost || article.original_url}</p>
+          </div>
+        </section>
+      ) : null}
+
+      {perex ? (
+        <p className={`mt-3 leading-7 text-abj-text1/90 ${compact ? "text-sm md:text-base" : "text-base md:text-lg"}`}>
+          {perex}
+        </p>
+      ) : null}
 
       {tags.length > 0 ? (
         <ul className="mt-3 flex flex-wrap gap-2">
