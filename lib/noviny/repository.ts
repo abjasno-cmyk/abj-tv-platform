@@ -81,6 +81,55 @@ function asArticleRow(row: unknown): NovinyArticleRow {
   return asRecord(row) as unknown as NovinyArticleRow;
 }
 
+async function loadArticleTagsMap(
+  supabase: SupabaseClient,
+  articleIds: string[],
+): Promise<Map<string, string[]>> {
+  const uniqueArticleIds = Array.from(new Set(articleIds));
+  if (uniqueArticleIds.length === 0) return new Map();
+
+  const { data: relRows, error: relError } = await supabase
+    .from("noviny_article_tags")
+    .select("article_id, tag_id")
+    .in("article_id", uniqueArticleIds);
+  if (relError) throw relError;
+
+  const tagIds = Array.from(
+    new Set(
+      (relRows ?? [])
+        .map((row) => String((row as Record<string, unknown>).tag_id ?? ""))
+        .filter((value) => value.length > 0),
+    ),
+  );
+  if (tagIds.length === 0) return new Map();
+
+  const { data: tagsRows, error: tagsError } = await supabase
+    .from("noviny_tags")
+    .select("id, name")
+    .in("id", tagIds);
+  if (tagsError) throw tagsError;
+
+  const tagNameById = new Map(
+    (tagsRows ?? []).map((row) => [
+      String((row as Record<string, unknown>).id),
+      String((row as Record<string, unknown>).name ?? ""),
+    ]),
+  );
+
+  const tagsByArticle = new Map<string, string[]>();
+  for (const row of relRows ?? []) {
+    const record = row as Record<string, unknown>;
+    const articleId = String(record.article_id ?? "");
+    const tagId = String(record.tag_id ?? "");
+    const tagName = tagNameById.get(tagId);
+    if (!articleId || !tagName) continue;
+    const list = tagsByArticle.get(articleId) ?? [];
+    if (!list.includes(tagName)) list.push(tagName);
+    tagsByArticle.set(articleId, list);
+  }
+  return tagsByArticle;
+}
+
 export function createNovinyPublicClient(): SupabaseClient {
   return createSupabaseAnonServerClient();
 }
@@ -187,6 +236,10 @@ export async function listPublicNovinyArticles(
       category as Record<string, unknown>,
     ]),
   );
+  const tagsByArticle = await loadArticleTagsMap(
+    supabase,
+    articles.map((article) => article.id),
+  );
 
   return articles.map((article) => ({
     ...article,
@@ -194,6 +247,7 @@ export async function listPublicNovinyArticles(
     category: article.category_id
       ? ((categoryMap.get(article.category_id) ?? null) as NovinyArticleWithRelations["category"])
       : null,
+    tags: tagsByArticle.get(article.id) ?? [],
   }));
 }
 
@@ -234,6 +288,10 @@ export async function listAdminNovinyArticles(
       category as Record<string, unknown>,
     ]),
   );
+  const tagsByArticle = await loadArticleTagsMap(
+    supabase,
+    rows.map((article) => article.id),
+  );
 
   return rows.map((article) => ({
     ...article,
@@ -241,6 +299,7 @@ export async function listAdminNovinyArticles(
     category: article.category_id
       ? ((categoryMap.get(article.category_id) ?? null) as NovinyArticleWithRelations["category"])
       : null,
+    tags: tagsByArticle.get(article.id) ?? [],
   }));
 }
 

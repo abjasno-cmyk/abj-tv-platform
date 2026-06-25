@@ -73,6 +73,7 @@ export type NovinyFetchLogRow = {
 export type NovinyArticleWithRelations = NovinyArticleRow & {
   source: Pick<NovinySourceRow, "id" | "name" | "slug" | "homepage_url"> | null;
   category: Pick<NovinyCategoryRow, "id" | "slug" | "name"> | null;
+  tags: string[];
 };
 
 export type NovinyRssArticleInput = {

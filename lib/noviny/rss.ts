@@ -2,6 +2,7 @@ import "server-only";
 
 import { XMLParser } from "fast-xml-parser";
 
+import { decodeHtmlEntities, normalizeWhitespace, stripHtmlToText } from "@/lib/noviny/text";
 import type { NovinyRssArticleInput } from "@/lib/noviny/types";
 import { normalizeExternalUrl } from "@/lib/noviny/url";
 
@@ -32,7 +33,10 @@ function asArray<T>(value: T | T[] | null | undefined): T[] {
 
 function pickFirstNonEmpty(values: Array<unknown>): string | null {
   for (const value of values) {
-    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "string") {
+      const normalized = normalizeWhitespace(decodeHtmlEntities(value));
+      if (normalized) return normalized;
+    }
   }
   return null;
 }
@@ -44,16 +48,7 @@ function toIsoDate(value: unknown): string | null {
 }
 
 function stripHtml(value: string): string {
-  return value
-    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
-    .replace(/\s+/g, " ")
-    .trim();
+  return stripHtmlToText(value);
 }
 
 function toPerex(rawValue: unknown): string | null {

@@ -9,7 +9,7 @@ describe("parseRssFeed", () => {
         <channel>
           <title>Test feed</title>
           <item>
-            <title>První článek</title>
+            <title>Prvn&#237; čl&#225;nek</title>
             <link>https://example.com/a?utm_source=test</link>
             <description><![CDATA[<p>Krátký popis.</p>]]></description>
             <pubDate>Thu, 26 Jun 2026 10:00:00 GMT</pubDate>

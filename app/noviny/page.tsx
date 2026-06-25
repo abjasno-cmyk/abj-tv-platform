@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Noviny | Verox",
-  description: "Kurátorovaný výběr článků Noviny podle relevance, novosti a dopadu. Obsahuje metadata a odkaz na původní zdroj.",
+  description: "Výběr článků Verox Noviny s odkazem na původní zdroj.",
   alternates: {
     canonical: `${SITE_URL}/noviny`,
   },
@@ -24,7 +24,6 @@ export const metadata: Metadata = {
 
 export default async function NovinyPage() {
   let articlesError: string | null = null;
-  let importInfo: string | null = null;
 
   const supabase = createNovinyPublicClient();
 
@@ -34,10 +33,9 @@ export default async function NovinyPage() {
   let articles = firstArticles;
   if (articles.length === 0) {
     try {
-      const report = await runNovinyImport({ runType: "api" });
+      await runNovinyImport({ runType: "api" });
       const secondTry = await listPublicNovinyArticles(supabase, { limit: 140 });
       articles = secondTry;
-      importInfo = `Automatický import spuštěn: zdrojů ${report.totalSources}, importováno ${report.importedCount}.`;
     } catch (error) {
       articlesError = error instanceof Error ? error.message : "Automatický import Novin selhal.";
     }
@@ -52,36 +50,23 @@ export default async function NovinyPage() {
 
   return (
     <main className="mx-auto w-full max-w-[1240px] px-4 py-8 text-abj-text1 md:py-12">
-      <header className="rounded-3xl border border-[var(--abj-gold-dim)] bg-abj-panel p-6 md:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-abj-text2">Verox Noviny</p>
-        <h1 className="mt-2 text-4xl font-black leading-tight md:text-5xl">Kurátorovaný přehled článků podle relevance</h1>
-        <p className="mt-3 max-w-3xl text-lg leading-8 text-abj-text1/90">
-          Pořadí je sestavené hierarchicky podle novosti, závažnosti tématu, čtenářské zajímavosti a neuro-ekonomických
-          aspektů. Každá karta vede na původní článek.
-        </p>
-      </header>
-
-      {importInfo ? (
-        <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">{importInfo}</div>
-      ) : null}
-
       {articlesError ? (
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           <p>Nepodařilo se načíst články: {articlesError}</p>
         </div>
       ) : null}
 
-      <div className="mt-8 space-y-8">
+      <div className="space-y-8">
         {lead ? (
           <section className="space-y-3">
-            <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">Priorita dne</h2>
+            <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">Hlavní výběr</h2>
             <NovinyArticleCard article={lead} />
           </section>
         ) : null}
 
         {secondary.length > 0 ? (
           <section className="space-y-3">
-            <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">Strategický výběr</h2>
+            <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">Doporučené články</h2>
             <div className="grid gap-4 md:grid-cols-2">
               {secondary.map((article) => (
                 <NovinyArticleCard key={article.id} article={article} compact />
