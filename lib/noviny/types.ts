@@ -74,6 +74,7 @@ export type NovinyArticleWithRelations = NovinyArticleRow & {
   source: Pick<NovinySourceRow, "id" | "name" | "slug" | "homepage_url" | "language" | "country"> | null;
   category: Pick<NovinyCategoryRow, "id" | "slug" | "name"> | null;
   tags: string[];
+  context?: NovinyArticleContextRow | null;
 };
 
 export type NovinyRssArticleInput = {
@@ -88,4 +89,62 @@ export type NovinyRssArticleInput = {
   externalAuthor: string | null;
   language: string | null;
   metadata: Record<string, unknown>;
+};
+
+export type NovinyEntityType = "person" | "institution" | "country" | "place" | "organization" | "other";
+
+export type NovinyEntityRow = {
+  id: string;
+  slug: string;
+  name: string;
+  entity_type: NovinyEntityType;
+  description: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+};
+
+export type NovinyTopicRow = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  is_long_term: boolean;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+};
+
+export type NovinyEventRow = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  starts_at: string | null;
+  last_seen_at: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+};
+
+export type NovinyArticleContextRow = {
+  article_id: string;
+  status: "ok" | "partial" | "failed";
+  content_type: string;
+  main_theme: string | null;
+  short_summary: string | null;
+  safe_attribution: string | null;
+  why_important: string | null;
+  verox_relevance: number;
+  suggested_tags: string[];
+  analysis_version: string;
+  analyzed_at: string;
+  metadata: Record<string, unknown>;
+};
+
+export type NovinyContextTopicSummary = Pick<
+  NovinyTopicRow,
+  "id" | "slug" | "name" | "description" | "is_long_term"
+> & {
+  article_count: number;
 };

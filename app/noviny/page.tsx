@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { NovinyArticleCard } from "@/app/noviny/_components/NovinyArticleCard";
+import { NovinyContextTopics } from "@/app/noviny/_components/NovinyContextTopics";
 import {
   getVisibleArticlePerex,
   getVisibleArticleTitle,
@@ -15,6 +16,7 @@ import { runNovinyImport } from "@/lib/noviny/importer";
 import { SITE_URL } from "@/lib/site";
 import { translateTextToCzech } from "@/lib/noviny/translation";
 import type { NovinyArticleWithRelations } from "@/lib/noviny/types";
+import { listNovinyContextTopics } from "@/lib/noviny/contextLayer";
 
 export const dynamic = "force-dynamic";
 
@@ -134,6 +136,7 @@ export default async function NovinyPage() {
   const enrichedArticles = await enrichArticlesFromOrigin(articles);
   const localizedArticles = await localizeArticlesToCzech(enrichedArticles);
   const ranked = applyLanguageHierarchy(rankNovinyArticles(localizedArticles));
+  const contextTopics = await listNovinyContextTopics(supabase, 10);
   const lead = ranked[0] ?? null;
   const secondary = ranked.slice(1, 7);
   const deepRead = ranked.slice(7);
@@ -148,6 +151,7 @@ export default async function NovinyPage() {
 
       <div className="space-y-8">
         <p className="text-sm text-abj-text2">Zobrazeno článků: {ranked.length}</p>
+        <NovinyContextTopics topics={contextTopics} />
         {lead ? (
           <section className="space-y-3">
             <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">Hlavní výběr</h2>

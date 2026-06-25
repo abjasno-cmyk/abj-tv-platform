@@ -26,8 +26,10 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
   const previewDescription = getArticlePreviewDescription(article);
   const perex = getVisibleArticlePerex(article);
   const author = getArticleAuthor(article);
-  const tags = getDisplayTags(article);
+  const tags = Array.from(new Set([...getDisplayTags(article), ...(article.context?.suggested_tags ?? [])])).slice(0, 8);
   const bullets = getArticleSummaryBullets(article);
+  const contextSummary = article.context?.safe_attribution ?? article.context?.short_summary ?? null;
+  const whyImportant = article.context?.why_important ?? null;
   const translatedView = shouldUseAutoTranslation(article);
   const outboundUrl = translatedView ? buildTranslateToCzechUrl(article.original_url) : article.original_url;
   const outboundLabel = translatedView ? "Otevřít originál (automatický CZ překlad)" : "Přejít na původní článek";
@@ -73,6 +75,14 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
         <p className={`mt-3 leading-7 text-abj-text1/90 ${compact ? "text-sm md:text-base" : "text-base md:text-lg"}`}>
           {perex}
         </p>
+      ) : null}
+
+      {contextSummary || whyImportant ? (
+        <section className="mt-3 rounded-2xl border border-[#FF6A00]/20 bg-[#FF6A00]/5 p-3 text-sm leading-6 text-abj-text1/90">
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#B04A00]">Kontext</p>
+          {contextSummary ? <p className="mt-1">{contextSummary}</p> : null}
+          {!compact && whyImportant ? <p className="mt-2 text-abj-text2">{whyImportant}</p> : null}
+        </section>
       ) : null}
 
       {tags.length > 0 ? (

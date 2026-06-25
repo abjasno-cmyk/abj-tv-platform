@@ -14,10 +14,22 @@ type RefreshPayload = {
   error?: string;
 };
 
+type ContextPayload = {
+  report?: {
+    totalArticles: number;
+    analyzedArticles: number;
+    failedArticles: number;
+  };
+  error?: string;
+};
+
 export function AdminNovinyDashboard() {
   const [loading, setLoading] = useState(false);
+  const [contextLoading, setContextLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [contextStatus, setContextStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [contextError, setContextError] = useState<string | null>(null);
 
   const runRefresh = async () => {
     setLoading(true);
@@ -40,6 +52,30 @@ export function AdminNovinyDashboard() {
       setError(refreshError instanceof Error ? refreshError.message : "Refresh Novin selhal.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const runContextAnalysis = async () => {
+    setContextLoading(true);
+    setContextError(null);
+    setContextStatus(null);
+    try {
+      const response = await fetch("/api/admin/noviny/context/analyze", {
+        method: "POST",
+        credentials: "include",
+      });
+      const payload = (await response.json().catch(() => ({}))) as ContextPayload;
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Kontextová analýza Novin selhala.");
+      }
+      const report = payload.report;
+      setContextStatus(
+        `Kontext 2.0 dokončen. Články: ${report?.totalArticles ?? 0}, analyzováno: ${report?.analyzedArticles ?? 0}, chyby: ${report?.failedArticles ?? 0}.`,
+      );
+    } catch (analysisError) {
+      setContextError(analysisError instanceof Error ? analysisError.message : "Kontextová analýza Novin selhala.");
+    } finally {
+      setContextLoading(false);
     }
   };
 
@@ -70,24 +106,47 @@ export function AdminNovinyDashboard() {
         </Link>
       </section>
 
-      <section className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-5">
-        <h2 className="text-lg font-semibold text-abj-text1">Ruční refresh všech aktivních zdrojů</h2>
-        <p className="mt-1 text-sm text-abj-text2">
-          Spustí RSS import pro všechny aktivní zdroje, provede deduplikaci podle canonical URL a uloží logy.
-        </p>
-        <button
-          type="button"
-          onClick={() => {
-            void runRefresh();
-          }}
-          disabled={loading}
-          className="mt-4 inline-flex min-h-11 items-center rounded-xl border border-[#FF6A00]/45 bg-[#FF6A00]/10 px-4 py-2 text-sm font-bold text-[#B04A00] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {loading ? "Probíhá refresh..." : "Spustit refresh"}
-        </button>
+      <section className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-5">
+          <h2 className="text-lg font-semibold text-abj-text1">Ruční refresh všech aktivních zdrojů</h2>
+          <p className="mt-1 text-sm text-abj-text2">
+            Spustí RSS import pro všechny aktivní zdroje, provede deduplikaci podle canonical URL a uloží logy.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              void runRefresh();
+            }}
+            disabled={loading}
+            className="mt-4 inline-flex min-h-11 items-center rounded-xl border border-[#FF6A00]/45 bg-[#FF6A00]/10 px-4 py-2 text-sm font-bold text-[#B04A00] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading ? "Probíhá refresh..." : "Spustit refresh"}
+          </button>
 
-        {status ? <p className="mt-3 text-sm text-[#2E6548]">{status}</p> : null}
-        {error ? <p className="mt-3 text-sm text-[#D14A2A]">{error}</p> : null}
+          {status ? <p className="mt-3 text-sm text-[#2E6548]">{status}</p> : null}
+          {error ? <p className="mt-3 text-sm text-[#D14A2A]">{error}</p> : null}
+        </div>
+
+        <div className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-5">
+          <h2 className="text-lg font-semibold text-abj-text1">Kontext Layer 2.0</h2>
+          <p className="mt-1 text-sm text-abj-text2">
+            Samostatně analyzuje články, navrhuje témata/entity a připravuje tematické stránky. RSS import na tom
+            nezávisí.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              void runContextAnalysis();
+            }}
+            disabled={contextLoading}
+            className="mt-4 inline-flex min-h-11 items-center rounded-xl border border-[#FF6A00]/45 bg-[#FF6A00]/10 px-4 py-2 text-sm font-bold text-[#B04A00] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {contextLoading ? "Probíhá Kontext 2.0..." : "Spustit Kontext 2.0"}
+          </button>
+
+          {contextStatus ? <p className="mt-3 text-sm text-[#2E6548]">{contextStatus}</p> : null}
+          {contextError ? <p className="mt-3 text-sm text-[#D14A2A]">{contextError}</p> : null}
+        </div>
       </section>
     </div>
   );

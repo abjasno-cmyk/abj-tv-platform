@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createSupabaseAnonServerClient, createSupabaseServiceClient } from "@/lib/supabase/server";
 import type {
+  NovinyArticleContextRow,
   NovinyArticleRow,
   NovinyArticleWithRelations,
   NovinyCategoryRow,
@@ -16,6 +17,7 @@ import { inferSourceSlug } from "@/lib/noviny/url";
 type ListPublicArticlesOptions = {
   limit?: number;
   sourceId?: string | null;
+  articleIds?: string[];
 };
 
 type CreateSourceInput = {
@@ -130,6 +132,33 @@ async function loadArticleTagsMap(
   return tagsByArticle;
 }
 
+async function loadArticleContextsMap(
+  supabase: SupabaseClient,
+  articleIds: string[],
+): Promise<Map<string, NovinyArticleContextRow>> {
+  const uniqueArticleIds = Array.from(new Set(articleIds));
+  if (uniqueArticleIds.length === 0) return new Map();
+
+  try {
+    const { data, error } = await supabase
+      .from("noviny_article_context")
+      .select(
+        "article_id,status,content_type,main_theme,short_summary,safe_attribution,why_important,verox_relevance,suggested_tags,analysis_version,analyzed_at,metadata",
+      )
+      .in("article_id", uniqueArticleIds);
+    if (error) return new Map();
+
+    return new Map(
+      (data ?? []).map((row) => [
+        String((row as Record<string, unknown>).article_id),
+        row as unknown as NovinyArticleContextRow,
+      ]),
+    );
+  } catch {
+    return new Map();
+  }
+}
+
 export function createNovinyPublicClient(): SupabaseClient {
   return createSupabaseAnonServerClient();
 }
@@ -206,6 +235,9 @@ export async function listPublicNovinyArticles(
   if (opts.sourceId) {
     query = query.eq("source_id", opts.sourceId);
   }
+  if (opts.articleIds && opts.articleIds.length > 0) {
+    query = query.in("id", Array.from(new Set(opts.articleIds)));
+  }
   const { data, error } = await query;
   if (error) throw error;
   const articles = (data ?? []).map(asArticleRow);
@@ -240,6 +272,10 @@ export async function listPublicNovinyArticles(
     supabase,
     articles.map((article) => article.id),
   );
+  const contextsByArticle = await loadArticleContextsMap(
+    supabase,
+    articles.map((article) => article.id),
+  );
 
   return articles.map((article) => ({
     ...article,
@@ -248,6 +284,7 @@ export async function listPublicNovinyArticles(
       ? ((categoryMap.get(article.category_id) ?? null) as NovinyArticleWithRelations["category"])
       : null,
     tags: tagsByArticle.get(article.id) ?? [],
+    context: contextsByArticle.get(article.id) ?? null,
   }));
 }
 
@@ -292,6 +329,10 @@ export async function listAdminNovinyArticles(
     supabase,
     rows.map((article) => article.id),
   );
+  const contextsByArticle = await loadArticleContextsMap(
+    supabase,
+    rows.map((article) => article.id),
+  );
 
   return rows.map((article) => ({
     ...article,
@@ -300,6 +341,7 @@ export async function listAdminNovinyArticles(
       ? ((categoryMap.get(article.category_id) ?? null) as NovinyArticleWithRelations["category"])
       : null,
     tags: tagsByArticle.get(article.id) ?? [],
+    context: contextsByArticle.get(article.id) ?? null,
   }));
 }
 
