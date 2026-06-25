@@ -68,7 +68,7 @@ describe("noviny public text rendering", () => {
       imported_at: new Date().toISOString(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      source: { id: "s1", name: "Zdroj", slug: "zdroj", homepage_url: null },
+      source: { id: "s1", name: "Zdroj", slug: "zdroj", homepage_url: null, language: "cs", country: "CZ" },
       category: { id: "c1", slug: "ekonomika", name: "Ekonomika" },
       tags: [],
     });
@@ -76,5 +76,34 @@ describe("noviny public text rendering", () => {
     expect(bullets.length).toBeGreaterThanOrEqual(3);
     expect(bullets.length).toBeLessThanOrEqual(5);
     expect(bullets[0]?.toLowerCase()).not.toContain("rozpočtová krize ve vládě");
+  });
+
+  it("returns no bullets when original text is missing", () => {
+    const bullets = getArticleSummaryBullets({
+      id: "2",
+      source_id: "s1",
+      category_id: "c1",
+      source_article_id: null,
+      title: "Krátká zpráva",
+      perex: "Stručný popis",
+      original_url: "https://example.com/y",
+      canonical_url: "https://example.com/y",
+      published_at: new Date().toISOString(),
+      image_url: null,
+      image_usage_safe: false,
+      external_author: null,
+      language: "cs",
+      is_hidden: false,
+      edited_title: null,
+      edited_perex: null,
+      metadata: {},
+      imported_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      source: { id: "s1", name: "Zdroj", slug: "zdroj", homepage_url: null, language: "cs", country: "CZ" },
+      category: { id: "c1", slug: "domaci", name: "Domácí" },
+      tags: [],
+    });
+    expect(bullets).toEqual([]);
   });
 });

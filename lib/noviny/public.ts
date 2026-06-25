@@ -162,10 +162,16 @@ function extractMetadataSummaryText(article: NovinyArticleWithRelations): string
 
 export function getArticleSummaryBullets(article: NovinyArticleWithRelations): string[] {
   const title = getVisibleArticleTitle(article);
-  const perex = getVisibleArticlePerex(article) ?? "";
   const detailsFromMetadata = extractMetadataSummaryText(article);
-  const sourceText = `${title}. ${perex} ${detailsFromMetadata}`.trim();
-  const plain = stripHtmlToText(sourceText);
+  if (detailsFromMetadata.length < 180) {
+    return [];
+  }
+
+  const plain = stripHtmlToText(detailsFromMetadata);
+  if (plain.length < 180) {
+    return [];
+  }
+
   const titleTokens = toTokenSet(title);
   const sentences = sentenceSplit(plain).filter((sentence) => overlapRatio(toTokenSet(sentence), titleTokens) < 0.85);
 
@@ -178,27 +184,14 @@ export function getArticleSummaryBullets(article: NovinyArticleWithRelations): s
     unique.push(sentence);
     if (unique.length >= 8) break;
   }
-  const bullets: string[] = [];
-  if (unique.length > 0) {
-    bullets.push(...unique.slice(0, 5));
-  } else if (plain.length > 0) {
-    bullets.push(plain.slice(0, 220).trim());
-  }
+  const bullets = unique
+    .map((bullet) => (bullet.length > 220 ? `${bullet.slice(0, 217).trimEnd()}...` : bullet))
+    .filter((bullet) => bullet.length >= 24)
+    .slice(0, 5);
 
   if (bullets.length < 3) {
-    const tagPart = getDisplayTags(article).slice(0, 3).join(", ");
-    if (tagPart) {
-      bullets.push(`Článek se týká témat: ${tagPart}.`);
-    }
-  }
-  if (bullets.length < 4) {
-    bullets.push(`Podle zdroje ${article.source?.name ?? "článku"} jde o aktuální vývoj sledovaného tématu.`);
-  }
-  if (bullets.length < 5) {
-    bullets.push("Podrobnosti a plný kontext jsou v původním článku.");
+    return [];
   }
 
-  return bullets
-    .map((bullet) => (bullet.length > 220 ? `${bullet.slice(0, 217).trimEnd()}...` : bullet))
-    .slice(0, 5);
+  return bullets;
 }

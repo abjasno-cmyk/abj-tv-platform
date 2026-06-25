@@ -25,6 +25,13 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
   const translatedView = shouldUseAutoTranslation(article);
   const outboundUrl = translatedView ? buildTranslateToCzechUrl(article.original_url) : article.original_url;
   const outboundLabel = translatedView ? "Otevřít originál (automatický CZ překlad)" : "Přejít na původní článek";
+  const previewImageUrl = article.image_url ? article.image_url.replace(/"/g, "%22") : null;
+  let articleHost = "";
+  try {
+    articleHost = new URL(article.original_url).host.replace(/^www\./i, "");
+  } catch {
+    articleHost = "";
+  }
 
   return (
     <article className={`rounded-3xl border border-[var(--abj-gold-dim)] bg-white shadow-sm ${compact ? "p-4 md:p-5" : "p-5 md:p-6"}`}>
@@ -36,6 +43,28 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
       </div>
 
       <h2 className={`mt-3 font-bold leading-tight text-abj-text1 ${compact ? "text-xl md:text-2xl" : "text-2xl md:text-3xl"}`}>{title}</h2>
+
+      <section className="mt-3 overflow-hidden rounded-2xl border border-[var(--abj-gold-dim)] bg-[var(--abj-panel)]">
+        <div
+          className="h-28 w-full md:h-36"
+          style={
+            previewImageUrl
+              ? {
+                  backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.12), rgba(0,0,0,0.45)), url("${previewImageUrl}")`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : {
+                  background:
+                    "linear-gradient(130deg, rgba(255,106,0,0.24), rgba(31,79,156,0.18) 50%, rgba(17,24,39,0.08))",
+                }
+          }
+        />
+        <div className="border-t border-[var(--abj-gold-dim)] px-3 py-2 text-xs text-abj-text2">
+          <p className="font-semibold uppercase tracking-[0.08em]">Náhled originálního článku</p>
+          <p className="mt-0.5 truncate">{articleHost || article.original_url}</p>
+        </div>
+      </section>
 
       {tags.length > 0 ? (
         <ul className="mt-3 flex flex-wrap gap-2">
@@ -50,14 +79,16 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
         </ul>
       ) : null}
 
-      <ul className={`mt-3 space-y-2 text-abj-text1/90 ${compact ? "text-sm md:text-base" : "text-base md:text-lg"}`}>
-        {bullets.slice(0, compact ? 3 : 5).map((bullet) => (
-          <li key={`${article.id}-${bullet.slice(0, 24)}`} className="flex gap-2 leading-7">
-            <span className="mt-[0.45rem] h-1.5 w-1.5 flex-none rounded-full bg-[#FF6A00]" aria-hidden="true" />
-            <span>{bullet}</span>
-          </li>
-        ))}
-      </ul>
+      {bullets.length > 0 ? (
+        <ul className={`mt-3 space-y-2 text-abj-text1/90 ${compact ? "text-sm md:text-base" : "text-base md:text-lg"}`}>
+          {bullets.slice(0, compact ? 3 : 5).map((bullet) => (
+            <li key={`${article.id}-${bullet.slice(0, 24)}`} className="flex gap-2 leading-7">
+              <span className="mt-[0.45rem] h-1.5 w-1.5 flex-none rounded-full bg-[#FF6A00]" aria-hidden="true" />
+              <span>{bullet}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-abj-text2">{formatNovinyDate(article.published_at)}</p>
