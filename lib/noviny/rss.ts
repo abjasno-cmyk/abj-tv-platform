@@ -105,6 +105,7 @@ function parseRss2(
     const rawOriginal = pickFirstNonEmpty([item.link, item.guid]);
     const originalUrl = rawOriginal ? normalizeExternalUrl(rawOriginal) : null;
     const canonicalUrl = originalUrl;
+    const rawDetailText = pickFirstNonEmpty([item["content:encoded"], item.description, item.summary]);
 
     if (!title || !canonicalUrl || !originalUrl) {
       warnings.push("Přeskočena RSS položka bez titulku nebo URL.");
@@ -129,6 +130,7 @@ function parseRss2(
       metadata: {
         sourceName: options.sourceName,
         parser: "rss2",
+        summary_source_text: rawDetailText ? stripHtml(rawDetailText).slice(0, 6000) : null,
       },
     });
   }
@@ -163,6 +165,7 @@ function parseAtom(
     const rawOriginal = pickFirstNonEmpty([links[0], entry.id]);
     const originalUrl = rawOriginal ? normalizeExternalUrl(rawOriginal) : null;
     const canonicalUrl = originalUrl;
+    const rawDetailText = pickFirstNonEmpty([entry.content, entry.summary]);
     if (!title || !originalUrl || !canonicalUrl) {
       warnings.push("Přeskočena Atom položka bez titulku nebo URL.");
       continue;
@@ -189,6 +192,7 @@ function parseAtom(
       metadata: {
         sourceName: options.sourceName,
         parser: "atom",
+        summary_source_text: rawDetailText ? stripHtml(rawDetailText).slice(0, 6000) : null,
       },
     });
   }

@@ -61,7 +61,10 @@ describe("noviny public text rendering", () => {
       is_hidden: false,
       edited_title: null,
       edited_perex: null,
-      metadata: {},
+      metadata: {
+        summary_source_text:
+          "Ministr financí představil novou rozpočtovou strategii. Opatření se dotkne energií, cen a daňových změn. Analytici upozorňují na dopad na domácnosti. Opozice žádá mimořádné jednání. Další kroky mají padnout příští týden.",
+      },
       imported_at: new Date().toISOString(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -72,5 +75,6 @@ describe("noviny public text rendering", () => {
 
     expect(bullets.length).toBeGreaterThanOrEqual(3);
     expect(bullets.length).toBeLessThanOrEqual(5);
+    expect(bullets[0]?.toLowerCase()).not.toContain("rozpočtová krize ve vládě");
   });
 });

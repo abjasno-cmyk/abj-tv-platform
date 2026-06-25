@@ -390,11 +390,11 @@ export async function upsertNovinyArticlesFromRss(
   const toInsert = parsedArticles.filter((article) => !existingCanonical.has(article.canonicalUrl));
   const deduplicated = parsedArticles.length - toInsert.length;
 
-  if (toInsert.length === 0) {
-    return { imported: 0, deduplicated, skipped: 0 };
+  if (parsedArticles.length === 0) {
+    return { imported: 0, deduplicated: 0, skipped: 0 };
   }
 
-  const payload = toInsert.map((article) => ({
+  const payload = parsedArticles.map((article) => ({
     source_id: source.id,
     category_id: source.category_id,
     source_article_id: article.sourceArticleId,
@@ -408,12 +408,16 @@ export async function upsertNovinyArticlesFromRss(
     external_author: article.externalAuthor,
     language: article.language,
     metadata: article.metadata,
+    imported_at: new Date().toISOString(),
   }));
 
-  const { error } = await supabase.from("noviny_articles").insert(payload);
+  const { error } = await supabase.from("noviny_articles").upsert(payload, {
+    onConflict: "canonical_url",
+    ignoreDuplicates: false,
+  });
   if (error) throw error;
 
-  return { imported: payload.length, deduplicated, skipped: 0 };
+  return { imported: toInsert.length, deduplicated, skipped: 0 };
 }
 
 export async function insertNovinyFetchLog(

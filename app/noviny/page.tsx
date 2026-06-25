@@ -72,14 +72,14 @@ export default async function NovinyPage() {
 
   const supabase = createNovinyPublicClient();
 
-  const [firstArticlesResult] = await Promise.allSettled([listPublicNovinyArticles(supabase, { limit: 140 })]);
+  const [firstArticlesResult] = await Promise.allSettled([listPublicNovinyArticles(supabase, { limit: 250 })]);
   const firstArticles = firstArticlesResult.status === "fulfilled" ? firstArticlesResult.value : [];
 
   let articles = firstArticles;
   if (articles.length === 0) {
     try {
       await runNovinyImport({ runType: "api" });
-      const secondTry = await listPublicNovinyArticles(supabase, { limit: 140 });
+      const secondTry = await listPublicNovinyArticles(supabase, { limit: 250 });
       articles = secondTry;
     } catch (error) {
       articlesError = error instanceof Error ? error.message : "Automatický import Novin selhal.";
@@ -91,8 +91,8 @@ export default async function NovinyPage() {
   const localizedArticles = await localizeArticlesToCzech(articles);
   const ranked = applyLanguageHierarchy(rankNovinyArticles(localizedArticles));
   const lead = ranked[0] ?? null;
-  const secondary = ranked.slice(1, 5);
-  const deepRead = ranked.slice(5, 24);
+  const secondary = ranked.slice(1, 7);
+  const deepRead = ranked.slice(7);
 
   return (
     <main className="mx-auto w-full max-w-[1240px] px-4 py-8 text-abj-text1 md:py-12">
@@ -103,6 +103,7 @@ export default async function NovinyPage() {
       ) : null}
 
       <div className="space-y-8">
+        <p className="text-sm text-abj-text2">Zobrazeno článků: {ranked.length}</p>
         {lead ? (
           <section className="space-y-3">
             <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">Hlavní výběr</h2>

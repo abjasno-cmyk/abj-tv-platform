@@ -134,20 +134,55 @@ function sentenceSplit(value: string): string[] {
     .filter((part) => part.length >= 16);
 }
 
+function toTokenSet(value: string): Set<string> {
+  const normalized = normalizeForLookup(value);
+  return new Set(
+    normalized
+      .split(/[^a-z0-9]+/)
+      .map((token) => token.trim())
+      .filter((token) => token.length >= 3),
+  );
+}
+
+function overlapRatio(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 || b.size === 0) return 0;
+  let overlap = 0;
+  for (const token of a) {
+    if (b.has(token)) overlap += 1;
+  }
+  return overlap / Math.max(1, Math.min(a.size, b.size));
+}
+
+function extractMetadataSummaryText(article: NovinyArticleWithRelations): string {
+  const metadata = article.metadata ?? {};
+  const maybe = metadata.summary_source_text;
+  if (typeof maybe !== "string") return "";
+  return normalizeWhitespace(decodeHtmlEntities(maybe));
+}
+
 export function getArticleSummaryBullets(article: NovinyArticleWithRelations): string[] {
   const title = getVisibleArticleTitle(article);
   const perex = getVisibleArticlePerex(article) ?? "";
-  const sourceText = `${title}. ${perex}`.trim();
+  const detailsFromMetadata = extractMetadataSummaryText(article);
+  const sourceText = `${title}. ${perex} ${detailsFromMetadata}`.trim();
   const plain = stripHtmlToText(sourceText);
-  const sentences = sentenceSplit(plain);
+  const titleTokens = toTokenSet(title);
+  const sentences = sentenceSplit(plain).filter((sentence) => overlapRatio(toTokenSet(sentence), titleTokens) < 0.85);
 
+  const unique: string[] = [];
+  const seen = new Set<string>();
+  for (const sentence of sentences) {
+    const normalized = normalizeForLookup(sentence);
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    unique.push(sentence);
+    if (unique.length >= 8) break;
+  }
   const bullets: string[] = [];
-  if (sentences.length > 0) {
-    bullets.push(...sentences.slice(0, 5));
+  if (unique.length > 0) {
+    bullets.push(...unique.slice(0, 5));
   } else if (plain.length > 0) {
     bullets.push(plain.slice(0, 220).trim());
-  } else {
-    bullets.push(title);
   }
 
   if (bullets.length < 3) {
