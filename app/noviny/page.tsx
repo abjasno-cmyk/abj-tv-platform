@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
 
 import { NovinyArticleCard } from "@/app/noviny/_components/NovinyArticleCard";
-import { NovinySourceList } from "@/app/noviny/_components/NovinySourceList";
-import { listPublicNovinyArticles, listPublicNovinySources, createNovinyPublicClient } from "@/lib/noviny/repository";
+import { listPublicNovinyArticles, createNovinyPublicClient } from "@/lib/noviny/repository";
+import { rankNovinyArticles } from "@/lib/noviny/ranking";
+import { runNovinyImport } from "@/lib/noviny/importer";
 import { SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Noviny | Verox",
-  description: "Přehled externích i vlastních článků Veroxu. Obsahuje pouze metadata a odkaz na původní zdroj.",
+  description: "Kurátorovaný výběr článků Noviny podle relevance, novosti a dopadu. Obsahuje metadata a odkaz na původní zdroj.",
   alternates: {
     canonical: `${SITE_URL}/noviny`,
   },
@@ -22,58 +23,88 @@ export const metadata: Metadata = {
 };
 
 export default async function NovinyPage() {
-  let sourcesError: string | null = null;
   let articlesError: string | null = null;
+  let importInfo: string | null = null;
 
   const supabase = createNovinyPublicClient();
 
-  const [sourcesResult, articlesResult] = await Promise.allSettled([
-    listPublicNovinySources(supabase, 120),
-    listPublicNovinyArticles(supabase, { limit: 80 }),
-  ]);
+  const [firstArticlesResult] = await Promise.allSettled([listPublicNovinyArticles(supabase, { limit: 140 })]);
+  const firstArticles = firstArticlesResult.status === "fulfilled" ? firstArticlesResult.value : [];
 
-  const sources = sourcesResult.status === "fulfilled" ? sourcesResult.value : [];
-  const articles = articlesResult.status === "fulfilled" ? articlesResult.value : [];
+  let articles = firstArticles;
+  if (articles.length === 0) {
+    try {
+      const report = await runNovinyImport({ runType: "api" });
+      const secondTry = await listPublicNovinyArticles(supabase, { limit: 140 });
+      articles = secondTry;
+      importInfo = `Automatický import spuštěn: zdrojů ${report.totalSources}, importováno ${report.importedCount}.`;
+    } catch (error) {
+      articlesError = error instanceof Error ? error.message : "Automatický import Novin selhal.";
+    }
+  } else if (firstArticlesResult.status === "rejected") {
+    articlesError = firstArticlesResult.reason instanceof Error ? firstArticlesResult.reason.message : "Články se nepodařilo načíst.";
+  }
 
-  if (sourcesResult.status === "rejected") {
-    sourcesError = sourcesResult.reason instanceof Error ? sourcesResult.reason.message : "Zdroje se nepodařilo načíst.";
-  }
-  if (articlesResult.status === "rejected") {
-    articlesError = articlesResult.reason instanceof Error ? articlesResult.reason.message : "Články se nepodařilo načíst.";
-  }
+  const ranked = rankNovinyArticles(articles);
+  const lead = ranked[0] ?? null;
+  const secondary = ranked.slice(1, 5);
+  const deepRead = ranked.slice(5, 24);
 
   return (
     <main className="mx-auto w-full max-w-[1240px] px-4 py-8 text-abj-text1 md:py-12">
       <header className="rounded-3xl border border-[var(--abj-gold-dim)] bg-abj-panel p-6 md:p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-abj-text2">Verox Noviny</p>
-        <h1 className="mt-2 text-4xl font-black leading-tight md:text-5xl">Informační uzel s odkazy na původní zdroje</h1>
+        <h1 className="mt-2 text-4xl font-black leading-tight md:text-5xl">Kurátorovaný přehled článků podle relevance</h1>
         <p className="mt-3 max-w-3xl text-lg leading-8 text-abj-text1/90">
-          Noviny nepublikují plné přepisy cizích článků. U každé položky najdete titulek, datum, zdroj, krátký perex a
-          přímý odkaz na originál.
+          Pořadí je sestavené hierarchicky podle novosti, závažnosti tématu, čtenářské zajímavosti a neuro-ekonomických
+          aspektů. Každá karta vede na původní článek.
         </p>
       </header>
 
-      {sourcesError || articlesError ? (
+      {importInfo ? (
+        <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">{importInfo}</div>
+      ) : null}
+
+      {articlesError ? (
         <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {sourcesError ? <p>Nepodařilo se načíst zdroje: {sourcesError}</p> : null}
-          {articlesError ? <p>Nepodařilo se načíst články: {articlesError}</p> : null}
+          <p>Nepodařilo se načíst články: {articlesError}</p>
         </div>
       ) : null}
 
-      <div className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <section className="space-y-5">
-          {articles.length === 0 ? (
+      <div className="mt-8 space-y-8">
+        {lead ? (
+          <section className="space-y-3">
+            <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">Priorita dne</h2>
+            <NovinyArticleCard article={lead} />
+          </section>
+        ) : null}
+
+        {secondary.length > 0 ? (
+          <section className="space-y-3">
+            <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">Strategický výběr</h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              {secondary.map((article) => (
+                <NovinyArticleCard key={article.id} article={article} compact />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        <section className="space-y-3">
+          <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">Další čtení</h2>
+          {deepRead.length === 0 && !lead ? (
             <div className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-6 text-base text-abj-text2">
-              Zatím nejsou k dispozici žádné publikované články.
+              Zatím nejsou k dispozici žádné publikované články. Otevři prosím <strong>/admin/noviny</strong> a spusť
+              ruční refresh.
             </div>
           ) : (
-            articles.map((article) => <NovinyArticleCard key={article.id} article={article} />)
+            <div className="space-y-4">
+              {deepRead.map((article) => (
+                <NovinyArticleCard key={article.id} article={article} compact />
+              ))}
+            </div>
           )}
         </section>
-
-        <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
-          <NovinySourceList sources={sources} />
-        </aside>
       </div>
     </main>
   );
