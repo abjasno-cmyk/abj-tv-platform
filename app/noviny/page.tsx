@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { NovinyArticleFeed } from "@/app/noviny/_components/NovinyArticleFeed";
 import { NovinyContextTopics } from "@/app/noviny/_components/NovinyContextTopics";
@@ -16,6 +17,8 @@ import { SITE_URL } from "@/lib/site";
 import type { NovinyArticleWithRelations } from "@/lib/noviny/types";
 import { listNovinyContextTopics } from "@/lib/noviny/contextLayer";
 import { translateTextToCzech } from "@/lib/noviny/translation";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isNazoryAdmin } from "@/lib/nazory/access";
 
 export const dynamic = "force-dynamic";
 
@@ -151,6 +154,18 @@ async function localizeForeignArticlesToCzech(
   });
 }
 
+async function canShowNovinyAdminControls(): Promise<boolean> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return user ? isNazoryAdmin(supabase, user) : false;
+  } catch {
+    return false;
+  }
+}
+
 export default async function NovinyPage() {
   let articlesError: string | null = null;
 
@@ -177,7 +192,10 @@ export default async function NovinyPage() {
   const ranked = rankNovinyArticles(localizedArticles);
   const domesticArticles = ranked.filter((article) => isCzechOrSlovak(resolveArticleLanguage(article)));
   const foreignArticles = ranked.filter((article) => !isCzechOrSlovak(resolveArticleLanguage(article)));
-  const contextTopics = await listNovinyContextTopics(supabase, 10);
+  const [contextTopics, showAdminControls] = await Promise.all([
+    listNovinyContextTopics(supabase, 10),
+    canShowNovinyAdminControls(),
+  ]);
 
   return (
     <main className="mx-auto w-full max-w-[1240px] px-4 py-8 text-abj-text1 md:py-12">
@@ -188,6 +206,32 @@ export default async function NovinyPage() {
       ) : null}
 
       <div className="space-y-8">
+        {showAdminControls ? (
+          <section className="rounded-2xl border border-[#FF6A00]/25 bg-[#FF6A00]/5 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#B04A00]">Admin Noviny</p>
+                <p className="mt-1 text-sm text-abj-text2">
+                  Přidání nebo vypnutí RSS zdrojů/kanálů a ruční refresh článků.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href="/admin/noviny/zdroje"
+                  className="inline-flex min-h-10 items-center rounded-xl border border-[#FF6A00]/40 bg-white px-4 py-2 text-sm font-bold text-[#B04A00] hover:bg-[#FF6A00]/10"
+                >
+                  Přidat zdroj/kanál
+                </Link>
+                <Link
+                  href="/admin/noviny"
+                  className="inline-flex min-h-10 items-center rounded-xl border border-[var(--abj-gold-dim)] bg-white px-4 py-2 text-sm font-bold text-abj-text1 hover:border-[#FF6A00]/35"
+                >
+                  Správa Novin
+                </Link>
+              </div>
+            </div>
+          </section>
+        ) : null}
         <NovinyContextTopics topics={contextTopics} />
         {ranked.length === 0 ? (
           <div className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-6 text-base text-abj-text2">
