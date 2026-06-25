@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 
 import { NovinyArticleFeed } from "@/app/noviny/_components/NovinyArticleFeed";
 import { NovinyContextTopics } from "@/app/noviny/_components/NovinyContextTopics";
-import { isCzechOrSlovak, resolveArticleLanguage } from "@/lib/noviny/public";
+import {
+  getVisibleArticlePerex,
+  getVisibleArticleTitle,
+  isCzechOrSlovak,
+  resolveArticleLanguage,
+} from "@/lib/noviny/public";
 import { fetchOriginMetadata } from "@/lib/noviny/originMetadata";
 import { listPublicNovinyArticles, createNovinyPublicClient } from "@/lib/noviny/repository";
 import { rankNovinyArticles } from "@/lib/noviny/ranking";
@@ -10,6 +15,7 @@ import { runNovinyImport } from "@/lib/noviny/importer";
 import { SITE_URL } from "@/lib/site";
 import type { NovinyArticleWithRelations } from "@/lib/noviny/types";
 import { listNovinyContextTopics } from "@/lib/noviny/contextLayer";
+import { translateTextToCzech } from "@/lib/noviny/translation";
 
 export const dynamic = "force-dynamic";
 
@@ -69,6 +75,82 @@ async function enrichArticlesFromOrigin(articles: NovinyArticleWithRelations[]):
   );
 }
 
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let cursor = 0;
+
+  async function worker() {
+    for (;;) {
+      const index = cursor;
+      cursor += 1;
+      if (index >= items.length) return;
+      results[index] = await mapper(items[index]);
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, worker));
+  return results;
+}
+
+async function translateMetadataField(
+  metadata: Record<string, unknown>,
+  key: string,
+  maxLength?: number,
+): Promise<string | null> {
+  const value = metadata[key];
+  if (typeof value !== "string" || value.trim().length === 0) return null;
+  return translateTextToCzech(value, maxLength);
+}
+
+async function localizeForeignArticlesToCzech(
+  articles: NovinyArticleWithRelations[],
+): Promise<NovinyArticleWithRelations[]> {
+  return mapWithConcurrency(articles, 6, async (article) => {
+    if (isCzechOrSlovak(resolveArticleLanguage(article))) return article;
+
+    const metadata = { ...(article.metadata ?? {}) } as Record<string, unknown>;
+    const context = article.context ? { ...article.context } : null;
+    const [
+      translatedTitle,
+      translatedPerex,
+      translatedPreviewTitle,
+      translatedPreviewDescription,
+      translatedSummaryText,
+      translatedContextSummary,
+      translatedContextAttribution,
+      translatedContextWhyImportant,
+    ] = await Promise.all([
+      translateTextToCzech(getVisibleArticleTitle(article), 500),
+      getVisibleArticlePerex(article) ? translateTextToCzech(getVisibleArticlePerex(article) ?? "", 1200) : Promise.resolve(null),
+      translateMetadataField(metadata, "preview_title", 500),
+      translateMetadataField(metadata, "preview_description", 1200),
+      translateMetadataField(metadata, "summary_source_text", 2400),
+      context?.short_summary ? translateTextToCzech(context.short_summary, 1200) : Promise.resolve(null),
+      context?.safe_attribution ? translateTextToCzech(context.safe_attribution, 1200) : Promise.resolve(null),
+      context?.why_important ? translateTextToCzech(context.why_important, 1200) : Promise.resolve(null),
+    ]);
+
+    if (translatedPreviewTitle) metadata.preview_title = translatedPreviewTitle;
+    if (translatedPreviewDescription) metadata.preview_description = translatedPreviewDescription;
+    if (translatedSummaryText) metadata.summary_source_text = translatedSummaryText;
+    if (context && translatedContextSummary) context.short_summary = translatedContextSummary;
+    if (context && translatedContextAttribution) context.safe_attribution = translatedContextAttribution;
+    if (context && translatedContextWhyImportant) context.why_important = translatedContextWhyImportant;
+
+    return {
+      ...article,
+      edited_title: translatedTitle ?? article.edited_title,
+      edited_perex: translatedPerex ?? article.edited_perex,
+      metadata,
+      context,
+    };
+  });
+}
+
 export default async function NovinyPage() {
   let articlesError: string | null = null;
 
@@ -91,7 +173,8 @@ export default async function NovinyPage() {
   }
 
   const enrichedArticles = await enrichArticlesFromOrigin(articles);
-  const ranked = rankNovinyArticles(enrichedArticles);
+  const localizedArticles = await localizeForeignArticlesToCzech(enrichedArticles);
+  const ranked = rankNovinyArticles(localizedArticles);
   const domesticArticles = ranked.filter((article) => isCzechOrSlovak(resolveArticleLanguage(article)));
   const foreignArticles = ranked.filter((article) => !isCzechOrSlovak(resolveArticleLanguage(article)));
   const contextTopics = await listNovinyContextTopics(supabase, 10);

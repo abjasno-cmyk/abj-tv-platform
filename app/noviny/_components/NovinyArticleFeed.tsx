@@ -65,13 +65,7 @@ export function NovinyArticleFeed({ domesticArticles, foreignArticles }: NovinyA
 
   return (
     <section className="space-y-5">
-      <div className="flex flex-col gap-3 rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm text-abj-text2">Zobrazeno článků: {activeArticles.length}</p>
-          <p className="mt-1 text-xs text-abj-text2">
-            Domácí výběr obsahuje české a slovenské zdroje společně. Zahraniční zdroje jsou oddělené.
-          </p>
-        </div>
+      <div className="flex justify-end">
         <div className="inline-flex rounded-full border border-[var(--abj-gold-dim)] bg-[var(--abj-panel)] p-1">
           <button
             type="button"
@@ -81,7 +75,7 @@ export function NovinyArticleFeed({ domesticArticles, foreignArticles }: NovinyA
             }`}
             aria-pressed={mode === "domaci"}
           >
-            Domácí ({domesticArticles.length})
+            Domácí
           </button>
           <button
             type="button"
@@ -91,7 +85,7 @@ export function NovinyArticleFeed({ domesticArticles, foreignArticles }: NovinyA
             }`}
             aria-pressed={mode === "zahranicni"}
           >
-            Zahraniční ({foreignArticles.length})
+            Zahraniční
           </button>
         </div>
       </div>
