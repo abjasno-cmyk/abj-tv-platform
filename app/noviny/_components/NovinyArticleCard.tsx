@@ -1,11 +1,13 @@
 import Link from "next/link";
 
 import {
+  buildTranslateToCzechUrl,
   formatNovinyDate,
   getArticleAuthor,
   getArticleSummaryBullets,
   getDisplayTags,
   getVisibleArticleTitle,
+  isCzechOrSlovak,
   sourceLabel,
 } from "@/lib/noviny/public";
 import type { NovinyArticleWithRelations } from "@/lib/noviny/types";
@@ -20,6 +22,9 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
   const author = getArticleAuthor(article);
   const tags = getDisplayTags(article);
   const bullets = getArticleSummaryBullets(article);
+  const translatedView = !isCzechOrSlovak(article.language);
+  const outboundUrl = translatedView ? buildTranslateToCzechUrl(article.original_url) : article.original_url;
+  const outboundLabel = translatedView ? "Otevřít originál (automatický CZ překlad)" : "Přejít na původní článek";
 
   return (
     <article className={`rounded-3xl border border-[var(--abj-gold-dim)] bg-white shadow-sm ${compact ? "p-4 md:p-5" : "p-5 md:p-6"}`}>
@@ -46,7 +51,7 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
       ) : null}
 
       <ul className={`mt-3 space-y-2 text-abj-text1/90 ${compact ? "text-sm md:text-base" : "text-base md:text-lg"}`}>
-        {bullets.slice(0, compact ? 2 : 3).map((bullet) => (
+        {bullets.slice(0, compact ? 3 : 5).map((bullet) => (
           <li key={`${article.id}-${bullet.slice(0, 24)}`} className="flex gap-2 leading-7">
             <span className="mt-[0.45rem] h-1.5 w-1.5 flex-none rounded-full bg-[#FF6A00]" aria-hidden="true" />
             <span>{bullet}</span>
@@ -57,12 +62,12 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-abj-text2">{formatNovinyDate(article.published_at)}</p>
         <Link
-          href={article.original_url}
+          href={outboundUrl}
           target="_blank"
           rel="noopener noreferrer nofollow"
           className="inline-flex min-h-11 items-center rounded-xl border border-[#FF6A00]/40 bg-[#FF6A00]/10 px-4 py-2 text-base font-bold text-[#B04A00] hover:bg-[#FF6A00]/15"
         >
-          Přejít na původní článek
+          {outboundLabel}
         </Link>
       </div>
     </article>

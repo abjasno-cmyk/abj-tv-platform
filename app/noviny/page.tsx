@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 
 import { NovinyArticleCard } from "@/app/noviny/_components/NovinyArticleCard";
+import { getVisibleArticlePerex, getVisibleArticleTitle, isCzechOrSlovak } from "@/lib/noviny/public";
 import { listPublicNovinyArticles, createNovinyPublicClient } from "@/lib/noviny/repository";
 import { rankNovinyArticles } from "@/lib/noviny/ranking";
 import { runNovinyImport } from "@/lib/noviny/importer";
 import { SITE_URL } from "@/lib/site";
+import { translateTextToCzech } from "@/lib/noviny/translation";
+import type { NovinyArticleWithRelations } from "@/lib/noviny/types";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +24,28 @@ export const metadata: Metadata = {
     type: "website",
   },
 };
+
+async function localizeArticlesToCzech(articles: NovinyArticleWithRelations[]): Promise<NovinyArticleWithRelations[]> {
+  return Promise.all(
+    articles.map(async (article) => {
+      if (isCzechOrSlovak(article.language)) return article;
+      if (article.edited_title?.trim() || article.edited_perex?.trim()) return article;
+
+      const titleInput = getVisibleArticleTitle(article);
+      const perexInput = getVisibleArticlePerex(article) ?? "";
+      const [translatedTitle, translatedPerex] = await Promise.all([
+        translateTextToCzech(titleInput),
+        perexInput ? translateTextToCzech(perexInput) : Promise.resolve(null),
+      ]);
+
+      return {
+        ...article,
+        edited_title: translatedTitle ?? article.edited_title,
+        edited_perex: translatedPerex ?? article.edited_perex,
+      };
+    }),
+  );
+}
 
 export default async function NovinyPage() {
   let articlesError: string | null = null;
@@ -43,7 +68,8 @@ export default async function NovinyPage() {
     articlesError = firstArticlesResult.reason instanceof Error ? firstArticlesResult.reason.message : "Články se nepodařilo načíst.";
   }
 
-  const ranked = rankNovinyArticles(articles);
+  const localizedArticles = await localizeArticlesToCzech(articles);
+  const ranked = rankNovinyArticles(localizedArticles);
   const lead = ranked[0] ?? null;
   const secondary = ranked.slice(1, 5);
   const deepRead = ranked.slice(5, 24);

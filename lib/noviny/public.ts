@@ -48,6 +48,15 @@ export function sourceLabel(article: Pick<NovinyArticleWithRelations, "source" |
   return language ? `${sourceName} · ${language.toUpperCase()}` : sourceName;
 }
 
+export function isCzechOrSlovak(language: string | null | undefined): boolean {
+  const normalized = (language ?? "").trim().toLowerCase();
+  return normalized === "cs" || normalized === "cz" || normalized === "sk" || normalized.startsWith("cs-") || normalized.startsWith("sk-");
+}
+
+export function buildTranslateToCzechUrl(originalUrl: string): string {
+  return `https://translate.google.com/translate?sl=auto&tl=cs&u=${encodeURIComponent(originalUrl)}`;
+}
+
 function normalizeForLookup(value: string): string {
   return value
     .toLowerCase()
@@ -101,9 +110,9 @@ export function getDisplayTags(article: NovinyArticleWithRelations): string[] {
 
 function sentenceSplit(value: string): string[] {
   return value
-    .split(/(?<=[.!?])\s+/)
+    .split(/(?<=[.!?])\s+|;\s+|\s+-\s+|,\s+(?=[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ])/)
     .map((part) => normalizeWhitespace(part))
-    .filter((part) => part.length >= 18);
+    .filter((part) => part.length >= 16);
 }
 
 export function getArticleSummaryBullets(article: NovinyArticleWithRelations): string[] {
@@ -115,12 +124,27 @@ export function getArticleSummaryBullets(article: NovinyArticleWithRelations): s
 
   const bullets: string[] = [];
   if (sentences.length > 0) {
-    bullets.push(...sentences.slice(0, 3));
+    bullets.push(...sentences.slice(0, 5));
   } else if (plain.length > 0) {
     bullets.push(plain.slice(0, 220).trim());
   } else {
     bullets.push(title);
   }
 
-  return bullets.map((bullet) => (bullet.length > 220 ? `${bullet.slice(0, 217).trimEnd()}...` : bullet));
+  if (bullets.length < 3) {
+    const tagPart = getDisplayTags(article).slice(0, 3).join(", ");
+    if (tagPart) {
+      bullets.push(`Článek se týká témat: ${tagPart}.`);
+    }
+  }
+  if (bullets.length < 4) {
+    bullets.push(`Podle zdroje ${article.source?.name ?? "článku"} jde o aktuální vývoj sledovaného tématu.`);
+  }
+  if (bullets.length < 5) {
+    bullets.push("Podrobnosti a plný kontext jsou v původním článku.");
+  }
+
+  return bullets
+    .map((bullet) => (bullet.length > 220 ? `${bullet.slice(0, 217).trimEnd()}...` : bullet))
+    .slice(0, 5);
 }

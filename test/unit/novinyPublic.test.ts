@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { getVisibleArticlePerex, getVisibleArticleTitle } from "@/lib/noviny/public";
+import {
+  buildTranslateToCzechUrl,
+  getArticleSummaryBullets,
+  getVisibleArticlePerex,
+  getVisibleArticleTitle,
+  isCzechOrSlovak,
+} from "@/lib/noviny/public";
 
 describe("noviny public text rendering", () => {
   it("decodes html entities in title and perex", () => {
@@ -17,5 +23,43 @@ describe("noviny public text rendering", () => {
         perex: "Projev na 24. sch&#367;zi Poslaneck&#233; sn&#283;movny.",
       }),
     ).toBe("Projev na 24. schůzi Poslanecké sněmovny.");
+  });
+
+  it("builds translate url and language helpers", () => {
+    expect(isCzechOrSlovak("cs")).toBe(true);
+    expect(isCzechOrSlovak("sk")).toBe(true);
+    expect(isCzechOrSlovak("en")).toBe(false);
+    expect(buildTranslateToCzechUrl("https://example.com/a b")).toContain("tl=cs");
+  });
+
+  it("returns 3-5 summary bullets", () => {
+    const bullets = getArticleSummaryBullets({
+      id: "1",
+      source_id: "s1",
+      category_id: "c1",
+      source_article_id: null,
+      title: "Rozpočtová krize ve vládě",
+      perex: "Vláda řeší deficit. Opozice mluví o riziku recese a drahých energií.",
+      original_url: "https://example.com/x",
+      canonical_url: "https://example.com/x",
+      published_at: new Date().toISOString(),
+      image_url: null,
+      image_usage_safe: false,
+      external_author: null,
+      language: "cs",
+      is_hidden: false,
+      edited_title: null,
+      edited_perex: null,
+      metadata: {},
+      imported_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      source: { id: "s1", name: "Zdroj", slug: "zdroj", homepage_url: null },
+      category: { id: "c1", slug: "ekonomika", name: "Ekonomika" },
+      tags: [],
+    });
+
+    expect(bullets.length).toBeGreaterThanOrEqual(3);
+    expect(bullets.length).toBeLessThanOrEqual(5);
   });
 });
