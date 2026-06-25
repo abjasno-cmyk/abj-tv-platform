@@ -342,8 +342,66 @@ async function buildAiResult(
   source: NovinySourceRow,
   text: string,
 ): Promise<EnrichmentAiResult> {
-  // Připraveno pro budoucí externí AI provider. Bez klíče se používá bezpečný
-  // lokální návrh, který pracuje pouze s dodaným textem a atribucí.
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (apiKey) {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: process.env.NOVINY_AI_MODEL?.trim() || "gpt-4o-mini",
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: `${NOVINY_ENRICHMENT_PROMPT}\nVrať pouze validní JSON s klíči five_point_summary, source_attribution_sentence, content_type, main_actors, topics, suggested_tags, why_it_matters, verox_relevance_score, legal_reputation_risk.`,
+          },
+          {
+            role: "user",
+            content: JSON.stringify({
+              source: source.name,
+              title: getVisibleArticleTitle(article),
+              perex: getVisibleArticlePerex(article),
+              article_text: text,
+            }),
+          },
+        ],
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`AI API vrátilo HTTP ${response.status}.`);
+    }
+    const payload = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    const content = payload.choices?.[0]?.message?.content;
+    if (!content) throw new Error("AI API nevrátilo obsah.");
+    const parsed = JSON.parse(content) as Partial<EnrichmentAiResult>;
+    const points = Array.isArray(parsed.five_point_summary) ? parsed.five_point_summary.map(String).map(shortenPoint) : [];
+    if (points.length !== 5) throw new Error("AI API nevrátilo přesně 5 bodů.");
+    return {
+      five_point_summary: points,
+      source_attribution_sentence:
+        typeof parsed.source_attribution_sentence === "string"
+          ? parsed.source_attribution_sentence
+          : `Podle serveru ${source.name} článek uvádí:`,
+      content_type: typeof parsed.content_type === "string" ? parsed.content_type : "article",
+      main_actors: Array.isArray(parsed.main_actors) ? parsed.main_actors : [],
+      topics: Array.isArray(parsed.topics) ? parsed.topics.map(String).slice(0, 8) : [],
+      suggested_tags: Array.isArray(parsed.suggested_tags) ? parsed.suggested_tags.map(String).slice(0, 8) : [],
+      why_it_matters: typeof parsed.why_it_matters === "string" ? parsed.why_it_matters : "",
+      verox_relevance_score:
+        typeof parsed.verox_relevance_score === "number" ? clamp(parsed.verox_relevance_score, 0, 100) : 50,
+      legal_reputation_risk:
+        typeof parsed.legal_reputation_risk === "number" ? clamp(parsed.legal_reputation_risk, 0, 100) : 25,
+    };
+  }
+
+  // Bez AI klíče se používá bezpečný lokální návrh, který pracuje pouze s
+  // dodaným textem a atribucí. Veřejně se zobrazí až po admin schválení.
   return buildSafeLocalAiResult(article, source, text);
 }
 
