@@ -53,27 +53,8 @@ export function isCzechOrSlovak(language: string | null | undefined): boolean {
   return normalized === "cs" || normalized === "cz" || normalized === "sk" || normalized.startsWith("cs-") || normalized.startsWith("sk-");
 }
 
-export function buildTranslateToCzechUrl(originalUrl: string): string {
-  return `https://translate.google.com/?sl=auto&tl=cs&op=websites&url=${encodeURIComponent(originalUrl)}`;
-}
-
 export function resolveArticleLanguage(article: Pick<NovinyArticleWithRelations, "language" | "source">): string | null {
   return (article.language ?? article.source?.language ?? null)?.trim() ?? null;
-}
-
-export function languagePriority(language: string | null | undefined): 0 | 1 | 2 {
-  const normalized = (language ?? "").trim().toLowerCase();
-  if (normalized === "cs" || normalized === "cz" || normalized.startsWith("cs-")) return 0;
-  if (normalized === "sk" || normalized.startsWith("sk-")) return 1;
-  return 2;
-}
-
-export function shouldUseAutoTranslation(article: Pick<NovinyArticleWithRelations, "language" | "source">): boolean {
-  const language = resolveArticleLanguage(article);
-  if (language && !isCzechOrSlovak(language)) return true;
-  const country = article.source?.country?.trim().toUpperCase();
-  if (country && country !== "CZ" && country !== "SK") return true;
-  return false;
 }
 
 function normalizeForLookup(value: string): string {

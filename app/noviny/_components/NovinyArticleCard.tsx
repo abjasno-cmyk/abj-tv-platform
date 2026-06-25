@@ -1,7 +1,9 @@
+"use client";
+
 import Link from "next/link";
 
+import { NovinyArticleActions } from "@/app/noviny/_components/NovinyArticleActions";
 import {
-  buildTranslateToCzechUrl,
   formatNovinyDate,
   getArticleAuthor,
   getArticlePreviewDescription,
@@ -10,9 +12,9 @@ import {
   getDisplayTags,
   getVisibleArticlePerex,
   getVisibleArticleTitle,
-  shouldUseAutoTranslation,
   sourceLabel,
 } from "@/lib/noviny/public";
+import { SITE_URL } from "@/lib/site";
 import type { NovinyArticleWithRelations } from "@/lib/noviny/types";
 
 type NovinyArticleCardProps = {
@@ -30,9 +32,7 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
   const bullets = getArticleSummaryBullets(article);
   const contextSummary = article.context?.safe_attribution ?? article.context?.short_summary ?? null;
   const whyImportant = article.context?.why_important ?? null;
-  const translatedView = shouldUseAutoTranslation(article);
-  const outboundUrl = translatedView ? buildTranslateToCzechUrl(article.original_url) : article.original_url;
-  const outboundLabel = translatedView ? "Otevřít originál (automatický CZ překlad)" : "Přejít na původní článek";
+  const shareUrl = `${SITE_URL}/noviny#noviny-article-${article.id}`;
   const previewImageUrl = article.image_url ? article.image_url.replace(/"/g, "%22") : null;
   let articleHost = "";
   try {
@@ -42,7 +42,10 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
   }
 
   return (
-    <article className={`rounded-3xl border border-[var(--abj-gold-dim)] bg-white shadow-sm ${compact ? "p-4 md:p-5" : "p-5 md:p-6"}`}>
+    <article
+      id={`noviny-article-${article.id}`}
+      className={`scroll-mt-24 rounded-3xl border border-[var(--abj-gold-dim)] bg-white shadow-sm ${compact ? "p-4 md:p-5" : "p-5 md:p-6"}`}
+    >
       <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-abj-text2">
         <span className="rounded-full bg-[rgba(255,106,0,0.12)] px-2.5 py-1 text-[#B04A00]">
           {sourceLabel(article)}
@@ -112,14 +115,24 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-abj-text2">{formatNovinyDate(article.published_at)}</p>
         <Link
-          href={outboundUrl}
+          href={article.original_url}
           target="_blank"
           rel="noopener noreferrer nofollow"
           className="inline-flex min-h-11 items-center rounded-xl border border-[#FF6A00]/40 bg-[#FF6A00]/10 px-4 py-2 text-base font-bold text-[#B04A00] hover:bg-[#FF6A00]/15"
         >
-          {outboundLabel}
+          Přejít na původní článek
         </Link>
       </div>
+      <NovinyArticleActions
+        articleId={article.id}
+        title={title}
+        sourceName={article.source?.name ?? null}
+        originalUrl={article.original_url}
+        imageUrl={article.image_url}
+        publishedAt={article.published_at}
+        shareUrl={shareUrl}
+        compact={compact}
+      />
     </article>
   );
 }

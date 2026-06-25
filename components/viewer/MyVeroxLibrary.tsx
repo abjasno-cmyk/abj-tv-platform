@@ -8,9 +8,11 @@ import { SaveVideoButton } from "@/components/auth/SaveVideoButton";
 import { VideoDiscussButton } from "@/components/viewer/VideoDiscussButton";
 import { VideoTranscriptLabel } from "@/components/viewer/VideoTranscriptLabel";
 import { SaveOpinionButton } from "@/components/nazory/SaveOpinionButton";
+import { SaveNovinyArticleButton } from "@/app/noviny/_components/SaveNovinyArticleButton";
 import type {
   MyVeroxLibraryPayload,
   ViewerLibraryChannel,
+  ViewerLibraryNovinyArticle,
   ViewerLibraryOpinion,
   ViewerLibraryVideo,
 } from "@/lib/viewer/myVeroxLibrary";
@@ -86,6 +88,42 @@ function OpinionShelfCard({
         slug={article.slug}
         heroImagePath={article.heroImagePath}
         authorName={article.authorName}
+        saved
+        className="nazory-btn mv-library-unsave"
+        onSavedChange={(saved) => {
+          if (!saved) onUnsave?.();
+        }}
+      />
+    </article>
+  );
+}
+
+function NovinyShelfCard({
+  article,
+  onUnsave,
+}: {
+  article: ViewerLibraryNovinyArticle;
+  onUnsave?: () => void;
+}) {
+  return (
+    <article className="mv-library-opinion-card">
+      <Link href={article.href}>
+        {article.imageUrl ? (
+          <span className="mv-library-thumb">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={article.imageUrl} alt="" loading="lazy" />
+          </span>
+        ) : null}
+        <span className="mv-library-opinion-title">{article.title}</span>
+        {article.sourceName ? <span className="mv-library-opinion-meta">{article.sourceName}</span> : null}
+      </Link>
+      <SaveNovinyArticleButton
+        articleId={article.articleId}
+        title={article.title}
+        sourceName={article.sourceName}
+        originalUrl={article.originalUrl}
+        imageUrl={article.imageUrl}
+        publishedAt={article.publishedAt}
         saved
         className="nazory-btn mv-library-unsave"
         onSavedChange={(saved) => {
@@ -274,6 +312,7 @@ export function MyVeroxLibrary() {
   const data = library ?? {
     savedVideos: [],
     savedOpinions: [],
+    savedNovinyArticles: [],
     watchedVideos: [],
     continueWatching: [],
     followedChannels: [],
@@ -295,6 +334,12 @@ export function MyVeroxLibrary() {
       <ShelfSection title="Uložené články Názorů" empty="Zatím nemáte uložené články. Na detailu článku klepněte na Uložit článek.">
         {data.savedOpinions.map((article) => (
           <OpinionShelfCard key={`opinion-${article.articleId}`} article={article} onUnsave={() => void loadLibrary()} />
+        ))}
+      </ShelfSection>
+
+      <ShelfSection title="Uložené články Novin" empty="Zatím nemáte uložené články Novin. V sekci Noviny klepněte na ☆ Uložit článek.">
+        {data.savedNovinyArticles.map((article) => (
+          <NovinyShelfCard key={`noviny-${article.articleId}`} article={article} onUnsave={() => void loadLibrary()} />
         ))}
       </ShelfSection>
 

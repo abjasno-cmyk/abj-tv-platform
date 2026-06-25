@@ -38,9 +38,21 @@ export type ViewerLibraryOpinion = {
   href: string;
 };
 
+export type ViewerLibraryNovinyArticle = {
+  articleId: string;
+  title: string;
+  sourceName: string | null;
+  originalUrl: string;
+  imageUrl: string | null;
+  publishedAt: string | null;
+  savedAt: string;
+  href: string;
+};
+
 export type MyVeroxLibraryPayload = {
   savedVideos: ViewerLibraryVideo[];
   savedOpinions: ViewerLibraryOpinion[];
+  savedNovinyArticles: ViewerLibraryNovinyArticle[];
   watchedVideos: ViewerLibraryVideo[];
   continueWatching: ViewerLibraryVideo[];
   followedChannels: ViewerLibraryChannel[];
@@ -75,6 +87,16 @@ export type SavedOpinionRow = {
   slug: string | null;
   hero_image_path: string | null;
   author_name: string | null;
+  created_at: string;
+};
+
+export type SavedNovinyArticleRow = {
+  article_id: string;
+  title: string | null;
+  source_name: string | null;
+  original_url: string | null;
+  image_url: string | null;
+  published_at: string | null;
   created_at: string;
 };
 
@@ -149,6 +171,19 @@ function mapSavedOpinionRow(row: SavedOpinionRow): ViewerLibraryOpinion {
   };
 }
 
+function mapSavedNovinyArticleRow(row: SavedNovinyArticleRow): ViewerLibraryNovinyArticle {
+  return {
+    articleId: row.article_id,
+    title: row.title?.trim() || "Článek Novin",
+    sourceName: row.source_name?.trim() || null,
+    originalUrl: row.original_url?.trim() || "",
+    imageUrl: row.image_url?.trim() || null,
+    publishedAt: row.published_at,
+    savedAt: row.created_at,
+    href: `/noviny#noviny-article-${row.article_id}`,
+  };
+}
+
 async function loadCatalogVideoTitles(
   supabase: SupabaseClient,
   videoIds: string[],
@@ -168,6 +203,7 @@ async function loadCatalogVideoTitles(
 export function buildMyVeroxLibraryFromRows(input: {
   savedRows: SavedVideoRow[];
   savedOpinionRows?: SavedOpinionRow[];
+  savedNovinyArticleRows?: SavedNovinyArticleRow[];
   progressRows: VideoProgressRow[];
   followRows: FollowRow[];
   catalog: LiveChannelGroup[];
@@ -176,6 +212,7 @@ export function buildMyVeroxLibraryFromRows(input: {
   const catalogTitles = input.catalogTitles ?? new Map<string, string>();
   const savedVideos = input.savedRows.map((row) => mapSavedRow(row, catalogTitles));
   const savedOpinions = (input.savedOpinionRows ?? []).map(mapSavedOpinionRow);
+  const savedNovinyArticles = (input.savedNovinyArticleRows ?? []).map(mapSavedNovinyArticleRow);
   const watchedVideos = input.progressRows
     .filter((row) => row.completed)
     .map((row) => mapProgressRow(row, catalogTitles));
@@ -198,6 +235,7 @@ export function buildMyVeroxLibraryFromRows(input: {
   return {
     savedVideos,
     savedOpinions,
+    savedNovinyArticles,
     watchedVideos,
     continueWatching,
     followedChannels,
@@ -208,7 +246,7 @@ export async function loadMyVeroxLibraryForUser(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<MyVeroxLibraryPayload> {
-  const [savedRes, savedOpinionsRes, progressRes, followsRes, catalog] = await Promise.all([
+  const [savedRes, savedOpinionsRes, savedNovinyRes, progressRes, followsRes, catalog] = await Promise.all([
     supabase
       .from("saved_videos")
       .select("video_id, title, thumbnail_url, channel_name, created_at")
@@ -217,6 +255,11 @@ export async function loadMyVeroxLibraryForUser(
     supabase
       .from("saved_opinion_articles")
       .select("article_id, title, slug, hero_image_path, author_name, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("saved_noviny_articles")
+      .select("article_id, title, source_name, original_url, image_url, published_at, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false }),
     supabase
@@ -251,6 +294,9 @@ export async function loadMyVeroxLibraryForUser(
     savedOpinionRows: savedOpinionsRes.error
       ? []
       : ((savedOpinionsRes.data ?? []) as SavedOpinionRow[]),
+    savedNovinyArticleRows: savedNovinyRes.error
+      ? []
+      : ((savedNovinyRes.data ?? []) as SavedNovinyArticleRow[]),
     progressRows,
     followRows: (followsRes.data ?? []) as FollowRow[],
     catalog,

@@ -1,20 +1,13 @@
 import type { Metadata } from "next";
 
-import { NovinyArticleCard } from "@/app/noviny/_components/NovinyArticleCard";
+import { NovinyArticleFeed } from "@/app/noviny/_components/NovinyArticleFeed";
 import { NovinyContextTopics } from "@/app/noviny/_components/NovinyContextTopics";
-import {
-  getVisibleArticlePerex,
-  getVisibleArticleTitle,
-  languagePriority,
-  resolveArticleLanguage,
-  shouldUseAutoTranslation,
-} from "@/lib/noviny/public";
+import { isCzechOrSlovak, resolveArticleLanguage } from "@/lib/noviny/public";
 import { fetchOriginMetadata } from "@/lib/noviny/originMetadata";
 import { listPublicNovinyArticles, createNovinyPublicClient } from "@/lib/noviny/repository";
 import { rankNovinyArticles } from "@/lib/noviny/ranking";
 import { runNovinyImport } from "@/lib/noviny/importer";
 import { SITE_URL } from "@/lib/site";
-import { translateTextToCzech } from "@/lib/noviny/translation";
 import type { NovinyArticleWithRelations } from "@/lib/noviny/types";
 import { listNovinyContextTopics } from "@/lib/noviny/contextLayer";
 
@@ -33,28 +26,6 @@ export const metadata: Metadata = {
     type: "website",
   },
 };
-
-async function localizeArticlesToCzech(articles: NovinyArticleWithRelations[]): Promise<NovinyArticleWithRelations[]> {
-  return Promise.all(
-    articles.map(async (article) => {
-      if (!shouldUseAutoTranslation(article)) return article;
-      if (article.edited_title?.trim() || article.edited_perex?.trim()) return article;
-
-      const titleInput = getVisibleArticleTitle(article);
-      const perexInput = getVisibleArticlePerex(article) ?? "";
-      const [translatedTitle, translatedPerex] = await Promise.all([
-        translateTextToCzech(titleInput),
-        perexInput ? translateTextToCzech(perexInput) : Promise.resolve(null),
-      ]);
-
-      return {
-        ...article,
-        edited_title: translatedTitle ?? article.edited_title,
-        edited_perex: translatedPerex ?? article.edited_perex,
-      };
-    }),
-  );
-}
 
 function hasUsefulSourceText(article: NovinyArticleWithRelations): boolean {
   const metadata = article.metadata ?? {};
@@ -98,20 +69,6 @@ async function enrichArticlesFromOrigin(articles: NovinyArticleWithRelations[]):
   );
 }
 
-function applyLanguageHierarchy(ranked: ReturnType<typeof rankNovinyArticles>) {
-  return [...ranked].sort((a, b) => {
-    const langA = resolveArticleLanguage(a);
-    const langB = resolveArticleLanguage(b);
-    const pA = languagePriority(langA);
-    const pB = languagePriority(langB);
-    if (pA !== pB) return pA - pB;
-    if (b.ranking.total !== a.ranking.total) return b.ranking.total - a.ranking.total;
-    const tsA = new Date(a.published_at ?? 0).getTime();
-    const tsB = new Date(b.published_at ?? 0).getTime();
-    return tsB - tsA;
-  });
-}
-
 export default async function NovinyPage() {
   let articlesError: string | null = null;
 
@@ -134,12 +91,10 @@ export default async function NovinyPage() {
   }
 
   const enrichedArticles = await enrichArticlesFromOrigin(articles);
-  const localizedArticles = await localizeArticlesToCzech(enrichedArticles);
-  const ranked = applyLanguageHierarchy(rankNovinyArticles(localizedArticles));
+  const ranked = rankNovinyArticles(enrichedArticles);
+  const domesticArticles = ranked.filter((article) => isCzechOrSlovak(resolveArticleLanguage(article)));
+  const foreignArticles = ranked.filter((article) => !isCzechOrSlovak(resolveArticleLanguage(article)));
   const contextTopics = await listNovinyContextTopics(supabase, 10);
-  const lead = ranked[0] ?? null;
-  const secondary = ranked.slice(1, 7);
-  const deepRead = ranked.slice(7);
 
   return (
     <main className="mx-auto w-full max-w-[1240px] px-4 py-8 text-abj-text1 md:py-12">
@@ -150,41 +105,15 @@ export default async function NovinyPage() {
       ) : null}
 
       <div className="space-y-8">
-        <p className="text-sm text-abj-text2">Zobrazeno článků: {ranked.length}</p>
         <NovinyContextTopics topics={contextTopics} />
-        {lead ? (
-          <section className="space-y-3">
-            <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">Hlavní výběr</h2>
-            <NovinyArticleCard article={lead} />
-          </section>
-        ) : null}
-
-        {secondary.length > 0 ? (
-          <section className="space-y-3">
-            <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">Doporučené články</h2>
-            <div className="grid gap-4 md:grid-cols-2">
-              {secondary.map((article) => (
-                <NovinyArticleCard key={article.id} article={article} compact />
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        <section className="space-y-3">
-          <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">Další čtení</h2>
-          {deepRead.length === 0 && !lead ? (
-            <div className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-6 text-base text-abj-text2">
-              Zatím nejsou k dispozici žádné publikované články. Otevři prosím <strong>/admin/noviny</strong> a spusť
-              ruční refresh.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {deepRead.map((article) => (
-                <NovinyArticleCard key={article.id} article={article} compact />
-              ))}
-            </div>
-          )}
-        </section>
+        {ranked.length === 0 ? (
+          <div className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-6 text-base text-abj-text2">
+            Zatím nejsou k dispozici žádné publikované články. Otevři prosím <strong>/admin/noviny</strong> a spusť
+            ruční refresh.
+          </div>
+        ) : (
+          <NovinyArticleFeed domesticArticles={domesticArticles} foreignArticles={foreignArticles} />
+        )}
       </div>
     </main>
   );
