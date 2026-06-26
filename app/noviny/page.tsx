@@ -10,7 +10,7 @@ import {
   resolveArticleLanguage,
 } from "@/lib/noviny/public";
 import { fetchOriginMetadata } from "@/lib/noviny/originMetadata";
-import { listPublicNovinyArticles, createNovinyPublicClient } from "@/lib/noviny/repository";
+import { createNovinyServiceClient, listPublicNovinyArticles, createNovinyPublicClient } from "@/lib/noviny/repository";
 import { rankNovinyArticles } from "@/lib/noviny/ranking";
 import { runNovinyImport } from "@/lib/noviny/importer";
 import { SITE_URL } from "@/lib/site";
@@ -21,6 +21,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isNazoryAdmin } from "@/lib/nazory/access";
 
 export const dynamic = "force-dynamic";
+
+const STALE_IMPORT_AFTER_MS = 25 * 60 * 1000;
 
 export const metadata: Metadata = {
   title: "Noviny | Verox",
@@ -166,6 +168,45 @@ async function canShowNovinyAdminControls(): Promise<boolean> {
   }
 }
 
+function shouldAttemptPageStaleImport(): boolean {
+  const explicit = process.env.NOVINY_PAGE_STALE_IMPORT?.trim().toLowerCase();
+  if (explicit === "true" || explicit === "1" || explicit === "yes") return true;
+  if (explicit === "false" || explicit === "0" || explicit === "no") return false;
+  return process.env.VERCEL_ENV !== "production";
+}
+
+function latestArticleImportAt(articles: NovinyArticleWithRelations[]): string | null {
+  let latestTs = 0;
+  for (const article of articles) {
+    const ts = new Date(article.imported_at).getTime();
+    if (Number.isFinite(ts) && ts > latestTs) latestTs = ts;
+  }
+  return latestTs > 0 ? new Date(latestTs).toISOString() : null;
+}
+
+async function latestFetchLogAt(): Promise<string | null> {
+  try {
+    const service = createNovinyServiceClient();
+    const { data, error } = await service
+      .from("noviny_fetch_logs")
+      .select("fetched_at")
+      .order("fetched_at", { ascending: false })
+      .limit(1);
+    if (error) return null;
+    const value = ((data ?? [])[0] as { fetched_at?: string } | undefined)?.fetched_at;
+    return value ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function isImportStale(value: string | null): boolean {
+  if (!value) return true;
+  const ts = new Date(value).getTime();
+  if (!Number.isFinite(ts)) return true;
+  return Date.now() - ts > STALE_IMPORT_AFTER_MS;
+}
+
 export default async function NovinyPage() {
   let articlesError: string | null = null;
 
@@ -182,6 +223,16 @@ export default async function NovinyPage() {
       articles = secondTry;
     } catch (error) {
       articlesError = error instanceof Error ? error.message : "Automatický import Novin selhal.";
+    }
+  } else if (shouldAttemptPageStaleImport()) {
+    try {
+      const latestImport = (await latestFetchLogAt()) ?? latestArticleImportAt(articles);
+      if (isImportStale(latestImport)) {
+        await runNovinyImport({ runType: "api" });
+        articles = await listPublicNovinyArticles(supabase, { limit: 250 });
+      }
+    } catch (error) {
+      articlesError = error instanceof Error ? error.message : "Automatický refresh Novin selhal.";
     }
   } else if (firstArticlesResult.status === "rejected") {
     articlesError = firstArticlesResult.reason instanceof Error ? firstArticlesResult.reason.message : "Články se nepodařilo načíst.";
