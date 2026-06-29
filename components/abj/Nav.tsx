@@ -24,6 +24,9 @@ function activeKeyFor(pathname: string): VeroxNavKey | undefined {
   if (pathname.startsWith("/muj-verox") || pathname.startsWith("/komunita") || pathname.startsWith("/zed")) {
     return "muj";
   }
+  if (pathname.startsWith("/vyhledavani")) {
+    return undefined;
+  }
   return "zive";
 }
 
