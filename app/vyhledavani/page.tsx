@@ -166,9 +166,14 @@ export default async function VyhledavaniPage({
           {response.results.length > 0 ? (
             response.results.map((result) => <ResultCard key={result.id} result={result} />)
           ) : (
-            <p className="rounded-2xl border border-neutral-200 bg-white p-6 text-neutral-700">
-              Pro tento dotaz zatím nemáme v indexu výsledek.
-            </p>
+            <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-neutral-700">
+              <p>Pro tento dotaz zatím vyhledávání nevrátilo výsledek.</p>
+              <p className="mt-2 text-sm text-neutral-500">
+                Pokud jde o první test po nasazení, search index se musí nejprve naplnit přes
+                <code className="mx-1 rounded bg-neutral-100 px-1.5 py-0.5">/api/search/index</code>
+                nebo počkat na plánovaný cron.
+              </p>
+            </div>
           )}
         </section>
       ) : (

@@ -93,6 +93,15 @@ AI souhrn se generuje jen z nalezených úryvků výsledků a vrací odkazy na p
 zdroje. Search index neukládá celý interně vytěžený text externích Zpráv; u
 Zpráv používá RSS metadata a případné adminem schválené enrichment shrnutí.
 
+Indexace běží záměrně postupně a ve výchozí dávce 40 položek, aby nezatěžovala
+menší Supabase projekty souběžnými dotazy. Pokud Supabase SQL editor hlásí
+`remaining connection slots are reserved for roles with the SUPERUSER attribute`,
+nejde o chybu migrace, ale o vyčerpaný connection pool databáze. Nejdřív uvolni
+nebo restartuj databázové connections v Supabase a až poté spusť SQL / reindex.
+První ruční reindex lze pustit šetrně například:
+
+`/api/search/index?secret=<CRON_SECRET>&limit=20`
+
 ### Noviny: SQL pořadí nasazení
 
 1. `supabase/018_noviny_mvp.sql` (schéma + RLS)

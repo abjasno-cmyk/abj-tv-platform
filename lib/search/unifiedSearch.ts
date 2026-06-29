@@ -80,6 +80,7 @@ type OpinionIndexRow = {
 
 const SEARCH_EMBEDDING_MODEL = process.env.VEROX_SEARCH_EMBEDDING_MODEL?.trim() || "text-embedding-3-small";
 const SEARCH_SUMMARY_MODEL = process.env.VEROX_SEARCH_SUMMARY_MODEL?.trim() || "gpt-4o-mini";
+const DEFAULT_TRANSCRIPT_INDEX_LIMIT = 10;
 
 function normalizeText(value: string | null | undefined): string {
   return (value ?? "").replace(/\s+/g, " ").trim();
@@ -229,7 +230,15 @@ async function indexVideos(supabase: SupabaseClient, limit: number): Promise<num
     }
   }
 
-  for (const row of rows.slice(0, Math.min(rows.length, 20))) {
+  const transcriptLimit = Math.max(
+    0,
+    Math.min(
+      rows.length,
+      Number(process.env.VEROX_SEARCH_TRANSCRIPT_INDEX_LIMIT ?? DEFAULT_TRANSCRIPT_INDEX_LIMIT) ||
+        DEFAULT_TRANSCRIPT_INDEX_LIMIT,
+    ),
+  );
+  for (const row of rows.slice(0, transcriptLimit)) {
     const doc = await videoTranscriptDocument(row);
     if (doc) {
       await upsertSearchDocument(supabase, doc);
@@ -309,19 +318,39 @@ export async function runUnifiedSearchIndex(limit = 80): Promise<{
   nazory: number;
   total: number;
   semanticEnabled: boolean;
+  errors: string[];
 }> {
   const supabase = createSupabaseServiceClient();
-  const [videos, zpravy, nazory] = await Promise.all([
-    indexVideos(supabase, limit),
-    indexZpravy(supabase, limit),
-    indexNazory(supabase, limit),
-  ]);
+  const errors: string[] = [];
+  let videos = 0;
+  let zpravy = 0;
+  let nazory = 0;
+
+  // Indexace běží záměrně postupně. Supabase projekty s menším connection limitem
+  // tak nedostanou špičku souběžných dotazů, když cron zrovna běží při provozu webu.
+  try {
+    videos = await indexVideos(supabase, limit);
+  } catch (error) {
+    errors.push(`videos: ${error instanceof Error ? error.message : "unknown error"}`);
+  }
+  try {
+    zpravy = await indexZpravy(supabase, limit);
+  } catch (error) {
+    errors.push(`zpravy: ${error instanceof Error ? error.message : "unknown error"}`);
+  }
+  try {
+    nazory = await indexNazory(supabase, limit);
+  } catch (error) {
+    errors.push(`nazory: ${error instanceof Error ? error.message : "unknown error"}`);
+  }
+
   return {
     videos,
     zpravy,
     nazory,
     total: videos + zpravy + nazory,
     semanticEnabled: Boolean(process.env.OPENAI_API_KEY?.trim()),
+    errors,
   };
 }
 
