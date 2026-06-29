@@ -104,11 +104,11 @@ export function VeroxHeader({ active, showAudience = false }: VeroxHeaderProps) 
         <Link className={active === "videa" ? "is-active" : undefined} href="/videa" aria-current={active === "videa" ? "page" : undefined}>
           NEJNOVĚJŠÍ VIDEA
         </Link>
+        <Link className={active === "noviny" ? "is-active" : undefined} href="/noviny" aria-current={active === "noviny" ? "page" : undefined}>
+          ZPRÁVY
+        </Link>
         <Link className={active === "nazory" ? "is-active" : undefined} href="/nazory" aria-current={active === "nazory" ? "page" : undefined}>
           NÁZORY
-        </Link>
-        <Link className={active === "noviny" ? "is-active" : undefined} href="/noviny" aria-current={active === "noviny" ? "page" : undefined}>
-          NOVINY
         </Link>
         <Link className={active === "kanaly" ? "is-active" : undefined} href="/kanaly" aria-current={active === "kanaly" ? "page" : undefined}>
           KANÁLY

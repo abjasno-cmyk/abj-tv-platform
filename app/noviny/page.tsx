@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { NovinyArticleFeed } from "@/app/noviny/_components/NovinyArticleFeed";
-import { NovinyContextTopics } from "@/app/noviny/_components/NovinyContextTopics";
 import {
   getVisibleArticlePerex,
   getVisibleArticleTitle,
@@ -15,7 +14,6 @@ import { rankNovinyArticles } from "@/lib/noviny/ranking";
 import { runNovinyImport } from "@/lib/noviny/importer";
 import { SITE_URL } from "@/lib/site";
 import type { NovinyArticleWithRelations } from "@/lib/noviny/types";
-import { listNovinyContextTopics } from "@/lib/noviny/contextLayer";
 import { translateTextToCzech } from "@/lib/noviny/translation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isNazoryAdmin } from "@/lib/nazory/access";
@@ -25,14 +23,14 @@ export const dynamic = "force-dynamic";
 const STALE_IMPORT_AFTER_MS = 25 * 60 * 1000;
 
 export const metadata: Metadata = {
-  title: "Noviny | Verox",
-  description: "Výběr článků Verox Noviny s odkazem na původní zdroj.",
+  title: "Zprávy | Verox",
+  description: "Výběr zpráv Verox s odkazem na původní zdroj.",
   alternates: {
     canonical: `${SITE_URL}/noviny`,
   },
   openGraph: {
-    title: "Noviny | Verox",
-    description: "Přehled externích i vlastních článků Veroxu.",
+    title: "Zprávy | Verox",
+    description: "Přehled externích i vlastních zpráv Veroxu.",
     url: `${SITE_URL}/noviny`,
     type: "website",
   },
@@ -243,10 +241,7 @@ export default async function NovinyPage() {
   const ranked = rankNovinyArticles(localizedArticles);
   const domesticArticles = ranked.filter((article) => isCzechOrSlovak(resolveArticleLanguage(article)));
   const foreignArticles = ranked.filter((article) => !isCzechOrSlovak(resolveArticleLanguage(article)));
-  const [contextTopics, showAdminControls] = await Promise.all([
-    listNovinyContextTopics(supabase, 10),
-    canShowNovinyAdminControls(),
-  ]);
+  const showAdminControls = await canShowNovinyAdminControls();
 
   return (
     <main className="mx-auto w-full max-w-[1240px] px-4 py-8 text-abj-text1 md:py-12">
@@ -283,7 +278,6 @@ export default async function NovinyPage() {
             </div>
           </section>
         ) : null}
-        <NovinyContextTopics topics={contextTopics} />
         {ranked.length === 0 ? (
           <div className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-6 text-base text-abj-text2">
             Zatím nejsou k dispozici žádné publikované články. Otevři prosím <strong>/admin/noviny</strong> a spusť
