@@ -44,6 +44,7 @@ describe("buildCommentEngagementHref", () => {
   it("builds video and opinion links", () => {
     expect(buildCommentEngagementHref("video", "abc123")).toBe("/videa/abc123#komentare");
     expect(buildCommentEngagementHref("opinion", "uuid-1", "muj-clanek")).toBe("/nazory/muj-clanek#komentare");
+    expect(buildCommentEngagementHref("noviny_article", "article-1")).toBe("/noviny#noviny-article-article-1");
   });
 });
 

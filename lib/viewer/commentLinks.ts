@@ -1,4 +1,8 @@
-import { VIEWER_COMMENT_ENTITY_OPINION, VIEWER_COMMENT_ENTITY_VIDEO } from "@/lib/viewer/comments";
+import {
+  VIEWER_COMMENT_ENTITY_NOVINY_ARTICLE,
+  VIEWER_COMMENT_ENTITY_OPINION,
+  VIEWER_COMMENT_ENTITY_VIDEO,
+} from "@/lib/viewer/comments";
 import { videoSharePath } from "@/lib/viewer/videoMetadata";
 
 export function buildCommentEngagementHref(
@@ -11,6 +15,9 @@ export function buildCommentEngagementHref(
   }
   if (entityType === VIEWER_COMMENT_ENTITY_VIDEO) {
     return `${videoSharePath(entityId)}#komentare`;
+  }
+  if (entityType === VIEWER_COMMENT_ENTITY_NOVINY_ARTICLE) {
+    return `/noviny#noviny-article-${encodeURIComponent(entityId)}`;
   }
   return "/muj-verox";
 }
