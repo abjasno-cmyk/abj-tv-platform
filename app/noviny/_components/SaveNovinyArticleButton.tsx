@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useSavedNoviny } from "@/app/noviny/_components/SavedNovinyProvider";
 
 type SaveNovinyArticleButtonProps = {
   articleId: string;
@@ -30,13 +31,19 @@ export function SaveNovinyArticleButton({
   onSavedChange,
 }: SaveNovinyArticleButtonProps) {
   const { isAuthenticated, requestAuth } = useAuth();
-  const [isSaved, setIsSaved] = useState(saved);
+  // Když je stránka obalená SavedNovinyProviderem, bere se stav odtud (jeden fetch
+  // na celou stránku). Bez providera (např. Můj Verox) se použije lokální fallback.
+  const savedCtx = useSavedNoviny();
+  const [localSaved, setLocalSaved] = useState(saved);
+  const isSaved = savedCtx ? savedCtx.isSaved(articleId) : localSaved;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Se providerem stav řeší on — žádný per-button fetch.
+    if (savedCtx) return;
     if (!isAuthenticated) {
-      const frame = window.requestAnimationFrame(() => setIsSaved(false));
+      const frame = window.requestAnimationFrame(() => setLocalSaved(false));
       return () => window.cancelAnimationFrame(frame);
     }
     let cancelled = false;
@@ -44,14 +51,14 @@ export function SaveNovinyArticleButton({
       .then(async (response) => {
         const payload = (await response.json().catch(() => ({}))) as { articles?: Array<{ articleId: string }> };
         if (!cancelled && response.ok) {
-          setIsSaved((payload.articles ?? []).some((article) => article.articleId === articleId));
+          setLocalSaved((payload.articles ?? []).some((article) => article.articleId === articleId));
         }
       })
       .catch(() => undefined);
     return () => {
       cancelled = true;
     };
-  }, [articleId, isAuthenticated]);
+  }, [articleId, isAuthenticated, savedCtx]);
 
   const toggleSave = async () => {
     setLoading(true);
@@ -84,7 +91,8 @@ export function SaveNovinyArticleButton({
       return;
     }
     const nextSaved = !isSaved;
-    setIsSaved(nextSaved);
+    if (savedCtx) savedCtx.setSaved(articleId, nextSaved);
+    else setLocalSaved(nextSaved);
     onSavedChange?.(nextSaved);
   };
 

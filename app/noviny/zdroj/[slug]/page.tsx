@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 import { NovinyArticleCard } from "@/app/noviny/_components/NovinyArticleCard";
+import { SavedNovinyProvider } from "@/app/noviny/_components/SavedNovinyProvider";
 import { NovinySourceList } from "@/app/noviny/_components/NovinySourceList";
 import {
   createNovinyPublicClient,
@@ -97,7 +98,11 @@ export default async function NovinySourcePage({
               Tento zdroj zatím nemá žádné publikované články.
             </div>
           ) : (
-            articles.map((article) => <NovinyArticleCard key={article.id} article={article} />)
+            <SavedNovinyProvider>
+              {articles.map((article) => (
+                <NovinyArticleCard key={article.id} article={article} />
+              ))}
+            </SavedNovinyProvider>
           )}
         </section>
         <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">

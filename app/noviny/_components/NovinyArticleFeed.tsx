@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { NovinyArticleCard } from "@/app/noviny/_components/NovinyArticleCard";
+import { SavedNovinyProvider } from "@/app/noviny/_components/SavedNovinyProvider";
 import type { RankedNovinyArticle } from "@/lib/noviny/ranking";
 
 type FeedMode = "domaci" | "zahranicni";
@@ -64,6 +65,7 @@ export function NovinyArticleFeed({ domesticArticles, foreignArticles }: NovinyA
   const activeArticles = mode === "domaci" ? domesticArticles : foreignArticles;
 
   return (
+    <SavedNovinyProvider>
     <section className="space-y-5">
       <div className="flex justify-end">
         <div className="inline-flex rounded-full border border-[var(--abj-gold-dim)] bg-[var(--abj-panel)] p-1">
@@ -92,5 +94,6 @@ export function NovinyArticleFeed({ domesticArticles, foreignArticles }: NovinyA
 
       <ArticleSections articles={activeArticles} />
     </section>
+    </SavedNovinyProvider>
   );
 }

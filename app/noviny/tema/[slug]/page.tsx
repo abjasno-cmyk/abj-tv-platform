@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { NovinyArticleCard } from "@/app/noviny/_components/NovinyArticleCard";
+import { SavedNovinyProvider } from "@/app/noviny/_components/SavedNovinyProvider";
 import { getNovinyTopicPage } from "@/lib/noviny/contextLayer";
 import { createNovinyPublicClient } from "@/lib/noviny/repository";
 import { SITE_URL } from "@/lib/site";
@@ -63,7 +64,11 @@ export default async function NovinyTopicPage({ params }: TopicPageProps) {
             Pro toto téma zatím nejsou dostupné žádné publikované články.
           </div>
         ) : (
-          data.articles.map((article) => <NovinyArticleCard key={article.id} article={article} compact />)
+          <SavedNovinyProvider>
+            {data.articles.map((article) => (
+              <NovinyArticleCard key={article.id} article={article} compact />
+            ))}
+          </SavedNovinyProvider>
         )}
       </section>
     </main>
