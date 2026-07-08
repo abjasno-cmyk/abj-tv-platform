@@ -49,6 +49,8 @@ export async function POST(request: Request) {
     const storage = createSupabaseServiceClient().storage.from("nazory-media");
     const upload = await storage.upload(objectPath, output, {
       contentType: "image/webp",
+      // Content-addressed (random UUID) path, never overwritten → cache for a year.
+      cacheControl: "31536000",
       upsert: false,
     });
 
