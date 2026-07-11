@@ -62,9 +62,14 @@ deduplikuje podle canonical URL.
 V produkci se nové zprávy primárně načítají automaticky cronem
 `/api/noviny/import` každých 20 minut. Stránka `/noviny` má navíc samoopravný
 stale-refresh fallback: pokud poslední import vypadá zastarale, pokusí se
-spustit bezpečný import při zobrazení stránky. Výchozí práh je 25 minut v
+naplánovat bezpečný import po odeslání response. Výchozí práh je 25 minut v
 preview/development a 2 hodiny v produkci. Lze řídit pomocí
 `NOVINY_PAGE_STALE_IMPORT=true|false` a `NOVINY_PAGE_STALE_IMPORT_MINUTES`.
+
+Veřejná stránka při renderu neotevírá původní články kvůli metadatům; to patří
+do import/enrichment workerů, aby kliknutí na Zprávy nečekalo na externí weby.
+Serverový překlad zahraničních článků má timeout `NOVINY_TRANSLATION_TIMEOUT_MS`
+a limit horních položek `NOVINY_PAGE_FOREIGN_TRANSLATION_LIMIT`.
 
 Kontext Layer 2.0 je oddělený od RSS importu. Nad publikovanými články vytváří
 entity, témata, bezpečné atribuce, stručné kontextové vysvětlení a vazby na
