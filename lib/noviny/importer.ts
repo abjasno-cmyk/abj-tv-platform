@@ -70,11 +70,11 @@ async function fetchSourceFeed(source: NovinySourceRow): Promise<{ statusCode: n
 }
 
 async function importSingleSource(
+  supabase: ReturnType<typeof createNovinyServiceClient>,
   source: NovinySourceRow,
   runType: NovinyImportRunType,
 ): Promise<NovinyImportSourceReport> {
   const startedAt = Date.now();
-  const supabase = createNovinyServiceClient();
   const nowIso = new Date().toISOString();
   try {
     const fetched = await fetchSourceFeed(source);
@@ -209,7 +209,7 @@ export async function runNovinyImport(options: ImportOptions): Promise<NovinyImp
 
   const reports: NovinyImportSourceReport[] = [];
   for (const source of sources) {
-    const report = await importSingleSource(source, options.runType);
+    const report = await importSingleSource(supabase, source, options.runType);
     reports.push(report);
   }
 

@@ -20,7 +20,8 @@ import { isNazoryAdmin } from "@/lib/nazory/access";
 
 export const dynamic = "force-dynamic";
 
-const STALE_IMPORT_AFTER_MS = 25 * 60 * 1000;
+const PREVIEW_STALE_IMPORT_AFTER_MS = 25 * 60 * 1000;
+const PRODUCTION_STALE_IMPORT_AFTER_MS = 2 * 60 * 60 * 1000;
 
 export const metadata: Metadata = {
   title: "Zprávy | Verox",
@@ -170,7 +171,15 @@ function shouldAttemptPageStaleImport(): boolean {
   const explicit = process.env.NOVINY_PAGE_STALE_IMPORT?.trim().toLowerCase();
   if (explicit === "true" || explicit === "1" || explicit === "yes") return true;
   if (explicit === "false" || explicit === "0" || explicit === "no") return false;
-  return process.env.VERCEL_ENV !== "production";
+  return true;
+}
+
+function staleImportAfterMs(): number {
+  const explicitMinutes = Number(process.env.NOVINY_PAGE_STALE_IMPORT_MINUTES);
+  if (Number.isFinite(explicitMinutes) && explicitMinutes > 0) {
+    return explicitMinutes * 60 * 1000;
+  }
+  return process.env.VERCEL_ENV === "production" ? PRODUCTION_STALE_IMPORT_AFTER_MS : PREVIEW_STALE_IMPORT_AFTER_MS;
 }
 
 function latestArticleImportAt(articles: NovinyArticleWithRelations[]): string | null {
@@ -202,7 +211,7 @@ function isImportStale(value: string | null): boolean {
   if (!value) return true;
   const ts = new Date(value).getTime();
   if (!Number.isFinite(ts)) return true;
-  return Date.now() - ts > STALE_IMPORT_AFTER_MS;
+  return Date.now() - ts > staleImportAfterMs();
 }
 
 export default async function NovinyPage() {
