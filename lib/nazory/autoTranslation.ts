@@ -301,3 +301,41 @@ export async function runOpinionAutoTranslation(options: TranslationRunOptions =
 
   return report;
 }
+
+export async function runVisibleOpinionAutoTranslation(
+  articles: OpinionArticleRow[],
+  options: TranslationRunOptions = {},
+): Promise<OpinionTranslationReport> {
+  const limit = Math.max(1, Math.min(10, Math.floor(options.limit ?? 3)));
+  const force = options.force === true;
+  const supabase = options.supabase ?? createSupabaseServiceClient();
+  const report: OpinionTranslationReport = {
+    checked: 0,
+    translated: 0,
+    skippedFresh: 0,
+    skippedManualOriginal: 0,
+    failed: 0,
+    errors: [],
+  };
+
+  for (const article of articles) {
+    if (report.translated >= limit) break;
+    report.checked += 1;
+
+    try {
+      const result = await translateAndStoreOpinionArticle(supabase, article, { force });
+      if (result === "translated") report.translated += 1;
+      if (result === "skipped-fresh") report.skippedFresh += 1;
+      if (result === "skipped-manual-original") report.skippedManualOriginal += 1;
+    } catch (translationError) {
+      report.failed += 1;
+      report.errors.push({
+        articleId: article.id,
+        title: article.title,
+        error: translationError instanceof Error ? translationError.message : "Překlad článku selhal.",
+      });
+    }
+  }
+
+  return report;
+}

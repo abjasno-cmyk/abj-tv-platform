@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { after } from "next/server";
 import { Fragment } from "react";
 
 import { NazoryAuthorsSection } from "@/components/nazory/NazoryAuthorsSection";
@@ -14,6 +15,7 @@ import { LOCALE_EN } from "@/lib/i18n/config";
 import { localizedPath } from "@/lib/i18n/paths";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { localizePublicAuthorProfile } from "@/lib/nazory/authorLocalization";
+import { runVisibleOpinionAutoTranslation } from "@/lib/nazory/autoTranslation";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +59,14 @@ export default async function NazoryAuthorPage({ params }: { params: Promise<{ a
       : isEnglish
         ? `${localizedAuthor.publishedArticleCount} published articles`
         : `${localizedAuthor.publishedArticleCount} publikovaných článků`;
+
+  if (isEnglish && articles.length > 0) {
+    after(async () => {
+      await runVisibleOpinionAutoTranslation(articles, { limit: 3 }).catch((translationError) => {
+        console.error("Opinion auto-translation after EN author render failed", translationError);
+      });
+    });
+  }
 
   return (
     <div className="vx-live vx-sub nazory-page">

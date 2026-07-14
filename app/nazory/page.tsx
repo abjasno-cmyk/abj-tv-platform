@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { after } from "next/server";
 
 import { NazoryAuthorsSection } from "@/components/nazory/NazoryAuthorsSection";
 import { OpinionList } from "@/components/nazory/OpinionList";
@@ -11,11 +12,13 @@ import {
 } from "@/lib/nazory/access";
 import { listPublishedArticles } from "@/lib/nazory/articles";
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { LOCALE_EN } from "@/lib/i18n/config";
 import { localizedPath } from "@/lib/i18n/paths";
 import { getRequestLocale } from "@/lib/i18n/server";
+import { runVisibleOpinionAutoTranslation } from "@/lib/nazory/autoTranslation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function NazoryPage() {
   const locale = await getRequestLocale();
@@ -51,6 +54,14 @@ export default async function NazoryPage() {
     }
   } catch {
     articles = [];
+  }
+
+  if (locale === LOCALE_EN && articles.length > 0) {
+    after(async () => {
+      await runVisibleOpinionAutoTranslation(articles, { limit: 3 }).catch((translationError) => {
+        console.error("Opinion auto-translation after EN list render failed", translationError);
+      });
+    });
   }
 
   return (
