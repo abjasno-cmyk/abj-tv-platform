@@ -522,6 +522,7 @@ export function HomePage({
             onEnded={handleStageEnded}
             onPlayerReady={registerPlayer}
             onPlayingChange={setPlaying}
+            locale={locale}
           />
           {/* Záchytný overlay přes celé video: pohltí VŠECHNY myší události, takže
               se hover ovládání YouTube (titulek, sdílení, „More videos", logo)
@@ -592,6 +593,7 @@ export function HomePage({
             onVolumeChange={handleVolumeChange}
             onMuteToggle={toggleMute}
             onScrollToChannels={displayChannels.length > 0 ? scrollToChannels : undefined}
+            locale={locale}
           />
         </div>
         <button type="button" className="live-badge" onClick={onReturnToLive} aria-label="Přepnout na živé vysílání">

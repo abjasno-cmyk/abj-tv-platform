@@ -2,6 +2,8 @@
 
 import { useId, useMemo, useState, type CSSProperties } from "react";
 
+import { LOCALE_CS, type VeroxLocale } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n/dictionary";
 import { formatPlayerClock } from "@/lib/playerTime";
 
 export const PLAYBACK_SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as const;
@@ -21,6 +23,7 @@ type HeroPlayerBarProps = {
   onVolumeChange: (volume: number) => void;
   onMuteToggle: () => void;
   onScrollToChannels?: () => void;
+  locale?: VeroxLocale;
 };
 
 export function HeroPlayerBar({
@@ -37,8 +40,10 @@ export function HeroPlayerBar({
   onVolumeChange,
   onMuteToggle,
   onScrollToChannels,
+  locale = LOCALE_CS,
 }: HeroPlayerBarProps) {
   const controlId = useId();
+  const labels = getDictionary(locale).live.player;
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [scrubValue, setScrubValue] = useState(0);
   const rangeValue = isScrubbing ? scrubValue : currentTime;
@@ -62,7 +67,7 @@ export function HeroPlayerBar({
   return (
     <div
       className={`hero-player-bar${expanded ? " hero-player-bar--expanded" : " hero-player-bar--collapsed"}`}
-      aria-label="Ovládání přehrávání"
+      aria-label={labels.controls}
     >
       <div className="hero-player-toolbar">
         <button
@@ -73,10 +78,10 @@ export function HeroPlayerBar({
           aria-controls={`${controlId}-panel`}
         >
           <span className="hero-player-toggle-text hero-player-toggle-text--desktop">
-            {expanded ? "Skrýt ovládání" : "Ovládání přehrávání"}
+            {expanded ? labels.hideControls : labels.showControls}
           </span>
           <span className="hero-player-toggle-text hero-player-toggle-text--mobile">
-            {expanded ? "Skrýt" : "Ovládání"}
+            {expanded ? labels.hide : labels.controlsShort}
           </span>
           <span className="hero-player-toggle-meta" aria-hidden="true">
             {timeLabel}
@@ -90,9 +95,9 @@ export function HeroPlayerBar({
             type="button"
             className="hero-player-pick-video"
             onClick={onScrollToChannels}
-            aria-label="Vybrat jiné video v sekci kanálů"
+            aria-label={labels.chooseAnotherVideoAria}
           >
-            Vybrat jiné video ↓
+            {labels.chooseAnotherVideo}
           </button>
         ) : null}
       </div>
@@ -104,7 +109,7 @@ export function HeroPlayerBar({
               type="button"
               className="hero-player-skip"
               onClick={() => onSeek(currentTime - 10)}
-              aria-label="Zpět 10 sekund"
+              aria-label={labels.back10}
             >
               −10 s
             </button>
@@ -112,7 +117,7 @@ export function HeroPlayerBar({
               type="button"
               className="hero-player-skip"
               onClick={() => onSeek(currentTime - 30)}
-              aria-label="Zpět 30 sekund"
+              aria-label={labels.back30}
             >
               −30 s
             </button>
@@ -129,7 +134,7 @@ export function HeroPlayerBar({
                 aria-valuemin={0}
                 aria-valuemax={Math.max(0, Math.floor(duration))}
                 aria-valuenow={Math.floor(rangeValue)}
-                aria-label="Pozice ve videu"
+                aria-label={labels.position}
                 style={{ "--hero-progress": `${progressPercent}%` } as CSSProperties}
                 onPointerDown={() => {
                   setIsScrubbing(true);
@@ -153,7 +158,7 @@ export function HeroPlayerBar({
               type="button"
               className="hero-player-skip"
               onClick={() => onSeek(currentTime + 10)}
-              aria-label="Vpřed 10 sekund"
+              aria-label={labels.forward10}
             >
               +10 s
             </button>
@@ -161,18 +166,18 @@ export function HeroPlayerBar({
               type="button"
               className="hero-player-skip"
               onClick={() => onSeek(currentTime + 30)}
-              aria-label="Vpřed 30 sekund"
+              aria-label={labels.forward30}
             >
               +30 s
             </button>
 
             <label className="hero-player-speed" htmlFor={`${controlId}-speed`}>
-              <span className="sr-only">Rychlost přehrávání</span>
+              <span className="sr-only">{labels.playbackSpeed}</span>
               <select
                 id={`${controlId}-speed`}
                 value={playbackRate}
                 onChange={(event) => onPlaybackRateChange(Number(event.target.value) as PlaybackSpeed)}
-                aria-label="Rychlost přehrávání"
+                aria-label={labels.playbackSpeed}
               >
                 {speedOptions.map(({ rate, label }) => (
                   <option key={rate} value={rate}>
@@ -188,7 +193,7 @@ export function HeroPlayerBar({
               type="button"
               className={`hero-player-mute${muted ? " is-muted" : ""}`}
               onClick={onMuteToggle}
-              aria-label={muted ? "Zapnout zvuk" : "Ztlumit zvuk"}
+              aria-label={muted ? labels.unmute : labels.mute}
               aria-pressed={muted}
             >
               {muted ? (
@@ -204,7 +209,7 @@ export function HeroPlayerBar({
               )}
             </button>
             <label className="hero-player-volume" htmlFor={`${controlId}-volume`}>
-              <span className="hero-player-volume-label">Hlasitost</span>
+              <span className="hero-player-volume-label">{labels.volume}</span>
               <input
                 id={`${controlId}-volume`}
                 type="range"
@@ -217,7 +222,7 @@ export function HeroPlayerBar({
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-valuenow={volume}
-                aria-label="Hlasitost videa"
+                aria-label={labels.volume}
               />
               <span className="hero-player-volume-value" aria-hidden="true">
                 {muted ? "0" : volume}%

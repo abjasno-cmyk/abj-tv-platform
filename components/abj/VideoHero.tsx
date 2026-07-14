@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import YouTube, { type YouTubeProps } from "react-youtube";
 
+import { LOCALE_EN, type VeroxLocale } from "@/lib/i18n/config";
+
 type VideoHeroProps = {
   videoId: string | null;
   title: string;
@@ -12,6 +14,7 @@ type VideoHeroProps = {
   remainingLabel: string;
   progressPercent: number;
   onPlayToggle?: () => void;
+  locale?: VeroxLocale;
 };
 
 export function VideoHero({
@@ -23,6 +26,7 @@ export function VideoHero({
   remainingLabel,
   progressPercent,
   onPlayToggle,
+  locale,
 }: VideoHeroProps) {
   const clampedProgress = Math.max(0, Math.min(100, progressPercent));
   const [manualUnmuteVideoId, setManualUnmuteVideoId] = useState<string | null>(null);
@@ -47,9 +51,12 @@ export function VideoHero({
         start: offsetSeconds,
         rel: 0,
         modestbranding: 1,
+        hl: locale === LOCALE_EN ? "en" : "cs",
+        cc_lang_pref: locale === LOCALE_EN ? "en" : undefined,
+        cc_load_policy: locale === LOCALE_EN ? 1 : undefined,
       },
     }),
-    [isMuted, offsetSeconds]
+    [isMuted, locale, offsetSeconds]
   );
 
   return (

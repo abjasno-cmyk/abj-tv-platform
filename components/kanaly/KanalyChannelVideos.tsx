@@ -12,6 +12,7 @@ import { VideoReleaseDateBadge } from "@/components/viewer/VideoReleaseDateBadge
 import { ViewerVideoBadges } from "@/components/viewer/ViewerVideoBadges";
 import { LOCALE_EN } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { localizedPath } from "@/lib/i18n/paths";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { resolveVideoThumbnail } from "@/lib/viewer/videoMetadata";
 import { useViewerVideoState } from "@/lib/viewer/useViewerVideoState";
@@ -54,7 +55,7 @@ export function KanalyChannelVideos({ videos, channelName }: KanalyChannelVideos
       {videos.map((video, index) => {
         const { month, day } = dateParts(video.publishedAt, locale);
         const thumbnail = resolveVideoThumbnail(video.videoId, video.thumbnail);
-        const href = channelVideoHref(video.videoId, video.title, channelName);
+        const href = localizedPath(locale, channelVideoHref(video.videoId, video.title, channelName));
 
         return (
           <Fragment key={video.videoId}>

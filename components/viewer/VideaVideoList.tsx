@@ -12,6 +12,7 @@ import { ViewerVideoBadges } from "@/components/viewer/ViewerVideoBadges";
 import type { FeedVideo } from "@/lib/dayOverview";
 import { LOCALE_EN } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { localizedPath } from "@/lib/i18n/paths";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { liveVideoHref, resolveVideoThumbnail } from "@/lib/viewer/videoMetadata";
 import { resolveVideoReleaseIso } from "@/lib/viewer/videoReleaseDate";
@@ -52,11 +53,14 @@ export function VideaVideoList({ videos }: VideaVideoListProps) {
         });
         const { month, day } = dateParts(releaseIso ?? video.published_at, locale);
         const desc = video.tldr ?? video.context ?? "";
-        const href = liveVideoHref({
-          videoId: video.video_id,
-          title: video.title,
-          channelName: video.channel,
-        });
+        const href = localizedPath(
+          locale,
+          liveVideoHref({
+            videoId: video.video_id,
+            title: video.title,
+            channelName: video.channel,
+          }),
+        );
         const thumbnail = resolveVideoThumbnail(video.video_id, video.thumbnail);
 
         return (

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import LivePage from "@/app/live/LivePage";
 import { getRequestLocale } from "@/lib/i18n/server";
+import { localizedPath } from "@/lib/i18n/paths";
 import {
   localizeLiveChannels,
   localizeProgramBlock,
@@ -475,7 +476,8 @@ export default async function LivePageServer(
     if (requestedTitleParam) params.set("title", requestedTitleParam);
     if (requestedChannelParam) params.set("channel", requestedChannelParam);
     const query = params.toString();
-    redirect(query ? `${videoSharePath(requestedVideoId)}?${query}` : videoSharePath(requestedVideoId));
+    const targetPath = localizedPath(locale, videoSharePath(requestedVideoId));
+    redirect(query ? `${targetPath}?${query}` : targetPath);
   }
 
   const liveChannelsPromise = loadLiveChannelsForPage();

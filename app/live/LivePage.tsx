@@ -9,6 +9,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { trackAnalyticsEvent, trackVideoProgressThrottled } from "@/lib/analytics/client";
 import { videoSharePath } from "@/lib/viewer/videoMetadata";
 import { LOCALE_CS, type VeroxLocale } from "@/lib/i18n/config";
+import { localizedPath } from "@/lib/i18n/paths";
 
 type LivePageProps = {
   epg: DayProgram[];
@@ -114,11 +115,11 @@ export default function LivePage({
       return;
     }
 
-    const nextPath = videoSharePath(videoId);
+    const nextPath = localizedPath(locale, videoSharePath(videoId));
     if (window.location.pathname !== nextPath) {
       window.history.replaceState(null, "", nextPath);
     }
-  }, [isLive, videoId]);
+  }, [isLive, locale, videoId]);
 
   useEffect(() => {
     linearSourceRef.current.capturedAtMs = Date.now();
