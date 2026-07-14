@@ -593,6 +593,7 @@ export function HomePage({
             onVolumeChange={handleVolumeChange}
             onMuteToggle={toggleMute}
             onScrollToChannels={displayChannels.length > 0 ? scrollToChannels : undefined}
+            locale={locale}
           />
         </div>
         <button type="button" className="live-badge" onClick={onReturnToLive} aria-label="Přepnout na živé vysílání">

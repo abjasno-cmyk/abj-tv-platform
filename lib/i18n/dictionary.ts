@@ -65,6 +65,24 @@ type SiteDictionary = {
     currentlyRunning: string;
     channels: string;
     channelHint: string;
+    player: {
+      controls: string;
+      hideControls: string;
+      showControls: string;
+      hide: string;
+      controlsShort: string;
+      chooseAnotherVideo: string;
+      chooseAnotherVideoAria: string;
+      back10: string;
+      back30: string;
+      forward10: string;
+      forward30: string;
+      position: string;
+      playbackSpeed: string;
+      volume: string;
+      unmute: string;
+      mute: string;
+    };
   };
   news: {
     lead: string;
@@ -172,6 +190,24 @@ const cs: SiteDictionary = {
     currentlyRunning: "PRÁVĚ BĚŽÍ",
     channels: "KANÁLY",
     channelHint: "KLIKNĚTE NA VYBRANÝ KANÁL PRO ZOBRAZENÍ DETAILU.",
+    player: {
+      controls: "Ovládání přehrávání",
+      hideControls: "Skrýt ovládání",
+      showControls: "Ovládání přehrávání",
+      hide: "Skrýt",
+      controlsShort: "Ovládání",
+      chooseAnotherVideo: "Vybrat jiné video ↓",
+      chooseAnotherVideoAria: "Vybrat jiné video v sekci kanálů",
+      back10: "Zpět 10 sekund",
+      back30: "Zpět 30 sekund",
+      forward10: "Vpřed 10 sekund",
+      forward30: "Vpřed 30 sekund",
+      position: "Pozice ve videu",
+      playbackSpeed: "Rychlost přehrávání",
+      volume: "Hlasitost",
+      unmute: "Zapnout zvuk",
+      mute: "Ztlumit zvuk",
+    },
   },
   news: {
     lead: "Hlavní výběr",
@@ -279,6 +315,24 @@ const en: SiteDictionary = {
     currentlyRunning: "ON AIR NOW",
     channels: "CHANNELS",
     channelHint: "CLICK A CHANNEL TO SEE DETAILS.",
+    player: {
+      controls: "Playback controls",
+      hideControls: "Hide controls",
+      showControls: "Playback controls",
+      hide: "Hide",
+      controlsShort: "Controls",
+      chooseAnotherVideo: "Choose another video ↓",
+      chooseAnotherVideoAria: "Choose another video in the channels section",
+      back10: "Back 10 seconds",
+      back30: "Back 30 seconds",
+      forward10: "Forward 10 seconds",
+      forward30: "Forward 30 seconds",
+      position: "Video position",
+      playbackSpeed: "Playback speed",
+      volume: "Volume",
+      unmute: "Turn sound on",
+      mute: "Mute",
+    },
   },
   news: {
     lead: "Top story",
