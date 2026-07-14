@@ -12,6 +12,7 @@ import {
 import { listPublishedArticles } from "@/lib/nazory/articles";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getRequestLocale } from "@/lib/i18n/server";
+import { localizePublicAuthorCatalogItems } from "@/lib/nazory/authorLocalization";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const revalidate = 60;
@@ -37,6 +38,7 @@ export default async function NazoryPage() {
       listPublishedArticles(supabase, 40),
       listPublicAuthorsForCatalog(supabase),
     ]);
+    authors = await localizePublicAuthorCatalogItems(authors, locale);
 
     if (user) {
       const [profile, authorProfile] = await Promise.all([
