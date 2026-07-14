@@ -138,6 +138,7 @@ function NovinyShelfCard({
 }
 
 function ChannelShelfCard({ channel }: { channel: ViewerLibraryChannel }) {
+  const dictionary = getDictionary(useLocale());
   return (
     <Link href={channel.href} className="mv-library-channel-card">
       <span className="mv-library-channel-avatar">
@@ -149,7 +150,7 @@ function ChannelShelfCard({ channel }: { channel: ViewerLibraryChannel }) {
         )}
       </span>
       <span className="mv-library-channel-name">{channel.channelName}</span>
-      <span className="mv-library-channel-label">Oblíbený kanál</span>
+      <span className="mv-library-channel-label">{dictionary.myVerox.favoriteChannel}</span>
     </Link>
   );
 }

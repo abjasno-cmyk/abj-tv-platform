@@ -41,6 +41,10 @@ type SiteDictionary = {
     videoSaved: string;
     saveArticle: string;
     saved: string;
+    saveChannel: string;
+    channelSaved: string;
+    removeChannel: string;
+    channelUnavailable: string;
     discuss: string;
     transcriptVideo: string;
     showTranscript: string;
@@ -86,12 +90,21 @@ type SiteDictionary = {
     noRecentVideos: (days: number) => string;
     fallback: (days: number) => string;
   };
+  opinions: {
+    authorsTitle: string;
+    authorsHint: string;
+    authorsAria: string;
+    previousAuthors: string;
+    nextAuthors: string;
+    preparingAuthors: string;
+  };
   myVerox: {
     heading: string;
     signIn: string;
     savedVideos: string;
     savedOpinions: string;
     savedNews: string;
+    favoriteChannel: string;
     emptyVideos: string;
     emptyOpinions: string;
     emptyNews: string;
@@ -135,6 +148,10 @@ const cs: SiteDictionary = {
     videoSaved: "Video uloženo",
     saveArticle: "Uložit článek",
     saved: "Uloženo",
+    saveChannel: "Uložit kanál",
+    channelSaved: "Oblíbený",
+    removeChannel: "Odebrat z oblíbených kanálů",
+    channelUnavailable: "Kanál zatím nemá interní identifikátor",
     discuss: "Diskutovat",
     transcriptVideo: "PŘEPIS VIDEA",
     showTranscript: "Zobrazit přepis videa",
@@ -180,12 +197,21 @@ const cs: SiteDictionary = {
     noRecentVideos: (days) => `Za posledních ${days} dní nejsou u tohoto kanálu dostupná videa.`,
     fallback: (days) => `Za posledních ${days} dní bez novinek — zobrazujeme nejnovější videa kanálu.`,
   },
+  opinions: {
+    authorsTitle: "AUTOŘI",
+    authorsHint: "KLIKNĚTE NA VYBRANÉHO AUTORA PRO ZOBRAZENÍ JEHO ČLÁNKŮ.",
+    authorsAria: "Autoři",
+    previousAuthors: "Předchozí autoři",
+    nextAuthors: "Další autoři",
+    preparingAuthors: "Připravujeme…",
+  },
   myVerox: {
     heading: "VAŠE VIDEA A KANÁLY",
     signIn: "Přihlásit zdarma",
     savedVideos: "Uložená videa",
     savedOpinions: "Uložené články Názorů",
     savedNews: "Uložené články Novin",
+    favoriteChannel: "Oblíbený kanál",
     emptyVideos: "Zatím nemáte uložená videa. Klepněte na ☆ Uložit video na stránce Živě nebo Videa.",
     emptyOpinions: "Zatím nemáte uložené články. Na detailu článku klepněte na Uložit článek.",
     emptyNews: "Zatím nemáte uložené články Novin. V sekci Noviny klepněte na ☆ Uložit článek.",
@@ -229,6 +255,10 @@ const en: SiteDictionary = {
     videoSaved: "Video saved",
     saveArticle: "Save article",
     saved: "Saved",
+    saveChannel: "Save channel",
+    channelSaved: "Favorite",
+    removeChannel: "Remove from favorite channels",
+    channelUnavailable: "This channel does not have an internal identifier yet",
     discuss: "Discuss",
     transcriptVideo: "VIDEO TRANSCRIPT",
     showTranscript: "Show video transcript",
@@ -274,12 +304,21 @@ const en: SiteDictionary = {
     noRecentVideos: (days) => `No videos are available for this channel from the last ${days} days.`,
     fallback: (days) => `No new videos in the last ${days} days — showing the channel's latest videos.`,
   },
+  opinions: {
+    authorsTitle: "AUTHORS",
+    authorsHint: "CLICK AN AUTHOR TO VIEW THEIR ARTICLES.",
+    authorsAria: "Authors",
+    previousAuthors: "Previous authors",
+    nextAuthors: "Next authors",
+    preparingAuthors: "Coming soon…",
+  },
   myVerox: {
     heading: "YOUR VIDEOS AND CHANNELS",
     signIn: "Sign in for free",
     savedVideos: "Saved videos",
     savedOpinions: "Saved opinion articles",
     savedNews: "Saved news articles",
+    favoriteChannel: "Favorite channel",
     emptyVideos: "You have no saved videos yet. Tap ☆ Save video on Live or Videos.",
     emptyOpinions: "You have no saved articles yet. Tap Save article on an article detail.",
     emptyNews: "You have no saved news articles yet. Tap ☆ Save article in News.",
