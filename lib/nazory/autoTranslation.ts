@@ -268,8 +268,8 @@ export async function translateAndStoreOpinionArticle(
 }
 
 export async function runOpinionAutoTranslation(options: TranslationRunOptions = {}): Promise<OpinionTranslationReport> {
-  const defaultLimit = envLimit("VEROX_OPINION_TRANSLATION_BATCH_SIZE", 50, 200);
-  const limit = boundedLimit(options.limit, defaultLimit, 200);
+  const defaultLimit = envLimit("VEROX_OPINION_TRANSLATION_BATCH_SIZE", 200, 500);
+  const limit = boundedLimit(options.limit, defaultLimit, 500);
   const force = options.force === true;
   const supabase = options.supabase ?? createSupabaseServiceClient();
   const report: OpinionTranslationReport = {
@@ -317,7 +317,7 @@ export async function runVisibleOpinionAutoTranslation(
   articles: OpinionArticleRow[],
   options: TranslationRunOptions = {},
 ): Promise<OpinionTranslationReport> {
-  const maxVisibleLimit = envLimit("VEROX_OPINION_VISIBLE_TRANSLATION_BATCH_SIZE", 100, 300);
+  const maxVisibleLimit = envLimit("VEROX_OPINION_VISIBLE_TRANSLATION_BATCH_SIZE", 300, 500);
   const limit = boundedLimit(options.limit, Math.min(articles.length, maxVisibleLimit), maxVisibleLimit);
   const force = options.force === true;
   const supabase = options.supabase ?? createSupabaseServiceClient();
