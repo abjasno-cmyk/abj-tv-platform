@@ -2106,46 +2106,6 @@
   text-decoration: none;
   color: inherit;
 }
-.nazory-page .hf.nazory-authors-hf .channel-card {
-  width: clamp(210px, 24vw, 300px);
-  min-height: 168px;
-  aspect-ratio: auto;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  padding: 12px;
-  gap: 6px;
-}
-.nazory-page .hf.nazory-authors-hf .channel-card.channel-card-active {
-  width: clamp(226px, 26vw, 320px);
-  min-height: 186px;
-  aspect-ratio: auto;
-}
-.nazory-page .hf.nazory-authors-hf .channel-card .ch-avatar {
-  width: 48px;
-  height: 48px;
-}
-.nazory-page .hf.nazory-authors-hf .channel-card .ch-name {
-  max-width: 100%;
-  white-space: normal;
-  line-height: 1.1;
-}
-.nazory-page .hf.nazory-authors-hf .channel-card .ch-author-meta,
-.nazory-page .hf.nazory-authors-hf .channel-card .ch-author-bio {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  color: rgba(23, 20, 17, 0.66);
-  font-size: clamp(0.72rem, 1vw, 0.86rem);
-  line-height: 1.25;
-}
-.nazory-page .hf.nazory-authors-hf .channel-card .ch-author-meta {
-  -webkit-line-clamp: 2;
-  font-weight: 700;
-}
-.nazory-page .hf.nazory-authors-hf .channel-card .ch-author-bio {
-  -webkit-line-clamp: 4;
-}
 /* Názory — dvojčára: každá linka 6pt (záhlaví → Autoři → medailonek → články) */
 .nazory-chrome .double-rule,
 .nazory-page .double-rule {

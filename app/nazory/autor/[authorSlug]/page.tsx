@@ -12,7 +12,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listPublishedArticlesByAuthor } from "@/lib/nazory/articles";
 import { LOCALE_EN } from "@/lib/i18n/config";
 import { getRequestLocale } from "@/lib/i18n/server";
-import { localizePublicAuthorCatalogItems, localizePublicAuthorProfile } from "@/lib/nazory/authorLocalization";
+import { localizePublicAuthorProfile } from "@/lib/nazory/authorLocalization";
 
 export const revalidate = 60;
 
@@ -44,7 +44,6 @@ export default async function NazoryAuthorPage({ params }: { params: Promise<{ a
     listPublishedArticlesByAuthor(supabase, author.userId),
     listPublicAuthorsForCatalog(supabase),
   ]);
-  const localizedAuthors = await localizePublicAuthorCatalogItems(authors, locale);
   const name = getAuthorDisplayName({ first_name: author.firstName, last_name: author.lastName });
   const avatarUrl = publicNazoryMediaUrl(author.avatarStoragePath);
   const localizedAuthor = await localizePublicAuthorProfile(author, locale);
@@ -60,7 +59,7 @@ export default async function NazoryAuthorPage({ params }: { params: Promise<{ a
 
   return (
     <div className="vx-live vx-sub nazory-page">
-      <NazoryAuthorsSection authors={localizedAuthors} activeSlug={authorSlug} />
+      <NazoryAuthorsSection authors={authors} activeSlug={authorSlug} />
 
       <header className="nazory-author-page">
         <div className="nazory-author-page-head">

@@ -81,8 +81,6 @@ export function NazoryAuthorsCarousel({ authors, activeSlug = null }: NazoryAuth
           ) : (
             authors.map((author) => {
               const active = author.slug === activeSlug;
-              const meta = [author.title, author.profession, author.city].filter(Boolean).join(" · ");
-              const bio = author.bio?.trim() ?? "";
               return (
                 <Link
                   key={author.slug}
@@ -95,8 +93,6 @@ export function NazoryAuthorsCarousel({ authors, activeSlug = null }: NazoryAuth
                     <img className="ch-avatar" src={author.avatarUrl} alt="" />
                   ) : null}
                   <span className="ch-name">{author.displayName}</span>
-                  {meta ? <span className="ch-author-meta">{meta}</span> : null}
-                  {bio ? <span className="ch-author-bio">{bio}</span> : null}
                 </Link>
               );
             })

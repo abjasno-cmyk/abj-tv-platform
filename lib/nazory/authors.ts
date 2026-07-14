@@ -314,16 +314,12 @@ export type PublicAuthorCatalogItem = {
   slug: string;
   displayName: string;
   avatarUrl: string | null;
-  title: string | null;
-  profession: string | null;
-  city: string | null;
-  bio: string | null;
 };
 
 export async function listPublicAuthorsForCatalog(supabase: SupabaseClient): Promise<PublicAuthorCatalogItem[]> {
   const { data, error } = await supabase
     .from("author_profiles")
-    .select("first_name, last_name, slug, avatar_storage_path, title, profession, city, bio")
+    .select("first_name, last_name, slug, avatar_storage_path")
     .eq("is_active", true)
     .eq("profile_completed", true)
     .order("last_name", { ascending: true })
@@ -331,15 +327,11 @@ export async function listPublicAuthorsForCatalog(supabase: SupabaseClient): Pro
 
   if (error || !data) return [];
 
-  return (data as Array<Pick<AuthorProfileRow, "first_name" | "last_name" | "slug" | "avatar_storage_path" | "title" | "profession" | "city" | "bio">>).map(
+  return (data as Array<Pick<AuthorProfileRow, "first_name" | "last_name" | "slug" | "avatar_storage_path">>).map(
     (row) => ({
       slug: row.slug,
       displayName: getAuthorDisplayName(row),
       avatarUrl: publicNazoryMediaUrl(row.avatar_storage_path),
-      title: row.title,
-      profession: row.profession,
-      city: row.city,
-      bio: row.bio,
     }),
   );
 }
