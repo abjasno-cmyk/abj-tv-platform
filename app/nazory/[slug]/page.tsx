@@ -7,6 +7,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isNazoryAdmin } from "@/lib/nazory/access";
 import { getPublicAuthorBySlug } from "@/lib/nazory/authors";
 import { getPublishedArticleBySlug } from "@/lib/nazory/articles";
+import { getRequestLocale } from "@/lib/i18n/server";
+import { localizePublicAuthorProfile } from "@/lib/nazory/authorLocalization";
 
 export const revalidate = 60;
 
@@ -42,6 +44,7 @@ export async function generateMetadata({
 
 export default async function NazoryArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  const locale = await getRequestLocale();
   const supabase = await createSupabaseServerClient();
   const article = await getPublishedArticleBySlug(supabase, slug);
   if (!article) notFound();
@@ -69,15 +72,17 @@ export default async function NazoryArticlePage({ params }: { params: Promise<{ 
   const admin = user ? await isNazoryAdmin(supabase, user) : false;
   const canEdit = Boolean(user && (admin || user.id === article.author_id));
   const editHref = canEdit ? `/nazory/napsat/${article.id}` : null;
+  const localizedAuthor = await localizePublicAuthorProfile(author, locale);
 
   return (
     <div className="vx-live vx-sub nazory-page">
       <OpinionDetail
         article={article}
-        author={author}
+        author={localizedAuthor}
         shareUrl={`${SITE_URL}/nazory/${article.slug}`}
         commentCount={count ?? 0}
         editHref={editHref}
+        locale={locale}
       />
     </div>
   );

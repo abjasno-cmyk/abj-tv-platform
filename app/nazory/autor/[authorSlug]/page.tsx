@@ -10,7 +10,9 @@ import { getAuthorDisplayName } from "@/lib/nazory/display";
 import { publicNazoryMediaUrl } from "@/lib/nazory/media";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listPublishedArticlesByAuthor } from "@/lib/nazory/articles";
+import { LOCALE_EN } from "@/lib/i18n/config";
 import { getRequestLocale } from "@/lib/i18n/server";
+import { localizePublicAuthorProfile } from "@/lib/nazory/authorLocalization";
 
 export const revalidate = 60;
 
@@ -44,6 +46,16 @@ export default async function NazoryAuthorPage({ params }: { params: Promise<{ a
   ]);
   const name = getAuthorDisplayName({ first_name: author.firstName, last_name: author.lastName });
   const avatarUrl = publicNazoryMediaUrl(author.avatarStoragePath);
+  const localizedAuthor = await localizePublicAuthorProfile(author, locale);
+  const isEnglish = locale === LOCALE_EN;
+  const articleCountLabel =
+    localizedAuthor.publishedArticleCount === 1
+      ? isEnglish
+        ? "1 published article"
+        : "1 publikovaný článek"
+      : isEnglish
+        ? `${localizedAuthor.publishedArticleCount} published articles`
+        : `${localizedAuthor.publishedArticleCount} publikovaných článků`;
 
   return (
     <div className="vx-live vx-sub nazory-page">
@@ -61,11 +73,11 @@ export default async function NazoryAuthorPage({ params }: { params: Promise<{ a
           </span>
           <div>
             <h1 className="section-h">{name}</h1>
-            {author.title ? <p className="nazory-author-page-title">{author.title}</p> : null}
-            {author.profession ? <p className="nazory-author-page-meta">{author.profession}</p> : null}
-            {author.city ? <p className="nazory-author-page-meta">{author.city}</p> : null}
-            {author.bio ? <p className="nazory-author-page-bio">{author.bio}</p> : null}
-            <p className="nazory-author-page-meta">{author.publishedArticleCount} publikovaných článků</p>
+            {localizedAuthor.title ? <p className="nazory-author-page-title">{localizedAuthor.title}</p> : null}
+            {localizedAuthor.profession ? <p className="nazory-author-page-meta">{localizedAuthor.profession}</p> : null}
+            {localizedAuthor.city ? <p className="nazory-author-page-meta">{localizedAuthor.city}</p> : null}
+            {localizedAuthor.bio ? <p className="nazory-author-page-bio">{localizedAuthor.bio}</p> : null}
+            <p className="nazory-author-page-meta">{articleCountLabel}</p>
           </div>
         </div>
         <div className="nazory-author-links">
@@ -114,12 +126,14 @@ export default async function NazoryAuthorPage({ params }: { params: Promise<{ a
             ))}
           </>
         ) : (
-          <p className="nazory-empty">Autor zatím nemá publikované články.</p>
+          <p className="nazory-empty">
+            {isEnglish ? "This author has no published articles yet." : "Autor zatím nemá publikované články."}
+          </p>
         )}
       </section>
 
       <p className="nazory-author-link">
-        <Link href="/nazory">Zpět na Názory</Link>
+        <Link href="/nazory">{isEnglish ? "Back to Opinions" : "Zpět na Názory"}</Link>
       </p>
     </div>
   );
