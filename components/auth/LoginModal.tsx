@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { LOCALE_EN } from "@/lib/i18n/config";
+import { useLocale } from "@/lib/i18n/useLocale";
+
 type LoginModalProps = {
   open: boolean;
   reason?: string | null;
@@ -25,6 +28,7 @@ export function LoginModal({
   onOAuth,
   onEmail,
 }: LoginModalProps) {
+  const isEnglish = useLocale() === LOCALE_EN;
   const [email, setEmail] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(true);
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
@@ -55,27 +59,30 @@ export function LoginModal({
       <button
         type="button"
         className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"
-        aria-label="Zavřít přihlášení"
+        aria-label={isEnglish ? "Close sign-in" : "Zavřít přihlášení"}
         onClick={onClose}
       />
       {/* Světlá karta dle návrhu PŘIHLÁŠENÍ (L. Robinson): oranžová horní lišta,
           tmavý titulek, obrysová tlačítka, oranžové ZAVŘÍT. */}
       <section className="relative z-[1] w-full max-w-md overflow-hidden border-[3px] border-[#ff6600] bg-white text-[#303030] shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
         <p className="bg-[#ff6600] px-4 py-2 text-center text-[12px] font-bold uppercase tracking-[0.12em] text-white">
-          Váš bezplatný divácký účet
+          {isEnglish ? "Your free viewer account" : "Váš bezplatný divácký účet"}
         </p>
 
         <div className="px-5 py-5 sm:px-7 sm:py-6">
           <header className="space-y-2 text-center">
             <h2 className="text-[28px] font-extrabold uppercase leading-none tracking-wide text-[#303030]">
-              Přihlásit zdarma
+              {isEnglish ? "Sign in for free" : "Přihlásit zdarma"}
             </h2>
             <p className="text-[13px] leading-relaxed text-[#5a5a5a]">
-              Přihlaste se zdarma a získejte svůj divácký účet. Budete moci komentovat, lajkovat, ukládat si oblíbené
-              pořady a pokračovat ve sledování tam, kde jste skončili.
+              {isEnglish
+                ? "Sign in for free and get your viewer account. You can comment, like, save favorite shows and continue watching where you left off."
+                : "Přihlaste se zdarma a získejte svůj divácký účet. Budete moci komentovat, lajkovat, ukládat si oblíbené pořady a pokračovat ve sledování tam, kde jste skončili."}
             </p>
             <p className="text-[12px] leading-relaxed text-[#707070]">
-              Účet je zdarma. Marketingové e-maily vám pošleme jen tehdy, pokud s tím zvlášť souhlasíte.
+              {isEnglish
+                ? "The account is free. We will send marketing emails only if you explicitly agree."
+                : "Účet je zdarma. Marketingové e-maily vám pošleme jen tehdy, pokud s tím zvlášť souhlasíte."}
             </p>
             {helperReason ? (
               <p className="border border-[#ff6600]/40 bg-[#ff6600]/5 px-3 py-2 text-xs text-[#5a5a5a]">
@@ -85,7 +92,7 @@ export function LoginModal({
           </header>
 
           <div className="mt-5 flex min-h-[44px] w-full items-center justify-center border-[1.5px] border-[#ff6600]/55 px-4 py-2 text-center text-[12px] font-bold uppercase tracking-[0.06em] text-[#303030]">
-            Komentujte, lajkujte a pokračujte tam, kde jste skončili.
+            {isEnglish ? "Comment, like and continue where you left off." : "Komentujte, lajkujte a pokračujte tam, kde jste skončili."}
           </div>
 
           <div className="mt-3 space-y-2">
@@ -95,14 +102,14 @@ export function LoginModal({
               onClick={() => {
                 setLocalError(null);
                 if (!termsAccepted) {
-                  setLocalError("Pro vytvoření účtu je potřeba souhlasit s podmínkami.");
+                  setLocalError(isEnglish ? "You need to accept the terms to create an account." : "Pro vytvoření účtu je potřeba souhlasit s podmínkami.");
                   return;
                 }
                 void onOAuth("google", { termsAccepted, newsletterOptIn });
               }}
               className="flex min-h-[44px] w-full items-center justify-center border-[1.5px] border-[#ff6600]/55 px-4 py-2 text-[13px] font-bold uppercase tracking-[0.06em] text-[#303030] transition hover:border-[#ff6600] hover:text-[#ff6600] disabled:opacity-60"
             >
-              {busyProvider === "google" ? "Přesměrovávám…" : "Pokračovat přes Google"}
+              {busyProvider === "google" ? (isEnglish ? "Redirecting…" : "Přesměrovávám…") : isEnglish ? "Continue with Google" : "Pokračovat přes Google"}
             </button>
             {enableFacebook ? (
               <button
@@ -111,14 +118,14 @@ export function LoginModal({
                 onClick={() => {
                   setLocalError(null);
                   if (!termsAccepted) {
-                    setLocalError("Pro vytvoření účtu je potřeba souhlasit s podmínkami.");
+                    setLocalError(isEnglish ? "You need to accept the terms to create an account." : "Pro vytvoření účtu je potřeba souhlasit s podmínkami.");
                     return;
                   }
                   void onOAuth("facebook", { termsAccepted, newsletterOptIn });
                 }}
                 className="flex min-h-[44px] w-full items-center justify-center border-[1.5px] border-[#ff6600]/55 px-4 py-2 text-[13px] font-bold uppercase tracking-[0.06em] text-[#303030] transition hover:border-[#ff6600] hover:text-[#ff6600] disabled:opacity-60"
               >
-                {busyProvider === "facebook" ? "Přesměrovávám…" : "Pokračovat přes Facebook"}
+                {busyProvider === "facebook" ? (isEnglish ? "Redirecting…" : "Přesměrovávám…") : isEnglish ? "Continue with Facebook" : "Pokračovat přes Facebook"}
               </button>
             ) : null}
           </div>
@@ -138,19 +145,19 @@ export function LoginModal({
                 onClick={() => {
                   setLocalError(null);
                   if (!termsAccepted) {
-                    setLocalError("Pro vytvoření účtu je potřeba souhlasit s podmínkami.");
+                    setLocalError(isEnglish ? "You need to accept the terms to create an account." : "Pro vytvoření účtu je potřeba souhlasit s podmínkami.");
                     return;
                   }
                   const normalizedEmail = email.trim();
                   if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-                    setLocalError("Zadejte prosím platný e-mail.");
+                    setLocalError(isEnglish ? "Please enter a valid email address." : "Zadejte prosím platný e-mail.");
                     return;
                   }
                   void onEmail(normalizedEmail, { termsAccepted, newsletterOptIn });
                 }}
                 className="flex min-h-[44px] w-full items-center justify-center border-2 border-[#ff6600] bg-[#ff6600] px-4 py-2 text-[13px] font-bold uppercase tracking-[0.06em] text-white transition hover:bg-[#e65c00] disabled:opacity-60"
               >
-                {busyProvider === "email" ? "Odesílám odkaz…" : "Pokračovat e-mailem"}
+                {busyProvider === "email" ? (isEnglish ? "Sending link…" : "Odesílám odkaz…") : isEnglish ? "Continue with email" : "Pokračovat e-mailem"}
               </button>
             </div>
           ) : null}
@@ -163,7 +170,7 @@ export function LoginModal({
                 onChange={(event) => setTermsAccepted(event.target.checked)}
                 className="mt-[2px] h-4 w-4 accent-[#ff6600]"
               />
-              Souhlasím s podmínkami používání a zásadami ochrany osobních údajů.
+              {isEnglish ? "I agree to the terms of use and privacy policy." : "Souhlasím s podmínkami používání a zásadami ochrany osobních údajů."}
             </label>
             <label className="flex items-start gap-2 text-[12px] leading-snug text-[#5a5a5a]">
               <input
@@ -172,9 +179,9 @@ export function LoginModal({
                 onChange={(event) => setNewsletterOptIn(event.target.checked)}
                 className="mt-[2px] h-4 w-4 accent-[#ff6600]"
               />
-              Chci dostávat e-mailové novinky a upozornění.
+              {isEnglish ? "I want to receive email updates and notifications." : "Chci dostávat e-mailové novinky a upozornění."}
             </label>
-            <p className="text-[12px] font-bold text-[#ff6600]">Sledování obsahu zůstává zdarma.</p>
+            <p className="text-[12px] font-bold text-[#ff6600]">{isEnglish ? "Watching content remains free." : "Sledování obsahu zůstává zdarma."}</p>
           </div>
 
           {effectiveError ? <p className="mt-3 text-sm text-[#d6360b]">{effectiveError}</p> : null}
@@ -185,7 +192,7 @@ export function LoginModal({
               onClick={onClose}
               className="bg-[#ff6600] px-5 py-2 text-[12px] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[#e65c00]"
             >
-              Zavřít
+              {isEnglish ? "Close" : "Zavřít"}
             </button>
           </div>
         </div>

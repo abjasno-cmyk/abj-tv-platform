@@ -1,12 +1,16 @@
 import Link from "next/link";
 
 import { OpinionDiscussButton } from "@/components/nazory/OpinionDiscussButton";
-import { publicNazoryMediaUrl } from "@/lib/nazory/media";
+import { LOCALE_EN, type VeroxLocale } from "@/lib/i18n/config";
 import type { OpinionArticleRow } from "@/lib/nazory/types";
 
 const MONTHS = [
   "LEDEN", "ÚNOR", "BŘEZEN", "DUBEN", "KVĚTEN", "ČERVEN",
   "ČERVENEC", "SRPEN", "ZÁŘÍ", "ŘÍJEN", "LISTOPAD", "PROSINEC",
+];
+const MONTHS_EN = [
+  "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+  "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
 ];
 
 export type OpinionCardAuthor = {
@@ -18,18 +22,20 @@ type OpinionCardProps = {
   article: OpinionArticleRow;
   author?: OpinionCardAuthor | null;
   commentCount?: number;
+  locale: VeroxLocale;
 };
 
-function dateParts(iso: string | null): { month: string; day: string } {
+function dateParts(iso: string | null, locale: VeroxLocale): { month: string; day: string } {
   if (!iso) return { month: "", day: "" };
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return { month: "", day: "" };
-  return { month: MONTHS[d.getMonth()] ?? "", day: String(d.getDate()) };
+  const months = locale === LOCALE_EN ? MONTHS_EN : MONTHS;
+  return { month: months[d.getMonth()] ?? "", day: String(d.getDate()) };
 }
 
-function formatPragueStamp(iso: string | null): string {
+function formatPragueStamp(iso: string | null, locale: VeroxLocale): string {
   if (!iso) return "";
-  return new Intl.DateTimeFormat("cs-CZ", {
+  return new Intl.DateTimeFormat(locale === LOCALE_EN ? "en-US" : "cs-CZ", {
     timeZone: "Europe/Prague",
     day: "numeric",
     month: "long",
@@ -42,14 +48,15 @@ function authorInitial(name: string): string {
   return trimmed ? trimmed.charAt(0).toUpperCase() : "?";
 }
 
-export function OpinionCard({ article, author, commentCount = 0 }: OpinionCardProps) {
-  const { month, day } = dateParts(article.published_at);
-  const authorName = author?.name?.trim() || "Autor";
+export function OpinionCard({ article, author, commentCount = 0, locale }: OpinionCardProps) {
+  const { month, day } = dateParts(article.published_at, locale);
+  const isEnglish = locale === LOCALE_EN;
+  const authorName = author?.name?.trim() || (isEnglish ? "Author" : "Autor");
   const metaParts = [
     authorName,
-    formatPragueStamp(article.published_at),
-    article.reading_time_min ? `${article.reading_time_min} min čtení` : null,
-    commentCount > 0 ? `${commentCount} komentářů` : null,
+    formatPragueStamp(article.published_at, locale),
+    article.reading_time_min ? `${article.reading_time_min} min ${isEnglish ? "read" : "čtení"}` : null,
+    commentCount > 0 ? `${commentCount} ${isEnglish ? "comments" : "komentářů"}` : null,
   ].filter(Boolean);
 
   return (
@@ -83,7 +90,7 @@ export function OpinionCard({ article, author, commentCount = 0 }: OpinionCardPr
         </div>
         {article.perex ? <p className="kostka-nazory-perex">{article.perex}</p> : null}
         <Link href={`/nazory/${article.slug}`} className="vx-arrow">
-          <b>Číst celý text</b>
+          <b>{isEnglish ? "Read full text" : "Číst celý text"}</b>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/icons/ikona_sipka.svg" alt="" />
         </Link>

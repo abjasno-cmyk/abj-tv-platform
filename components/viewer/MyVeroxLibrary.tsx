@@ -17,6 +17,9 @@ import type {
   ViewerLibraryVideo,
 } from "@/lib/viewer/myVeroxLibrary";
 import { scrollHorizontalCarousel } from "@/lib/horizontalCarouselScroll";
+import { LOCALE_EN } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { useLocale } from "@/lib/i18n/useLocale";
 import { publicNazoryMediaUrl } from "@/lib/nazory/media";
 
 function VideoShelfCard({
@@ -135,6 +138,7 @@ function NovinyShelfCard({
 }
 
 function ChannelShelfCard({ channel }: { channel: ViewerLibraryChannel }) {
+  const dictionary = getDictionary(useLocale());
   return (
     <Link href={channel.href} className="mv-library-channel-card">
       <span className="mv-library-channel-avatar">
@@ -146,7 +150,7 @@ function ChannelShelfCard({ channel }: { channel: ViewerLibraryChannel }) {
         )}
       </span>
       <span className="mv-library-channel-name">{channel.channelName}</span>
-      <span className="mv-library-channel-label">Oblíbený kanál</span>
+      <span className="mv-library-channel-label">{dictionary.myVerox.favoriteChannel}</span>
     </Link>
   );
 }
@@ -234,6 +238,9 @@ function ShelfSection({
 
 export function MyVeroxLibrary() {
   const { isAuthenticated, openLoginModal } = useAuth();
+  const locale = useLocale();
+  const dictionary = getDictionary(locale);
+  const isEnglish = locale === LOCALE_EN;
   const [library, setLibrary] = useState<MyVeroxLibraryPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -276,16 +283,18 @@ export function MyVeroxLibrary() {
   if (!isAuthenticated) {
     return (
       <section className="mv-library">
-        <h2 className="mv-library-heading">VAŠE VIDEA A KANÁLY</h2>
+        <h2 className="mv-library-heading">{dictionary.myVerox.heading}</h2>
         <p className="mv-library-lead">
-          Po přihlášení uvidíte uložená videa, rozkoukané pořady a oblíbené kanály.
+          {isEnglish
+            ? "Sign in to see saved videos, in-progress shows and favorite channels."
+            : "Po přihlášení uvidíte uložená videa, rozkoukané pořady a oblíbené kanály."}
         </p>
         <button
           type="button"
           className="mv-library-login"
-          onClick={() => openLoginModal({ reason: "Přihlaste se zdarma a mějte svá videa na jednom místě." })}
+          onClick={() => openLoginModal({ reason: isEnglish ? "Sign in for free and keep your videos in one place." : "Přihlaste se zdarma a mějte svá videa na jednom místě." })}
         >
-          Přihlásit zdarma
+          {dictionary.myVerox.signIn}
         </button>
       </section>
     );
@@ -294,8 +303,8 @@ export function MyVeroxLibrary() {
   if (loading && !library) {
     return (
       <section className="mv-library">
-        <h2 className="mv-library-heading">VAŠE VIDEA A KANÁLY</h2>
-        <p className="mv-library-empty">Načítám vaši knihovnu…</p>
+        <h2 className="mv-library-heading">{dictionary.myVerox.heading}</h2>
+        <p className="mv-library-empty">{isEnglish ? "Loading your library…" : "Načítám vaši knihovnu…"}</p>
       </section>
     );
   }
@@ -303,7 +312,7 @@ export function MyVeroxLibrary() {
   if (error) {
     return (
       <section className="mv-library">
-        <h2 className="mv-library-heading">VAŠE VIDEA A KANÁLY</h2>
+        <h2 className="mv-library-heading">{dictionary.myVerox.heading}</h2>
         <p className="mv-library-empty">{error}</p>
       </section>
     );
@@ -320,32 +329,34 @@ export function MyVeroxLibrary() {
 
   return (
     <section className="mv-library">
-      <h2 className="mv-library-heading">VAŠE VIDEA A KANÁLY</h2>
+      <h2 className="mv-library-heading">{dictionary.myVerox.heading}</h2>
       <p className="mv-library-lead">
-        Uložená videa, historie sledování a oblíbené kanály — vše na jednom místě.
+        {isEnglish
+          ? "Saved videos, viewing history and favorite channels — all in one place."
+          : "Uložená videa, historie sledování a oblíbené kanály — vše na jednom místě."}
       </p>
 
-      <ShelfSection title="Uložená videa" empty="Zatím nemáte uložená videa. Klepněte na ☆ Uložit video na stránce Živě nebo Videa.">
+      <ShelfSection title={dictionary.myVerox.savedVideos} empty={dictionary.myVerox.emptyVideos}>
         {data.savedVideos.map((video) => (
           <VideoShelfCard key={`saved-${video.videoId}`} video={video} onUnsave={() => void loadLibrary()} />
         ))}
       </ShelfSection>
 
-      <ShelfSection title="Uložené články Názorů" empty="Zatím nemáte uložené články. Na detailu článku klepněte na Uložit článek.">
+      <ShelfSection title={dictionary.myVerox.savedOpinions} empty={dictionary.myVerox.emptyOpinions}>
         {data.savedOpinions.map((article) => (
           <OpinionShelfCard key={`opinion-${article.articleId}`} article={article} onUnsave={() => void loadLibrary()} />
         ))}
       </ShelfSection>
 
-      <ShelfSection title="Uložené články Novin" empty="Zatím nemáte uložené články Novin. V sekci Noviny klepněte na ☆ Uložit článek.">
+      <ShelfSection title={dictionary.myVerox.savedNews} empty={dictionary.myVerox.emptyNews}>
         {data.savedNovinyArticles.map((article) => (
           <NovinyShelfCard key={`noviny-${article.articleId}`} article={article} onUnsave={() => void loadLibrary()} />
         ))}
       </ShelfSection>
 
       <ShelfSection
-        title="Pokračovat ve sledování"
-        empty="Rozkoukaná videa se zde objeví automaticky po přihlášení a sledování na Živě."
+        title={isEnglish ? "Continue watching" : "Pokračovat ve sledování"}
+        empty={isEnglish ? "In-progress videos will appear here automatically after signing in and watching Live." : "Rozkoukaná videa se zde objeví automaticky po přihlášení a sledování na Živě."}
         carousel
       >
         {data.continueWatching.map((video) => (
@@ -354,8 +365,8 @@ export function MyVeroxLibrary() {
       </ShelfSection>
 
       <ShelfSection
-        title="Zhlédnutá videa"
-        empty="Po dohrání videa (cca 90 %) se tu zobrazí s odznakem Zhlédnuto."
+        title={isEnglish ? "Watched videos" : "Zhlédnutá videa"}
+        empty={isEnglish ? "After you finish a video (around 90%), it appears here with a Watched badge." : "Po dohrání videa (cca 90 %) se tu zobrazí s odznakem Zhlédnuto."}
         carousel
       >
         {data.watchedVideos.map((video) => (
@@ -364,8 +375,8 @@ export function MyVeroxLibrary() {
       </ShelfSection>
 
       <ShelfSection
-        title="Oblíbené kanály"
-        empty="U kanálů na stránce Živě klepněte na ☆ Uložit a přidejte kanál mezi oblíbené."
+        title={isEnglish ? "Favorite channels" : "Oblíbené kanály"}
+        empty={isEnglish ? "On Live, tap ☆ Save to add a channel to your favorites." : "U kanálů na stránce Živě klepněte na ☆ Uložit a přidejte kanál mezi oblíbené."}
       >
         {data.followedChannels.map((channel) => (
           <ChannelShelfCard key={channel.channelId} channel={channel} />

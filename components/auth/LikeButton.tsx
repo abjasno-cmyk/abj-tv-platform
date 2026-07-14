@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { useLocale } from "@/lib/i18n/useLocale";
 
 type LikeButtonProps = {
   entityType: string;
@@ -20,6 +22,7 @@ export function LikeButton({ entityType, entityId, className }: LikeButtonProps)
   const [liked, setLiked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dictionary = getDictionary(useLocale());
   const effectiveLiked = isAuthenticated && liked;
 
   useEffect(() => {
@@ -94,7 +97,7 @@ export function LikeButton({ entityType, entityId, className }: LikeButtonProps)
                 // Po přihlášení uživatel kliknutí potvrdí.
               },
               {
-                reason: "Komentujte, lajkujte a pokračujte tam, kde jste skončili.",
+                reason: dictionary.header.authReason.default,
               }
             );
             return;
@@ -104,12 +107,12 @@ export function LikeButton({ entityType, entityId, className }: LikeButtonProps)
       >
         <span aria-hidden="true">{!isAuthenticated ? "🔒" : effectiveLiked ? "♥" : "♡"}</span>
         {loading
-          ? "Ukládám..."
+          ? dictionary.common.liking
           : !isAuthenticated
-            ? "Přihlásit pro lajk"
+            ? dictionary.common.signInForLike
             : effectiveLiked
-              ? "Líbí se vám to"
-              : "Líbí se mi"}
+              ? dictionary.common.liked
+              : dictionary.common.like}
       </button>
       {error ? <p className="text-xs text-[#D14A2A]">{error}</p> : null}
     </div>

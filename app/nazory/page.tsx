@@ -10,11 +10,15 @@ import {
   loadProfileRoleRow,
 } from "@/lib/nazory/access";
 import { listPublishedArticles } from "@/lib/nazory/articles";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { getRequestLocale } from "@/lib/i18n/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const revalidate = 60;
 
 export default async function NazoryPage() {
+  const locale = await getRequestLocale();
+  const dictionary = getDictionary(locale);
   let articles: Awaited<ReturnType<typeof listPublishedArticles>> = [];
   let authors: Awaited<ReturnType<typeof listPublicAuthorsForCatalog>> = [];
   let isAuthenticated = false;
@@ -52,44 +56,57 @@ export default async function NazoryPage() {
     <div className="vx-live vx-sub nazory-page">
       <NazoryAuthorsSection authors={authors} />
 
-      <h1 className="section-h">NÁZORY</h1>
+      <h1 className="section-h">{dictionary.header.nav.opinions}</h1>
 
       {articles.length > 0 ? (
-        <OpinionList articles={articles} />
+        <OpinionList articles={articles} locale={locale} />
       ) : (
-        <p className="nazory-empty">Brzy zde najdete autorské názory. Sekce se právě připravuje.</p>
+        <p className="nazory-empty">
+          {locale === "en"
+            ? "Author opinions will appear here soon. This section is being prepared."
+            : "Brzy zde najdete autorské názory. Sekce se právě připravuje."}
+        </p>
       )}
 
       {isAuthenticated ? (
         <p className="nazory-author-link">
           {isAuthor ? (
             <>
-              <Link href="/nazory/profil">Můj autorský profil</Link>
+              <Link href="/nazory/profil">{locale === "en" ? "My author profile" : "Můj autorský profil"}</Link>
               {" · "}
-              <Link href="/nazory/napsat">Napsat článek</Link>
+              <Link href="/nazory/napsat">{locale === "en" ? "Write an article" : "Napsat článek"}</Link>
               {profileCompleted && authorSlug ? (
                 <>
                   {" · "}
-                  <Link href={`/nazory/autor/${authorSlug}`}>Veřejná karta</Link>
+                  <Link href={`/nazory/autor/${authorSlug}`}>{locale === "en" ? "Public card" : "Veřejná karta"}</Link>
                 </>
               ) : null}
             </>
           ) : (
-            <Link href="/nazory/profil">Aktivovat autorský profil</Link>
+            <Link href="/nazory/profil">{locale === "en" ? "Activate author profile" : "Aktivovat autorský profil"}</Link>
           )}
           {isAdmin ? (
             <>
               {" · "}
-              <Link href="/autori">Autoři</Link>
+              <Link href="/autori">{locale === "en" ? "Authors" : "Autoři"}</Link>
               {" · "}
-              <Link href="/nazory/sprava">Správa článků</Link>
+              <Link href="/nazory/sprava">{locale === "en" ? "Article management" : "Správa článků"}</Link>
             </>
           ) : null}
         </p>
       ) : (
         <p className="nazory-guest-pitch">
-          Chcete psát své texty na verox.cz? Napište nám na{" "}
-          <a href="mailto:info@abybylojasno.cz">info@abybylojasno.cz</a> — pošlete první článek a domluvíme se.
+          {locale === "en" ? (
+            <>
+              Would you like to publish your writing on verox.cz? Email us at{" "}
+              <a href="mailto:info@abybylojasno.cz">info@abybylojasno.cz</a> — send your first article and we will get in touch.
+            </>
+          ) : (
+            <>
+              Chcete psát své texty na verox.cz? Napište nám na{" "}
+              <a href="mailto:info@abybylojasno.cz">info@abybylojasno.cz</a> — pošlete první článek a domluvíme se.
+            </>
+          )}
         </p>
       )}
     </div>

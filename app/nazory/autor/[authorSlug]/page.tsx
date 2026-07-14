@@ -10,6 +10,7 @@ import { getAuthorDisplayName } from "@/lib/nazory/display";
 import { publicNazoryMediaUrl } from "@/lib/nazory/media";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listPublishedArticlesByAuthor } from "@/lib/nazory/articles";
+import { getRequestLocale } from "@/lib/i18n/server";
 
 export const revalidate = 60;
 
@@ -32,6 +33,7 @@ export async function generateMetadata({
 
 export default async function NazoryAuthorPage({ params }: { params: Promise<{ authorSlug: string }> }) {
   const { authorSlug } = await params;
+  const locale = await getRequestLocale();
   const supabase = await createSupabaseServerClient();
   const author = await getPublicAuthorBySlug(supabase, authorSlug);
   if (!author) notFound();
@@ -100,6 +102,7 @@ export default async function NazoryAuthorPage({ params }: { params: Promise<{ a
                 <OpinionCard
                   article={article}
                   author={{ name, avatarUrl }}
+                  locale={locale}
                 />
                 {index < articles.length - 1 ? (
                   <div className="vx-strip" aria-hidden="true">

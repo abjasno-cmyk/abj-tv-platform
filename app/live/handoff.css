@@ -119,6 +119,28 @@
   color: var(--vx-orange);
   font-weight: 800;
 }
+.hf-lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--vx-nav-gray, #707070);
+  font-size: clamp(0.72rem, 2.4vw, 0.92rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.hf-lang-switch a {
+  font-size: inherit;
+  font-weight: inherit;
+}
+.hf-lang-switch a.is-active {
+  color: var(--vx-orange);
+  font-weight: 900;
+}
+.hf-lang-switch span {
+  color: rgba(112, 112, 112, 0.45);
+}
 
 /* ---------- Sdílený kontejner lišty na subpages (mimo .hf landing) ---------- */
 .hf-chrome {
@@ -1248,6 +1270,9 @@
   }
   .hf-nav a {
     font-size: clamp(14px, 1.25vw, 22px);
+  }
+  .hf-lang-switch {
+    font-size: clamp(12px, 0.9vw, 16px);
   }
   .hf-timeblock {
     grid-area: time;

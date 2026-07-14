@@ -11,29 +11,35 @@ import { SitePresenceReporter } from "@/components/abj/SitePresenceReporter";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { TranscriptStatesProvider } from "@/components/viewer/TranscriptStatesProvider";
 import { EditorialEventDebugPanel } from "@/components/dev/EditorialEventDebugPanel";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { getRequestLocale } from "@/lib/i18n/server";
+import { LOCALE_EN } from "@/lib/i18n/config";
 import { CANONICAL_HOST, SITE_URL } from "@/lib/site";
-
-const SITE_DESCRIPTION =
-  "Mainstreamový detox — živé vysílání, videa a souhrny v kostce z alternativních kanálů.";
 
 // Next.js automaticky doplní og:image / twitter:image z app/opengraph-image.png
 // a app/twitter-image.png (rozlišené přes metadataBase).
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: "VEROX • Mainstreamový detox",
-  description: SITE_DESCRIPTION,
-  openGraph: {
-    type: "website",
-    siteName: "VEROX",
-    title: "VEROX • Mainstreamový detox",
-    description: SITE_DESCRIPTION,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "VEROX • Mainstreamový detox",
-    description: SITE_DESCRIPTION,
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getRequestLocale();
+  const dictionary = getDictionary(locale);
+  const siteUrl = locale === LOCALE_EN ? process.env.VEROX_EN_SITE_URL?.trim() || "https://www.veroxmed.com" : SITE_URL;
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title: dictionary.metadata.title,
+    description: dictionary.metadata.description,
+    openGraph: {
+      type: "website",
+      siteName: "VEROX",
+      title: dictionary.metadata.title,
+      description: dictionary.metadata.description,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: dictionary.metadata.title,
+      description: dictionary.metadata.description,
+    },
+  };
+}
 
 type RootLayoutProps = {
   children: React.ReactNode;
@@ -54,7 +60,8 @@ const montserrat = Montserrat({
   weight: ["600", "700", "800"],
 });
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default async function RootLayout({ children }: RootLayoutProps) {
+  const locale = await getRequestLocale();
   const showEditorialDebug = process.env.NODE_ENV !== "production";
   // Only canonicalize the host on the production deployment. Preview
   // deployments (VERCEL_ENV="preview", e.g. branch builds like
@@ -63,9 +70,10 @@ export default function RootLayout({ children }: RootLayoutProps) {
   const isProductionDeployment = process.env.VERCEL_ENV === "production";
   return (
     <html
-      lang="cs"
+      lang={locale}
       className={`${montserrat.variable} ${robotoCondensed.variable}`}
       data-vercel-env={process.env.VERCEL_ENV ?? ""}
+      data-locale={locale}
     >
       <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
         {isProductionDeployment ? (
@@ -112,9 +120,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <AuthProvider vercelEnv={process.env.VERCEL_ENV}>
           <TranscriptStatesProvider>
             {/* Single global nav only — prevents duplicate legacy header stacks. */}
-            <ABJNav />
+            <ABJNav locale={locale} />
             <main className="min-h-[50vh]">{children}</main>
-            <LegalFooter />
+            <LegalFooter locale={locale} />
             {showEditorialDebug ? <EditorialEventDebugPanel /> : null}
           </TranscriptStatesProvider>
         </AuthProvider>

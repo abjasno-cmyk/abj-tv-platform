@@ -22,6 +22,27 @@ function sanitizeEnvValue(value?: string): string | undefined {
 
 export async function proxy(request: NextRequest) {
   const requestHost = request.nextUrl.host.toLowerCase();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-verox-host", requestHost);
+  requestHeaders.set("x-verox-pathname", request.nextUrl.pathname);
+  const shouldRewriteEnglishPath =
+    request.nextUrl.pathname === "/en" || request.nextUrl.pathname.startsWith("/en/");
+  const rewriteUrl = request.nextUrl.clone();
+  if (shouldRewriteEnglishPath) {
+    rewriteUrl.pathname = request.nextUrl.pathname === "/en" ? "/live" : request.nextUrl.pathname.replace(/^\/en(?=\/|$)/, "") || "/live";
+  }
+  const makePassThroughResponse = () =>
+    shouldRewriteEnglishPath
+      ? NextResponse.rewrite(rewriteUrl, {
+          request: {
+            headers: requestHeaders,
+          },
+        })
+      : NextResponse.next({
+          request: {
+            headers: requestHeaders,
+          },
+        });
   // Cron endpointy NESMÍ být kanonikalizované: Vercel cron fíruje proti generovanému
   // deployment URL a redirecty NEnásleduje (Vercel docs) — 307 by cron zabil. Necháme
   // je doběhnout na endpoint (auth řeší CRON_SECRET, ne host).
@@ -47,14 +68,10 @@ export async function proxy(request: NextRequest) {
   const supabaseUrl = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);
   const supabaseAnonKey = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.next({
-      request,
-    });
+    return makePassThroughResponse();
   }
 
-  let response = NextResponse.next({
-    request,
-  });
+  let response = makePassThroughResponse();
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -63,9 +80,7 @@ export async function proxy(request: NextRequest) {
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({
-          request,
-        });
+        response = makePassThroughResponse();
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });
