@@ -39,6 +39,16 @@ export type OpinionTranslationReport = {
   errors: Array<{ articleId: string; title: string; error: string }>;
 };
 
+function boundedLimit(value: number | undefined, fallback: number, max: number): number {
+  const candidate = Math.floor(value ?? fallback);
+  return Math.max(1, Math.min(max, Number.isFinite(candidate) ? candidate : fallback));
+}
+
+function envLimit(name: string, fallback: number, max: number): number {
+  const value = Number(process.env[name]);
+  return boundedLimit(Number.isFinite(value) ? value : undefined, fallback, max);
+}
+
 function stableStringify(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
   if (value && typeof value === "object") {
@@ -258,7 +268,8 @@ export async function translateAndStoreOpinionArticle(
 }
 
 export async function runOpinionAutoTranslation(options: TranslationRunOptions = {}): Promise<OpinionTranslationReport> {
-  const limit = Math.max(1, Math.min(50, Math.floor(options.limit ?? 20)));
+  const defaultLimit = envLimit("VEROX_OPINION_TRANSLATION_BATCH_SIZE", 50, 200);
+  const limit = boundedLimit(options.limit, defaultLimit, 200);
   const force = options.force === true;
   const supabase = options.supabase ?? createSupabaseServiceClient();
   const report: OpinionTranslationReport = {
@@ -306,7 +317,8 @@ export async function runVisibleOpinionAutoTranslation(
   articles: OpinionArticleRow[],
   options: TranslationRunOptions = {},
 ): Promise<OpinionTranslationReport> {
-  const limit = Math.max(1, Math.min(50, Math.floor(options.limit ?? articles.length)));
+  const maxVisibleLimit = envLimit("VEROX_OPINION_VISIBLE_TRANSLATION_BATCH_SIZE", 100, 300);
+  const limit = boundedLimit(options.limit, Math.min(articles.length, maxVisibleLimit), maxVisibleLimit);
   const force = options.force === true;
   const supabase = options.supabase ?? createSupabaseServiceClient();
   const report: OpinionTranslationReport = {

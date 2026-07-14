@@ -11,7 +11,8 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const limit = Number(url.searchParams.get("limit") ?? 8);
+  const rawLimit = url.searchParams.get("limit");
+  const limit = rawLimit ? Number(rawLimit) : undefined;
   const force = url.searchParams.get("force") === "1" || url.searchParams.get("force") === "true";
 
   try {
