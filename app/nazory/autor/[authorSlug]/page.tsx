@@ -62,7 +62,7 @@ export default async function NazoryAuthorPage({ params }: { params: Promise<{ a
 
   if (isEnglish && articles.length > 0) {
     after(async () => {
-      await runVisibleOpinionAutoTranslation(articles, { limit: 3 }).catch((translationError) => {
+      await runVisibleOpinionAutoTranslation(articles, { limit: articles.length }).catch((translationError) => {
         console.error("Opinion auto-translation after EN author render failed", translationError);
       });
     });

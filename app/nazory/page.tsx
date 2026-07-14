@@ -58,7 +58,7 @@ export default async function NazoryPage() {
 
   if (locale === LOCALE_EN && articles.length > 0) {
     after(async () => {
-      await runVisibleOpinionAutoTranslation(articles, { limit: 3 }).catch((translationError) => {
+      await runVisibleOpinionAutoTranslation(articles, { limit: articles.length }).catch((translationError) => {
         console.error("Opinion auto-translation after EN list render failed", translationError);
       });
     });

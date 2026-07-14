@@ -258,7 +258,7 @@ export async function translateAndStoreOpinionArticle(
 }
 
 export async function runOpinionAutoTranslation(options: TranslationRunOptions = {}): Promise<OpinionTranslationReport> {
-  const limit = Math.max(1, Math.min(50, Math.floor(options.limit ?? 10)));
+  const limit = Math.max(1, Math.min(50, Math.floor(options.limit ?? 20)));
   const force = options.force === true;
   const supabase = options.supabase ?? createSupabaseServiceClient();
   const report: OpinionTranslationReport = {
@@ -306,7 +306,7 @@ export async function runVisibleOpinionAutoTranslation(
   articles: OpinionArticleRow[],
   options: TranslationRunOptions = {},
 ): Promise<OpinionTranslationReport> {
-  const limit = Math.max(1, Math.min(10, Math.floor(options.limit ?? 3)));
+  const limit = Math.max(1, Math.min(50, Math.floor(options.limit ?? articles.length)));
   const force = options.force === true;
   const supabase = options.supabase ?? createSupabaseServiceClient();
   const report: OpinionTranslationReport = {
