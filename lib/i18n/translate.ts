@@ -1,7 +1,7 @@
 import "server-only";
 
 const translationCache = new Map<string, string | null>();
-const DEFAULT_TRANSLATION_TIMEOUT_MS = 2000;
+const DEFAULT_TRANSLATION_TIMEOUT_MS = 4500;
 
 export async function translateText(
   text: string | null | undefined,
@@ -34,13 +34,11 @@ export async function translateText(
       signal: controller.signal,
     });
     if (!response.ok) {
-      translationCache.set(cacheKey, null);
       return null;
     }
 
     const payload = (await response.json()) as unknown;
     if (!Array.isArray(payload) || !Array.isArray(payload[0])) {
-      translationCache.set(cacheKey, null);
       return null;
     }
 
@@ -52,7 +50,6 @@ export async function translateText(
     translationCache.set(cacheKey, result);
     return result;
   } catch {
-    translationCache.set(cacheKey, null);
     return null;
   } finally {
     clearTimeout(timeout);

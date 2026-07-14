@@ -10,7 +10,7 @@ import { getPublishedArticleBySlug } from "@/lib/nazory/articles";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { localizePublicAuthorProfile } from "@/lib/nazory/authorLocalization";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
