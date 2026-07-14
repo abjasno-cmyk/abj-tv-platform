@@ -1,5 +1,6 @@
 import "server-only";
 
+import { loadStructuredFeedPayload } from "@/lib/dayOverview";
 import { createSupabaseAnonServerClient } from "@/lib/supabase/server";
 import { resolveVideoThumbnail, resolveVideoTitle } from "@/lib/viewer/videoMetadata";
 
@@ -15,6 +16,30 @@ export type VideoPageMeta = {
   channelName: string;
   thumbnailUrl: string;
 };
+
+async function loadVideoMetaFromFeed(videoId: string): Promise<{
+  title: string | null;
+  channelName: string | null;
+  thumbnail: string | null;
+}> {
+  try {
+    const payload = await loadStructuredFeedPayload();
+    const candidates = [
+      ...payload.top,
+      ...Object.values(payload.topics).flat(),
+      ...Object.values(payload.channels).flat(),
+    ];
+    const match = candidates.find((video) => video.video_id === videoId);
+    if (!match) return { title: null, channelName: null, thumbnail: null };
+    return {
+      title: match.title?.trim() || null,
+      channelName: match.channel?.trim() || null,
+      thumbnail: match.thumbnail?.trim() || null,
+    };
+  } catch {
+    return { title: null, channelName: null, thumbnail: null };
+  }
+}
 
 export async function loadVideoPageMeta(
   videoId: string,
@@ -45,6 +70,13 @@ export async function loadVideoPageMeta(
     }
   } catch {
     // Feed without videos table — fall back to URL params only.
+  }
+
+  if (!title || !channelName || !thumbnail) {
+    const feedMeta = await loadVideoMetaFromFeed(trimmedId);
+    if (!title) title = feedMeta.title ?? "";
+    if (!channelName) channelName = feedMeta.channelName ?? "";
+    if (!thumbnail) thumbnail = feedMeta.thumbnail;
   }
 
   return {

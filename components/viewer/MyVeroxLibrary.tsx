@@ -19,6 +19,7 @@ import type {
 import { scrollHorizontalCarousel } from "@/lib/horizontalCarouselScroll";
 import { LOCALE_EN } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { localizedPath } from "@/lib/i18n/paths";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { publicNazoryMediaUrl } from "@/lib/nazory/media";
 
@@ -29,9 +30,10 @@ function VideoShelfCard({
   video: ViewerLibraryVideo;
   onUnsave?: () => void;
 }) {
+  const locale = useLocale();
   return (
     <article className="mv-library-card">
-      <Link href={video.href} className="mv-library-card-link">
+      <Link href={localizedPath(locale, video.href)} className="mv-library-card-link">
         <span className="mv-library-thumb">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={video.thumbnailUrl} alt="" loading="lazy" />
