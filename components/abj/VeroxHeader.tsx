@@ -92,9 +92,17 @@ function isPreviewLikeHost(host: string): boolean {
   );
 }
 
+function isPreviewLikeRuntime(): boolean {
+  const vercelEnv = (process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.VERCEL_ENV ?? "").toLowerCase();
+  return vercelEnv === "preview" || vercelEnv === "development";
+}
+
 function languageHref(targetLocale: VeroxLocale, pathname: string): string {
   const path = pathname || "/live";
-  if (typeof window !== "undefined" && isPreviewLikeHost(window.location.host)) {
+  if (
+    isPreviewLikeRuntime() ||
+    (typeof window !== "undefined" && isPreviewLikeHost(window.location.host))
+  ) {
     return targetLocale === LOCALE_EN ? withEnglishPrefix(path) : stripEnglishPrefix(path);
   }
 
