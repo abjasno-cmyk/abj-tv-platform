@@ -2,6 +2,12 @@ import { redirect } from "next/navigation";
 
 import LivePage from "@/app/live/LivePage";
 import { getRequestLocale } from "@/lib/i18n/server";
+import {
+  localizeLiveChannels,
+  localizeProgramBlock,
+  localizeProgramDays,
+  localizeVideoTitle,
+} from "@/lib/i18n/videoTitles";
 import { buildEPG } from "@/lib/buildEPG";
 import { loadLiveChannelsForPage } from "@/lib/liveChannelsServer";
 import { getNowPlaying, getProgram } from "@/lib/programEngine";
@@ -510,6 +516,18 @@ export default async function LivePageServer(
     } catch (error) {
       console.error("live-page-buildEPG-fallback-failed", error);
     }
+  }
+
+  [epg, liveChannels, v3NowPlaying] = await Promise.all([
+    localizeProgramDays(epg, locale),
+    localizeLiveChannels(liveChannels, locale),
+    localizeProgramBlock(v3NowPlaying, locale),
+  ]);
+  if (externalNowPlaying) {
+    externalNowPlaying = {
+      ...externalNowPlaying,
+      title: await localizeVideoTitle(externalNowPlaying.title, locale),
+    };
   }
 
   const initialFromNowPlaying = externalNowPlaying

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import LivePage from "@/app/live/LivePage";
+import { getRequestLocale } from "@/lib/i18n/server";
+import { localizeLiveChannels, localizeProgramDays, localizeVideoTitle } from "@/lib/i18n/videoTitles";
 import { loadLivePageShell } from "@/lib/livePageShell";
 import { videoSeoPath } from "@/lib/seo/slug";
 import { buildVideoMetaDescription, buildVideoSeoTitle } from "@/lib/seo/videoTitles";
@@ -30,6 +32,7 @@ export async function generateMetadata({
     return { title: "Video nenalezeno — VEROX" };
   }
 
+  const locale = await getRequestLocale();
   const meta = await loadVideoPageMeta(videoId, {
     title: fallbackTitle,
     channelName: fallbackChannel,
@@ -37,8 +40,9 @@ export async function generateMetadata({
   const seoRecord = await loadVideoSeoRecord(meta.videoId);
   const pageUrl = `${SITE_URL}${videoSharePath(meta.videoId)}`;
   const canonicalUrl = seoRecord?.slug ? `${SITE_URL}${videoSeoPath(seoRecord.slug)}` : undefined;
-  const title = buildVideoSeoTitle(meta.title, meta.channelName);
-  const description = buildVideoMetaDescription(meta.title, meta.channelName);
+  const displayTitle = await localizeVideoTitle(meta.title, locale);
+  const title = buildVideoSeoTitle(displayTitle, meta.channelName);
+  const description = buildVideoMetaDescription(displayTitle, meta.channelName);
 
   return {
     title,
@@ -76,6 +80,7 @@ export default async function VideoSharePage({
   const fallbackTitle = (Array.isArray(rawTitle) ? rawTitle[0] : rawTitle)?.trim() || null;
   const fallbackChannel = (Array.isArray(rawChannel) ? rawChannel[0] : rawChannel)?.trim() || null;
 
+  const locale = await getRequestLocale();
   const [{ epg, channels }, meta] = await Promise.all([
     loadLivePageShell(),
     loadVideoPageMeta(videoId, {
@@ -83,16 +88,22 @@ export default async function VideoSharePage({
       channelName: fallbackChannel,
     }),
   ]);
+  const [displayEpg, displayChannels, displayTitle] = await Promise.all([
+    localizeProgramDays(epg, locale),
+    localizeLiveChannels(channels, locale),
+    localizeVideoTitle(meta.title, locale),
+  ]);
 
   return (
     <LivePage
-      epg={epg}
+      epg={displayEpg}
       initialVideoId={meta.videoId}
-      initialTitle={meta.title}
+      initialTitle={displayTitle}
       initialChannelName={meta.channelName}
       initialStartSeconds={0}
       initialIsLive={false}
-      channels={channels}
+      channels={displayChannels}
+      locale={locale}
     />
   );
 }
