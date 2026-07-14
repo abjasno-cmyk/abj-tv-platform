@@ -7,6 +7,8 @@ import { FollowChannelButton } from "@/components/auth/FollowChannelButton";
 import { KanalyChannelVideos } from "@/components/kanaly/KanalyChannelVideos";
 import { CHANNEL_VIDEO_LOOKBACK_DAYS } from "@/lib/liveChannelVideos";
 import { fetchChannelVideosForKanaly } from "@/lib/kanaly/channelVideosClient";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { useLocale } from "@/lib/i18n/useLocale";
 import { normalizeChannelFollowId } from "@/lib/viewer/videoMetadata";
 
 type KanalyPageClientProps = {
@@ -37,6 +39,7 @@ function ChannelAvatar({ channelName, avatarUrl }: { channelName: string; avatar
 }
 
 export function KanalyPageClient({ channels }: KanalyPageClientProps) {
+  const dictionary = getDictionary(useLocale());
   const orderedChannels = useMemo(
     () => [...channels].sort((a, b) => a.channelName.localeCompare(b.channelName, "cs-CZ")),
     [channels],
@@ -70,7 +73,7 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
       if (result.videos.length === 0) {
         setErrorByChannel((prev) => ({
           ...prev,
-          [channel.channelName]: `U tohoto kanálu teď nejsou dostupná videa.`,
+          [channel.channelName]: dictionary.channels.emptyChannel,
         }));
       }
     } catch {
@@ -78,22 +81,19 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
       setFallbackByChannel((prev) => ({ ...prev, [channel.channelName]: false }));
       setErrorByChannel((prev) => ({
         ...prev,
-        [channel.channelName]: "Videa kanálu se nepodařilo načíst.",
+        [channel.channelName]: dictionary.channels.loadError,
       }));
     } finally {
       setLoadingChannel(null);
     }
-  }, [openChannelName, videosByChannel]);
+  }, [dictionary.channels.emptyChannel, dictionary.channels.loadError, openChannelName, videosByChannel]);
 
   return (
     <div className="kanaly-page">
-      <p className="kanaly-lead">
-        Vyberte kanál — zobrazí se videa za posledních {CHANNEL_VIDEO_LOOKBACK_DAYS} dní. Kliknutím na video
-        přejdete do přehrávače.
-      </p>
+      <p className="kanaly-lead">{dictionary.channels.lead(CHANNEL_VIDEO_LOOKBACK_DAYS)}</p>
 
       {orderedChannels.length === 0 ? (
-        <p className="kanaly-empty">Seznam kanálů se právě připravuje.</p>
+        <p className="kanaly-empty">{dictionary.channels.emptyList}</p>
       ) : (
         <ul className="kanaly-list">
           {orderedChannels.map((channel) => {
@@ -125,7 +125,7 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
                     aria-live="polite"
                   >
                     <div className="kanaly-channel-panel-head">
-                      <p className="kanaly-channel-panel-label">Aktivní kanál</p>
+                      <p className="kanaly-channel-panel-label">{dictionary.channels.activeChannel}</p>
                       <div className="kanaly-channel-panel-row">
                         <p className="kanaly-channel-panel-name">{channel.channelName}</p>
                         <FollowChannelButton
@@ -136,12 +136,12 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
                     </div>
 
                     {isLoading ? (
-                      <p className="kanaly-channel-info">Načítám videa za posledních {CHANNEL_VIDEO_LOOKBACK_DAYS} dní…</p>
+                      <p className="kanaly-channel-info">{dictionary.channels.loading(CHANNEL_VIDEO_LOOKBACK_DAYS)}</p>
                     ) : videos.length > 0 ? (
                       <>
                         {usedFallback ? (
                           <p className="kanaly-channel-info kanaly-channel-fallback">
-                            Za posledních {CHANNEL_VIDEO_LOOKBACK_DAYS} dní bez novinek — zobrazujeme nejnovější videa kanálu.
+                            {dictionary.channels.fallback(CHANNEL_VIDEO_LOOKBACK_DAYS)}
                           </p>
                         ) : null}
                         <KanalyChannelVideos videos={videos} channelName={channel.channelName} />
@@ -149,7 +149,7 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
                     ) : (
                       <p className="kanaly-channel-info">
                         {errorByChannel[channel.channelName] ||
-                          `Za posledních ${CHANNEL_VIDEO_LOOKBACK_DAYS} dní nejsou u tohoto kanálu dostupná videa.`}
+                          dictionary.channels.noRecentVideos(CHANNEL_VIDEO_LOOKBACK_DAYS)}
                       </p>
                     )}
                   </div>

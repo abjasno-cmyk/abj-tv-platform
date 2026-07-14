@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { useLocale } from "@/lib/i18n/useLocale";
 import { resolveVideoThumbnail } from "@/lib/viewer/videoMetadata";
 
 type SaveVideoButtonProps = {
@@ -27,6 +29,7 @@ export function SaveVideoButton({
   compact = false,
 }: SaveVideoButtonProps) {
   const { isAuthenticated, requestAuth } = useAuth();
+  const dictionary = getDictionary(useLocale());
   const [isSaved, setIsSaved] = useState(saved);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,15 +80,15 @@ export function SaveVideoButton({
       }
       disabled={loading}
       aria-pressed={isSaved}
-      aria-label={isSaved ? "Odebrat video z uložených" : "Uložit video na později"}
-      title={isSaved ? "Odebrat video z uložených" : "Uložit video na později"}
+      aria-label={isSaved ? dictionary.common.videoSaved : dictionary.common.saveVideo}
+      title={isSaved ? dictionary.common.videoSaved : dictionary.common.saveVideo}
       onClick={(event) => {
         event.stopPropagation();
         event.preventDefault();
         if (!isAuthenticated) {
           requestAuth(() => {
             void toggleSave();
-          }, { reason: "Přihlaste se zdarma a uložte si video na později." });
+          }, { reason: dictionary.header.authReason.default });
           return;
         }
         void toggleSave();
@@ -93,7 +96,7 @@ export function SaveVideoButton({
     >
       <span aria-hidden="true">{isSaved ? "★" : "☆"}</span>
       <span className={compact ? "vx-save-video-label vx-save-video-label--compact" : "vx-save-video-label"}>
-        {loading ? "…" : isSaved ? "Video uloženo" : "Uložit video"}
+        {loading ? "…" : isSaved ? dictionary.common.videoSaved : dictionary.common.saveVideo}
       </span>
     </button>
     {error ? <span className="vx-save-video-error">{error}</span> : null}

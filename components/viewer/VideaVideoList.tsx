@@ -10,6 +10,9 @@ import { VideoTranscriptLabel } from "@/components/viewer/VideoTranscriptLabel";
 import { VideoReleaseDateBadge } from "@/components/viewer/VideoReleaseDateBadge";
 import { ViewerVideoBadges } from "@/components/viewer/ViewerVideoBadges";
 import type { FeedVideo } from "@/lib/dayOverview";
+import { LOCALE_EN } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { useLocale } from "@/lib/i18n/useLocale";
 import { liveVideoHref, resolveVideoThumbnail } from "@/lib/viewer/videoMetadata";
 import { resolveVideoReleaseIso } from "@/lib/viewer/videoReleaseDate";
 import { useViewerVideoState } from "@/lib/viewer/useViewerVideoState";
@@ -18,11 +21,16 @@ const MONTHS = [
   "LEDEN", "ÚNOR", "BŘEZEN", "DUBEN", "KVĚTEN", "ČERVEN",
   "ČERVENEC", "SRPEN", "ZÁŘÍ", "ŘÍJEN", "LISTOPAD", "PROSINEC",
 ];
+const MONTHS_EN = [
+  "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+  "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
+];
 
-function dateParts(iso: string): { month: string; day: string } {
+function dateParts(iso: string, locale: string): { month: string; day: string } {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return { month: "", day: "" };
-  return { month: MONTHS[d.getMonth()] ?? "", day: String(d.getDate()) };
+  const months = locale === LOCALE_EN ? MONTHS_EN : MONTHS;
+  return { month: months[d.getMonth()] ?? "", day: String(d.getDate()) };
 }
 
 type VideaVideoListProps = {
@@ -31,6 +39,8 @@ type VideaVideoListProps = {
 
 export function VideaVideoList({ videos }: VideaVideoListProps) {
   const { savedVideoIds, watchedVideoIds, setSaved } = useViewerVideoState();
+  const locale = useLocale();
+  const dictionary = getDictionary(locale);
 
   return (
     <>
@@ -40,7 +50,7 @@ export function VideaVideoList({ videos }: VideaVideoListProps) {
           scheduledStartAt: video.scheduled_start_at,
           videoType: video.video_type,
         });
-        const { month, day } = dateParts(releaseIso ?? video.published_at);
+        const { month, day } = dateParts(releaseIso ?? video.published_at, locale);
         const desc = video.tldr ?? video.context ?? "";
         const href = liveVideoHref({
           videoId: video.video_id,
@@ -86,7 +96,7 @@ export function VideaVideoList({ videos }: VideaVideoListProps) {
                   <VideoTranscriptLabel videoId={video.video_id} videoTitle={video.title} />
                   <ShareVideoButton videoId={video.video_id} title={video.title} />
                   <Link href={href} className="vx-arrow">
-                    <b>Přehrát</b>
+                    <b>{dictionary.common.play}</b>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/icons/ikona_sipka.svg" alt="" />
                   </Link>

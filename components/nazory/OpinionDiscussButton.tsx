@@ -3,6 +3,9 @@
 import Link from "next/link";
 import type { MouseEvent } from "react";
 
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { useLocale } from "@/lib/i18n/useLocale";
+
 const COMMENTS_SECTION_ID = "komentare";
 
 type OpinionDiscussButtonProps = {
@@ -15,6 +18,7 @@ type OpinionDiscussButtonProps = {
 };
 
 function DiscussLabel({ compact }: { compact?: boolean }) {
+  const dictionary = getDictionary(useLocale());
   return (
     <>
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -24,7 +28,7 @@ function DiscussLabel({ compact }: { compact?: boolean }) {
           compact ? "vx-discuss-video-label vx-discuss-video-label--compact" : "vx-discuss-video-label"
         }
       >
-        Diskutovat
+        {dictionary.common.discuss}
       </span>
     </>
   );
@@ -40,9 +44,10 @@ export function OpinionDiscussButton({
 }: OpinionDiscussButtonProps) {
   const classes =
     className ?? `vx-discuss-video${compact ? " vx-discuss-video--compact" : ""}`;
+  const dictionary = getDictionary(useLocale());
   const ariaLabel = articleTitle
-    ? `Diskutovat k článku ${articleTitle}`
-    : "Diskutovat k článku";
+    ? `${dictionary.common.discuss}: ${articleTitle}`
+    : dictionary.common.discuss;
 
   if (behavior === "link") {
     if (!slug) return null;
@@ -51,7 +56,7 @@ export function OpinionDiscussButton({
         href={`/nazory/${slug}#${COMMENTS_SECTION_ID}`}
         className={classes}
         aria-label={ariaLabel}
-        title="Diskutovat"
+        title={dictionary.common.discuss}
       >
         <DiscussLabel compact={compact} />
       </Link>
@@ -69,7 +74,7 @@ export function OpinionDiscussButton({
       className={classes}
       onClick={scrollToComments}
       aria-label={ariaLabel}
-      title="Diskutovat"
+      title={dictionary.common.discuss}
       data-article-id={articleId}
     >
       <DiscussLabel compact={compact} />
