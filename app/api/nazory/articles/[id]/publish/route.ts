@@ -1,7 +1,10 @@
+import { after } from "next/server";
+
 import { AuthApiError, requireAuthenticatedUser } from "@/lib/supabase/authenticated-server";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { isNazoryAdmin, requireAuthorWithCompletedProfile } from "@/lib/nazory/access";
 import { getArticleById, publishArticle } from "@/lib/nazory/articles";
+import { translateAndStoreOpinionArticle } from "@/lib/nazory/autoTranslation";
 import { enforceWriteRateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +33,12 @@ export async function POST(
           await requireAuthorWithCompletedProfile(supabase, user);
           return publishArticle(supabase, id, user.id);
         })();
+
+    after(async () => {
+      await translateAndStoreOpinionArticle(createSupabaseServiceClient(), article).catch((translationError) => {
+        console.error("Opinion auto-translation after publish failed", translationError);
+      });
+    });
 
     return Response.json({ article });
   } catch (error) {

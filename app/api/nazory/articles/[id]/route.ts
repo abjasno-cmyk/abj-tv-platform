@@ -1,3 +1,5 @@
+import { after } from "next/server";
+
 import { AuthApiError, requireAuthenticatedUser } from "@/lib/supabase/authenticated-server";
 import { isNazoryAdmin, requireAuthorWithCompletedProfile } from "@/lib/nazory/access";
 import {
@@ -8,7 +10,9 @@ import {
   updateArticleByAdmin,
   updateDraftArticle,
 } from "@/lib/nazory/articles";
+import { translateAndStoreOpinionArticle } from "@/lib/nazory/autoTranslation";
 import { enforceWriteRateLimit } from "@/lib/rateLimit";
+import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -69,6 +73,14 @@ export async function PATCH(
           await requireAuthorWithCompletedProfile(supabase, user);
           return updateDraftArticle(supabase, id, user.id, patch);
         })();
+
+    if (article.status === "published") {
+      after(async () => {
+        await translateAndStoreOpinionArticle(createSupabaseServiceClient(), article).catch((translationError) => {
+          console.error("Opinion auto-translation after article update failed", translationError);
+        });
+      });
+    }
 
     return Response.json({ article });
   } catch (error) {
