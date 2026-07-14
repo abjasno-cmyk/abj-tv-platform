@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { MouseEvent } from "react";
 
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { localizedPath } from "@/lib/i18n/paths";
 import { useLocale } from "@/lib/i18n/useLocale";
 
 const COMMENTS_SECTION_ID = "komentare";
@@ -44,7 +45,8 @@ export function OpinionDiscussButton({
 }: OpinionDiscussButtonProps) {
   const classes =
     className ?? `vx-discuss-video${compact ? " vx-discuss-video--compact" : ""}`;
-  const dictionary = getDictionary(useLocale());
+  const locale = useLocale();
+  const dictionary = getDictionary(locale);
   const ariaLabel = articleTitle
     ? `${dictionary.common.discuss}: ${articleTitle}`
     : dictionary.common.discuss;
@@ -53,7 +55,7 @@ export function OpinionDiscussButton({
     if (!slug) return null;
     return (
       <Link
-        href={`/nazory/${slug}#${COMMENTS_SECTION_ID}`}
+        href={`${localizedPath(locale, `/nazory/${slug}`)}#${COMMENTS_SECTION_ID}`}
         className={classes}
         aria-label={ariaLabel}
         title={dictionary.common.discuss}

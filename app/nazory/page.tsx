@@ -11,6 +11,7 @@ import {
 } from "@/lib/nazory/access";
 import { listPublishedArticles } from "@/lib/nazory/articles";
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { localizedPath } from "@/lib/i18n/paths";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -72,25 +73,25 @@ export default async function NazoryPage() {
         <p className="nazory-author-link">
           {isAuthor ? (
             <>
-              <Link href="/nazory/profil">{locale === "en" ? "My author profile" : "Můj autorský profil"}</Link>
+              <Link href={localizedPath(locale, "/nazory/profil")}>{locale === "en" ? "My author profile" : "Můj autorský profil"}</Link>
               {" · "}
-              <Link href="/nazory/napsat">{locale === "en" ? "Write an article" : "Napsat článek"}</Link>
+              <Link href={localizedPath(locale, "/nazory/napsat")}>{locale === "en" ? "Write an article" : "Napsat článek"}</Link>
               {profileCompleted && authorSlug ? (
                 <>
                   {" · "}
-                  <Link href={`/nazory/autor/${authorSlug}`}>{locale === "en" ? "Public card" : "Veřejná karta"}</Link>
+                  <Link href={localizedPath(locale, `/nazory/autor/${authorSlug}`)}>{locale === "en" ? "Public card" : "Veřejná karta"}</Link>
                 </>
               ) : null}
             </>
           ) : (
-            <Link href="/nazory/profil">{locale === "en" ? "Activate author profile" : "Aktivovat autorský profil"}</Link>
+            <Link href={localizedPath(locale, "/nazory/profil")}>{locale === "en" ? "Activate author profile" : "Aktivovat autorský profil"}</Link>
           )}
           {isAdmin ? (
             <>
               {" · "}
-              <Link href="/autori">{locale === "en" ? "Authors" : "Autoři"}</Link>
+              <Link href={localizedPath(locale, "/autori")}>{locale === "en" ? "Authors" : "Autoři"}</Link>
               {" · "}
-              <Link href="/nazory/sprava">{locale === "en" ? "Article management" : "Správa článků"}</Link>
+              <Link href={localizedPath(locale, "/nazory/sprava")}>{locale === "en" ? "Article management" : "Správa článků"}</Link>
             </>
           ) : null}
         </p>

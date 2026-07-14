@@ -97,6 +97,11 @@ function isPreviewLikeRuntime(): boolean {
   return vercelEnv === "preview" || vercelEnv === "development";
 }
 
+function shouldUseExternalEnglishOrigin(): boolean {
+  const value = process.env.NEXT_PUBLIC_VEROX_EN_USE_EXTERNAL_ORIGIN?.trim().toLowerCase();
+  return value === "true" || value === "1" || value === "yes";
+}
+
 function languageHref(targetLocale: VeroxLocale, pathname: string): string {
   const path = pathname || "/live";
   if (
@@ -107,11 +112,14 @@ function languageHref(targetLocale: VeroxLocale, pathname: string): string {
   }
 
   if (targetLocale === LOCALE_EN) {
-    const origin = process.env.NEXT_PUBLIC_VEROX_EN_ORIGIN?.trim() || "https://www.veroxmed.com";
-    return `${origin}${stripEnglishPrefix(path)}`;
+    const origin = process.env.NEXT_PUBLIC_VEROX_EN_ORIGIN?.trim();
+    return origin && shouldUseExternalEnglishOrigin()
+      ? `${origin}${stripEnglishPrefix(path)}`
+      : withEnglishPrefix(path);
   }
-  const origin = process.env.NEXT_PUBLIC_VEROX_CS_ORIGIN?.trim() || "https://www.verox.cz";
-  return `${origin}${stripEnglishPrefix(path)}`;
+  const origin = process.env.NEXT_PUBLIC_VEROX_CS_ORIGIN?.trim();
+  const czechPath = stripEnglishPrefix(path);
+  return origin ? `${origin}${czechPath}` : czechPath;
 }
 
 function shouldUseEnglishPathPrefix(locale: VeroxLocale, pathname: string): boolean {
