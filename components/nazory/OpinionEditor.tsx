@@ -10,6 +10,11 @@ import { useRouter } from "next/navigation";
 
 import { Youtube } from "@/components/nazory/tiptapYoutube";
 import { hasMeaningfulDraftContent } from "@/lib/nazory/content";
+import {
+  getOpinionEnglishOriginal,
+  stripOpinionEnglishOriginal,
+  withOpinionEnglishOriginal,
+} from "@/lib/nazory/englishOriginal";
 import { extractYoutubeVideoId } from "@/lib/nazory/youtube";
 
 type OpinionEditorProps = {
@@ -43,8 +48,11 @@ export function OpinionEditor({
   onDeleted,
 }: OpinionEditorProps) {
   const router = useRouter();
+  const initialEnglishOriginal = getOpinionEnglishOriginal(initialContent);
   const [title, setTitle] = useState(initialTitle);
   const [perex, setPerex] = useState(initialPerex);
+  const [englishTitle, setEnglishTitle] = useState(initialEnglishOriginal.title);
+  const [englishPerex, setEnglishPerex] = useState(initialEnglishOriginal.perex);
   const [currentArticleId, setCurrentArticleId] = useState(articleId ?? "");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -69,16 +77,47 @@ export function OpinionEditor({
       }),
       Youtube,
     ],
-    content: initialContent ?? EMPTY_DOC,
+    content: stripOpinionEnglishOriginal(initialContent ?? EMPTY_DOC),
+    editable: mode === "edit",
+    immediatelyRender: false,
+  });
+  const englishEditor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: { levels: [2, 3] },
+      }),
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+      }),
+      Placeholder.configure({
+        placeholder: "Vložte původní anglický text článku…",
+      }),
+      Image.configure({
+        inline: false,
+      }),
+      Youtube,
+    ],
+    content: initialEnglishOriginal.contentJson ?? EMPTY_DOC,
     editable: mode === "edit",
     immediatelyRender: false,
   });
 
   const persistDraft = useCallback(async () => {
-    if (!editor || mode !== "edit") return;
+    if (!editor || !englishEditor || mode !== "edit") return;
 
-    const contentJson = editor.getJSON();
-    if (!currentArticleId && !hasMeaningfulDraftContent(title, perex, contentJson)) {
+    const baseContentJson = editor.getJSON();
+    const englishContentJson = englishEditor.getJSON();
+    const contentJson = withOpinionEnglishOriginal(baseContentJson, {
+      title: englishTitle,
+      perex: englishPerex,
+      contentJson: englishContentJson,
+    });
+    if (
+      !currentArticleId &&
+      !hasMeaningfulDraftContent(title, perex, baseContentJson) &&
+      !hasMeaningfulDraftContent(englishTitle, englishPerex, englishContentJson)
+    ) {
       return;
     }
 
@@ -130,7 +169,7 @@ export function OpinionEditor({
       }
     }
     setSaveState("saved");
-  }, [currentArticleId, editor, mode, onDraftSaved, perex, redirectOnCreate, router, title]);
+  }, [currentArticleId, editor, englishEditor, englishPerex, englishTitle, mode, onDraftSaved, perex, redirectOnCreate, router, title]);
 
   useEffect(() => {
     if (!editor || mode !== "edit") return;
@@ -143,15 +182,17 @@ export function OpinionEditor({
     };
 
     editor.on("update", scheduleSave);
+    englishEditor?.on("update", scheduleSave);
     return () => {
       editor.off("update", scheduleSave);
+      englishEditor?.off("update", scheduleSave);
       if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     };
-  }, [editor, mode, persistDraft]);
+  }, [editor, englishEditor, mode, persistDraft]);
 
   useEffect(() => {
     if (mode !== "edit") return;
-    if (!currentArticleId && !title.trim() && !perex.trim()) return;
+    if (!currentArticleId && !title.trim() && !perex.trim() && !englishTitle.trim() && !englishPerex.trim()) return;
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     saveTimerRef.current = window.setTimeout(() => {
       void persistDraft();
@@ -159,7 +200,7 @@ export function OpinionEditor({
     return () => {
       if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     };
-  }, [title, perex, mode, persistDraft, currentArticleId]);
+  }, [title, perex, englishTitle, englishPerex, mode, persistDraft, currentArticleId]);
 
   const addLink = () => {
     if (!editor) return;
@@ -259,7 +300,7 @@ export function OpinionEditor({
     router.push(`/nazory/${payload.article.slug}`);
   };
 
-  if (!editor) {
+  if (!editor || !englishEditor) {
     return <p className="nazory-empty">Načítám editor…</p>;
   }
 
@@ -326,6 +367,66 @@ export function OpinionEditor({
       ) : null}
 
       <EditorContent editor={editor} className="nazory-editor-content" />
+
+      <section className="nazory-english-original">
+        <div className="nazory-english-original-head">
+          <h2>Anglický originál</h2>
+          <p>
+            Volitelné pole pro texty, které vyšly původně anglicky. Pokud je vyplněné, EN verze webu zobrazí tento ručně
+            vložený originál místo české verze.
+          </p>
+        </div>
+        <label className="nazory-field">
+          <span>Original English title</span>
+          <input
+            value={englishTitle}
+            onChange={(event) => setEnglishTitle(event.target.value)}
+            readOnly={mode === "preview"}
+            placeholder="Original title"
+          />
+        </label>
+        <label className="nazory-field">
+          <span className="nazory-field-label-row">
+            <span>Original English perex</span>
+            <span className="nazory-field-counter" aria-live="polite">
+              {englishPerex.length} znaků
+            </span>
+          </span>
+          <textarea
+            value={englishPerex}
+            rows={4}
+            onChange={(event) => setEnglishPerex(event.target.value)}
+            readOnly={mode === "preview"}
+            placeholder="Original short summary"
+          />
+        </label>
+        {mode === "edit" ? (
+          <div className="nazory-editor-toolbar" role="toolbar" aria-label="Formátování anglického originálu">
+            <button type="button" onClick={() => englishEditor.chain().focus().toggleHeading({ level: 2 }).run()}>
+              Heading
+            </button>
+            <button type="button" onClick={() => englishEditor.chain().focus().toggleHeading({ level: 3 }).run()}>
+              Subheading
+            </button>
+            <button type="button" onClick={() => englishEditor.chain().focus().toggleBold().run()}>
+              Bold
+            </button>
+            <button type="button" onClick={() => englishEditor.chain().focus().toggleItalic().run()}>
+              Italic
+            </button>
+            <button type="button" onClick={() => englishEditor.chain().focus().toggleBulletList().run()}>
+              Bullets
+            </button>
+            <button type="button" onClick={() => englishEditor.chain().focus().toggleOrderedList().run()}>
+              Numbered
+            </button>
+            <button type="button" onClick={() => englishEditor.chain().focus().toggleBlockquote().run()}>
+              Quote
+            </button>
+          </div>
+        ) : null}
+        <EditorContent editor={englishEditor} className="nazory-editor-content nazory-editor-content-english" />
+      </section>
 
       {mode === "edit" ? (
         <div className="nazory-editor-actions">

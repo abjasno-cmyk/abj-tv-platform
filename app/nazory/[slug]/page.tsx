@@ -8,6 +8,8 @@ import { isNazoryAdmin } from "@/lib/nazory/access";
 import { getPublicAuthorBySlug } from "@/lib/nazory/authors";
 import { getPublishedArticleBySlug } from "@/lib/nazory/articles";
 import { getRequestLocale } from "@/lib/i18n/server";
+import { localizedPath } from "@/lib/i18n/paths";
+import { getOpinionArticleDisplay } from "@/lib/nazory/englishOriginal";
 import { localizePublicAuthorProfile } from "@/lib/nazory/authorLocalization";
 
 export const dynamic = "force-dynamic";
@@ -18,12 +20,14 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  const locale = await getRequestLocale();
   const supabase = await createSupabaseServerClient();
   const article = await getPublishedArticleBySlug(supabase, slug);
   if (!article) return { title: "Článek nenalezen — Názory" };
 
-  const title = article.seo_title ?? `${article.title} — Názory`;
-  const description = article.seo_description ?? article.perex;
+  const displayArticle = getOpinionArticleDisplay(article, locale);
+  const title = locale === "en" ? `${displayArticle.title} — Opinions` : article.seo_title ?? `${displayArticle.title} — Názory`;
+  const description = locale === "en" ? displayArticle.perex : article.seo_description ?? displayArticle.perex;
   return {
     title,
     description,
@@ -32,7 +36,7 @@ export async function generateMetadata({
       description: description ?? undefined,
       type: "article",
       publishedTime: article.published_at ?? undefined,
-      url: `${SITE_URL}/nazory/${article.slug}`,
+      url: `${SITE_URL}${localizedPath(locale, `/nazory/${article.slug}`)}`,
     },
     twitter: {
       card: "summary_large_image",
@@ -79,7 +83,7 @@ export default async function NazoryArticlePage({ params }: { params: Promise<{ 
       <OpinionDetail
         article={article}
         author={localizedAuthor}
-        shareUrl={`${SITE_URL}/nazory/${article.slug}`}
+        shareUrl={`${SITE_URL}${localizedPath(locale, `/nazory/${article.slug}`)}`}
         commentCount={count ?? 0}
         editHref={editHref}
         locale={locale}
