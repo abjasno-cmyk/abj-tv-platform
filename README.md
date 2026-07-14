@@ -41,6 +41,7 @@ the block has `title` and valid time window. In that mode:
 - `/api/noviny/import` every 20 minutes
 - `/api/noviny/enrich` every 15 minutes
 - `/api/noviny/context/analyze` every hour
+- `/api/search/index` every hour
 
 ## Noviny (MVP)
 
@@ -82,6 +83,32 @@ nastavení zdroje (`enrichment_enabled`, `enrichment_mode`, robots.txt, odstup
 fetchů a denní limit), neukládá celý text článku a veřejně zobrazuje jen
 adminem schválené pětibodové shrnutí.
 
+## Sjednocené vyhledávání
+
+Vyhledávání je izolovaná vrstva nad veřejně použitelnými pasážemi z videí,
+přepisů, Zpráv a Názorů. Používá samostatnou tabulku `verox_search_documents`,
+Postgres full-text search, trigramovou toleranci překlepů (`pg_trgm`) a sloupec
+`embedding vector(1536)` připravený pro semantické řazení přes `pgvector`.
+
+- `GET /api/search?q=...` — veřejný hybridní dotaz
+- `GET /api/search/index` — cron/manual reindex chráněný `CRON_SECRET`
+- `/vyhledavani` — veřejná stránka sjednoceného vyhledávání
+
+Pokud je nastavený `OPENAI_API_KEY`, indexer doplňuje embeddingy a dotaz může
+využít semantickou složku. Bez klíče vyhledávání dál funguje přes FTS + fuzzy.
+AI souhrn se generuje jen z nalezených úryvků výsledků a vrací odkazy na použité
+zdroje. Search index neukládá celý interně vytěžený text externích Zpráv; u
+Zpráv používá RSS metadata a případné adminem schválené enrichment shrnutí.
+
+Indexace běží záměrně postupně a ve výchozí dávce 40 položek, aby nezatěžovala
+menší Supabase projekty souběžnými dotazy. Pokud Supabase SQL editor hlásí
+`remaining connection slots are reserved for roles with the SUPERUSER attribute`,
+nejde o chybu migrace, ale o vyčerpaný connection pool databáze. Nejdřív uvolni
+nebo restartuj databázové connections v Supabase a až poté spusť SQL / reindex.
+První ruční reindex lze pustit šetrně například:
+
+`/api/search/index?secret=<CRON_SECRET>&limit=20`
+
 ### Noviny: SQL pořadí nasazení
 
 1. `supabase/018_noviny_mvp.sql` (schéma + RLS)
@@ -89,3 +116,4 @@ adminem schválené pětibodové shrnutí.
 3. `supabase/020_noviny_context_layer.sql` (Kontext Layer 2.0: témata, entity, vazby)
 4. `supabase/021_saved_noviny_articles.sql` (uložené články Novin pro Můj Verox)
 5. `supabase/022_noviny_article_enrichment.sql` (bezpečné obohacení článků a nastavení zdrojů)
+6. `supabase/023_unified_search_layer.sql` (sjednocený hybridní search index)

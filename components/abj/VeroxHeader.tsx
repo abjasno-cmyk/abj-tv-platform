@@ -116,6 +116,13 @@ export function VeroxHeader({ active, showAudience = false }: VeroxHeaderProps) 
         <Link className={active === "muj" ? "is-active" : undefined} href="/muj-verox" aria-current={active === "muj" ? "page" : undefined}>
           MŮJ VEROX
         </Link>
+        <form className="hf-search" action="/vyhledavani" method="get" role="search" aria-label="Vyhledávání na Veroxu">
+          <label className="sr-only" htmlFor="hf-search-q">
+            Hledat na Veroxu
+          </label>
+          <input id="hf-search-q" name="q" type="search" placeholder="Hledat..." autoComplete="off" />
+          <button type="submit">HLEDAT</button>
+        </form>
         {isAuthenticated ? (
           <a
             className="login-link"
