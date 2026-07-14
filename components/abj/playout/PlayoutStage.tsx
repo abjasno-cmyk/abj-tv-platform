@@ -9,6 +9,7 @@ import {
   type PlayoutSourceCandidate,
   type PlayoutSurface,
 } from "@/lib/playout/types";
+import { LOCALE_EN, type VeroxLocale } from "@/lib/i18n/config";
 
 interface PlayoutStageProps {
   surface: PlayoutSurface | null;
@@ -19,6 +20,7 @@ interface PlayoutStageProps {
   onEnded: () => void;
   onPlayerReady?: (player: PlayerHandle | null) => void;
   onPlayingChange?: (playing: boolean) => void;
+  locale?: VeroxLocale;
 }
 
 const IDENT_LOGO = "/design/brand/verox-logo.png";
@@ -37,6 +39,16 @@ function applyPlayerAudio(player: PlayerHandle, muted: boolean, volume: number) 
   }
 }
 
+function applyEnglishCaptions(player: PlayerHandle) {
+  try {
+    player.loadModule?.("captions");
+    player.setOption?.("captions", "track", { languageCode: "en" });
+    player.setOption?.("captions", "reload", true);
+  } catch {
+    // Captions are controlled by YouTube availability and may be absent.
+  }
+}
+
 export function PlayoutStage({
   surface,
   muted,
@@ -45,6 +57,7 @@ export function PlayoutStage({
   onEnded,
   onPlayerReady,
   onPlayingChange,
+  locale,
 }: PlayoutStageProps) {
   const playerRef = useRef<PlayerHandle | null>(null);
   const isYouTube = surface?.kind === "youtube" && isValidYouTubeVideoId(surface.videoId);
@@ -84,9 +97,12 @@ export function PlayoutStage({
         controls: 0,
         playsinline: 1,
         iv_load_policy: 3,
+        hl: locale === LOCALE_EN ? "en" : "cs",
+        cc_lang_pref: locale === LOCALE_EN ? "en" : undefined,
+        cc_load_policy: locale === LOCALE_EN ? 1 : undefined,
       },
     }),
-    [],
+    [locale],
   );
 
   useEffect(() => {
@@ -209,6 +225,9 @@ export function PlayoutStage({
           player.setPlaybackRate?.(playbackRate);
         } catch {
           // ignore unsupported rate on live streams
+        }
+        if (locale === LOCALE_EN) {
+          window.setTimeout(() => applyEnglishCaptions(player), 300);
         }
       }}
       onStateChange={(event) => {

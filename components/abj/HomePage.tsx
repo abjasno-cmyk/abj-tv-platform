@@ -522,6 +522,7 @@ export function HomePage({
             onEnded={handleStageEnded}
             onPlayerReady={registerPlayer}
             onPlayingChange={setPlaying}
+            locale={locale}
           />
           {/* Záchytný overlay přes celé video: pohltí VŠECHNY myší události, takže
               se hover ovládání YouTube (titulek, sdílení, „More videos", logo)
