@@ -22,6 +22,9 @@ function sanitizeEnvValue(value?: string): string | undefined {
 
 export async function proxy(request: NextRequest) {
   const requestHost = request.nextUrl.host.toLowerCase();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-verox-host", requestHost);
+  requestHeaders.set("x-verox-pathname", request.nextUrl.pathname);
   // Cron endpointy NESMÍ být kanonikalizované: Vercel cron fíruje proti generovanému
   // deployment URL a redirecty NEnásleduje (Vercel docs) — 307 by cron zabil. Necháme
   // je doběhnout na endpoint (auth řeší CRON_SECRET, ne host).
@@ -48,12 +51,16 @@ export async function proxy(request: NextRequest) {
   const supabaseAnonKey = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   if (!supabaseUrl || !supabaseAnonKey) {
     return NextResponse.next({
-      request,
+      request: {
+        headers: requestHeaders,
+      },
     });
   }
 
   let response = NextResponse.next({
-    request,
+    request: {
+      headers: requestHeaders,
+    },
   });
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -64,7 +71,9 @@ export async function proxy(request: NextRequest) {
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         response = NextResponse.next({
-          request,
+          request: {
+            headers: requestHeaders,
+          },
         });
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);

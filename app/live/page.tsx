@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import LivePage from "@/app/live/LivePage";
+import { getRequestLocale } from "@/lib/i18n/server";
 import { buildEPG } from "@/lib/buildEPG";
 import { loadLiveChannelsForPage } from "@/lib/liveChannelsServer";
 import { getNowPlaying, getProgram } from "@/lib/programEngine";
@@ -453,6 +454,7 @@ export default async function LivePageServer(
   let v3NowPlaying: ProgramBlock | null = null;
   let externalNowPlaying: ExternalNowPlaying | null = null;
   let liveChannels: LiveChannelGroup[] = [];
+  const locale = await getRequestLocale();
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const rawVideoId = resolvedSearchParams?.videoId;
@@ -571,6 +573,7 @@ export default async function LivePageServer(
       initialStartSeconds={initialStartOffsetSeconds}
       initialIsLive={!hasRequestedVideoId}
       channels={liveChannels}
+      locale={locale}
     />
   );
 }

@@ -24,6 +24,7 @@ import { useRegisterTranscriptStates } from "@/components/viewer/TranscriptState
 import type { TranscriptState } from "@/lib/transcriptTypes";
 import { useViewerVideoState } from "@/lib/viewer/useViewerVideoState";
 import { normalizeChannelFollowId } from "@/lib/viewer/videoMetadata";
+import { LOCALE_CS, type VeroxLocale } from "@/lib/i18n/config";
 import { PlayoutStage } from "@/components/abj/playout/PlayoutStage";
 import { usePlayoutLoop } from "@/components/abj/playout/usePlayoutLoop";
 import { scrollHorizontalCarousel } from "@/lib/horizontalCarouselScroll";
@@ -51,6 +52,7 @@ type HomePageProps = {
   onSelectChannelVideo: (payload: { channelName: string; video: LiveChannelVideo }) => void;
   engagementSlot?: ReactNode;
   reactionsSlot?: ReactNode;
+  locale?: VeroxLocale;
 };
 
 const DOT_COUNT = 7;
@@ -75,6 +77,7 @@ export function HomePage({
   onReturnToLive,
   onPlaybackSample,
   onSelectChannelVideo: onSelectChannelVideoProp,
+  locale = LOCALE_CS,
 }: HomePageProps) {
   const [clientChannels, setClientChannels] = useState<LiveChannelGroup[]>([]);
   const displayChannels = channels.length > 0 ? channels : clientChannels;
@@ -499,7 +502,7 @@ export function HomePage({
 
   return (
     <div className="hf">
-      <VeroxHeader active="zive" showAudience />
+      <VeroxHeader active="zive" showAudience locale={locale} />
       <div className="double-rule header-rule" aria-hidden="true" />
 
       {/* Obsah pod hlavičkou — nosič oranžového gradientu vlevo (po dolní okraj) */}

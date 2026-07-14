@@ -42,6 +42,29 @@ the block has `title` and valid time window. In that mode:
 - `/api/noviny/enrich` every 15 minutes
 - `/api/noviny/context/analyze` every hour
 
+## English mutation / veroxmed.com
+
+První fáze anglické mutace je izolovaná jazyková vrstva pro shell webu:
+
+- `verox.cz` zůstává český výchozí web
+- `veroxmed.com` a `www.veroxmed.com` aktivují anglický locale
+- `/en` a `/en/*` aktivují anglický locale jako fallback cesta
+- česká data ani české routy se nemění
+- EN vrstva jde vypnout přes `VEROX_EN_ENABLED=false`
+
+Volitelné env proměnné:
+
+- `VEROX_EN_ENABLED=false` — vypne anglickou mutaci a všude vrátí češtinu
+- `VEROX_EN_HOSTS=veroxmed.com,www.veroxmed.com` — seznam domén pro EN locale
+- `VEROX_EN_SITE_URL=https://www.veroxmed.com` — metadata base pro EN doménu
+- `NEXT_PUBLIC_VEROX_EN_ORIGIN=https://www.veroxmed.com` — cíl EN přepínače v hlavičce
+- `NEXT_PUBLIC_VEROX_CS_ORIGIN=https://www.verox.cz` — cíl CZ přepínače v hlavičce
+
+V této fázi je přeložený základní shell (metadata, hlavní navigace, footer a
+CZ/EN přepínač). Překlady obsahu mají být další oddělená vrstva: samostatná DB
+tabulka, asynchronní worker a fallbacky, aby český web nikdy nečekal na
+překladové API.
+
 ## Noviny (MVP)
 
 Sekce Noviny je oddělená od živého vysílání/programu a používá vlastní tabulky

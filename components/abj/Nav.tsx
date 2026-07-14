@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 
 import { VeroxHeader, type VeroxNavKey } from "@/components/abj/VeroxHeader";
+import { LOCALE_CS, type VeroxLocale } from "@/lib/i18n/config";
 
 // Globální lišta pro subpages. Landing /live má vlastní hlavičku uvnitř
 // HomePage (stejná komponenta VeroxHeader), takže tam globální lišta ustoupí.
@@ -27,7 +28,7 @@ function activeKeyFor(pathname: string): VeroxNavKey | undefined {
   return "zive";
 }
 
-export function ABJNav() {
+export function ABJNav({ locale = LOCALE_CS }: { locale?: VeroxLocale }) {
   const pathname = usePathname();
 
   if (pathname.startsWith("/live") || /^\/videa\/[^/]+/.test(pathname)) {
@@ -38,7 +39,7 @@ export function ABJNav() {
 
   return (
     <div className={`hf-chrome${nazoryChrome ? " nazory-chrome" : ""}`}>
-      <VeroxHeader active={activeKeyFor(pathname)} />
+      <VeroxHeader active={activeKeyFor(pathname)} locale={locale} />
       <div className={`double-rule header-rule${nazoryChrome ? " nazory-double-rule" : ""}`} aria-hidden="true" />
     </div>
   );
