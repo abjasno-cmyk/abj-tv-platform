@@ -72,14 +72,50 @@ interface VeroxHeaderProps {
   locale?: VeroxLocale;
 }
 
+function stripEnglishPrefix(pathname: string): string {
+  if (pathname === "/en") return "/live";
+  return pathname.replace(/^\/en(?=\/|$)/, "") || "/live";
+}
+
+function withEnglishPrefix(pathname: string): string {
+  if (pathname === "/en" || pathname.startsWith("/en/")) return pathname;
+  return `/en${pathname.startsWith("/") ? pathname : `/${pathname}`}`;
+}
+
+function isPreviewLikeHost(host: string): boolean {
+  const normalized = host.toLowerCase();
+  return (
+    normalized.includes("localhost") ||
+    normalized.includes("127.0.0.1") ||
+    normalized.endsWith(".vercel.app") ||
+    normalized.includes("-git-")
+  );
+}
+
 function languageHref(targetLocale: VeroxLocale, pathname: string): string {
   const path = pathname || "/live";
+  if (typeof window !== "undefined" && isPreviewLikeHost(window.location.host)) {
+    return targetLocale === LOCALE_EN ? withEnglishPrefix(path) : stripEnglishPrefix(path);
+  }
+
   if (targetLocale === LOCALE_EN) {
     const origin = process.env.NEXT_PUBLIC_VEROX_EN_ORIGIN?.trim() || "https://www.veroxmed.com";
-    return `${origin}${path}`;
+    return `${origin}${stripEnglishPrefix(path)}`;
   }
   const origin = process.env.NEXT_PUBLIC_VEROX_CS_ORIGIN?.trim() || "https://www.verox.cz";
-  return `${origin}${path === "/en" ? "/live" : path.replace(/^\/en(?=\/|$)/, "") || "/live"}`;
+  return `${origin}${stripEnglishPrefix(path)}`;
+}
+
+function shouldUseEnglishPathPrefix(locale: VeroxLocale, pathname: string): boolean {
+  if (locale !== LOCALE_EN) return false;
+  if (pathname === "/en" || pathname.startsWith("/en/")) return true;
+  if (typeof window === "undefined") return false;
+  return isPreviewLikeHost(window.location.host);
+}
+
+function localizedHref(locale: VeroxLocale, pathname: string, href: string): string {
+  if (!shouldUseEnglishPathPrefix(locale, pathname)) return href;
+  return withEnglishPrefix(href);
 }
 
 export function VeroxHeader({ active, showAudience = false, locale = LOCALE_CS }: VeroxHeaderProps) {
@@ -101,7 +137,7 @@ export function VeroxHeader({ active, showAudience = false, locale = LOCALE_CS }
 
   return (
     <header className="hf-header" aria-label="VEROX">
-      <Link className="hf-logo-link" href="/live" aria-label="VEROX — Mainstreamový detox">
+      <Link className="hf-logo-link" href={localizedHref(locale, pathname, "/live")} aria-label="VEROX — Mainstreamový detox">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="hf-logo" src="/design/brand/verox-logo.png" alt="VEROX" />
       </Link>
@@ -123,22 +159,22 @@ export function VeroxHeader({ active, showAudience = false, locale = LOCALE_CS }
         </div>
       </div>
       <nav className="hf-nav" aria-label="Hlavní navigace">
-        <Link className={active === "zive" ? "is-active" : undefined} href="/live" aria-current={active === "zive" ? "page" : undefined}>
+        <Link className={active === "zive" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/live")} aria-current={active === "zive" ? "page" : undefined}>
           {dictionary.header.nav.live}
         </Link>
-        <Link className={active === "videa" ? "is-active" : undefined} href="/videa" aria-current={active === "videa" ? "page" : undefined}>
+        <Link className={active === "videa" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/videa")} aria-current={active === "videa" ? "page" : undefined}>
           {dictionary.header.nav.latestVideos}
         </Link>
-        <Link className={active === "noviny" ? "is-active" : undefined} href="/noviny" aria-current={active === "noviny" ? "page" : undefined}>
+        <Link className={active === "noviny" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/noviny")} aria-current={active === "noviny" ? "page" : undefined}>
           {dictionary.header.nav.news}
         </Link>
-        <Link className={active === "nazory" ? "is-active" : undefined} href="/nazory" aria-current={active === "nazory" ? "page" : undefined}>
+        <Link className={active === "nazory" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/nazory")} aria-current={active === "nazory" ? "page" : undefined}>
           {dictionary.header.nav.opinions}
         </Link>
-        <Link className={active === "kanaly" ? "is-active" : undefined} href="/kanaly" aria-current={active === "kanaly" ? "page" : undefined}>
+        <Link className={active === "kanaly" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/kanaly")} aria-current={active === "kanaly" ? "page" : undefined}>
           {dictionary.header.nav.channels}
         </Link>
-        <Link className={active === "muj" ? "is-active" : undefined} href="/muj-verox" aria-current={active === "muj" ? "page" : undefined}>
+        <Link className={active === "muj" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/muj-verox")} aria-current={active === "muj" ? "page" : undefined}>
           {dictionary.header.nav.myVerox}
         </Link>
         <div className="hf-lang-switch" aria-label={dictionary.header.language.label}>

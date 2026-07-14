@@ -60,6 +60,11 @@ Volitelné env proměnné:
 - `NEXT_PUBLIC_VEROX_EN_ORIGIN=https://www.veroxmed.com` — cíl EN přepínače v hlavičce
 - `NEXT_PUBLIC_VEROX_CS_ORIGIN=https://www.verox.cz` — cíl CZ přepínače v hlavičce
 
+V preview/localhost prostředí EN přepínač zůstává na aktuálním hostu a používá
+`/en/...`, aby nevyžadoval připravené DNS pro `veroxmed.com`. Proxy tyto cesty
+interně přepíše na existující routy a zachová EN locale v request hlavičkách.
+V produkci může EN přepínač vést přímo na `veroxmed.com`.
+
 V této fázi je přeložený základní shell (metadata, hlavní navigace, footer a
 CZ/EN přepínač). Překlady obsahu mají být další oddělená vrstva: samostatná DB
 tabulka, asynchronní worker a fallbacky, aby český web nikdy nečekal na

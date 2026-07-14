@@ -10,32 +10,39 @@ import { LOCALE_CS, type VeroxLocale } from "@/lib/i18n/config";
 // Lišta i obsah subpage sdílí kontejner .hf-chrome (stejná šířka jako .hf).
 
 function activeKeyFor(pathname: string): VeroxNavKey | undefined {
-  if (pathname.startsWith("/noviny")) {
+  const normalizedPathname = normalizeEnglishPath(pathname);
+  if (normalizedPathname.startsWith("/noviny")) {
     return "noviny";
   }
-  if (pathname.startsWith("/kanaly")) {
+  if (normalizedPathname.startsWith("/kanaly")) {
     return "kanaly";
   }
-  if (pathname.startsWith("/nazory")) {
+  if (normalizedPathname.startsWith("/nazory")) {
     return "nazory";
   }
-  if (pathname.startsWith("/videa") || pathname.startsWith("/archiv") || pathname.startsWith("/feed")) {
+  if (normalizedPathname.startsWith("/videa") || normalizedPathname.startsWith("/archiv") || normalizedPathname.startsWith("/feed")) {
     return "videa";
   }
-  if (pathname.startsWith("/muj-verox") || pathname.startsWith("/komunita") || pathname.startsWith("/zed")) {
+  if (normalizedPathname.startsWith("/muj-verox") || normalizedPathname.startsWith("/komunita") || normalizedPathname.startsWith("/zed")) {
     return "muj";
   }
   return "zive";
 }
 
+function normalizeEnglishPath(pathname: string): string {
+  if (pathname === "/en") return "/live";
+  return pathname.replace(/^\/en(?=\/|$)/, "") || pathname;
+}
+
 export function ABJNav({ locale = LOCALE_CS }: { locale?: VeroxLocale }) {
   const pathname = usePathname();
+  const normalizedPathname = normalizeEnglishPath(pathname);
 
-  if (pathname.startsWith("/live") || /^\/videa\/[^/]+/.test(pathname)) {
+  if (normalizedPathname.startsWith("/live") || /^\/videa\/[^/]+/.test(normalizedPathname)) {
     return null;
   }
 
-  const nazoryChrome = pathname.startsWith("/nazory");
+  const nazoryChrome = normalizedPathname.startsWith("/nazory");
 
   return (
     <div className={`hf-chrome${nazoryChrome ? " nazory-chrome" : ""}`}>
