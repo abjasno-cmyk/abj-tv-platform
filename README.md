@@ -41,6 +41,7 @@ the block has `title` and valid time window. In that mode:
 - `/api/noviny/import` every 20 minutes
 - `/api/noviny/enrich` every 15 minutes
 - `/api/noviny/context/analyze` every hour
+- `/api/nazory/translate` every hour
 
 ## English mutation / veroxmed.com
 
@@ -69,15 +70,31 @@ po dokončení DNS/deployment konfigurace nastavením `NEXT_PUBLIC_VEROX_EN_ORIG
 a `NEXT_PUBLIC_VEROX_EN_USE_EXTERNAL_ORIGIN=true`.
 
 V této fázi je přeložený základní shell (metadata, hlavní navigace, footer a
-CZ/EN přepínač). Překlady obsahu mají být další oddělená vrstva: samostatná DB
-tabulka, asynchronní worker a fallbacky, aby český web nikdy nečekal na
-překladové API.
+CZ/EN přepínač). Obsahové překlady běží odděleně tak, aby český web nikdy
+nečekal na překladové API.
 
 Názory podporují ruční vložení originální anglické verze článku přímo v editoru.
 Anglický originál se ukládá izolovaně do `opinion_articles.content_json` pod
 interní klíč `veroxEnglishOriginal`, takže nevyžaduje novou Supabase migraci a
 nemění českou verzi článku. V EN mutaci se použije ruční anglický titulek, perex
 a tělo článku, pokud jsou vyplněné.
+
+Názory mají také automatický EN překlad pro články bez ručního anglického
+originálu. Worker ukládá výsledek do `opinion_articles.content_json` pod interní
+klíč `veroxEnglishAutoTranslation`, včetně hashe českého zdroje, času vytvoření
+a použitého provideru. Ruční originál má vždy přednost před automatickým
+překladem. Pokud se český článek změní, hash se změní také a worker překlad
+znovu vygeneruje.
+
+- `GET /api/nazory/translate` — chráněný cron endpoint pro zpětné i průběžné
+  doplňování překladů; podporuje `?limit=8` a volitelně `?force=1`
+- při publikaci nebo úpravě publikovaného Názoru se překlad spustí neblokujícím
+  `after()` callbackem
+- s `OPENAI_API_KEY` se používá AI překlad s instrukcí zachovat tón, styl a
+  argumentační duch textu; bez něj se použije jednodušší Google Translate
+  fallback
+- volitelné env proměnné: `VEROX_OPINION_TRANSLATION_MODEL`,
+  `OPENAI_TRANSLATION_MODEL`, `VEROX_OPINION_TRANSLATION_TIMEOUT_MS`
 
 ## Noviny (MVP)
 

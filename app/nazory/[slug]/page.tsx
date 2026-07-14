@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { after } from "next/server";
 
 import { OpinionDetail } from "@/components/nazory/OpinionDetail";
 import { SITE_URL } from "@/lib/site";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, createSupabaseServiceClient } from "@/lib/supabase/server";
 import { isNazoryAdmin } from "@/lib/nazory/access";
 import { getPublicAuthorBySlug } from "@/lib/nazory/authors";
 import { getPublishedArticleBySlug } from "@/lib/nazory/articles";
+import { LOCALE_EN } from "@/lib/i18n/config";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { localizedPath } from "@/lib/i18n/paths";
 import { getOpinionArticleDisplay } from "@/lib/nazory/englishOriginal";
 import { localizePublicAuthorProfile } from "@/lib/nazory/authorLocalization";
+import { translateAndStoreOpinionArticle } from "@/lib/nazory/autoTranslation";
 
 export const dynamic = "force-dynamic";
 
@@ -77,6 +80,14 @@ export default async function NazoryArticlePage({ params }: { params: Promise<{ 
   const canEdit = Boolean(user && (admin || user.id === article.author_id));
   const editHref = canEdit ? `/nazory/napsat/${article.id}` : null;
   const localizedAuthor = await localizePublicAuthorProfile(author, locale);
+
+  if (locale === LOCALE_EN) {
+    after(async () => {
+      await translateAndStoreOpinionArticle(createSupabaseServiceClient(), article).catch((translationError) => {
+        console.error("Opinion auto-translation after EN article render failed", translationError);
+      });
+    });
+  }
 
   return (
     <div className="vx-live vx-sub nazory-page">
