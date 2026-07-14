@@ -38,7 +38,7 @@ export default async function NazoryPage() {
     } = await supabase.auth.getUser();
     isAuthenticated = Boolean(user);
     [articles, authors] = await Promise.all([
-      listPublishedArticles(supabase, 40),
+      listPublishedArticles(supabase),
       listPublicAuthorsForCatalog(supabase),
     ]);
 

@@ -1,6 +1,7 @@
 import { VideaVideoList } from "@/components/viewer/VideaVideoList";
 import { loadStructuredFeedPayload, type FeedVideo } from "@/lib/dayOverview";
 import { getRequestLocale } from "@/lib/i18n/server";
+import { localizeFeedVideos } from "@/lib/i18n/videoTitles";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ async function loadVideos(): Promise<FeedVideo[]> {
 // Nejnovější videa — karta = datum (měsíc + velký den) + náhled + popis.
 export default async function VideaPage() {
   const [videos, locale] = await Promise.all([loadVideos(), getRequestLocale()]);
+  const displayVideos = await localizeFeedVideos(videos, locale);
 
   return (
     <div className="vx-live vx-sub">
@@ -26,7 +28,7 @@ export default async function VideaPage() {
           <div className="info">{locale === "en" ? "Videos are being prepared." : "Videa se právě připravují."}</div>
         </div>
       ) : (
-        <VideaVideoList videos={videos} />
+        <VideaVideoList videos={displayVideos} />
       )}
     </div>
   );

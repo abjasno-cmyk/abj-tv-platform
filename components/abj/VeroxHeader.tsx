@@ -171,6 +171,15 @@ export function VeroxHeader({ active, showAudience = false, locale = LOCALE_CS }
               {isEnglish ? `${desktopMonth} ${t.day}, ${t.year}` : `${t.day}.${desktopMonth} ${t.year}`}
             </span>
           </p>
+          <div className="hf-lang-switch" aria-label={dictionary.header.language.label}>
+            <a className={locale === LOCALE_CS ? "is-active" : undefined} href={languageHref(LOCALE_CS, pathname)}>
+              {dictionary.header.language.cs}
+            </a>
+            <span aria-hidden="true">/</span>
+            <a className={locale === LOCALE_EN ? "is-active" : undefined} href={languageHref(LOCALE_EN, pathname)}>
+              {dictionary.header.language.en}
+            </a>
+          </div>
           {showAudience ? <HeroAudienceIndicator /> : null}
         </div>
       </div>
@@ -193,15 +202,6 @@ export function VeroxHeader({ active, showAudience = false, locale = LOCALE_CS }
         <Link className={active === "muj" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/muj-verox")} aria-current={active === "muj" ? "page" : undefined}>
           {dictionary.header.nav.myVerox}
         </Link>
-        <div className="hf-lang-switch" aria-label={dictionary.header.language.label}>
-          <a className={locale === LOCALE_CS ? "is-active" : undefined} href={languageHref(LOCALE_CS, pathname)}>
-            {dictionary.header.language.cs}
-          </a>
-          <span aria-hidden="true">/</span>
-          <a className={locale === LOCALE_EN ? "is-active" : undefined} href={languageHref(LOCALE_EN, pathname)}>
-            {dictionary.header.language.en}
-          </a>
-        </div>
         {isAuthenticated ? (
           <a
             className="login-link"

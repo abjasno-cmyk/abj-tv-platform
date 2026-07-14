@@ -253,7 +253,7 @@ export function MyVeroxLibrary() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/viewer/my-verox", { cache: "no-store" });
+      const response = await fetch(`/api/viewer/my-verox?locale=${encodeURIComponent(locale)}`, { cache: "no-store" });
       const payload = (await response.json().catch(() => ({}))) as {
         library?: MyVeroxLibraryPayload;
         error?: string;
@@ -274,7 +274,7 @@ export function MyVeroxLibrary() {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, locale]);
 
   useEffect(() => {
     void loadLibrary();

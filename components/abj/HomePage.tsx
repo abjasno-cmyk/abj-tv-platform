@@ -120,7 +120,7 @@ export function HomePage({
   useEffect(() => {
     if (channels.length > 0) return;
     let cancelled = false;
-    void fetch("/api/live/channels", { cache: "no-store" })
+    void fetch(`/api/live/channels?locale=${encodeURIComponent(locale)}`, { cache: "no-store" })
       .then((response) => response.json())
       .then((payload: { channels?: LiveChannelGroup[] }) => {
         if (cancelled) return;
@@ -134,7 +134,7 @@ export function HomePage({
     return () => {
       cancelled = true;
     };
-  }, [channels.length]);
+  }, [channels.length, locale]);
 
   const scrollToChannels = useCallback(() => {
     const target = document.getElementById("hf-channels");

@@ -39,7 +39,8 @@ function ChannelAvatar({ channelName, avatarUrl }: { channelName: string; avatar
 }
 
 export function KanalyPageClient({ channels }: KanalyPageClientProps) {
-  const dictionary = getDictionary(useLocale());
+  const locale = useLocale();
+  const dictionary = getDictionary(locale);
   const orderedChannels = useMemo(
     () => [...channels].sort((a, b) => a.channelName.localeCompare(b.channelName, "cs-CZ")),
     [channels],
@@ -67,7 +68,7 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
     setErrorByChannel((prev) => ({ ...prev, [channel.channelName]: "" }));
 
     try {
-      const result = await fetchChannelVideosForKanaly(channel);
+      const result = await fetchChannelVideosForKanaly(channel, locale);
       setVideosByChannel((prev) => ({ ...prev, [channel.channelName]: result.videos }));
       setFallbackByChannel((prev) => ({ ...prev, [channel.channelName]: result.usedLatestFallback }));
       if (result.videos.length === 0) {
@@ -86,7 +87,7 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
     } finally {
       setLoadingChannel(null);
     }
-  }, [dictionary.channels.emptyChannel, dictionary.channels.loadError, openChannelName, videosByChannel]);
+  }, [dictionary.channels.emptyChannel, dictionary.channels.loadError, locale, openChannelName, videosByChannel]);
 
   return (
     <div className="kanaly-page">
