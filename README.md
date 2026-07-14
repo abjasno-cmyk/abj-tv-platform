@@ -57,13 +57,16 @@ Volitelné env proměnné:
 - `VEROX_EN_ENABLED=false` — vypne anglickou mutaci a všude vrátí češtinu
 - `VEROX_EN_HOSTS=veroxmed.com,www.veroxmed.com` — seznam domén pro EN locale
 - `VEROX_EN_SITE_URL=https://www.veroxmed.com` — metadata base pro EN doménu
-- `NEXT_PUBLIC_VEROX_EN_ORIGIN=https://www.veroxmed.com` — cíl EN přepínače v hlavičce
+- `NEXT_PUBLIC_VEROX_EN_ORIGIN=https://www.veroxmed.com` — volitelný cíl EN přepínače v hlavičce; nastavujte až ve chvíli, kdy je doména nasměrovaná na deployment
+- `NEXT_PUBLIC_VEROX_EN_USE_EXTERNAL_ORIGIN=true` — povolí EN přepínači používat `NEXT_PUBLIC_VEROX_EN_ORIGIN`; bez této hodnoty zůstane přepínač bezpečně na `/en/...`
 - `NEXT_PUBLIC_VEROX_CS_ORIGIN=https://www.verox.cz` — cíl CZ přepínače v hlavičce
 
-V preview/localhost prostředí EN přepínač zůstává na aktuálním hostu a používá
-`/en/...`, aby nevyžadoval připravené DNS pro `veroxmed.com`. Proxy tyto cesty
-interně přepíše na existující routy a zachová EN locale v request hlavičkách.
-V produkci může EN přepínač vést přímo na `veroxmed.com`.
+Pokud externí EN origin není explicitně povolený, EN přepínač zůstává na
+aktuálním hostu a používá `/en/...`, aby nevyžadoval připravené DNS pro
+`veroxmed.com`. Proxy tyto cesty interně přepíše na existující routy a zachová
+EN locale v request hlavičkách. Přímé přepnutí na `veroxmed.com` zapínejte až
+po dokončení DNS/deployment konfigurace nastavením `NEXT_PUBLIC_VEROX_EN_ORIGIN`
+a `NEXT_PUBLIC_VEROX_EN_USE_EXTERNAL_ORIGIN=true`.
 
 V této fázi je přeložený základní shell (metadata, hlavní navigace, footer a
 CZ/EN přepínač). Překlady obsahu mají být další oddělená vrstva: samostatná DB
