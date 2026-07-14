@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { OpinionDiscussButton } from "@/components/nazory/OpinionDiscussButton";
 import { LOCALE_EN, type VeroxLocale } from "@/lib/i18n/config";
+import { localizedPath } from "@/lib/i18n/paths";
 import type { OpinionArticleRow } from "@/lib/nazory/types";
 
 const MONTHS = [
@@ -51,6 +52,7 @@ function authorInitial(name: string): string {
 export function OpinionCard({ article, author, commentCount = 0, locale }: OpinionCardProps) {
   const { month, day } = dateParts(article.published_at, locale);
   const isEnglish = locale === LOCALE_EN;
+  const articleHref = localizedPath(locale, `/nazory/${article.slug}`);
   const authorName = author?.name?.trim() || (isEnglish ? "Author" : "Autor");
   const metaParts = [
     authorName,
@@ -76,7 +78,7 @@ export function OpinionCard({ article, author, commentCount = 0, locale }: Opini
             )}
           </span>
           <h3>
-            <Link href={`/nazory/${article.slug}`}>{article.title}</Link>
+            <Link href={articleHref}>{article.title}</Link>
           </h3>
         </div>
         <div className="src">{metaParts.join("  ·  ")}</div>
@@ -89,7 +91,7 @@ export function OpinionCard({ article, author, commentCount = 0, locale }: Opini
           />
         </div>
         {article.perex ? <p className="kostka-nazory-perex">{article.perex}</p> : null}
-        <Link href={`/nazory/${article.slug}`} className="vx-arrow">
+        <Link href={articleHref} className="vx-arrow">
           <b>{isEnglish ? "Read full text" : "Číst celý text"}</b>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/icons/ikona_sipka.svg" alt="" />

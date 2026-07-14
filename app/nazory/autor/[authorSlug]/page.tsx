@@ -11,6 +11,7 @@ import { publicNazoryMediaUrl } from "@/lib/nazory/media";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listPublishedArticlesByAuthor } from "@/lib/nazory/articles";
 import { LOCALE_EN } from "@/lib/i18n/config";
+import { localizedPath } from "@/lib/i18n/paths";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { localizePublicAuthorProfile } from "@/lib/nazory/authorLocalization";
 
@@ -133,7 +134,7 @@ export default async function NazoryAuthorPage({ params }: { params: Promise<{ a
       </section>
 
       <p className="nazory-author-link">
-        <Link href="/nazory">{isEnglish ? "Back to Opinions" : "Zpět na Názory"}</Link>
+        <Link href={localizedPath(locale, "/nazory")}>{isEnglish ? "Back to Opinions" : "Zpět na Názory"}</Link>
       </p>
     </div>
   );

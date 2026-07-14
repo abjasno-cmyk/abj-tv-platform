@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { localizedPath } from "@/lib/i18n/paths";
 import { useLocale } from "@/lib/i18n/useLocale";
 import type { PublicAuthorCatalogItem } from "@/lib/nazory/authors";
 
@@ -17,7 +18,8 @@ type NazoryAuthorsCarouselProps = {
 export function NazoryAuthorsCarousel({ authors, activeSlug = null }: NazoryAuthorsCarouselProps) {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [dot, setDot] = useState(0);
-  const dictionary = getDictionary(useLocale());
+  const locale = useLocale();
+  const dictionary = getDictionary(locale);
 
   const scrollAuthors = (dir: -1 | 1) => {
     const el = trackRef.current;
@@ -84,7 +86,7 @@ export function NazoryAuthorsCarousel({ authors, activeSlug = null }: NazoryAuth
               return (
                 <Link
                   key={author.slug}
-                  href={`/nazory/autor/${author.slug}`}
+                  href={localizedPath(locale, `/nazory/autor/${author.slug}`)}
                   className={`channel-card${active ? " channel-card-active" : ""}`}
                   aria-current={active ? "page" : undefined}
                 >
