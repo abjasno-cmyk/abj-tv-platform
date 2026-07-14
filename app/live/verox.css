@@ -2412,6 +2412,32 @@
   border-color: var(--vx-orange);
   box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.18);
 }
+.nazory-english-original {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid rgba(255, 102, 0, 0.22);
+  background: rgba(255, 255, 255, 0.62);
+}
+.nazory-english-original-head {
+  margin-bottom: 14px;
+}
+.nazory-english-original-head h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(23, 20, 17, 0.86);
+}
+.nazory-english-original-head p {
+  margin: 6px 0 0;
+  color: rgba(23, 20, 17, 0.66);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+.nazory-editor-content-english .ProseMirror {
+  min-height: 220px;
+}
 .nazory-editor-toolbar {
   display: flex;
   flex-wrap: wrap;

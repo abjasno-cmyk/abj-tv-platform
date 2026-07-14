@@ -73,6 +73,12 @@ CZ/EN přepínač). Překlady obsahu mají být další oddělená vrstva: samos
 tabulka, asynchronní worker a fallbacky, aby český web nikdy nečekal na
 překladové API.
 
+Názory podporují ruční vložení originální anglické verze článku přímo v editoru.
+Anglický originál se ukládá izolovaně do `opinion_articles.content_json` pod
+interní klíč `veroxEnglishOriginal`, takže nevyžaduje novou Supabase migraci a
+nemění českou verzi článku. V EN mutaci se použije ruční anglický titulek, perex
+a tělo článku, pokud jsou vyplněné.
+
 ## Noviny (MVP)
 
 Sekce Noviny je oddělená od živého vysílání/programu a používá vlastní tabulky

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { OpinionDiscussButton } from "@/components/nazory/OpinionDiscussButton";
 import { LOCALE_EN, type VeroxLocale } from "@/lib/i18n/config";
 import { localizedPath } from "@/lib/i18n/paths";
+import { getOpinionArticleDisplay } from "@/lib/nazory/englishOriginal";
 import type { OpinionArticleRow } from "@/lib/nazory/types";
 
 const MONTHS = [
@@ -50,9 +51,10 @@ function authorInitial(name: string): string {
 }
 
 export function OpinionCard({ article, author, commentCount = 0, locale }: OpinionCardProps) {
-  const { month, day } = dateParts(article.published_at, locale);
+  const displayArticle = getOpinionArticleDisplay(article, locale);
+  const { month, day } = dateParts(displayArticle.published_at, locale);
   const isEnglish = locale === LOCALE_EN;
-  const articleHref = localizedPath(locale, `/nazory/${article.slug}`);
+  const articleHref = localizedPath(locale, `/nazory/${displayArticle.slug}`);
   const authorName = author?.name?.trim() || (isEnglish ? "Author" : "Autor");
   const metaParts = [
     authorName,
@@ -78,19 +80,19 @@ export function OpinionCard({ article, author, commentCount = 0, locale }: Opini
             )}
           </span>
           <h3>
-            <Link href={articleHref}>{article.title}</Link>
+            <Link href={articleHref}>{displayArticle.title}</Link>
           </h3>
         </div>
         <div className="src">{metaParts.join("  ·  ")}</div>
         <div className="kostka-nazory-actions nazory-detail-actions">
           <OpinionDiscussButton
             behavior="link"
-            articleId={article.id}
-            articleTitle={article.title}
-            slug={article.slug}
+            articleId={displayArticle.id}
+            articleTitle={displayArticle.title}
+            slug={displayArticle.slug}
           />
         </div>
-        {article.perex ? <p className="kostka-nazory-perex">{article.perex}</p> : null}
+        {displayArticle.perex ? <p className="kostka-nazory-perex">{displayArticle.perex}</p> : null}
         <Link href={articleHref} className="vx-arrow">
           <b>{isEnglish ? "Read full text" : "Číst celý text"}</b>
           {/* eslint-disable-next-line @next/next/no-img-element */}
