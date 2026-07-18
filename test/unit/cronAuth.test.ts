@@ -37,6 +37,13 @@ describe("isCronAuthorized", () => {
     expect(isCronAuthorized(req({ authorization: "Bearer second" }))).toBe(true);
   });
 
+  it("accepts secrets configured as KEY=value or quoted strings", () => {
+    vi.stubEnv("PROGRAM_CACHE_CRON_SECRET", "PROGRAM_CACHE_CRON_SECRET='first-secret'");
+    vi.stubEnv("CRON_SECRET", 'CRON_SECRET="second-secret"');
+    expect(isCronAuthorized(req({ authorization: "Bearer first-secret" }))).toBe(true);
+    expect(isCronAuthorized(req({ authorization: "Bearer second-secret" }))).toBe(true);
+  });
+
   it("accepts the secret via the ?secret= query parameter", () => {
     vi.stubEnv("PROGRAM_CACHE_CRON_SECRET", "qsecret");
     vi.stubEnv("CRON_SECRET", "");

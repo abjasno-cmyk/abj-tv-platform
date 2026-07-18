@@ -6,6 +6,24 @@ function timingSafeEqualStr(provided: string, secret: string): boolean {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
+function sanitizeEnvValue(value?: string): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  const equalsIdx = trimmed.indexOf("=");
+  const maybeAssigned =
+    equalsIdx > 0 && /^[A-Z0-9_]+$/.test(trimmed.slice(0, equalsIdx))
+      ? trimmed.slice(equalsIdx + 1).trim()
+      : trimmed;
+
+  if (
+    (maybeAssigned.startsWith('"') && maybeAssigned.endsWith('"')) ||
+    (maybeAssigned.startsWith("'") && maybeAssigned.endsWith("'"))
+  ) {
+    return maybeAssigned.slice(1, -1).trim();
+  }
+  return maybeAssigned;
+}
+
 // Vercel Cron podepisuje requesty hlavičkou `Authorization: Bearer <CRON_SECRET>`.
 // Akceptujeme proto KTERÝKOLI z nakonfigurovaných secretů (PROGRAM_CACHE_CRON_SECRET
 // i CRON_SECRET), aby autorizace fungovala bez ohledu na to, kterým Vercel podepisuje.
@@ -18,7 +36,7 @@ export function isCronAuthorized(request: Request): boolean {
   // Hlavičku `x-vercel-cron-schedule` ZÁMĚRNĚ NEbereme jako autorizaci — je
   // forgeable (může ji nastavit kdokoliv) → byl by to auth bypass.
   const secrets = [process.env.PROGRAM_CACHE_CRON_SECRET, process.env.CRON_SECRET]
-    .map((value) => value?.trim())
+    .map((value) => sanitizeEnvValue(value))
     .filter((value): value is string => Boolean(value));
   if (secrets.length === 0) return true;
 
