@@ -9,7 +9,7 @@ type SourceRow = {
   source_name: string;
   channel_url: string;
   channel_id: string;
-  uploads_playlist_id: string;
+  uploads_playlist_id: string | null;
   priority: "A" | "B" | "C";
 };
 
