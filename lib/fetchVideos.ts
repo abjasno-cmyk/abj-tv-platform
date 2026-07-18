@@ -105,7 +105,14 @@ export type RefreshVideoCacheResult = {
 
 type SourceIdUpdate = {
   channelId: string;
-  uploadsPlaylistId: string;
+  uploadsPlaylistId: string | null;
+};
+
+type ChannelFeedVideo = {
+  videoId: string;
+  title: string;
+  publishedAt: string;
+  thumbnail: string | null;
 };
 
 function sanitizeEnvValue(value?: string): string | undefined {
@@ -211,6 +218,72 @@ async function fetchUploadsPlaylistIdByChannelId(
 
 function isPlaylistItems404(error: unknown): boolean {
   return error instanceof Error && /playlistItems\.list failed \(404\)/i.test(error.message);
+}
+
+function isYouTube403(error: unknown): boolean {
+  return error instanceof Error && /\b(403|forbidden)\b/i.test(error.message);
+}
+
+function decodeXmlEntities(value: string): string {
+  return value
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+function parseTagValue(source: string, regex: RegExp): string | null {
+  const match = source.match(regex);
+  if (!match || typeof match[1] !== "string") return null;
+  const trimmed = decodeXmlEntities(match[1].trim());
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function toValidIsoOrNull(value: string | null): string | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
+function parseFeedVideosXml(xml: string, limit: number): ChannelFeedVideo[] {
+  const entries = xml.match(/<entry>([\s\S]*?)<\/entry>/g) ?? [];
+  const output: ChannelFeedVideo[] = [];
+
+  for (const entry of entries) {
+    const videoId = parseTagValue(entry, /<yt:videoId>([^<]+)<\/yt:videoId>/);
+    const title = parseTagValue(entry, /<title>([\s\S]*?)<\/title>/);
+    const publishedAt =
+      toValidIsoOrNull(parseTagValue(entry, /<published>([^<]+)<\/published>/)) ??
+      toValidIsoOrNull(parseTagValue(entry, /<updated>([^<]+)<\/updated>/));
+    if (!videoId || !title || !publishedAt) continue;
+
+    output.push({
+      videoId,
+      title,
+      publishedAt,
+      thumbnail: `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`,
+    });
+    if (output.length >= limit) break;
+  }
+
+  return output;
+}
+
+async function fetchChannelFeedVideos(channelId: string, maxResults: number): Promise<ChannelFeedVideo[]> {
+  const url = new URL("https://www.youtube.com/feeds/videos.xml");
+  url.searchParams.set("channel_id", channelId);
+
+  const response = await fetch(url.toString(), {
+    headers: { Accept: "application/atom+xml,text/xml;q=0.9,*/*;q=0.8" },
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new Error(`channel feed failed (${response.status})`);
+  }
+  const xml = await response.text();
+  return parseFeedVideosXml(xml, maxResults);
 }
 
 async function fetchVideosDetailsBatch(videoIds: string[], apiKey: string): Promise<VideosListResponse> {
@@ -380,11 +453,11 @@ export async function resolveActiveSourceIdsFromChannelUrl(
 ): Promise<{ ids: SourceIdUpdate | null; apiCalls: number; changed: boolean }> {
   const channelUrl = source.channel_url?.trim() ?? "";
   if (!channelUrl) {
-    if (source.channel_id && source.uploads_playlist_id) {
+    if (source.channel_id) {
       return {
         ids: {
           channelId: source.channel_id,
-          uploadsPlaylistId: source.uploads_playlist_id,
+          uploadsPlaylistId: source.uploads_playlist_id ?? null,
         },
         apiCalls: 0,
         changed: false,
@@ -393,13 +466,31 @@ export async function resolveActiveSourceIdsFromChannelUrl(
     return { ids: null, apiCalls: 0, changed: false };
   }
 
-  const resolved = await resolveChannelIdsFromChannelUrl(channelUrl, youtubeApiKey);
-  if (!resolved) {
-    if (source.channel_id && source.uploads_playlist_id) {
+  let resolved: Awaited<ReturnType<typeof resolveChannelIdsFromChannelUrl>> = null;
+  try {
+    resolved = await resolveChannelIdsFromChannelUrl(channelUrl, youtubeApiKey);
+  } catch (error) {
+    if (source.channel_id) {
+      console.warn(
+        `[WARN] ${source.source_name}: channel_url resolution failed (${error instanceof Error ? error.message : String(error)}), using stored channel_id`
+      );
       return {
         ids: {
           channelId: source.channel_id,
-          uploadsPlaylistId: source.uploads_playlist_id,
+          uploadsPlaylistId: source.uploads_playlist_id ?? null,
+        },
+        apiCalls: 1,
+        changed: false,
+      };
+    }
+    throw error;
+  }
+  if (!resolved) {
+    if (source.channel_id) {
+      return {
+        ids: {
+          channelId: source.channel_id,
+          uploadsPlaylistId: source.uploads_playlist_id ?? null,
         },
         apiCalls: 1,
         changed: false,
@@ -464,6 +555,7 @@ export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
   const nowIso = new Date().toISOString();
 
   const sourceByVideoId = new Map<string, SourceMeta>();
+  const feedFallbackByVideoId = new Map<string, ChannelFeedVideo>();
   for (const source of sources) {
     try {
       const channelUrl = source.channel_url?.trim() ?? "";
@@ -495,59 +587,103 @@ export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
       let videoIds: string[] = [];
       const maxResults = maxResultsByPriority(source.priority);
 
-      const loadUploadsVideoIds = async () =>
-        fetchUploadsVideoIds(uploadsPlaylistId, youtubeApiKey, maxResults);
+      const appendFeedFallback = async () => {
+        const feedVideos = await fetchChannelFeedVideos(activeChannelId, maxResults);
+        for (const feedVideo of feedVideos) {
+          if (!sourceByVideoId.has(feedVideo.videoId)) {
+            sourceByVideoId.set(feedVideo.videoId, {
+              sourceId: source.id,
+              sourceName: source.source_name,
+              sourcePriority: source.priority,
+              channelId: activeChannelId,
+            });
+          }
+          const existing = feedFallbackByVideoId.get(feedVideo.videoId);
+          if (!existing) {
+            feedFallbackByVideoId.set(feedVideo.videoId, feedVideo);
+            continue;
+          }
+          const existingTs = new Date(existing.publishedAt).getTime();
+          const incomingTs = new Date(feedVideo.publishedAt).getTime();
+          if (incomingTs > existingTs) {
+            feedFallbackByVideoId.set(feedVideo.videoId, feedVideo);
+          }
+        }
+        videoIds = feedVideos.map((item) => item.videoId);
+      };
+
+      const loadUploadsVideoIds = async () => {
+        if (!uploadsPlaylistId) {
+          throw new Error("missing uploads_playlist_id");
+        }
+        return fetchUploadsVideoIds(uploadsPlaylistId, youtubeApiKey, maxResults);
+      };
 
       try {
         videoIds = await loadUploadsVideoIds();
         apiCalls += 1;
       } catch (err) {
-        if (!isPlaylistItems404(err)) {
+        if (uploadsPlaylistId && isYouTube403(err)) {
+          console.warn(
+            `[WARN] ${source.source_name}: playlistItems 403, falling back to public channel feed for ${activeChannelId}`
+          );
+          await appendFeedFallback();
+        } else if (uploadsPlaylistId && isPlaylistItems404(err)) {
+          console.warn(
+            `[WARN] ${source.source_name}: playlist ${uploadsPlaylistId} returned 404, resolving uploads playlist from channel_id ${activeChannelId}`
+          );
+          const refreshedUploadsPlaylistId = await fetchUploadsPlaylistIdByChannelId(
+            activeChannelId,
+            youtubeApiKey
+          );
+          apiCalls += 1;
+
+          if (!refreshedUploadsPlaylistId) {
+            throw new Error(`Unable to resolve uploads playlist for channel_id ${activeChannelId}`);
+          }
+
+          uploadsPlaylistId = refreshedUploadsPlaylistId;
+          if (uploadsPlaylistId !== source.uploads_playlist_id) {
+            const persisted = await persistSourceYoutubeIds(supabase, source.id, {
+              channelId: activeChannelId,
+              uploadsPlaylistId,
+            });
+            if (!persisted) {
+              console.warn(
+                `[WARN] ${source.source_name}: failed to persist refreshed uploads_playlist_id`
+              );
+            } else {
+              source.uploads_playlist_id = uploadsPlaylistId;
+              console.log(
+                `[OK] ${source.source_name}: uploads_playlist_id auto-updated to ${uploadsPlaylistId}`
+              );
+            }
+          }
+
+          videoIds = await loadUploadsVideoIds();
+          apiCalls += 1;
+        } else if (!uploadsPlaylistId) {
+          console.log(
+            `[WARN] ${source.source_name}: missing uploads_playlist_id, using public channel feed fallback for ${activeChannelId}`
+          );
+          await appendFeedFallback();
+        } else {
           throw err;
         }
-
-        console.warn(
-          `[WARN] ${source.source_name}: playlist ${uploadsPlaylistId} returned 404, resolving uploads playlist from channel_id ${activeChannelId}`
-        );
-        const refreshedUploadsPlaylistId = await fetchUploadsPlaylistIdByChannelId(
-          activeChannelId,
-          youtubeApiKey
-        );
-        apiCalls += 1;
-
-        if (!refreshedUploadsPlaylistId) {
-          throw new Error(`Unable to resolve uploads playlist for channel_id ${activeChannelId}`);
-        }
-
-        uploadsPlaylistId = refreshedUploadsPlaylistId;
-        if (uploadsPlaylistId !== source.uploads_playlist_id) {
-          const persisted = await persistSourceYoutubeIds(supabase, source.id, {
-            channelId: activeChannelId,
-            uploadsPlaylistId,
-          });
-          if (!persisted) {
-            console.warn(
-              `[WARN] ${source.source_name}: failed to persist refreshed uploads_playlist_id`
-            );
-          } else {
-            source.uploads_playlist_id = uploadsPlaylistId;
-            console.log(
-              `[OK] ${source.source_name}: uploads_playlist_id auto-updated to ${uploadsPlaylistId}`
-            );
-          }
-        }
-
-        videoIds = await loadUploadsVideoIds();
-        apiCalls += 1;
       }
 
       if (videoIds.length === 0) {
-        const message = "no videos from uploads playlist";
-        failedSources.push(source.source_name);
-        failedDetails.push({ source: source.source_name, error: message });
-        console.log(`[MISS] ${source.source_name}: ${message}`);
-        await sleep(120);
-        continue;
+        try {
+          await appendFeedFallback();
+        } catch (feedError) {
+          const message =
+            feedError instanceof Error ? feedError.message : "no videos from uploads playlist";
+          failedSources.push(source.source_name);
+          failedDetails.push({ source: source.source_name, error: message });
+          console.log(`[MISS] ${source.source_name}: ${message}`);
+          await sleep(120);
+          continue;
+        }
       }
 
       for (const videoId of videoIds) {
@@ -573,6 +709,7 @@ export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
 
   const videoIds = [...sourceByVideoId.keys()];
   const detailsByVideoId = new Map<string, NonNullable<VideosListResponse["items"]>[number]>();
+  let detailsApi403 = false;
   for (let idx = 0; idx < videoIds.length; idx += 50) {
     const batch = videoIds.slice(idx, idx + 50);
     try {
@@ -584,6 +721,13 @@ export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
       }
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
+      if (isYouTube403(err)) {
+        detailsApi403 = true;
+        console.warn(
+          `[WARN] videos.list returned 403; continuing with feed fallback metadata where available`
+        );
+        break;
+      }
       for (const videoId of batch) {
         const source = sourceByVideoId.get(videoId);
         if (!source) continue;
@@ -604,27 +748,32 @@ export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
   for (const videoId of videoIds) {
     const source = sourceByVideoId.get(videoId);
     const details = detailsByVideoId.get(videoId);
-    if (!source || !details?.snippet?.title) continue;
+    const feedFallback = feedFallbackByVideoId.get(videoId);
+    if (!source) continue;
 
-    const snippet = details.snippet;
-    const liveBroadcastContent = (snippet.liveBroadcastContent ?? "none") as "live" | "upcoming" | "none";
-    const scheduledStartTime = details.liveStreamingDetails?.scheduledStartTime ?? null;
-    const actualStartTime = details.liveStreamingDetails?.actualStartTime ?? null;
-    const durationIso = details.contentDetails?.duration;
-    const durationMin = parseDurationToMinutes(durationIso);
+    const snippet = details?.snippet;
+    const title = snippet?.title ?? feedFallback?.title;
+    if (!title) continue;
+    const liveBroadcastContent = ((snippet?.liveBroadcastContent ?? "none") as "live" | "upcoming" | "none");
+    const scheduledStartTime = details?.liveStreamingDetails?.scheduledStartTime ?? null;
+    const actualStartTime = details?.liveStreamingDetails?.actualStartTime ?? null;
+    const durationIso = details?.contentDetails?.duration;
+    const durationMin = durationIso ? parseDurationToMinutes(durationIso) : 30;
     const videoType = inferVideoType(liveBroadcastContent, scheduledStartTime, nowIso);
     const thumbnail =
-      snippet.thumbnails?.high?.url ??
-      snippet.thumbnails?.medium?.url ??
-      snippet.thumbnails?.default?.url ??
+      snippet?.thumbnails?.high?.url ??
+      snippet?.thumbnails?.medium?.url ??
+      snippet?.thumbnails?.default?.url ??
+      feedFallback?.thumbnail ??
       null;
     const isABJ = source.sourceName.toLowerCase().includes("abj");
+    const publishedAt = snippet?.publishedAt ?? feedFallback?.publishedAt ?? null;
 
     rows.push({
       video_id: videoId,
-      title: snippet.title ?? "Bez názvu",
+      title,
       thumbnail,
-      published_at: snippet.publishedAt ?? null,
+      published_at: publishedAt,
       scheduled_start_at: scheduledStartTime,
       video_type: videoType,
       channel_id: source.channelId,
@@ -639,11 +788,14 @@ export async function refreshVideoCache(): Promise<RefreshVideoCacheResult> {
         liveBroadcastContent,
         scheduledStartTime,
         actualStartTime,
-        actualEndTime: details.liveStreamingDetails?.actualEndTime ?? null,
-        channelTitle: snippet.channelTitle ?? source.sourceName,
+        actualEndTime: details?.liveStreamingDetails?.actualEndTime ?? null,
+        channelTitle: snippet?.channelTitle ?? source.sourceName,
         ingestedAt: nowIso,
         sourcePriority: source.sourcePriority,
-        ingestMode: "uploads-playlist-batch-videos-list",
+        ingestMode:
+          feedFallback && (!details || detailsApi403)
+            ? "uploads-playlist-fallback-channel-feed"
+            : "uploads-playlist-batch-videos-list",
       },
       cache_refreshed_at: nowIso,
     });
