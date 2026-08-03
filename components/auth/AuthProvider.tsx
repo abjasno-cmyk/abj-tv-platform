@@ -8,6 +8,7 @@ import {
   rememberOAuthReturnPath,
 } from "@/lib/auth/oauthRedirect";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { moduleEnabled } from "@/lib/tenant";
 import { LoginModal } from "@/components/auth/LoginModal";
 
 const PENDING_CONSENTS_KEY = "verox_pending_consents_v1";
@@ -83,13 +84,37 @@ function clearPendingConsentsStorage() {
   }
 }
 
-export function AuthProvider({
-  children,
-}: {
+// Vertikála bez modulu auth (ProudX MVP): žádný Supabase klient, žádné
+// session cookies, žádný login modal. Komponenty přes useAuth dostanou
+// trvale anonymní stav, takže live/VOD stránky fungují beze změn.
+const DISABLED_AUTH: AuthContextValue = {
+  user: null,
+  profile: null,
+  loading: false,
+  isAuthenticated: false,
+  openLoginModal: () => {},
+  closeLoginModal: () => {},
+  requestAuth: () => false,
+  signOut: async () => {},
+  refreshProfile: async () => {},
+};
+
+type AuthProviderProps = {
   children: React.ReactNode;
   /** @deprecated Passed from layout for backwards compatibility; ignored. */
   vercelEnv?: string;
-}) {
+};
+
+export function AuthProvider(props: AuthProviderProps) {
+  if (!moduleEnabled("auth")) {
+    return <AuthContext.Provider value={DISABLED_AUTH}>{props.children}</AuthContext.Provider>;
+  }
+  return <SupabaseAuthProvider {...props} />;
+}
+
+function SupabaseAuthProvider({
+  children,
+}: AuthProviderProps) {
   const supabase = useMemo<SupabaseClient | null>(() => {
     try {
       return createSupabaseBrowserClient();

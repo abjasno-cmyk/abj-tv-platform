@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { PRODUCTION_LEGACY_VERCEL_HOST } from "@/lib/deploymentHost";
+import { isPageAllowed, moduleEnabled } from "@/lib/tenant";
 
 function sanitizeEnvValue(value?: string): string | undefined {
   if (!value) return undefined;
@@ -21,6 +22,12 @@ function sanitizeEnvValue(value?: string): string | undefined {
 }
 
 export async function proxy(request: NextRequest) {
+  // Stránky vypnutých modulů nesmí být na této vertikále dosažitelné.
+  // ponytail: plaintext 404 stačí — hezčí 404 stránka až s brand fází.
+  if (!isPageAllowed(request.nextUrl.pathname)) {
+    return new NextResponse("Not Found", { status: 404 });
+  }
+
   const requestHost = request.nextUrl.host.toLowerCase();
   // Cron endpointy NESMÍ být kanonikalizované: Vercel cron fíruje proti generovanému
   // deployment URL a redirecty NEnásleduje (Vercel docs) — 307 by cron zabil. Necháme
@@ -42,6 +49,12 @@ export async function proxy(request: NextRequest) {
     canonicalUrl.protocol = "https";
     canonicalUrl.host = PRODUCTION_LEGACY_VERCEL_HOST;
     return NextResponse.redirect(canonicalUrl, 307);
+  }
+
+  // Vertikála bez přihlašování (ProudX MVP) nesmí zakládat ani obnovovat
+  // auth session cookies — žádné sdílené profily mezi vertikálami.
+  if (!moduleEnabled("auth")) {
+    return NextResponse.next({ request });
   }
 
   const supabaseUrl = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);

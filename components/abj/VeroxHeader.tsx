@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { HeroAudienceIndicator } from "@/components/abj/HeroAudienceIndicator";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { moduleEnabled, TENANT } from "@/lib/tenant";
 
 // Sdílená horní lišta dle návrhu Lucie Robinson („menu_listy"): velké logo
 // vlevo, nav svisle vpravo, hodiny + datum vpravo (desktop) / pod logem (mobil).
@@ -75,13 +76,13 @@ export function VeroxHeader({ active, showAudience = false }: VeroxHeaderProps) 
   const t = pragueParts(now);
 
   return (
-    <header className="hf-header" aria-label="VEROX">
-      <Link className="hf-logo-link" href="/live" aria-label="VEROX — Mainstreamový detox">
+    <header className="hf-header" aria-label={TENANT.siteName}>
+      <Link className="hf-logo-link" href="/live" aria-label={`${TENANT.siteName} — ${TENANT.tagline}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="hf-logo" src="/design/brand/verox-logo.png" alt="VEROX" />
+        <img className="hf-logo" src={TENANT.logoSrc} alt={TENANT.siteName} />
       </Link>
       <div className="hf-meta">
-        <p className="hf-tagline">MAINSTREAMOVÝ DETOX</p>
+        <p className="hf-tagline">{TENANT.tagline}</p>
         <div className="hf-timeblock">
           <p className="hf-clock" suppressHydrationWarning>
             {t.hour}:{t.minute}
@@ -104,19 +105,27 @@ export function VeroxHeader({ active, showAudience = false }: VeroxHeaderProps) 
         <Link className={active === "videa" ? "is-active" : undefined} href="/videa" aria-current={active === "videa" ? "page" : undefined}>
           NEJNOVĚJŠÍ VIDEA
         </Link>
-        <Link className={active === "noviny" ? "is-active" : undefined} href="/noviny" aria-current={active === "noviny" ? "page" : undefined}>
-          ZPRÁVY
-        </Link>
-        <Link className={active === "nazory" ? "is-active" : undefined} href="/nazory" aria-current={active === "nazory" ? "page" : undefined}>
-          NÁZORY
-        </Link>
-        <Link className={active === "kanaly" ? "is-active" : undefined} href="/kanaly" aria-current={active === "kanaly" ? "page" : undefined}>
-          KANÁLY
-        </Link>
-        <Link className={active === "muj" ? "is-active" : undefined} href="/muj-verox" aria-current={active === "muj" ? "page" : undefined}>
-          MŮJ VEROX
-        </Link>
-        {isAuthenticated ? (
+        {moduleEnabled("noviny") ? (
+          <Link className={active === "noviny" ? "is-active" : undefined} href="/noviny" aria-current={active === "noviny" ? "page" : undefined}>
+            ZPRÁVY
+          </Link>
+        ) : null}
+        {moduleEnabled("nazory") ? (
+          <Link className={active === "nazory" ? "is-active" : undefined} href="/nazory" aria-current={active === "nazory" ? "page" : undefined}>
+            NÁZORY
+          </Link>
+        ) : null}
+        {moduleEnabled("kanaly") ? (
+          <Link className={active === "kanaly" ? "is-active" : undefined} href="/kanaly" aria-current={active === "kanaly" ? "page" : undefined}>
+            KANÁLY
+          </Link>
+        ) : null}
+        {moduleEnabled("komunita") ? (
+          <Link className={active === "muj" ? "is-active" : undefined} href="/muj-verox" aria-current={active === "muj" ? "page" : undefined}>
+            MŮJ VEROX
+          </Link>
+        ) : null}
+        {!moduleEnabled("auth") ? null : isAuthenticated ? (
           <a
             className="login-link"
             href="/muj-verox"

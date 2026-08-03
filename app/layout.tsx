@@ -12,26 +12,24 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { TranscriptStatesProvider } from "@/components/viewer/TranscriptStatesProvider";
 import { EditorialEventDebugPanel } from "@/components/dev/EditorialEventDebugPanel";
 import { CANONICAL_HOST, SITE_URL } from "@/lib/site";
-
-const SITE_DESCRIPTION =
-  "Mainstreamový detox — živé vysílání, videa a souhrny v kostce z alternativních kanálů.";
+import { TENANT } from "@/lib/tenant";
 
 // Next.js automaticky doplní og:image / twitter:image z app/opengraph-image.png
 // a app/twitter-image.png (rozlišené přes metadataBase).
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "VEROX • Mainstreamový detox",
-  description: SITE_DESCRIPTION,
+  title: TENANT.title,
+  description: TENANT.description,
   openGraph: {
     type: "website",
-    siteName: "VEROX",
-    title: "VEROX • Mainstreamový detox",
-    description: SITE_DESCRIPTION,
+    siteName: TENANT.siteName,
+    title: TENANT.title,
+    description: TENANT.description,
   },
   twitter: {
     card: "summary_large_image",
-    title: "VEROX • Mainstreamový detox",
-    description: SITE_DESCRIPTION,
+    title: TENANT.title,
+    description: TENANT.description,
   },
 };
 
