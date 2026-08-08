@@ -64,6 +64,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
       lang="cs"
       className={`${montserrat.variable} ${robotoCondensed.variable}`}
       data-vercel-env={process.env.VERCEL_ENV ?? ""}
+      data-tenant={TENANT.id}
+      // Akcentní barva vertikály přepisuje --vx-orange (definované v verox.css :root).
+      style={{ ["--vx-orange" as string]: TENANT.brandColor }}
     >
       <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
         {isProductionDeployment ? (

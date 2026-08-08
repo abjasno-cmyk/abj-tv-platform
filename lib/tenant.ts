@@ -23,6 +23,8 @@ export type TenantConfig = {
   title: string;
   description: string;
   logoSrc: string;
+  /** Akcentní barva značky — přepisuje CSS proměnnou --vx-orange. */
+  brandColor: string;
   modules: Record<ModuleKey, boolean>;
   /**
    * Povolené prefixy stránek. null = vše povoleno (VEROX). U vertikály
@@ -42,6 +44,7 @@ const VEROX: TenantConfig = {
   description:
     "Mainstreamový detox — živé vysílání, videa a souhrny v kostce z alternativních kanálů.",
   logoSrc: "/design/brand/verox-logo.png",
+  brandColor: "#ff6600",
   modules: {
     noviny: true,
     nazory: true,
@@ -58,10 +61,11 @@ const VEROX: TenantConfig = {
 const PROUDX: TenantConfig = {
   id: "proudx",
   siteName: "ProudX",
-  tagline: "ZPRÁVY V PROUDU",
+  tagline: "ZŮSTAŇTE V PROUDU",
   title: "ProudX • Živé vysílání a videa",
-  description: "ProudX — nepřetržitý videoproud a katalog videí.",
-  logoSrc: "/design/brand/proudx-logo.png",
+  description: "ProudX — nepřetržitý videoproud a katalog videí pro městské publikum.",
+  logoSrc: "/design/brand/proudx-logo.svg",
+  brandColor: "#1c64f2",
   modules: {
     noviny: false,
     nazory: false,
