@@ -1,0 +1,314 @@
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600;700&display=swap");
+
+/* ProudX živé vysílání — dark cinematic editorial. Vše pod .px, nedotýká se VEROXu. */
+
+.px {
+  --bg: #0a0b10;
+  --bg-2: #10121a;
+  --card: #14161f;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-2: rgba(255, 255, 255, 0.14);
+  --ink: #f3f4f7;
+  --muted: #9296a4;
+  --faint: #62667a;
+  --accent: #6a8cff;
+  --accent-soft: rgba(106, 140, 255, 0.16);
+  --serif: "Instrument Serif", Georgia, serif;
+  --sans: "Instrument Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  position: relative;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  overflow-x: hidden;
+  isolation: isolate;
+}
+
+/* Atmosférická záře za obsahem */
+.px-bgglow {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 60% at 50% -8%, rgba(106, 140, 255, 0.18), transparent 60%),
+    radial-gradient(80% 50% at 85% 15%, rgba(120, 90, 255, 0.08), transparent 55%),
+    var(--bg);
+}
+
+/* ── Horní lišta ─────────────────────────────────────────────── */
+.px-top {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(18px, 2.4vw, 30px) clamp(20px, 4vw, 48px);
+}
+.px-brand {
+  font-family: var(--serif);
+  font-size: clamp(26px, 2.6vw, 34px);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-decoration: none;
+  line-height: 1;
+}
+.px-brand span { color: var(--accent); }
+.px-nav {
+  display: flex;
+  gap: 22px;
+  margin-left: 8px;
+}
+.px-nav a {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 6px 0;
+  position: relative;
+  transition: color 0.15s ease;
+}
+.px-nav a:hover { color: var(--ink); }
+.px-nav a.is-active { color: var(--ink); }
+.px-nav a.is-active::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -2px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.px-status {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.px-livedot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ff4d5e;
+  box-shadow: 0 0 0 0 rgba(255, 77, 94, 0.6);
+  animation: px-pulse 1.9s ease-out infinite;
+}
+.px-status-label { color: var(--ink); text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.7rem; }
+.px-clock { color: var(--muted); font-variant-numeric: tabular-nums; margin-left: 4px; }
+@keyframes px-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 77, 94, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(255, 77, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 77, 94, 0); }
+}
+
+/* ── Hlavní ──────────────────────────────────────────────────── */
+.px-main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(8px, 1.5vw, 20px) clamp(20px, 4vw, 48px) 80px;
+}
+
+/* STAGE — přehrávač jako centrální plocha */
+.px-stage {
+  position: relative;
+  animation: px-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.px-player {
+  position: relative;
+  width: min(100%, 1000px);
+  margin: 12px auto 0;
+  aspect-ratio: 16 / 9;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--line);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.4),
+    0 40px 90px -40px rgba(106, 140, 255, 0.45),
+    0 30px 60px -30px rgba(0, 0, 0, 0.8);
+}
+.px-player :where(iframe, .playout-embed) { border: 0; width: 100%; height: 100%; }
+/* Pohltí YouTube hover UI — jediné ovládání jsou naše tlačítka */
+.px-guard {
+  position: absolute; inset: 0; z-index: 2;
+}
+.px-onair, .px-backlive {
+  position: absolute; top: 14px; left: 14px; z-index: 4;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  background: rgba(10, 11, 16, 0.66);
+  backdrop-filter: blur(10px);
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--ink);
+}
+.px-backlive { cursor: pointer; letter-spacing: 0.04em; text-transform: none; font-weight: 600; }
+.px-backlive:hover { border-color: var(--accent); color: var(--accent); }
+.px-onair-dot { width: 7px; height: 7px; border-radius: 50%; background: #ff4d5e; animation: px-pulse 1.9s ease-out infinite; }
+
+.px-ctrls {
+  position: absolute; top: 14px; right: 14px; z-index: 4;
+  display: flex; flex-direction: column; gap: 9px;
+}
+.px-ctrls button {
+  width: clamp(38px, 3.4vw, 46px); aspect-ratio: 1;
+  display: grid; place-items: center;
+  border: 1px solid var(--line-2);
+  border-radius: 50%;
+  background: rgba(10, 11, 16, 0.6);
+  backdrop-filter: blur(10px);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+}
+.px-ctrls button:hover { background: var(--accent); border-color: var(--accent); color: #0a0b10; transform: scale(1.05); }
+.px-ctrls svg { width: 46%; height: 46%; fill: currentColor; }
+
+.px-scrub {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 4;
+  height: 6px; cursor: pointer;
+  background: rgba(255, 255, 255, 0.14);
+}
+.px-scrub-fill { display: block; height: 100%; background: var(--accent); }
+
+/* Titulek pod přehrávačem — editorial */
+.px-nowmeta {
+  width: min(100%, 760px);
+  margin: clamp(22px, 2.6vw, 36px) auto 0;
+  text-align: center;
+  animation: px-rise 0.7s 0.08s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.px-kicker {
+  font-size: 0.76rem; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--accent);
+  margin: 0 0 10px;
+}
+.px-kicker span { color: var(--faint); }
+.px-title {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(28px, 4vw, 52px);
+  line-height: 1.06;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0;
+  text-wrap: balance;
+}
+
+/* ── Sekce (rail + kanály) ───────────────────────────────────── */
+.px-block { margin-top: clamp(48px, 6vw, 84px); }
+.px-head {
+  display: flex; align-items: baseline; gap: 14px;
+  margin-bottom: 22px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.px-eyebrow {
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--accent);
+}
+.px-head h2 {
+  font-family: var(--serif); font-weight: 400;
+  font-size: clamp(24px, 2.6vw, 34px);
+  letter-spacing: -0.01em; color: var(--ink); margin: 0;
+}
+.px-count {
+  margin-left: auto; font-size: 0.8rem; color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Rail „Právě hraje" */
+.px-rail {
+  display: flex; gap: 16px;
+  overflow-x: auto; scroll-snap-type: x mandatory;
+  padding-bottom: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
+}
+.px-rail::-webkit-scrollbar { height: 6px; }
+.px-rail::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 3px; }
+.px-card {
+  flex: 0 0 clamp(220px, 22vw, 268px);
+  scroll-snap-align: start;
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 0; border: 0; background: none; text-align: left; cursor: pointer;
+}
+.px-card-thumb {
+  position: relative; display: block;
+  aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden;
+  background: var(--card); border: 1px solid var(--line);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.px-card-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.px-card-play {
+  position: absolute; inset: 0; margin: auto;
+  width: 46px; height: 46px; display: grid; place-items: center;
+  border-radius: 50%; background: rgba(10, 11, 16, 0.55); backdrop-filter: blur(6px);
+  border: 1px solid var(--line-2);
+  opacity: 0; transform: scale(0.9); transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.px-card-play svg { width: 20px; height: 20px; fill: #fff; margin-left: 2px; }
+.px-card:hover .px-card-thumb {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  box-shadow: 0 24px 44px -26px rgba(106, 140, 255, 0.6);
+}
+.px-card:hover .px-card-play { opacity: 1; transform: scale(1); }
+.px-card-meta { display: flex; flex-direction: column; gap: 5px; }
+.px-card-ch { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); }
+.px-card-title {
+  font-size: 0.94rem; line-height: 1.32; color: var(--ink);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* Kanály */
+.px-channel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+  gap: 10px;
+}
+.pxc {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 14px;
+  border: 1px solid var(--line); background: var(--card);
+  cursor: pointer; text-align: left;
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+.pxc:hover { border-color: var(--accent); background: var(--bg-2); transform: translateY(-2px); }
+.pxc-avatar {
+  width: 42px; height: 42px; flex: 0 0 42px; border-radius: 50%;
+  object-fit: cover; background: var(--bg-2);
+  border: 1px solid var(--line-2);
+}
+.pxc-avatar--fallback {
+  display: grid; place-items: center;
+  font-family: var(--serif); font-size: 1rem; color: var(--accent);
+  background: var(--accent-soft);
+}
+.pxc-name {
+  font-size: 0.86rem; font-weight: 500; color: var(--ink); line-height: 1.2;
+  overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+
+/* ── Patička ─────────────────────────────────────────────────── */
+.px-foot {
+  max-width: 1180px; margin: 0 auto;
+  padding: 40px clamp(20px, 4vw, 48px);
+  border-top: 1px solid var(--line);
+  display: flex; align-items: baseline; gap: 16px;
+}
+.px-foot-brand { font-family: var(--serif); font-size: 1.4rem; color: var(--ink); }
+.px-foot-brand span { color: var(--accent); }
+.px-foot-tag { font-size: 0.8rem; color: var(--faint); letter-spacing: 0.04em; }
+
+@keyframes px-rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 640px) {
+  .px-nav { display: none; }
+  .px-title { font-size: clamp(24px, 7vw, 34px); }
+}
