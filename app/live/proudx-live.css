@@ -157,30 +157,71 @@
 .px-backlive:hover { border-color: var(--accent); color: var(--accent); }
 .px-onair-dot { width: 7px; height: 7px; border-radius: 50%; background: #ff4d5e; animation: px-pulse 1.9s ease-out infinite; }
 
-.px-ctrls {
-  position: absolute; top: 14px; right: 14px; z-index: 4;
-  display: flex; flex-direction: column; gap: 9px;
-}
-.px-ctrls button {
-  width: clamp(38px, 3.4vw, 46px); aspect-ratio: 1;
-  display: grid; place-items: center;
-  border: 1px solid var(--line-2);
-  border-radius: 50%;
-  background: rgba(10, 11, 16, 0.6);
-  backdrop-filter: blur(10px);
-  color: var(--ink);
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
-}
-.px-ctrls button:hover { background: var(--accent); border-color: var(--accent); color: #0a0b10; transform: scale(1.05); }
-.px-ctrls svg { width: 46%; height: 46%; fill: currentColor; }
-
-.px-scrub {
+/* Spodní ovládací lišta */
+.px-bar {
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 4;
-  height: 6px; cursor: pointer;
-  background: rgba(255, 255, 255, 0.14);
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 16px 14px;
+  background: linear-gradient(to top, rgba(6, 7, 11, 0.94) 0%, rgba(6, 7, 11, 0.55) 62%, transparent 100%);
 }
-.px-scrub-fill { display: block; height: 100%; background: var(--accent); }
+.px-bar-btn {
+  flex: 0 0 auto;
+  width: 34px; height: 34px; display: grid; place-items: center;
+  border: 0; border-radius: 9px; background: transparent; color: var(--ink);
+  cursor: pointer; transition: background 0.14s ease, color 0.14s ease;
+}
+.px-bar-btn:hover { background: rgba(255, 255, 255, 0.12); }
+.px-bar-btn svg { width: 18px; height: 18px; fill: currentColor; }
+.px-bar-speed {
+  width: auto; padding: 0 10px; font-size: 0.78rem; font-weight: 600;
+  font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+}
+.px-bar-time {
+  flex: 0 0 auto; font-size: 0.76rem; color: var(--ink);
+  font-variant-numeric: tabular-nums; opacity: 0.9;
+}
+.px-bar-time--dur { opacity: 0.6; }
+.px-bar-scrub {
+  flex: 1 1 auto; position: relative; height: 16px; display: flex; align-items: center;
+  cursor: pointer;
+}
+.px-bar-scrub::before {
+  content: ""; position: absolute; left: 0; right: 0; height: 4px;
+  border-radius: 2px; background: rgba(255, 255, 255, 0.22);
+}
+.px-bar-scrub-fill {
+  position: relative; height: 4px; border-radius: 2px; background: var(--accent);
+  min-width: 4px;
+}
+.px-bar-scrub-knob {
+  position: absolute; right: -6px; top: 50%; transform: translateY(-50%);
+  width: 12px; height: 12px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  opacity: 0; transition: opacity 0.14s ease;
+}
+.px-bar-scrub:hover .px-bar-scrub-knob { opacity: 1; }
+.px-bar-liveflag {
+  flex: 1 1 auto; display: inline-flex; align-items: center; gap: 8px;
+  font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted);
+}
+.px-bar-vol { flex: 0 0 auto; display: flex; align-items: center; gap: 2px; }
+.px-bar-vol-slider {
+  width: 0; opacity: 0; padding: 0;
+  transition: width 0.2s ease, opacity 0.2s ease;
+  -webkit-appearance: none; appearance: none; height: 4px; border-radius: 2px;
+  background: rgba(255, 255, 255, 0.28); cursor: pointer;
+}
+.px-bar-vol:hover .px-bar-vol-slider,
+.px-bar-vol-slider:focus { width: 72px; opacity: 1; }
+.px-bar-vol-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 12px; height: 12px; border-radius: 50%; background: var(--accent);
+  cursor: pointer;
+}
+.px-bar-vol-slider::-moz-range-thumb {
+  width: 12px; height: 12px; border: 0; border-radius: 50%; background: var(--accent); cursor: pointer;
+}
 
 /* Titulek pod přehrávačem — editorial */
 .px-nowmeta {
