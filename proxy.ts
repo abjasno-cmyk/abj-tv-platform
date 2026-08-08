@@ -22,6 +22,20 @@ function sanitizeEnvValue(value?: string): string | undefined {
 }
 
 export async function proxy(request: NextRequest) {
+  // Staging/beta deployment (dev.proudx.cz): celý web za HTTP Basic Auth.
+  // Aktivuje se jen nastavením DEV_BASIC_AUTH_PASSWORD na deploymentu;
+  // produkce a preview bez env běží beze změny. /api/ vynecháno (crony).
+  const devPassword = process.env.DEV_BASIC_AUTH_PASSWORD;
+  if (devPassword && !request.nextUrl.pathname.startsWith("/api/")) {
+    const expected = `Basic ${btoa(`proudx:${devPassword}`)}`;
+    if (request.headers.get("authorization") !== expected) {
+      return new NextResponse("Authentication required", {
+        status: 401,
+        headers: { "WWW-Authenticate": 'Basic realm="ProudX dev"' },
+      });
+    }
+  }
+
   // Stránky vypnutých modulů nesmí být na této vertikále dosažitelné.
   // ponytail: plaintext 404 stačí — hezčí 404 stránka až s brand fází.
   if (!isPageAllowed(request.nextUrl.pathname)) {
