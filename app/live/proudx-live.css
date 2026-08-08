@@ -130,7 +130,7 @@
 }
 /* react-youtube renderuje <div><iframe/></div> — roztáhnout MUSÍ i ten wrapper
    div, jinak je iframe 100 % z nulové výšky a zkolabuje. Ovládání/scrub ven. */
-.px-player > div:not(.px-ctrls):not(.px-scrub),
+.px-player > div:not(.hero-ctrls):not(.hero-player-bar),
 .px-player iframe {
   position: absolute;
   inset: 0;
