@@ -89,11 +89,14 @@
   }
   :root[data-tenant="proudx"] .hf .feature-copy {
     text-align: center;
-    max-width: 40ch;
+    width: min(92%, 40rem);
+    max-width: none;
     margin: 0 auto;
+    align-items: center;
   }
   :root[data-tenant="proudx"] .hf .feature-copy h1 {
-    font-size: clamp(28px, 3.2vw, 46px);
+    font-size: clamp(24px, 2.4vw, 36px);
+    width: 100%;
   }
 }
 
@@ -131,10 +134,16 @@
   backdrop-filter: blur(8px);
   font-family: var(--px-sans);
   font-weight: 700;
-  font-size: 0.62rem !important;
+  font-size: 0 !important;
   letter-spacing: 0.14em;
   line-height: 1;
   box-shadow: none;
+}
+:root[data-tenant="proudx"] .hf .live-badge::after {
+  content: "ŽIVĚ";
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  color: #fff;
 }
 :root[data-tenant="proudx"] .hf .live-badge::before {
   content: "";
