@@ -1,4 +1,6 @@
 import { VideaVideoList } from "@/components/viewer/VideaVideoList";
+import ProudXVidea from "@/components/proudx/ProudXVidea";
+import { TENANT } from "@/lib/tenant";
 import { loadStructuredFeedPayload, type FeedVideo } from "@/lib/dayOverview";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +18,10 @@ async function loadVideos(): Promise<FeedVideo[]> {
 // Nejnovější videa — karta = datum (měsíc + velký den) + náhled + popis.
 export default async function VideaPage() {
   const videos = await loadVideos();
+
+  if (TENANT.id === "proudx") {
+    return <ProudXVidea videos={videos} />;
+  }
 
   return (
     <div className="vx-live vx-sub">
