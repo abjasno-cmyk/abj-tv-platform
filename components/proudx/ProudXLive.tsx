@@ -8,10 +8,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { PlayoutStage } from "@/components/abj/playout/PlayoutStage";
 import { usePlayoutLoop } from "@/components/abj/playout/usePlayoutLoop";
+import { HeroPlayerBar, type PlaybackSpeed } from "@/components/abj/playout/HeroPlayerBar";
 import { clampSeekSeconds } from "@/lib/playerTime";
 import type { PlayerHandle, PlayoutSurface } from "@/lib/playout/types";
 import type { DayProgram, ProgramItem } from "@/lib/epg-types";
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
+import { ProudXHeader } from "@/components/proudx/ProudXHeader";
 
 import "@/app/live/proudx-live.css";
 
@@ -41,24 +43,6 @@ function initials(name: string): string {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-function formatClock(d: Date): string {
-  return new Intl.DateTimeFormat("cs-CZ", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Europe/Prague",
-  }).format(d);
-}
-
-function formatTime(sec: number): string {
-  const s = Math.max(0, Math.floor(sec));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const r = s % 60;
-  const mm = h > 0 ? String(m).padStart(2, "0") : String(m);
-  return `${h > 0 ? `${h}:` : ""}${mm}:${String(r).padStart(2, "0")}`;
-}
-
-const SPEEDS = [1, 1.25, 1.5, 1.75, 2] as const;
 
 function ChannelAvatar({ name, url }: { name: string; url: string | null }) {
   const [failed, setFailed] = useState(false);
@@ -88,15 +72,8 @@ export default function ProudXLive({
   const [playing, setPlaying] = useState(true);
   const [playerCurrentTime, setPlayerCurrentTime] = useState(0);
   const [playerDuration, setPlayerDuration] = useState(0);
-  const [playbackRate, setPlaybackRate] = useState<number>(1);
-  const [clock, setClock] = useState<string>("");
-
-  useEffect(() => {
-    const tick = () => setClock(formatClock(new Date()));
-    tick();
-    const id = window.setInterval(tick, 15_000);
-    return () => window.clearInterval(id);
-  }, []);
+  const [playbackRate, setPlaybackRate] = useState<PlaybackSpeed>(1);
+  const [barExpanded, setBarExpanded] = useState(false);
 
   const offset = Math.max(0, Math.floor(startSeconds));
   const { surface: playoutSurface, signalEnded } = usePlayoutLoop({
@@ -210,43 +187,25 @@ export default function ProudXLive({
     [applyAudio],
   );
 
-  const cycleSpeed = useCallback(() => {
-    const idx = SPEEDS.indexOf(playbackRate as (typeof SPEEDS)[number]);
-    const next = SPEEDS[(idx + 1) % SPEEDS.length];
+  const changeSpeed = useCallback((next: PlaybackSpeed) => {
     setPlaybackRate(next);
     try {
       playerRef.current?.setPlaybackRate?.(next);
     } catch {
       /* live streamy rychlost neberou */
     }
-  }, [playbackRate]);
+  }, []);
 
   const programItems = useMemo(
     () => days.flatMap((d) => d.items).filter((i) => Boolean(i.videoId)).slice(0, 40),
     [days],
   );
 
-  const progressPct = playerDuration > 0 ? Math.min(100, (playerCurrentTime / playerDuration) * 100) : 0;
-  const isVod = controlsEnabled && !isLive;
-
   return (
     <div className="px" data-live={isLive ? "1" : "0"}>
       <div className="px-bgglow" aria-hidden="true" />
 
-      <header className="px-top">
-        <a className="px-brand" href="/live" aria-label="ProudX">
-          Proud<span>X</span>
-        </a>
-        <nav className="px-nav" aria-label="Navigace">
-          <a className="is-active" href="/live">Živě</a>
-          <a href="/videa">Videa</a>
-        </nav>
-        <div className="px-status">
-          <span className="px-livedot" aria-hidden="true" />
-          <span className="px-status-label">Živě</span>
-          <span className="px-clock" suppressHydrationWarning>{clock}</span>
-        </div>
-      </header>
+      <ProudXHeader active="live" />
 
       <main className="px-main">
         {/* STAGE */}
@@ -270,73 +229,40 @@ export default function ProudXLive({
               </button>
             )}
 
-            {/* Ovládací lišta — play · čas/scrubber · rychlost · hlasitost · fullscreen */}
-            <div className="px-bar" data-mode={isVod ? "vod" : "live"}>
-              <button type="button" className="px-bar-btn" onClick={togglePlay} aria-label={playing ? "Pozastavit" : "Přehrát"}>
+            {/* Stejné ovládání jako VEROX: 3 kruhová tlačítka + HeroPlayerBar */}
+            <div className="hero-ctrls">
+              <button type="button" className="ctrl-play" onClick={togglePlay} aria-label={playing ? "Pozastavit" : "Přehrát"}>
                 {playing ? (
-                  <svg viewBox="0 0 24 24"><rect x="7" y="5" width="3.4" height="14" rx="1" /><rect x="13.6" y="5" width="3.4" height="14" rx="1" /></svg>
+                  <svg viewBox="0 0 24 24"><rect x="7" y="5" width="3.6" height="14" rx="1" /><rect x="13.4" y="5" width="3.6" height="14" rx="1" /></svg>
                 ) : (
                   <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
                 )}
               </button>
-
-              {isVod && playerDuration > 0 ? (
-                <>
-                  <span className="px-bar-time">{formatTime(playerCurrentTime)}</span>
-                  <div
-                    className="px-bar-scrub"
-                    role="slider"
-                    aria-label="Pozice ve videu"
-                    aria-valuemin={0}
-                    aria-valuemax={playerDuration}
-                    aria-valuenow={playerCurrentTime}
-                    tabIndex={0}
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      seekTo(((e.clientX - rect.left) / rect.width) * playerDuration);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "ArrowLeft") seekTo(playerCurrentTime - 10);
-                      else if (e.key === "ArrowRight") seekTo(playerCurrentTime + 10);
-                    }}
-                  >
-                    <span className="px-bar-scrub-fill" style={{ width: `${progressPct}%` }}>
-                      <span className="px-bar-scrub-knob" />
-                    </span>
-                  </div>
-                  <span className="px-bar-time px-bar-time--dur">{formatTime(playerDuration)}</span>
-                </>
-              ) : (
-                <span className="px-bar-liveflag"><span className="px-onair-dot" />Živě · právě běží</span>
-              )}
-
-              <button type="button" className="px-bar-btn px-bar-speed" onClick={cycleSpeed} aria-label="Rychlost přehrávání">
-                {playbackRate}×
-              </button>
-
-              <div className="px-bar-vol">
-                <button type="button" className="px-bar-btn" onClick={toggleMute} aria-label={muted ? "Zapnout zvuk" : "Ztlumit"} aria-pressed={muted}>
-                  {muted || volume === 0 ? (
-                    <svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z" /><path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" /></svg>
-                  ) : (
-                    <svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z" /><path d="M16 8.6a4 4 0 0 1 0 6.8M18.6 6a7 7 0 0 1 0 12" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" /></svg>
-                  )}
-                </button>
-                <input
-                  className="px-bar-vol-slider"
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={muted ? 0 : volume}
-                  onChange={(e) => changeVolume(Number(e.target.value))}
-                  aria-label="Hlasitost"
-                />
-              </div>
-
-              <button type="button" className="px-bar-btn" onClick={toggleFullscreen} aria-label="Celá obrazovka">
+              <button type="button" className="ctrl-fs" onClick={toggleFullscreen} aria-label="Celá obrazovka">
                 <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
               </button>
+              <button type="button" className={`ctrl-sound${muted ? " is-muted" : ""}`} onClick={toggleMute} aria-label={muted ? "Zapnout zvuk" : "Vypnout zvuk"} aria-pressed={muted}>
+                {muted ? (
+                  <svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" /><path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" /></svg>
+                ) : (
+                  <svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" /><path d="M16 8.6a4 4 0 0 1 0 6.8M18.6 6a7 7 0 0 1 0 12" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" /></svg>
+                )}
+              </button>
             </div>
+            <HeroPlayerBar
+              enabled={controlsEnabled}
+              expanded={barExpanded}
+              onExpandedChange={setBarExpanded}
+              currentTime={playerCurrentTime}
+              duration={playerDuration}
+              onSeek={seekTo}
+              playbackRate={playbackRate}
+              onPlaybackRateChange={changeSpeed}
+              volume={volume}
+              muted={muted}
+              onVolumeChange={changeVolume}
+              onMuteToggle={toggleMute}
+            />
           </div>
 
           <div className="px-nowmeta">
