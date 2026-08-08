@@ -5,6 +5,7 @@ import Script from "next/script";
 import "./globals.css";
 import "./live/verox.css";
 import "./live/handoff.css";
+import "./live/tenant-proudx.css";
 import { ABJNav } from "@/components/abj/Nav";
 import { LegalFooter } from "@/components/abj/LegalFooter";
 import { SitePresenceReporter } from "@/components/abj/SitePresenceReporter";
@@ -65,8 +66,6 @@ export default function RootLayout({ children }: RootLayoutProps) {
       className={`${montserrat.variable} ${robotoCondensed.variable}`}
       data-vercel-env={process.env.VERCEL_ENV ?? ""}
       data-tenant={TENANT.id}
-      // Akcentní barva vertikály přepisuje --vx-orange (definované v verox.css :root).
-      style={{ ["--vx-orange" as string]: TENANT.brandColor }}
     >
       <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
         {isProductionDeployment ? (

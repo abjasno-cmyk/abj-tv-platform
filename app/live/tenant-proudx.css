@@ -1,0 +1,29 @@
+/*
+ * ProudX vizuální téma. VŠE je scoped pod :root[data-tenant="proudx"], takže
+ * na VEROXu (data-tenant="verox") se žádné pravidlo neuplatní — nulový dopad.
+ * Importováno v layoutu ZA verox.css/handoff.css, aby přebilo jejich hodnoty.
+ *
+ * Kryje jen barvy na live+VOD ploše (jediné stránky ProudX MVP). Hluboké
+ * oranžové v CSS vypnutých modulů (noviny/názory/zeď/studio) se nevykreslí.
+ */
+
+:root[data-tenant="proudx"] {
+  --vx-orange: #1c64f2;
+  --abj-red: #1c64f2;
+  --abj-red-dim: rgba(28, 100, 242, 0.14);
+}
+
+/* Přepis-videa pilulka — natvrdo oranžová v verox.css:107 */
+:root[data-tenant="proudx"] .vx-transcript-label {
+  border-color: rgba(28, 100, 242, 0.45);
+  background: rgba(28, 100, 242, 0.1);
+  color: #1c50c0;
+}
+:root[data-tenant="proudx"] .vx-transcript-label:hover {
+  background: rgba(28, 100, 242, 0.18);
+}
+
+/* Uložit-video pilulka (stav uloženo) — natvrdo oranžové pozadí v handoff.css:1018 */
+:root[data-tenant="proudx"] .hf .vx-save-video.is-saved {
+  background: rgba(28, 100, 242, 0.08);
+}
