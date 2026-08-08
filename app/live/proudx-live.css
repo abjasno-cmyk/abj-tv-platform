@@ -128,7 +128,16 @@
     0 40px 90px -40px rgba(106, 140, 255, 0.45),
     0 30px 60px -30px rgba(0, 0, 0, 0.8);
 }
-.px-player :where(iframe, .playout-embed) { border: 0; width: 100%; height: 100%; }
+/* react-youtube renderuje <div><iframe/></div> — roztáhnout MUSÍ i ten wrapper
+   div, jinak je iframe 100 % z nulové výšky a zkolabuje. Ovládání/scrub ven. */
+.px-player > div:not(.px-ctrls):not(.px-scrub),
+.px-player iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
 /* Pohltí YouTube hover UI — jediné ovládání jsou naše tlačítka */
 .px-guard {
   position: absolute; inset: 0; z-index: 2;
