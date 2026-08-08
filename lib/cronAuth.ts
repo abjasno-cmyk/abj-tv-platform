@@ -20,7 +20,12 @@ export function isCronAuthorized(request: Request): boolean {
   const secrets = [process.env.PROGRAM_CACHE_CRON_SECRET, process.env.CRON_SECRET]
     .map((value) => value?.trim())
     .filter((value): value is string => Boolean(value));
-  if (secrets.length === 0) return true;
+  if (secrets.length === 0) {
+    // Fail-CLOSED na jakémkoli Vercel deploymentu: bez nakonfigurovaného secretu
+    // by jinak byly service-role/YouTube cron operace veřejně spustitelné.
+    // Lokální vývoj (bez VERCEL) zůstává fail-open kvůli pohodlí.
+    return process.env.VERCEL !== "1";
+  }
 
   const authHeader = request.headers.get("authorization");
   const bearer = authHeader?.startsWith("Bearer ") ? authHeader.slice("Bearer ".length).trim() : null;

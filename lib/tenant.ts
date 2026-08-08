@@ -107,3 +107,26 @@ export function isPageAllowed(pathname: string, tenant: TenantConfig = TENANT): 
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 }
+
+// API cesty patřící jednotlivým modulům. Když je modul na vertikále vypnutý,
+// jeho API routy vrátí 404 — jinak by šly přímo na sdílenou DB (část přes
+// service_role, tedy i zápisy), přestože stránky modulu jsou nedostupné.
+const MODULE_API_PREFIXES: Partial<Record<ModuleKey, readonly string[]>> = {
+  noviny: ["/api/noviny", "/api/admin/noviny"],
+  nazory: ["/api/nazory"],
+  komunita: ["/api/wall", "/api/abj-x", "/api/admin/wall", "/api/viewer"],
+  studio: ["/api/studio", "/api/admin/sources"],
+  auth: ["/api/auth"],
+};
+
+/** API gating pro proxy: 404 pro API cesty vypnutých modulů této vertikály. */
+export function isApiPathAllowed(pathname: string, tenant: TenantConfig = TENANT): boolean {
+  if (!pathname.startsWith("/api/")) return true;
+  for (const [mod, prefixes] of Object.entries(MODULE_API_PREFIXES)) {
+    if (moduleEnabled(mod as ModuleKey, tenant)) continue;
+    if (prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+      return false;
+    }
+  }
+  return true;
+}

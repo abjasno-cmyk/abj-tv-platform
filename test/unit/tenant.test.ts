@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isPageAllowed, moduleEnabled, resolveTenant } from "@/lib/tenant";
+import { isApiPathAllowed, isPageAllowed, moduleEnabled, resolveTenant } from "@/lib/tenant";
 
 describe("resolveTenant", () => {
   it("bez env vrací VEROX se všemi moduly (současná produkce beze změny)", () => {
@@ -76,5 +76,49 @@ describe("isPageAllowed", () => {
   it("prefix match je hranatý: /videa/x ano, /videax ne", () => {
     expect(isPageAllowed("/videa/nejnovejsi", proudx)).toBe(true);
     expect(isPageAllowed("/videax", proudx)).toBe(false);
+  });
+});
+
+describe("isApiPathAllowed", () => {
+  const verox = resolveTenant("verox");
+  const proudx = resolveTenant("proudx");
+
+  it("VEROX povoluje všechny API cesty", () => {
+    for (const p of ["/api/wall/posts", "/api/nazory/articles", "/api/noviny/import", "/api/studio/sources"]) {
+      expect(isApiPathAllowed(p, verox)).toBe(true);
+    }
+  });
+
+  it("ProudX blokuje API vypnutých modulů (i zápisové service_role cesty)", () => {
+    for (const p of [
+      "/api/wall/posts",
+      "/api/wall/posts/abc/react",
+      "/api/abj-x/comments",
+      "/api/nazory/articles",
+      "/api/noviny/import",
+      "/api/admin/noviny/sources",
+      "/api/admin/wall/posts",
+      "/api/studio/control",
+      "/api/auth/bootstrap",
+      "/api/viewer/comments",
+    ]) {
+      expect(isApiPathAllowed(p, proudx)).toBe(false);
+    }
+  });
+
+  it("ProudX povoluje API potřebné pro live+VOD", () => {
+    for (const p of [
+      "/api/replit/program/now",
+      "/api/program/v3/import-feed",
+      "/api/live/channels",
+      "/api/transcript/abc123",
+      "/api/analytics/events",
+    ]) {
+      expect(isApiPathAllowed(p, proudx)).toBe(true);
+    }
+  });
+
+  it("nekolizní prefix: /api/wallet není /api/wall", () => {
+    expect(isApiPathAllowed("/api/wallet/x", proudx)).toBe(true);
   });
 });
