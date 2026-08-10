@@ -192,6 +192,7 @@
 .px .hero-player-toggle:hover { border-color: var(--accent); background: var(--accent-soft); }
 .px .hero-player-toggle-meta { margin-left: auto; font-weight: 600; opacity: 0.9; white-space: nowrap; }
 .px .hero-player-toggle-chevron { font-size: 0.85rem; line-height: 1; }
+.px .hero-player-toggle-text--mobile { display: none; }
 .px .hero-player-pick-video {
   flex: 0 0 auto; border: 0; background: var(--accent); color: #0a0b10;
   border-radius: 9px; padding: 0.45rem 0.75rem; font-size: 0.78rem; font-weight: 700;
@@ -416,4 +417,7 @@
 @media (max-width: 640px) {
   .px-nav { display: none; }
   .px-title { font-size: clamp(24px, 7vw, 34px); }
+  .px .hero-player-toggle-text--desktop { display: none; }
+  .px .hero-player-toggle-text--mobile { display: inline; }
+  .px .hero-player-pick-video { display: none; }
 }
