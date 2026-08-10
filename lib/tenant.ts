@@ -23,6 +23,10 @@ export type TenantConfig = {
   title: string;
   description: string;
   logoSrc: string;
+  /** Favicon (SVG) — nahrazuje dřívější file-convention app/icon.svg. */
+  iconSrc: string;
+  /** OG/twitter obrázek; null = bez og:image (dokud značka nedodá vizuál). */
+  ogImageSrc: string | null;
   /** Akcentní barva značky — přepisuje CSS proměnnou --vx-orange. */
   brandColor: string;
   modules: Record<ModuleKey, boolean>;
@@ -44,6 +48,8 @@ const VEROX: TenantConfig = {
   description:
     "Mainstreamový detox — živé vysílání, videa a souhrny v kostce z alternativních kanálů.",
   logoSrc: "/design/brand/verox-logo.png",
+  iconSrc: "/design/brand/verox-icon.svg",
+  ogImageSrc: "/design/brand/verox-og.png",
   brandColor: "#ff6600",
   modules: {
     noviny: true,
@@ -65,6 +71,8 @@ const PROUDX: TenantConfig = {
   title: "ProudX • Živé vysílání a videa",
   description: "ProudX — nepřetržitý videoproud a katalog videí pro městské publikum.",
   logoSrc: "/design/brand/proudx-logo.svg",
+  iconSrc: "/design/brand/proudx-logo.svg",
+  ogImageSrc: null,
   brandColor: "#1c64f2",
   modules: {
     noviny: false,

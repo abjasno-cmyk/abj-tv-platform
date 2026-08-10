@@ -15,22 +15,28 @@ import { EditorialEventDebugPanel } from "@/components/dev/EditorialEventDebugPa
 import { CANONICAL_HOST, SITE_URL } from "@/lib/site";
 import { TENANT } from "@/lib/tenant";
 
-// Next.js automaticky doplní og:image / twitter:image z app/opengraph-image.png
-// a app/twitter-image.png (rozlišené přes metadataBase).
+// Ikony a og/twitter obrázky jdou z tenant configu (ne z file-convention
+// app/icon.svg apod.), aby vertikály nesdílely cizí brand assety.
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: TENANT.title,
   description: TENANT.description,
+  icons: {
+    icon: TENANT.iconSrc,
+    apple: TENANT.iconSrc,
+  },
   openGraph: {
     type: "website",
     siteName: TENANT.siteName,
     title: TENANT.title,
     description: TENANT.description,
+    ...(TENANT.ogImageSrc ? { images: [TENANT.ogImageSrc] } : {}),
   },
   twitter: {
     card: "summary_large_image",
     title: TENANT.title,
     description: TENANT.description,
+    ...(TENANT.ogImageSrc ? { images: [TENANT.ogImageSrc] } : {}),
   },
 };
 
@@ -60,6 +66,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
   // *-git-design-visual-refresh-*.vercel.app) must stay on their own host so
   // visual changes can be reviewed before merging to main.
   const isProductionDeployment = process.env.VERCEL_ENV === "production";
+  // Oba inline skripty jsou VEROX-specifické (canonical host, legacy auth
+  // cookie) — na jiné vertikále by jen prozrazovaly společný codebase.
+  const isVeroxTenant = TENANT.id === "verox";
   return (
     <html
       lang="cs"
@@ -68,7 +77,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
       data-tenant={TENANT.id}
     >
       <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
-        {isProductionDeployment ? (
+        {isProductionDeployment && isVeroxTenant ? (
           <Script id="verox-canonical-host-guard" strategy="beforeInteractive">
             {`
             (function () {
@@ -94,8 +103,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
           `}
           </Script>
         ) : null}
-        <Script id="verox-legacy-token-cookie-cleanup" strategy="beforeInteractive">
-          {`
+        {isVeroxTenant ? (
+          <Script id="verox-legacy-token-cookie-cleanup" strategy="beforeInteractive">
+            {`
             (function () {
               try {
                 // F-C2 migration: actively expire the legacy non-HttpOnly
@@ -107,7 +117,8 @@ export default function RootLayout({ children }: RootLayoutProps) {
               }
             })();
           `}
-        </Script>
+          </Script>
+        ) : null}
         <SitePresenceReporter />
         <AuthProvider vercelEnv={process.env.VERCEL_ENV}>
           <TranscriptStatesProvider>
