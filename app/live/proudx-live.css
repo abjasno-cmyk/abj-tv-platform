@@ -331,6 +331,11 @@
   transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
 }
 .pxc:hover { border-color: var(--accent); background: var(--bg-2); transform: translateY(-2px); }
+.pxc.is-active { border-color: var(--accent); background: var(--accent-soft); }
+
+/* Rozbalený kanál — panel s videi pod gridem (karty = stejné .px-card jako program) */
+.px-channel-detail { margin-top: 18px; display: flex; flex-direction: column; gap: 12px; }
+.px-channel-note { font-size: 0.9rem; color: var(--muted); margin: 0; }
 .pxc-avatar {
   width: 42px; height: 42px; flex: 0 0 42px; border-radius: 50%;
   object-fit: cover; background: var(--bg-2);

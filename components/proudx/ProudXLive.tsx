@@ -75,6 +75,76 @@ export default function ProudXLive({
   const [playbackRate, setPlaybackRate] = useState<PlaybackSpeed>(1);
   const [barExpanded, setBarExpanded] = useState(false);
 
+  // Rozbalený kanál — jako VEROX ChannelDirectory: klik = panel s videi
+  // kanálu, klik na video = přehrát v hlavním okně. Když payload videa nemá,
+  // dotáhnou se přes /api/channel-latest (sdílená routa s VEROXem).
+  const [activeChannelName, setActiveChannelName] = useState<string | null>(null);
+  const [fetchedByChannel, setFetchedByChannel] = useState<Record<string, LiveChannelVideo[]>>({});
+  const [channelLoading, setChannelLoading] = useState<string | null>(null);
+  const [channelError, setChannelError] = useState<Record<string, string>>({});
+
+  const loadChannelVideos = useCallback(
+    async (channel: LiveChannelGroup) => {
+      const key = channel.channelName;
+      if (channel.videos.length > 0) return;
+      if (Object.prototype.hasOwnProperty.call(fetchedByChannel, key)) return;
+      if (!channel.channelId && !channel.channelUrl && !key.trim()) return;
+
+      setChannelLoading(key);
+      setChannelError((prev) => ({ ...prev, [key]: "" }));
+      try {
+        const params = new URLSearchParams();
+        if (channel.channelUrl) params.set("channelUrl", channel.channelUrl);
+        else if (channel.channelId) params.set("channelId", channel.channelId);
+        params.set("channelName", key);
+        params.set("limit", "6");
+        const response = await fetch(`/api/channel-latest?${params.toString()}`, { cache: "no-store" });
+        const payload = (await response.json().catch(() => ({}))) as {
+          videos?: Array<{ videoId?: string; title?: string; thumbnail?: string; publishedAt?: string }>;
+          error?: string;
+        };
+        if (!response.ok) throw new Error(payload.error ?? `HTTP ${response.status}`);
+        const videos = (payload.videos ?? [])
+          .map((v): LiveChannelVideo | null => {
+            const vid = v.videoId?.trim();
+            const vtitle = v.title?.trim();
+            if (!vid || !vtitle) return null;
+            return {
+              videoId: vid,
+              title: vtitle,
+              thumbnail: v.thumbnail?.trim() || null,
+              publishedAt: v.publishedAt?.trim() || new Date(0).toISOString(),
+            };
+          })
+          .filter((v): v is LiveChannelVideo => Boolean(v));
+        setFetchedByChannel((prev) => ({ ...prev, [key]: videos }));
+        if (videos.length === 0) {
+          setChannelError((prev) => ({ ...prev, [key]: "Kanál momentálně neposkytuje dostupná videa." }));
+        }
+      } catch (error) {
+        setFetchedByChannel((prev) => ({ ...prev, [key]: [] }));
+        setChannelError((prev) => ({
+          ...prev,
+          [key]: error instanceof Error ? error.message : "Nepodařilo se načíst videa.",
+        }));
+      } finally {
+        setChannelLoading((prev) => (prev === key ? null : prev));
+      }
+    },
+    [fetchedByChannel],
+  );
+
+  const activeChannel = useMemo(
+    () => channels.find((ch) => ch.channelName === activeChannelName) ?? null,
+    [channels, activeChannelName],
+  );
+  const activeChannelVideos = activeChannel
+    ? (activeChannel.videos.length > 0
+        ? activeChannel.videos
+        : (fetchedByChannel[activeChannel.channelName] ?? [])
+      ).slice(0, 6)
+    : [];
+
   const offset = Math.max(0, Math.floor(startSeconds));
   const { surface: playoutSurface, signalEnded } = usePlayoutLoop({
     enabled: isLive,
@@ -318,10 +388,11 @@ export default function ProudXLive({
                 <button
                   key={ch.channelName}
                   type="button"
-                  className="pxc"
+                  className={`pxc${activeChannelName === ch.channelName ? " is-active" : ""}`}
+                  aria-expanded={activeChannelName === ch.channelName}
                   onClick={() => {
-                    const first = ch.videos[0];
-                    if (first) onSelectChannelVideo({ channelName: ch.channelName, video: first });
+                    setActiveChannelName((prev) => (prev === ch.channelName ? null : ch.channelName));
+                    if (ch.videos.length === 0) void loadChannelVideos(ch);
                   }}
                 >
                   <ChannelAvatar name={ch.channelName} url={ch.avatarUrl} />
@@ -329,6 +400,49 @@ export default function ProudXLive({
                 </button>
               ))}
             </div>
+
+            {activeChannel ? (
+              <div className="px-channel-detail">
+                <p className="px-kicker">
+                  {activeChannel.channelName}
+                  <span> · nejnovější videa</span>
+                </p>
+                {channelLoading === activeChannel.channelName ? (
+                  <p className="px-channel-note">Načítám nejnovější videa kanálu…</p>
+                ) : activeChannelVideos.length > 0 ? (
+                  <div className="px-rail">
+                    {activeChannelVideos.map((video) => (
+                      <button
+                        key={`${activeChannel.channelName}-${video.videoId}`}
+                        type="button"
+                        className="px-card"
+                        onClick={() =>
+                          onSelectChannelVideo({ channelName: activeChannel.channelName, video })
+                        }
+                      >
+                        <span className="px-card-thumb">
+                          {thumbFor(video) ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={thumbFor(video)} alt="" loading="lazy" />
+                          ) : null}
+                          <span className="px-card-play" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                          </span>
+                        </span>
+                        <span className="px-card-meta">
+                          <span className="px-card-ch">{activeChannel.channelName}</span>
+                          <span className="px-card-title">{video.title}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="px-channel-note">
+                    {channelError[activeChannel.channelName] || "Kanál momentálně neposkytuje dostupná videa."}
+                  </p>
+                )}
+              </div>
+            ) : null}
           </section>
         ) : null}
       </main>
