@@ -18,6 +18,10 @@ import { CANONICAL_HOST, SITE_URL } from "@/lib/site";
 
 // Next.js automaticky doplní og:image / twitter:image z app/opengraph-image.png
 // a app/twitter-image.png (rozlišené přes metadataBase).
+// Google Search Console ověření vlastnictví domény (vyžaduje OAuth brand
+// verifikace). Token per deployment přes env.
+const googleSiteVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
+
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getRequestLocale();
   const dictionary = getDictionary(locale);
@@ -27,6 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(siteUrl),
     title: dictionary.metadata.title,
     description: dictionary.metadata.description,
+    ...(googleSiteVerification ? { verification: { google: googleSiteVerification } } : {}),
     openGraph: {
       type: "website",
       siteName: "VEROX",
