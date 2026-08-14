@@ -7,14 +7,16 @@ export function LegalFooter({ locale = LOCALE_CS }: { locale?: VeroxLocale }) {
   const dictionary = getDictionary(locale);
 
   return (
-    <footer className="border-t border-[rgba(17,17,17,0.1)] bg-white/95 px-4 py-3">
-      {/* Popis služby a účelu přihlášení — vyžaduje Google OAuth verifikace
-          (home page must explain the purpose of your app + app name match). */}
-      <p className="mx-auto mb-2 w-full max-w-6xl text-center text-[11px] leading-relaxed text-abj-text2">
-        VEROX je internetová televize — živé vysílání, videa a souhrny z nezávislých kanálů na
-        jednom místě. Přihlášení (e-mailem či přes Google) slouží k vytvoření bezplatného
-        diváckého účtu: komentáře, oblíbené pořady a pokračování ve sledování.
-      </p>
+    <footer className="border-t border-[rgba(17,17,17,0.1)] bg-white/95 px-4 pb-4 pt-6">
+      {/* Viditelný popis služby a účelu přihlášení — Google OAuth verifikace
+          vyžaduje, aby homepage srozumitelně vysvětlila, co aplikace dělá
+          (drobný text v patičce reviewerům nestačil). */}
+      <section className="mx-auto mb-5 w-full max-w-3xl text-center">
+        <h2 className="text-sm font-black uppercase tracking-[0.14em] text-[#111111]">
+          {dictionary.footer.aboutTitle}
+        </h2>
+        <p className="mt-2 text-[14px] leading-relaxed text-[#3a3a3a]">{dictionary.footer.aboutText}</p>
+      </section>
       <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-2 text-[11px] text-abj-text2">
         <Link href="/privacy" className="hover:text-abj-text1">
           {dictionary.footer.privacy}

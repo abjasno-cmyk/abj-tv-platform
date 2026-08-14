@@ -24,6 +24,8 @@ type HeaderDictionary = {
 };
 
 type FooterDictionary = {
+  aboutTitle: string;
+  aboutText: string;
   privacy: string;
   terms: string;
   dataDeletion: string;
@@ -153,6 +155,9 @@ const cs: SiteDictionary = {
     },
   },
   footer: {
+    aboutTitle: "Co je VEROX",
+    aboutText:
+      "VEROX je nezávislá internetová televize — mainstreamový detox. Nonstop živý program a videa z desítek nezávislých českých a slovenských kanálů, zdarma a bez registrace. S bezplatným diváckým účtem navíc můžete komentovat, ukládat si oblíbené pořady a pokračovat ve sledování tam, kde jste přestali.",
     privacy: "Ochrana osobních údajů",
     terms: "Podmínky užívání",
     dataDeletion: "Smazání účtu",
@@ -278,6 +283,9 @@ const en: SiteDictionary = {
     },
   },
   footer: {
+    aboutTitle: "What is VEROX",
+    aboutText:
+      "VEROX is an independent internet television — a mainstream detox. A nonstop live programme and videos from dozens of independent Czech and Slovak channels, free and with no registration required. With a free viewer account you can also comment, save favourite shows and resume watching where you left off.",
     privacy: "Privacy policy",
     terms: "Terms of use",
     dataDeletion: "Account deletion",
