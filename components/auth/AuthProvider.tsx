@@ -448,7 +448,8 @@ export function AuthProvider({
         onClose={closeLoginModal}
         onOAuth={handleOAuth}
         onEmail={handleEmail}
-        enableFacebook
+        // ponytail: docasne — Meta app ceka na overeni totoznosti klientek
+        enableFacebook={false}
         onPasswordSignIn={handlePasswordSignIn}
         onPasswordSignUp={handlePasswordSignUp}
         onPasswordReset={handlePasswordReset}
