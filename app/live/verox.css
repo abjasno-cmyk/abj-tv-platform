@@ -1401,7 +1401,9 @@
 
   /* Můj Verox — texty v bílé části mimo oranžový pruh */
   .vx-live.vx-sub.muj-verox-page .mv-author-studio,
-  .vx-live.vx-sub.muj-verox-page .mv-library {
+  .vx-live.vx-sub.muj-verox-page .mv-library,
+  .vx-live.vx-sub.muj-verox-page .mv,
+  .vx-live.vx-sub.muj-verox-page .mv-account-delete {
     padding-left: calc(15% + 12px);
     padding-right: clamp(12px, 2vw, 24px);
   }
