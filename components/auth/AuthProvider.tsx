@@ -371,6 +371,7 @@ export function AuthProvider({
         onClose={closeLoginModal}
         onOAuth={handleOAuth}
         onEmail={handleEmail}
+        enableFacebook
       />
     </AuthContext.Provider>
   );
