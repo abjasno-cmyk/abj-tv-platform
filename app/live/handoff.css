@@ -119,6 +119,20 @@
   color: var(--vx-orange);
   font-weight: 800;
 }
+/* Přihlášený stav: jméno se na hoveru přepne na šedé ODHLÁSIT (varování,
+   co klik udělá) — žádný confirm dialog. */
+.hf-nav a.login-link--signout .login-link-signout {
+  display: none;
+  color: var(--vx-nav-gray, #707070);
+}
+.hf-nav a.login-link--signout:hover .login-link-name,
+.hf-nav a.login-link--signout:focus-visible .login-link-name {
+  display: none;
+}
+.hf-nav a.login-link--signout:hover .login-link-signout,
+.hf-nav a.login-link--signout:focus-visible .login-link-signout {
+  display: inline;
+}
 .hf-lang-switch {
   display: inline-flex;
   align-items: center;
