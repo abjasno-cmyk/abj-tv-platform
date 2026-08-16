@@ -208,6 +208,12 @@ export function VeroxHeader({ active, showAudience = false, locale = LOCALE_CS }
             href="/muj-verox"
             onClick={(e) => {
               e.preventDefault();
+              // Bez potvrzení klik na vlastní jméno tiše odhlásil — divák často
+              // kliká jen ze zvědavosti, co jeho jméno v menu dělá.
+              const confirmed = window.confirm(
+                isEnglish ? "Do you really want to sign out?" : "Opravdu se chcete odhlásit?",
+              );
+              if (!confirmed) return;
               void signOut();
             }}
           >
