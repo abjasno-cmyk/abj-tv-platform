@@ -204,20 +204,20 @@ export function VeroxHeader({ active, showAudience = false, locale = LOCALE_CS }
         </Link>
         {isAuthenticated ? (
           <a
-            className="login-link"
+            className="login-link login-link--signout"
             href="/muj-verox"
             onClick={(e) => {
               e.preventDefault();
-              // Bez potvrzení klik na vlastní jméno tiše odhlásil — divák často
-              // kliká jen ze zvědavosti, co jeho jméno v menu dělá.
-              const confirmed = window.confirm(
-                isEnglish ? "Do you really want to sign out?" : "Opravdu se chcete odhlásit?",
-              );
-              if (!confirmed) return;
               void signOut();
             }}
           >
-            {profile?.display_name ? profile.display_name.toUpperCase() : dictionary.header.nav.signOut}
+            {/* Hover přepne jméno na šedé ODHLÁSIT — divák ví, co klik udělá. */}
+            <span className="login-link-name">
+              {profile?.display_name ? profile.display_name.toUpperCase() : dictionary.header.nav.signOut.toUpperCase()}
+            </span>
+            <span className="login-link-signout" aria-hidden="true">
+              {dictionary.header.nav.signOut.toUpperCase()}
+            </span>
           </a>
         ) : (
           <a
