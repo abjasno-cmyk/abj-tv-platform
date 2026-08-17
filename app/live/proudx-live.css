@@ -277,6 +277,9 @@
 .px-rail {
   display: flex; gap: 16px;
   overflow-x: auto; scroll-snap-type: x mandatory;
+  /* overflow-x:auto ořezává i svislý přesah — headroom pro hover lift (-4px)
+     karty, jinak se vršek thumbů při najetí usekne. */
+  padding-top: 8px; margin-top: -8px;
   padding-bottom: 10px;
   scrollbar-width: thin;
   scrollbar-color: var(--line-2) transparent;

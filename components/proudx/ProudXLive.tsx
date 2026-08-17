@@ -134,6 +134,13 @@ export default function ProudXLive({
     [fetchedByChannel],
   );
 
+  const channelDetailRef = useRef<HTMLDivElement | null>(null);
+  // Panel je NAD gridem — po kliku ze spodku gridu ho doscrolluj do zorneho pole.
+  useEffect(() => {
+    if (!activeChannelName) return;
+    channelDetailRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [activeChannelName]);
+
   const activeChannel = useMemo(
     () => channels.find((ch) => ch.channelName === activeChannelName) ?? null,
     [channels, activeChannelName],
@@ -383,26 +390,8 @@ export default function ProudXLive({
               <h2 id="px-channels">Kanály</h2>
               <span className="px-count">{channels.length}</span>
             </div>
-            <div className="px-channel-grid">
-              {channels.map((ch) => (
-                <button
-                  key={ch.channelName}
-                  type="button"
-                  className={`pxc${activeChannelName === ch.channelName ? " is-active" : ""}`}
-                  aria-expanded={activeChannelName === ch.channelName}
-                  onClick={() => {
-                    setActiveChannelName((prev) => (prev === ch.channelName ? null : ch.channelName));
-                    if (ch.videos.length === 0) void loadChannelVideos(ch);
-                  }}
-                >
-                  <ChannelAvatar name={ch.channelName} url={ch.avatarUrl} />
-                  <span className="pxc-name">{ch.channelName}</span>
-                </button>
-              ))}
-            </div>
-
             {activeChannel ? (
-              <div className="px-channel-detail">
+              <div className="px-channel-detail" ref={channelDetailRef}>
                 <p className="px-kicker">
                   {activeChannel.channelName}
                   <span> · nejnovější videa</span>
@@ -443,6 +432,24 @@ export default function ProudXLive({
                 )}
               </div>
             ) : null}
+            <div className="px-channel-grid">
+              {channels.map((ch) => (
+                <button
+                  key={ch.channelName}
+                  type="button"
+                  className={`pxc${activeChannelName === ch.channelName ? " is-active" : ""}`}
+                  aria-expanded={activeChannelName === ch.channelName}
+                  onClick={() => {
+                    setActiveChannelName((prev) => (prev === ch.channelName ? null : ch.channelName));
+                    if (ch.videos.length === 0) void loadChannelVideos(ch);
+                  }}
+                >
+                  <ChannelAvatar name={ch.channelName} url={ch.avatarUrl} />
+                  <span className="pxc-name">{ch.channelName}</span>
+                </button>
+              ))}
+            </div>
+
           </section>
         ) : null}
       </main>
