@@ -5,6 +5,7 @@ import Script from "next/script";
 import "./globals.css";
 import "./live/verox.css";
 import "./live/handoff.css";
+import "./live/tenant-proudx.css";
 import { ABJNav } from "@/components/abj/Nav";
 import { LegalFooter } from "@/components/abj/LegalFooter";
 import { SitePresenceReporter } from "@/components/abj/SitePresenceReporter";
@@ -15,33 +16,46 @@ import { getDictionary } from "@/lib/i18n/dictionary";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { LOCALE_EN } from "@/lib/i18n/config";
 import { CANONICAL_HOST, SITE_URL } from "@/lib/site";
+import { TENANT } from "@/lib/tenant";
 
-// Next.js automaticky doplní og:image / twitter:image z app/opengraph-image.png
-// a app/twitter-image.png (rozlišené přes metadataBase).
-// Google Search Console ověření vlastnictví domény (vyžaduje OAuth brand
-// verifikace). Token per deployment přes env.
+// Ikony a og/twitter obrázky jdou z tenant configu (ne z file-convention
+// app/icon.svg apod.), aby vertikály nesdílely cizí brand assety. Texty:
+// VEROX lokalizovaně přes dictionary (cs/en mirror), ostatní vertikály
+// z tenant configu. Google site verification token per deployment přes env.
 const googleSiteVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getRequestLocale();
   const dictionary = getDictionary(locale);
-  const siteUrl = locale === LOCALE_EN ? process.env.VEROX_EN_SITE_URL?.trim() || "https://www.veroxmed.com" : SITE_URL;
+  const isVerox = TENANT.id === "verox";
+  const siteUrl =
+    isVerox && locale === LOCALE_EN
+      ? process.env.VEROX_EN_SITE_URL?.trim() || "https://www.veroxmed.com"
+      : SITE_URL;
+  const title = isVerox ? dictionary.metadata.title : TENANT.title;
+  const description = isVerox ? dictionary.metadata.description : TENANT.description;
 
   return {
     metadataBase: new URL(siteUrl),
-    title: dictionary.metadata.title,
-    description: dictionary.metadata.description,
+    title,
+    description,
     ...(googleSiteVerification ? { verification: { google: googleSiteVerification } } : {}),
+    icons: {
+      icon: TENANT.iconSrc,
+      apple: TENANT.iconSrc,
+    },
     openGraph: {
       type: "website",
-      siteName: "VEROX",
-      title: dictionary.metadata.title,
-      description: dictionary.metadata.description,
+      siteName: TENANT.siteName,
+      title,
+      description,
+      ...(TENANT.ogImageSrc ? { images: [TENANT.ogImageSrc] } : {}),
     },
     twitter: {
       card: "summary_large_image",
-      title: dictionary.metadata.title,
-      description: dictionary.metadata.description,
+      title,
+      description,
+      ...(TENANT.ogImageSrc ? { images: [TENANT.ogImageSrc] } : {}),
     },
   };
 }
@@ -73,15 +87,19 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   // *-git-design-visual-refresh-*.vercel.app) must stay on their own host so
   // visual changes can be reviewed before merging to main.
   const isProductionDeployment = process.env.VERCEL_ENV === "production";
+  // Oba inline skripty jsou VEROX-specifické (canonical host, legacy auth
+  // cookie) — na jiné vertikále by jen prozrazovaly společný codebase.
+  const isVeroxTenant = TENANT.id === "verox";
   return (
     <html
       lang={locale}
       className={`${montserrat.variable} ${robotoCondensed.variable}`}
       data-vercel-env={process.env.VERCEL_ENV ?? ""}
+      data-tenant={TENANT.id}
       data-locale={locale}
     >
       <body className="min-h-screen bg-abj-main text-abj-text1 antialiased">
-        {isProductionDeployment ? (
+        {isProductionDeployment && isVeroxTenant ? (
           <Script id="verox-canonical-host-guard" strategy="beforeInteractive">
             {`
             (function () {
@@ -107,8 +125,9 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           `}
           </Script>
         ) : null}
-        <Script id="verox-legacy-token-cookie-cleanup" strategy="beforeInteractive">
-          {`
+        {isVeroxTenant ? (
+          <Script id="verox-legacy-token-cookie-cleanup" strategy="beforeInteractive">
+            {`
             (function () {
               try {
                 // F-C2 migration: actively expire the legacy non-HttpOnly
@@ -120,7 +139,8 @@ export default async function RootLayout({ children }: RootLayoutProps) {
               }
             })();
           `}
-        </Script>
+          </Script>
+        ) : null}
         <SitePresenceReporter />
         <AuthProvider vercelEnv={process.env.VERCEL_ENV}>
           <TranscriptStatesProvider>

@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 
 import { VeroxHeader, type VeroxNavKey } from "@/components/abj/VeroxHeader";
 import { LOCALE_CS, type VeroxLocale } from "@/lib/i18n/config";
+import { TENANT } from "@/lib/tenant";
 
 // Globální lišta pro subpages. Landing /live má vlastní hlavičku uvnitř
 // HomePage (stejná komponenta VeroxHeader), takže tam globální lišta ustoupí.
@@ -37,6 +38,13 @@ function normalizeEnglishPath(pathname: string): string {
 export function ABJNav({ locale = LOCALE_CS }: { locale?: VeroxLocale }) {
   const pathname = usePathname();
   const normalizedPathname = normalizeEnglishPath(pathname);
+
+  // ProudX stránky mají vlastní ProudXHeader — globální VEROX lišta by se
+  // renderovala nad nimi jako neviditelný blok (tenant CSS ji skryje vizuálně,
+  // ale výška zůstane → prázdný pruh nad obsahem).
+  if (TENANT.id === "proudx") {
+    return null;
+  }
 
   if (normalizedPathname.startsWith("/live") || /^\/videa\/[^/]+/.test(normalizedPathname)) {
     return null;

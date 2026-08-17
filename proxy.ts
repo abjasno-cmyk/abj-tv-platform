@@ -2,6 +2,20 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { PRODUCTION_LEGACY_VERCEL_HOST } from "@/lib/deploymentHost";
+import { isApiPathAllowed, isPageAllowed, moduleEnabled } from "@/lib/tenant";
+
+// Cesty, které volají Vercel crony server-to-server (bez prohlížeče, tedy bez
+// Basic Auth hlavičky). Chráněné vlastním CRON_SECRET. Jen tyto smí obejít
+// staging Basic Auth — NE celé /api/ (jinak je engine proxy veřejná, viz
+// security audit 8.8.).
+const CRON_PATHS: ReadonlyArray<string> = [
+  "/api/program/v3/refresh-cache",
+  "/api/program/v3/import-feed",
+  "/api/program/v3/sync-channel-ids",
+  "/api/noviny/import",
+  "/api/noviny/context/analyze",
+  "/api/noviny/enrich",
+];
 
 function sanitizeEnvValue(value?: string): string | undefined {
   if (!value) return undefined;
@@ -21,6 +35,36 @@ function sanitizeEnvValue(value?: string): string | undefined {
 }
 
 export async function proxy(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  // Vertikála s vypnutými moduly: jejich API cesty nesmí být dosažitelné ani
+  // přes /api (stránky jsou 404, ale API routy jdou přímo na sdílenou DB přes
+  // service_role — bez tohoto gate umí ProudX zapisovat do VEROX Zdi apod.).
+  if (!isApiPathAllowed(pathname)) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
+
+  // Staging/beta deployment (dev.proudx.cz): celý web za HTTP Basic Auth.
+  // Aktivuje se jen nastavením DEV_BASIC_AUTH_PASSWORD na deploymentu;
+  // produkce a preview bez env běží beze změny. Vyňaté jsou JEN cron cesty
+  // (server-to-server, chráněné CRON_SECRET) — ne celé /api/.
+  const devPassword = process.env.DEV_BASIC_AUTH_PASSWORD;
+  if (devPassword && !CRON_PATHS.includes(pathname)) {
+    const expected = `Basic ${btoa(`proudx:${devPassword}`)}`;
+    if (request.headers.get("authorization") !== expected) {
+      return new NextResponse("Authentication required", {
+        status: 401,
+        headers: { "WWW-Authenticate": 'Basic realm="ProudX dev"' },
+      });
+    }
+  }
+
+  // Stránky vypnutých modulů nesmí být na této vertikále dosažitelné.
+  // ponytail: plaintext 404 stačí — hezčí 404 stránka až s brand fází.
+  if (!isPageAllowed(pathname)) {
+    return new NextResponse("Not Found", { status: 404 });
+  }
+
   const requestHost = request.nextUrl.host.toLowerCase();
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-verox-host", requestHost);
@@ -63,6 +107,12 @@ export async function proxy(request: NextRequest) {
     canonicalUrl.protocol = "https";
     canonicalUrl.host = PRODUCTION_LEGACY_VERCEL_HOST;
     return NextResponse.redirect(canonicalUrl, 307);
+  }
+
+  // Vertikála bez přihlašování (ProudX MVP) nesmí zakládat ani obnovovat
+  // auth session cookies — žádné sdílené profily mezi vertikálami.
+  if (!moduleEnabled("auth")) {
+    return NextResponse.next({ request });
   }
 
   const supabaseUrl = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);

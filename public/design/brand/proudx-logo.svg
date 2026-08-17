@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3000 900" role="img" aria-label="ProudX">
+  <style>
+    .wm { font-family: "Arial Narrow", "Helvetica Neue", Arial, sans-serif; font-weight: 900; font-size: 620px; letter-spacing: -8px; }
+  </style>
+  <!-- Náznak proudu / linky vysílání pod wordmarkem -->
+  <rect x="60" y="742" width="2000" height="26" fill="#1c64f2"/>
+  <rect x="2120" y="742" width="820" height="26" fill="#141414"/>
+  <text x="40" y="640" class="wm" fill="#141414">Proud<tspan fill="#1c64f2">X</tspan></text>
+</svg>

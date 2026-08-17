@@ -10,6 +10,7 @@ import {
   type PlayoutSurface,
 } from "@/lib/playout/types";
 import { LOCALE_EN, type VeroxLocale } from "@/lib/i18n/config";
+import { TENANT } from "@/lib/tenant";
 
 interface PlayoutStageProps {
   surface: PlayoutSurface | null;
@@ -23,7 +24,7 @@ interface PlayoutStageProps {
   locale?: VeroxLocale;
 }
 
-const IDENT_LOGO = "/design/brand/verox-logo.png";
+const IDENT_LOGO = TENANT.logoSrc;
 
 function applyPlayerAudio(player: PlayerHandle, muted: boolean, volume: number) {
   const level = Math.min(100, Math.max(0, Math.round(volume)));
@@ -247,7 +248,7 @@ function PlayoutIdent({ title }: { title?: string }) {
   return (
     <div className="playout-ident" aria-label={title ?? "ABJ — pokračujeme"}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={IDENT_LOGO} alt="VEROX" className="playout-ident-logo" />
+      <img src={IDENT_LOGO} alt={TENANT.siteName} className="playout-ident-logo" />
     </div>
   );
 }

@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LiveChannelGroup } from "@/components/abj/ChannelDirectory";
 import type { DayProgram } from "@/lib/epg-types";
 import { HomePage } from "@/components/abj/HomePage";
+import ProudXLive from "@/components/proudx/ProudXLive";
+import { TENANT } from "@/lib/tenant";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { trackAnalyticsEvent, trackVideoProgressThrottled } from "@/lib/analytics/client";
 import { videoSharePath } from "@/lib/viewer/videoMetadata";
@@ -243,6 +245,60 @@ export default function LivePage({
 
   // KOMUNITA blok je nově součástí hero/live-block (viz HomePage), v souladu
   // s klientskou šablonou — žádná samostatná sekce.
+  // ProudX vertikála má vlastní vizuální identitu (dark cinematic). VEROX i
+  // ostatní běží beze změny na HomePage.
+  if (TENANT.id === "proudx") {
+    return (
+      <ProudXLive
+        days={safeEpg}
+        channels={channels}
+        videoId={videoId}
+        title={title}
+        channelName={channelName}
+        isLive={isLive}
+        startSeconds={startSeconds}
+        onSelect={(item) => {
+          setTitle(item.title);
+          setChannelName(item.channelName);
+          setVideoId(item.videoId);
+          setStartSeconds(0);
+          setIsLive(item.type === "live");
+          setContinueFromSeconds(null);
+          trackAnalyticsEvent({
+            event_name: item.type === "live" ? "live_open" : "video_start",
+            entity_type: item.type === "live" ? "live" : "video",
+            entity_id: item.videoId ?? undefined,
+            properties: { source: "proudx_program" },
+          });
+        }}
+        onReturnToLive={() => {
+          const source = linearSourceRef.current;
+          const elapsed = source.capturedAtMs > 0 ? Math.max(0, Math.floor((Date.now() - source.capturedAtMs) / 1000)) : 0;
+          setVideoId(source.videoId);
+          setTitle(source.title);
+          setChannelName(source.channelName);
+          setStartSeconds(source.startSeconds + elapsed);
+          setIsLive(true);
+          setContinueFromSeconds(null);
+        }}
+        onSelectChannelVideo={({ channelName: ch, video }) => {
+          setTitle(video.title);
+          setChannelName(ch);
+          setVideoId(video.videoId);
+          setStartSeconds(0);
+          setIsLive(false);
+          setContinueFromSeconds(null);
+          trackAnalyticsEvent({
+            event_name: "video_start",
+            entity_type: "video",
+            entity_id: video.videoId,
+            properties: { source: "proudx_channel", channel_name: ch },
+          });
+        }}
+      />
+    );
+  }
+
   return (
     <section data-ui-version="abj-template-v1" className="min-h-screen bg-[#FFFFFF] text-[#171411]">
       <HomePage

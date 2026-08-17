@@ -8,6 +8,7 @@ import { HeroAudienceIndicator } from "@/components/abj/HeroAudienceIndicator";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { LOCALE_CS, LOCALE_EN, type VeroxLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { moduleEnabled, TENANT } from "@/lib/tenant";
 
 // Sdílená horní lišta dle návrhu Lucie Robinson („menu_listy"): velké logo
 // vlevo, nav svisle vpravo, hodiny + datum vpravo (desktop) / pod logem (mobil).
@@ -152,10 +153,10 @@ export function VeroxHeader({ active, showAudience = false, locale = LOCALE_CS }
   const desktopMonth = isEnglish ? MONTHS_EN[t.monthIndex] : MONTHS_NOM[t.monthIndex];
 
   return (
-    <header className="hf-header" aria-label="VEROX">
-      <Link className="hf-logo-link" href={localizedHref(locale, pathname, "/live")} aria-label="VEROX — Mainstreamový detox">
+    <header className="hf-header" aria-label={TENANT.siteName}>
+      <Link className="hf-logo-link" href={localizedHref(locale, pathname, "/live")} aria-label={`${TENANT.siteName} — ${TENANT.tagline}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="hf-logo" src="/design/brand/verox-logo.png" alt="VEROX" />
+        <img className="hf-logo" src={TENANT.logoSrc} alt={TENANT.siteName} />
       </Link>
       <div className="hf-meta">
         <p className="hf-tagline">{dictionary.header.tagline}</p>
@@ -190,19 +191,27 @@ export function VeroxHeader({ active, showAudience = false, locale = LOCALE_CS }
         <Link className={active === "videa" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/videa")} aria-current={active === "videa" ? "page" : undefined}>
           {dictionary.header.nav.latestVideos}
         </Link>
-        <Link className={active === "noviny" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/noviny")} aria-current={active === "noviny" ? "page" : undefined}>
-          {dictionary.header.nav.news}
-        </Link>
-        <Link className={active === "nazory" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/nazory")} aria-current={active === "nazory" ? "page" : undefined}>
-          {dictionary.header.nav.opinions}
-        </Link>
-        <Link className={active === "kanaly" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/kanaly")} aria-current={active === "kanaly" ? "page" : undefined}>
-          {dictionary.header.nav.channels}
-        </Link>
-        <Link className={active === "muj" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/muj-verox")} aria-current={active === "muj" ? "page" : undefined}>
-          {dictionary.header.nav.myVerox}
-        </Link>
-        {isAuthenticated ? (
+        {moduleEnabled("noviny") ? (
+          <Link className={active === "noviny" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/noviny")} aria-current={active === "noviny" ? "page" : undefined}>
+            {dictionary.header.nav.news}
+          </Link>
+        ) : null}
+        {moduleEnabled("nazory") ? (
+          <Link className={active === "nazory" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/nazory")} aria-current={active === "nazory" ? "page" : undefined}>
+            {dictionary.header.nav.opinions}
+          </Link>
+        ) : null}
+        {moduleEnabled("kanaly") ? (
+          <Link className={active === "kanaly" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/kanaly")} aria-current={active === "kanaly" ? "page" : undefined}>
+            {dictionary.header.nav.channels}
+          </Link>
+        ) : null}
+        {moduleEnabled("komunita") ? (
+          <Link className={active === "muj" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/muj-verox")} aria-current={active === "muj" ? "page" : undefined}>
+            {dictionary.header.nav.myVerox}
+          </Link>
+        ) : null}
+        {!moduleEnabled("auth") ? null : isAuthenticated ? (
           <a
             className="login-link login-link--signout"
             href="/muj-verox"

@@ -1,0 +1,224 @@
+/*
+ * ProudX vizuální téma — editorial-modern, centrální přehrávač.
+ * VŠE scoped pod :root[data-tenant="proudx"] → na VEROXu nulový dopad.
+ * Přehrávač (PlayoutStage) a veškerý JS beze změny; měníme jen layout + vzhled.
+ * Importováno v layoutu ZA verox.css/handoff.css.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Instrument+Sans:wght@400;500;600&display=swap");
+
+/* ── Paleta ─────────────────────────────────────────────────────── */
+:root[data-tenant="proudx"] {
+  --vx-orange: #1c46f2;
+  --abj-red: #1c46f2;
+  --abj-red-dim: rgba(28, 70, 242, 0.12);
+  --px-ink: #14161a;
+  --px-muted: #6b7078;
+  --px-line: #e9e6e0;
+  --px-bg: #faf8f5;
+  --px-accent: #1c46f2;
+  --px-serif: "Fraunces", Georgia, "Times New Roman", serif;
+  --px-sans: "Instrument Sans", var(--font-sans), -apple-system, sans-serif;
+}
+
+/* Čisté plátno — pryč s oranžovým gradientem VEROXu */
+:root[data-tenant="proudx"] body,
+:root[data-tenant="proudx"] .hf {
+  background: var(--px-bg);
+  color: var(--px-ink);
+}
+:root[data-tenant="proudx"] .hf-body {
+  background-image: none !important;
+  background: var(--px-bg);
+}
+
+/* ── Hlavička: víc vzduchu, decentní linky ──────────────────────── */
+:root[data-tenant="proudx"] .hf-header {
+  padding-top: clamp(14px, 2vw, 26px);
+  padding-bottom: clamp(6px, 1vw, 12px);
+}
+:root[data-tenant="proudx"] .hf-tagline {
+  font-family: var(--px-sans);
+  letter-spacing: 0.28em;
+  color: var(--px-muted);
+  font-weight: 500;
+}
+:root[data-tenant="proudx"] .double-rule,
+:root[data-tenant="proudx"] .header-rule {
+  opacity: 0.5;
+}
+:root[data-tenant="proudx"] .hf-nav a {
+  font-family: var(--px-sans);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+:root[data-tenant="proudx"] .hf-clock {
+  font-family: var(--px-serif);
+  font-weight: 600;
+  color: var(--px-ink);
+}
+
+/* ── Desktop: rozbít dvousloupec, přehrávač do centra ───────────── */
+@media (min-width: 961px) {
+  :root[data-tenant="proudx"] .hf-stage {
+    display: block;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: clamp(20px, 3vw, 44px) 24px 0;
+  }
+  /* Přehrávač = kinematický střed */
+  :root[data-tenant="proudx"] .hf .hero {
+    order: 0;
+    height: auto;
+    margin: 0 auto;
+  }
+  :root[data-tenant="proudx"] .hf .hero-media {
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 34px 70px -30px rgba(20, 32, 70, 0.42), 0 8px 22px -14px rgba(20, 32, 70, 0.24);
+  }
+  /* Titulek + kanál pod přehrávačem, vycentrované, editorial */
+  :root[data-tenant="proudx"] .hf .feature-summary {
+    order: 1;
+    padding: clamp(26px, 3vw, 44px) 24px 0;
+    background: none;
+    align-items: center;
+  }
+  :root[data-tenant="proudx"] .hf .feature-copy {
+    text-align: center;
+    width: min(92%, 40rem);
+    max-width: none;
+    margin: 0 auto;
+    align-items: center;
+  }
+  :root[data-tenant="proudx"] .hf .feature-copy h1 {
+    font-size: clamp(24px, 2.4vw, 36px);
+    width: 100%;
+  }
+}
+
+/* ── Editorial titulek (Fraunces) ───────────────────────────────── */
+:root[data-tenant="proudx"] .feature-copy h1 {
+  font-family: var(--px-serif);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: var(--px-ink);
+}
+/* Název kanálu jako kicker nad/pod titulkem */
+:root[data-tenant="proudx"] .feature-copy > *:not(h1):not(.hero-save-row):not(.hero-pick-hint) {
+  font-family: var(--px-sans);
+  color: var(--px-accent);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+}
+
+/* ── Živě odznak: čistá pilulka na přehrávači ───────────────────── */
+:root[data-tenant="proudx"] .hf .live-badge {
+  left: clamp(14px, 2%, 22px) !important;
+  top: clamp(14px, 2%, 22px) !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  width: auto !important;
+  height: auto !important;
+  aspect-ratio: auto !important;
+  border-radius: 999px;
+  padding: 7px 14px 7px 26px;
+  background: rgba(20, 22, 26, 0.72);
+  backdrop-filter: blur(8px);
+  font-family: var(--px-sans);
+  font-weight: 700;
+  font-size: 0 !important;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  box-shadow: none;
+}
+:root[data-tenant="proudx"] .hf .live-badge::after {
+  content: "ŽIVĚ";
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  color: #fff;
+}
+:root[data-tenant="proudx"] .hf .live-badge::before {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff4d4d;
+  box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.6);
+  animation: px-live-pulse 1.8s ease-out infinite;
+}
+:root[data-tenant="proudx"] .hf .live-badge br {
+  display: none;
+}
+@keyframes px-live-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.55); }
+  70% { box-shadow: 0 0 0 7px rgba(255, 77, 77, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); }
+}
+
+/* Ovládací tlačítka přehrávače — modrá, decentnější */
+:root[data-tenant="proudx"] .hf .hero-ctrls .ctrl-play,
+:root[data-tenant="proudx"] .hf .hero-ctrls .ctrl-fs,
+:root[data-tenant="proudx"] .hf .hero-ctrls .ctrl-sound {
+  background: rgba(20, 22, 26, 0.62);
+  backdrop-filter: blur(8px);
+}
+:root[data-tenant="proudx"] .hf .hero-ctrls .ctrl-play:hover,
+:root[data-tenant="proudx"] .hf .hero-ctrls .ctrl-fs:hover,
+:root[data-tenant="proudx"] .hf .hero-ctrls .ctrl-sound:hover {
+  background: var(--px-accent);
+}
+
+/* ── Nadpisy sekcí (PRÁVĚ HRAJE, KANÁLY) — editorial ────────────── */
+:root[data-tenant="proudx"] .hf h2 {
+  font-family: var(--px-serif) !important;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--px-ink);
+  text-transform: none;
+}
+
+/* ── Akční pilulky (uložit / diskutovat / přepis) ───────────────── */
+:root[data-tenant="proudx"] .vx-transcript-label {
+  border-color: rgba(28, 70, 242, 0.35);
+  background: rgba(28, 70, 242, 0.08);
+  color: var(--px-accent);
+  border-radius: 999px;
+  font-family: var(--px-sans);
+}
+:root[data-tenant="proudx"] .vx-transcript-label:hover {
+  background: rgba(28, 70, 242, 0.15);
+}
+:root[data-tenant="proudx"] .hf .vx-save-video.is-saved {
+  background: rgba(28, 70, 242, 0.08);
+}
+
+/* ── Karty PRÁVĚ HRAJE + kanály: měkčí, moderní ─────────────────── */
+:root[data-tenant="proudx"] .hf .channel-card {
+  border-radius: 14px;
+  overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+:root[data-tenant="proudx"] .hf .channel-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 30px -18px rgba(20, 32, 70, 0.4);
+}
+:root[data-tenant="proudx"] .hf .channel-card img {
+  border-radius: 14px;
+}
+
+/* Odkazy / drobné akcenty */
+:root[data-tenant="proudx"] .hf a {
+  color: var(--px-accent);
+}

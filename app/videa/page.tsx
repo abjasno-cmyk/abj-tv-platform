@@ -1,4 +1,6 @@
 import { VideaVideoList } from "@/components/viewer/VideaVideoList";
+import ProudXVidea from "@/components/proudx/ProudXVidea";
+import { TENANT } from "@/lib/tenant";
 import { loadStructuredFeedPayload, type FeedVideo } from "@/lib/dayOverview";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { localizeFeedVideos } from "@/lib/i18n/videoTitles";
@@ -20,6 +22,10 @@ async function loadVideos(): Promise<FeedVideo[]> {
 export default async function VideaPage() {
   const [videos, locale] = await Promise.all([loadVideos(), getRequestLocale()]);
   const displayVideos = await localizeFeedVideos(videos, locale);
+
+  if (TENANT.id === "proudx") {
+    return <ProudXVidea videos={videos} />;
+  }
 
   return (
     <div className="vx-live vx-sub">
