@@ -72,7 +72,7 @@ const PROUDX: TenantConfig = {
   description: "ProudX — nepřetržitý videoproud a katalog videí pro městské publikum.",
   logoSrc: "/design/brand/proudx-logo.svg",
   iconSrc: "/design/brand/proudx-logo.svg",
-  ogImageSrc: null,
+  ogImageSrc: "/design/brand/proudx-og.png",
   brandColor: "#1c64f2",
   modules: {
     noviny: false,
