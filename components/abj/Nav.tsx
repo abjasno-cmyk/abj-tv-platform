@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 
 import { VeroxHeader, type VeroxNavKey } from "@/components/abj/VeroxHeader";
+import { TENANT } from "@/lib/tenant";
 
 // Globální lišta pro subpages. Landing /live má vlastní hlavičku uvnitř
 // HomePage (stejná komponenta VeroxHeader), takže tam globální lišta ustoupí.
@@ -29,6 +30,13 @@ function activeKeyFor(pathname: string): VeroxNavKey | undefined {
 
 export function ABJNav() {
   const pathname = usePathname();
+
+  // ProudX stránky mají vlastní ProudXHeader — globální VEROX lišta by se
+  // renderovala nad nimi jako neviditelný blok (tenant CSS ji skryje vizuálně,
+  // ale výška zůstane → prázdný pruh nad obsahem).
+  if (TENANT.id === "proudx") {
+    return null;
+  }
 
   if (pathname.startsWith("/live") || /^\/videa\/[^/]+/.test(pathname)) {
     return null;
