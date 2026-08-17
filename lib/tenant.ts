@@ -93,6 +93,8 @@ const PROUDX: TenantConfig = {
     "/terms",
     "/data-deletion",
     "/sitemap-videos.xml",
+    "/sitemap.xml",
+    "/robots.txt",
   ],
 };
 
