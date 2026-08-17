@@ -10,6 +10,8 @@ import { TENANT } from "@/lib/tenant";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { trackAnalyticsEvent, trackVideoProgressThrottled } from "@/lib/analytics/client";
 import { videoSharePath } from "@/lib/viewer/videoMetadata";
+import { LOCALE_CS, type VeroxLocale } from "@/lib/i18n/config";
+import { localizedPath } from "@/lib/i18n/paths";
 
 type LivePageProps = {
   epg: DayProgram[];
@@ -21,6 +23,7 @@ type LivePageProps = {
   // VOD video (deep-link / klik) — po dohrání se vrátí na živo.
   initialIsLive?: boolean;
   channels: LiveChannelGroup[];
+  locale?: VeroxLocale;
 };
 
 export default function LivePage({
@@ -31,6 +34,7 @@ export default function LivePage({
   initialStartSeconds = 0,
   initialIsLive = true,
   channels,
+  locale = LOCALE_CS,
 }: LivePageProps) {
   const { isAuthenticated } = useAuth();
   const safeEpg = epg;
@@ -113,11 +117,11 @@ export default function LivePage({
       return;
     }
 
-    const nextPath = videoSharePath(videoId);
+    const nextPath = localizedPath(locale, videoSharePath(videoId));
     if (window.location.pathname !== nextPath) {
       window.history.replaceState(null, "", nextPath);
     }
-  }, [isLive, videoId]);
+  }, [isLive, locale, videoId]);
 
   useEffect(() => {
     linearSourceRef.current.capturedAtMs = Date.now();
@@ -300,6 +304,7 @@ export default function LivePage({
       <HomePage
         days={safeEpg}
         channels={channels}
+        locale={locale}
         videoId={videoId}
         title={title}
         channelName={channelName}

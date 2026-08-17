@@ -8,6 +8,9 @@ import { DeleteAccountPanel } from "@/components/auth/DeleteAccountPanel";
 import { MujVeroxAuthorStudio } from "@/components/nazory/MujVeroxAuthorStudio";
 import { MyVeroxEngagement } from "@/components/viewer/MyVeroxEngagement";
 import { MyVeroxLibrary } from "@/components/viewer/MyVeroxLibrary";
+import { LOCALE_EN } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { useLocale } from "@/lib/i18n/useLocale";
 import { buildWallTree, formatWallPostTime, type WallTreeNode } from "@/lib/wallThread";
 import type { WallPost } from "@/lib/wallTypes";
 
@@ -137,6 +140,9 @@ function WallThread(props: WallThreadProps) {
 
 // MŮJ VEROX: komunitní diskuze s odpověďmi ve stylu Seznam.cz (vlákna + srdíčko).
 export function MujVeroxTemplate() {
+  const locale = useLocale();
+  const dictionary = getDictionary(locale);
+  const isEnglish = locale === LOCALE_EN;
   const { isAuthenticated, profile, openLoginModal, requestAuth } = useAuth();
   const [sort, setSort] = useState<"newest" | "popular">("popular");
   const [posts, setPosts] = useState<WallPost[]>([]);
@@ -265,7 +271,7 @@ export function MujVeroxTemplate() {
   return (
     <div className="vx-live vx-sub muj-verox-page">
       <div className="mv">
-        <h1>MŮJ VEROX</h1>
+        <h1>{isEnglish ? "MY VEROX" : "MŮJ VEROX"}</h1>
       </div>
 
       <MujVeroxAuthorStudio />
@@ -276,28 +282,34 @@ export function MujVeroxTemplate() {
       </div>
 
       <div className="mv">
-        <h2>VAŠE VIDEA, KANÁLY A DISKUZE</h2>
-        <div className="sub">Uložená videa, sledování a oblíbené kanály — plus komunitní diskuze níže.</div>
+        <h2>{isEnglish ? "YOUR VIDEOS, CHANNELS AND DISCUSSIONS" : "VAŠE VIDEA, KANÁLY A DISKUZE"}</h2>
+        <div className="sub">
+          {isEnglish
+            ? "Saved videos, viewing history and favorite channels — plus community discussion below."
+            : "Uložená videa, sledování a oblíbené kanály — plus komunitní diskuze níže."}
+        </div>
         {!isAuthenticated ? (
           <>
             <div className="info">
-              INTERAKCE V KOMUNITĚ (PŘIDÁNÍ, ODPOVĚDI, REAKCE) JSOU DOSTUPNÉ POUZE PO PŘIHLÁŠENÍ.
+              {isEnglish
+                ? "COMMUNITY INTERACTIONS (POSTS, REPLIES, REACTIONS) ARE AVAILABLE AFTER SIGN-IN."
+                : "INTERAKCE V KOMUNITĚ (PŘIDÁNÍ, ODPOVĚDI, REAKCE) JSOU DOSTUPNÉ POUZE PO PŘIHLÁŠENÍ."}
             </div>
             <button
               type="button"
               className="cta"
               onClick={() => openLoginModal({ reason: "Přihlaste se zdarma a zapojte se do diskuze." })}
             >
-              PŘIHLÁSIT ZDARMA
+              {dictionary.myVerox.signIn.toUpperCase()}
             </button>
           </>
         ) : (
           <p className="sub" style={{ marginTop: "1rem" }}>
-            Komentáře přímo k videím najdete na{" "}
+            {isEnglish ? "Video-specific comments are available on " : "Komentáře přímo k videím najdete na "}
             <Link href="/live" style={{ color: "var(--vx-orange)", fontWeight: 700 }}>
-              ŽIVĚ
+              {dictionary.header.nav.live}
             </Link>{" "}
-            (ikona komentářů u přehrávače).
+            {isEnglish ? "(the comment icon in the player)." : "(ikona komentářů u přehrávače)."}
           </p>
         )}
       </div>
@@ -336,22 +348,22 @@ export function MujVeroxTemplate() {
               className={sort === "newest" ? "active" : "inactive"}
               onClick={() => setSort("newest")}
             >
-              NEJNOVĚJŠÍ
+              {isEnglish ? "NEWEST" : "NEJNOVĚJŠÍ"}
             </button>
             <button
               type="button"
               className={sort === "popular" ? "active" : "inactive"}
               onClick={() => setSort("popular")}
             >
-              POPULÁRNÍ
+              {isEnglish ? "POPULAR" : "POPULÁRNÍ"}
             </button>
           </div>
           <div className="col">
-            <h2>DISKUSE</h2>
+            <h2>{isEnglish ? "DISCUSSION" : "DISKUSE"}</h2>
             {loading ? (
-              <div className="empty">Načítám příspěvky…</div>
+              <div className="empty">{isEnglish ? "Loading posts…" : "Načítám příspěvky…"}</div>
             ) : tree.length === 0 ? (
-              <div className="empty">Zatím tu žádné příspěvky nejsou. Buďte první.</div>
+              <div className="empty">{isEnglish ? "There are no posts yet. Be the first." : "Zatím tu žádné příspěvky nejsou. Buďte první."}</div>
             ) : (
               <div className="mv-thread-list">
                 {tree.map((node) => (
@@ -375,11 +387,11 @@ export function MujVeroxTemplate() {
           </div>
         </div>
 
-        <aside className="mv-message-panel" aria-label="Přidat vzkaz">
+        <aside className="mv-message-panel" aria-label={isEnglish ? "Add a message" : "Přidat vzkaz"}>
           <form onSubmit={submit}>
             {replyParentId && replyParentName ? (
               <p className="mv-reply-hint">
-                Odpovídáte uživateli <strong>{replyParentName}</strong>
+                {isEnglish ? "Replying to " : "Odpovídáte uživateli "}<strong>{replyParentName}</strong>
                 <button
                   type="button"
                   className="mv-reply-cancel"
@@ -388,19 +400,19 @@ export function MujVeroxTemplate() {
                     setReplyParentName(null);
                   }}
                 >
-                  Zrušit
+                  {isEnglish ? "Cancel" : "Zrušit"}
                 </button>
               </p>
             ) : null}
             <div className="form-row">
-              <label htmlFor="mv-nick">PŘEZDÍVKA</label>
+              <label htmlFor="mv-nick">{isEnglish ? "NICKNAME" : "PŘEZDÍVKA"}</label>
               <span />
               <div className="field">
                 <input
                   id="mv-nick"
                   value={nick}
                   onChange={(e) => setNick(e.target.value)}
-                  placeholder="Vaše přezdívka"
+                  placeholder={isEnglish ? "Your nickname" : "Vaše přezdívka"}
                   maxLength={60}
                   disabled={!isAuthenticated}
                 />
@@ -409,7 +421,7 @@ export function MujVeroxTemplate() {
             <div className="form-row">
               <label htmlFor="mv-email">
                 E-MAIL
-                <small>( volitelné, nezveřejňujeme )</small>
+                <small>{isEnglish ? "( optional, not public )" : "( volitelné, nezveřejňujeme )"}</small>
               </label>
               <span />
               <div className="field">
@@ -424,7 +436,7 @@ export function MujVeroxTemplate() {
               </div>
             </div>
             <div className="form-row">
-              <label htmlFor="mv-msg">{replyParentId ? "ODPOVĚĎ" : "VZKAZ"}</label>
+              <label htmlFor="mv-msg">{replyParentId ? (isEnglish ? "REPLY" : "ODPOVĚĎ") : isEnglish ? "MESSAGE" : "VZKAZ"}</label>
               <span />
               <div className="field">
                 <textarea
@@ -433,8 +445,8 @@ export function MujVeroxTemplate() {
                   onChange={(e) => setMessage(e.target.value.slice(0, MAX_LEN))}
                   placeholder={
                     replyParentId
-                      ? "Napište odpověď..."
-                      : "Co chcete vzkázat redakci, nebo ostatním divákům?"
+                      ? isEnglish ? "Write a reply..." : "Napište odpověď..."
+                      : isEnglish ? "What would you like to tell the editors or other viewers?" : "Co chcete vzkázat redakci, nebo ostatním divákům?"
                   }
                   disabled={!isAuthenticated}
                 />
@@ -445,7 +457,11 @@ export function MujVeroxTemplate() {
               <span />
               <div className="submit">
                 <button type="submit" disabled={submitting || !isAuthenticated}>
-                  {submitting ? "ODESÍLÁM…" : replyParentId ? "ODESLAT ODPOVĚĎ" : "PŘIDAT VZKAZ"}
+                  {submitting
+                    ? isEnglish ? "SENDING…" : "ODESÍLÁM…"
+                    : replyParentId
+                      ? isEnglish ? "SEND REPLY" : "ODESLAT ODPOVĚĎ"
+                      : isEnglish ? "ADD MESSAGE" : "PŘIDAT VZKAZ"}
                 </button>
                 <span className="count">{counter}</span>
               </div>

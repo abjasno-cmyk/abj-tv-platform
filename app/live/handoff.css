@@ -119,6 +119,52 @@
   color: var(--vx-orange);
   font-weight: 800;
 }
+/* Přihlášený stav: jméno se na hoveru přepne na šedé ODHLÁSIT (varování,
+   co klik udělá) — žádný confirm dialog. */
+.hf-nav a.login-link--signout .login-link-signout {
+  display: none;
+  color: var(--vx-nav-gray, #707070);
+}
+.hf-nav a.login-link--signout:hover .login-link-name,
+.hf-nav a.login-link--signout:focus-visible .login-link-name {
+  display: none;
+}
+.hf-nav a.login-link--signout:hover .login-link-signout,
+.hf-nav a.login-link--signout:focus-visible .login-link-signout {
+  display: inline;
+}
+.hf-lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--vx-nav-gray, #707070);
+  font-size: clamp(0.72rem, 2.4vw, 0.92rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.hf-lang-switch a {
+  color: var(--vx-nav-gray, #707070);
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: 1;
+  letter-spacing: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.hf-lang-switch a.is-active {
+  color: var(--vx-orange);
+  font-weight: 900;
+}
+.hf-lang-switch span {
+  color: rgba(112, 112, 112, 0.45);
+}
+.hf-timeblock .hf-lang-switch {
+  justify-content: flex-end;
+  margin-top: 6px;
+}
 
 /* ---------- Sdílený kontejner lišty na subpages (mimo .hf landing) ---------- */
 .hf-chrome {
@@ -1248,6 +1294,9 @@
   }
   .hf-nav a {
     font-size: clamp(14px, 1.25vw, 22px);
+  }
+  .hf-lang-switch {
+    font-size: clamp(12px, 0.9vw, 16px);
   }
   .hf-timeblock {
     grid-area: time;

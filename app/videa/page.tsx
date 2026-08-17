@@ -2,14 +2,17 @@ import { VideaVideoList } from "@/components/viewer/VideaVideoList";
 import ProudXVidea from "@/components/proudx/ProudXVidea";
 import { TENANT } from "@/lib/tenant";
 import { loadStructuredFeedPayload, type FeedVideo } from "@/lib/dayOverview";
+import { getRequestLocale } from "@/lib/i18n/server";
+import { localizeFeedVideos } from "@/lib/i18n/videoTitles";
+import { selectVideaVideosForTodayAndYesterday } from "@/lib/viewer/videaDaySelection";
 
 export const dynamic = "force-dynamic";
 
 async function loadVideos(): Promise<FeedVideo[]> {
   try {
     const payload = await loadStructuredFeedPayload();
-    const videos = payload.top.length > 0 ? payload.top : Object.values(payload.channels).flat();
-    return videos.slice(0, 30);
+    const allVideos = Object.values(payload.channels).flat();
+    return selectVideaVideosForTodayAndYesterday(allVideos);
   } catch {
     return [];
   }
@@ -17,7 +20,8 @@ async function loadVideos(): Promise<FeedVideo[]> {
 
 // Nejnovější videa — karta = datum (měsíc + velký den) + náhled + popis.
 export default async function VideaPage() {
-  const videos = await loadVideos();
+  const [videos, locale] = await Promise.all([loadVideos(), getRequestLocale()]);
+  const displayVideos = await localizeFeedVideos(videos, locale);
 
   if (TENANT.id === "proudx") {
     return <ProudXVidea videos={videos} />;
@@ -25,13 +29,13 @@ export default async function VideaPage() {
 
   return (
     <div className="vx-live vx-sub">
-      <h1 className="section-h">Právě vyšlo</h1>
+      <h1 className="section-h">{locale === "en" ? "Latest releases" : "Právě vyšlo"}</h1>
       {videos.length === 0 ? (
         <div className="mv">
-          <div className="info">Videa se právě připravují.</div>
+          <div className="info">{locale === "en" ? "Videos are being prepared." : "Videa se právě připravují."}</div>
         </div>
       ) : (
-        <VideaVideoList videos={videos} />
+        <VideaVideoList videos={displayVideos} />
       )}
     </div>
   );

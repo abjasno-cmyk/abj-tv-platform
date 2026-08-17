@@ -4,6 +4,8 @@ import { useState, type MouseEvent } from "react";
 
 import { useTranscriptState } from "@/components/viewer/TranscriptStatesProvider";
 import { VideoTranscriptPanel } from "@/components/viewer/VideoTranscriptPanel";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { useLocale } from "@/lib/i18n/useLocale";
 import { isTranscriptLabelVisible, type TranscriptState } from "@/lib/transcriptTypes";
 
 type VideoTranscriptLabelProps = {
@@ -24,6 +26,7 @@ export function VideoTranscriptLabel({
   const [panelOpen, setPanelOpen] = useState(false);
   const contextState = useTranscriptState(videoId);
   const resolvedState = transcriptState ?? contextState;
+  const dictionary = getDictionary(useLocale());
 
   if (!isTranscriptLabelVisible(resolvedState)) return null;
 
@@ -42,11 +45,11 @@ export function VideoTranscriptLabel({
         type="button"
         className={classes}
         onClick={openPanel}
-        aria-label="Zobrazit přepis videa"
-        title="Přepis videa"
+        aria-label={dictionary.common.showTranscript}
+        title={dictionary.common.transcriptVideo}
       >
         <span className={compact ? "vx-transcript-label-text vx-transcript-label-text--compact" : "vx-transcript-label-text"}>
-          PŘEPIS VIDEA
+          {dictionary.common.transcriptVideo}
         </span>
       </button>
       <VideoTranscriptPanel

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { FollowChannelButton } from "@/components/auth/FollowChannelButton";
+import { useLocale } from "@/lib/i18n/useLocale";
 import { scrollHorizontalCarousel } from "@/lib/horizontalCarouselScroll";
 
 export type LiveChannelVideo = {
@@ -91,6 +92,7 @@ function ChannelAvatar({ channelName, avatarUrl }: { channelName: string; avatar
 }
 
 export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryProps) {
+  const locale = useLocale();
   const [activeChannelName, setActiveChannelName] = useState<string | null>(null);
   const [fetchedVideosByChannel, setFetchedVideosByChannel] = useState<Record<string, LiveChannelVideo[]>>({});
   const [loadingByChannel, setLoadingByChannel] = useState<Record<string, boolean>>({});
@@ -167,6 +169,7 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
       }
       params.set("channelName", channel.channelName);
       params.set("limit", "4");
+      params.set("locale", locale);
 
       const response = await fetch(`/api/channel-latest?${params.toString()}`, {
         cache: "no-store",

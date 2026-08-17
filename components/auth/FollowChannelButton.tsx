@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { useLocale } from "@/lib/i18n/useLocale";
 
 type FollowChannelButtonProps = {
   channelId: string | null;
@@ -17,6 +19,7 @@ type FollowsResponse = {
 
 export function FollowChannelButton({ channelId, channelName, className }: FollowChannelButtonProps) {
   const { isAuthenticated, requestAuth } = useAuth();
+  const dictionary = getDictionary(useLocale());
   const [followed, setFollowed] = useState(false);
   const [loading, setLoading] = useState(false);
   const effectiveFollowed = isAuthenticated && followed;
@@ -67,15 +70,15 @@ export function FollowChannelButton({ channelId, channelName, className }: Follo
       className={className ?? `vx-save-video vx-save-video--channel${effectiveFollowed ? " is-saved" : ""}`}
       disabled={loading || !channelId}
       aria-pressed={effectiveFollowed}
-      aria-label={effectiveFollowed ? "Odebrat z oblíbených kanálů" : "Uložit kanál mezi oblíbené"}
-      title={channelId ? undefined : "Kanál zatím nemá interní identifikátor"}
+      aria-label={effectiveFollowed ? dictionary.common.removeChannel : dictionary.common.saveChannel}
+      title={channelId ? undefined : dictionary.common.channelUnavailable}
       onClick={() => {
         if (!channelId) return;
         if (!isAuthenticated) {
           requestAuth(() => {
             void toggleFollow();
           }, {
-            reason: `Přihlaste se zdarma a uložte si kanál ${channelName} mezi oblíbené.`,
+            reason: `${dictionary.header.authReason.default} (${channelName})`,
           });
           return;
         }
@@ -84,7 +87,7 @@ export function FollowChannelButton({ channelId, channelName, className }: Follo
     >
       <span aria-hidden="true">{effectiveFollowed ? "★" : "☆"}</span>
       <span className="vx-save-video-label">
-        {loading ? "…" : effectiveFollowed ? "Oblíbený" : "Uložit kanál"}
+        {loading ? "…" : effectiveFollowed ? dictionary.common.channelSaved : dictionary.common.saveChannel}
       </span>
     </button>
   );

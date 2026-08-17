@@ -4,6 +4,8 @@ import {
   selectLatestNonShortChannelVideos,
   type ChannelVideoCandidate,
 } from "@/lib/liveChannelVideos";
+import { LOCALE_CS, LOCALE_EN, type VeroxLocale } from "@/lib/i18n/config";
+import { localizeVideoTitleItems } from "@/lib/i18n/videoTitles";
 import { resolveChannelIdsFromChannelUrl } from "@/lib/youtubeChannelResolve";
 import { parseIsoDurationSeconds } from "@/lib/youtubeShort";
 
@@ -65,6 +67,15 @@ type YouTubeChannelContentPayload = {
     };
   }>;
 };
+
+function parseLocale(value: string | null): VeroxLocale {
+  return value === LOCALE_EN ? LOCALE_EN : LOCALE_CS;
+}
+
+async function localizeApiVideos(videos: ChannelLatestVideo[], locale: VeroxLocale): Promise<ChannelLatestVideo[]> {
+  if (locale !== LOCALE_EN || videos.length === 0) return videos;
+  return localizeVideoTitleItems(videos, locale);
+}
 
 type YouTubePlaylistItemsPayload = {
   items?: Array<{
@@ -620,6 +631,7 @@ export async function GET(request: Request) {
   const requestedChannelId = searchParams.get("channelId")?.trim() ?? "";
   const channelUrl = searchParams.get("channelUrl")?.trim() ?? "";
   const channelName = searchParams.get("channelName")?.trim() ?? "";
+  const locale = parseLocale(searchParams.get("locale"));
   const requestedLimit = Number.parseInt(searchParams.get("limit") ?? String(LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT), 10);
   const displayLimit = Number.isFinite(requestedLimit)
     ? Math.min(LIVE_CHANNEL_VIDEO_FETCH_BUFFER, Math.max(1, requestedLimit))
@@ -690,7 +702,10 @@ export async function GET(request: Request) {
     if (rawVideos.length === 0) {
       const fallbackVideos = await resolveLatestVideosBySearchQuery(channelName, apiKey, fetchBuffer);
       if (fallbackVideos.length > 0) {
-        const videos = await finalizeChannelVideos(fallbackVideos, displayLimit, fetchBuffer, apiKey);
+        const videos = await localizeApiVideos(
+          await finalizeChannelVideos(fallbackVideos, displayLimit, fetchBuffer, apiKey),
+          locale,
+        );
         return Response.json({ videos, resolvedChannelId: channelId || null, fallback: "search" });
       }
 
@@ -720,7 +735,7 @@ export async function GET(request: Request) {
       }
     }
 
-    return Response.json({ videos, resolvedChannelId: channelId });
+    return Response.json({ videos: await localizeApiVideos(videos, locale), resolvedChannelId: channelId });
   } catch (error) {
     // Detail jen do server logu; klientovi generická hláška (chybové hlášky
     // fetch() mohou prozradit interní hostname/port).

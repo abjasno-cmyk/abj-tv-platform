@@ -24,6 +24,8 @@ import { useRegisterTranscriptStates } from "@/components/viewer/TranscriptState
 import type { TranscriptState } from "@/lib/transcriptTypes";
 import { useViewerVideoState } from "@/lib/viewer/useViewerVideoState";
 import { normalizeChannelFollowId } from "@/lib/viewer/videoMetadata";
+import { LOCALE_CS, type VeroxLocale } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n/dictionary";
 import { PlayoutStage } from "@/components/abj/playout/PlayoutStage";
 import { usePlayoutLoop } from "@/components/abj/playout/usePlayoutLoop";
 import { scrollHorizontalCarousel } from "@/lib/horizontalCarouselScroll";
@@ -51,6 +53,7 @@ type HomePageProps = {
   onSelectChannelVideo: (payload: { channelName: string; video: LiveChannelVideo }) => void;
   engagementSlot?: ReactNode;
   reactionsSlot?: ReactNode;
+  locale?: VeroxLocale;
 };
 
 const DOT_COUNT = 7;
@@ -75,6 +78,7 @@ export function HomePage({
   onReturnToLive,
   onPlaybackSample,
   onSelectChannelVideo: onSelectChannelVideoProp,
+  locale = LOCALE_CS,
 }: HomePageProps) {
   const [clientChannels, setClientChannels] = useState<LiveChannelGroup[]>([]);
   const displayChannels = channels.length > 0 ? channels : clientChannels;
@@ -103,6 +107,7 @@ export function HomePage({
   const [playerBarExpanded, setPlayerBarExpanded] = useState(false);
   const { savedVideoIds, watchedVideoIds, setSaved } = useViewerVideoState();
   const registerTranscriptStates = useRegisterTranscriptStates();
+  const dictionary = getDictionary(locale);
 
   const onSelectChannelVideo = useCallback(
     (payload: { channelName: string; video: LiveChannelVideo }) => {
@@ -115,7 +120,7 @@ export function HomePage({
   useEffect(() => {
     if (channels.length > 0) return;
     let cancelled = false;
-    void fetch("/api/live/channels", { cache: "no-store" })
+    void fetch(`/api/live/channels?locale=${encodeURIComponent(locale)}`, { cache: "no-store" })
       .then((response) => response.json())
       .then((payload: { channels?: LiveChannelGroup[] }) => {
         if (cancelled) return;
@@ -129,7 +134,7 @@ export function HomePage({
     return () => {
       cancelled = true;
     };
-  }, [channels.length]);
+  }, [channels.length, locale]);
 
   const scrollToChannels = useCallback(() => {
     const target = document.getElementById("hf-channels");
@@ -499,7 +504,7 @@ export function HomePage({
 
   return (
     <div className="hf">
-      <VeroxHeader active="zive" showAudience />
+      <VeroxHeader active="zive" showAudience locale={locale} />
       <div className="double-rule header-rule" aria-hidden="true" />
 
       {/* Obsah pod hlavičkou — nosič oranžového gradientu vlevo (po dolní okraj) */}
@@ -517,6 +522,7 @@ export function HomePage({
             onEnded={handleStageEnded}
             onPlayerReady={registerPlayer}
             onPlayingChange={setPlaying}
+            locale={locale}
           />
           {/* Záchytný overlay přes celé video: pohltí VŠECHNY myší události, takže
               se hover ovládání YouTube (titulek, sdílení, „More videos", logo)
@@ -528,7 +534,7 @@ export function HomePage({
               type="button"
               className="ctrl-play"
               onClick={togglePlay}
-              aria-label={playing ? "Pozastavit" : "Přehrát"}
+              aria-label={playing ? dictionary.common.pause : dictionary.common.play}
             >
               {playing ? (
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -587,6 +593,7 @@ export function HomePage({
             onVolumeChange={handleVolumeChange}
             onMuteToggle={toggleMute}
             onScrollToChannels={displayChannels.length > 0 ? scrollToChannels : undefined}
+            locale={locale}
           />
         </div>
         <button type="button" className="live-badge" onClick={onReturnToLive} aria-label="Přepnout na živé vysílání">
@@ -623,7 +630,7 @@ export function HomePage({
         {displayChannels.length > 0 ? (
           <p className="hero-pick-hint">
             <button type="button" className="hero-pick-hint-btn" onClick={scrollToChannels}>
-              Vyberte jiné video v sekci KANÁLY níže ↓
+              {dictionary.live.chooseAnotherVideo}
             </button>
           </p>
         ) : null}
@@ -636,7 +643,7 @@ export function HomePage({
 
       {/* PRÁVĚ HRAJE */}
       <section className="playing-now" aria-labelledby="hf-playing">
-        <h2 id="hf-playing">PRÁVĚ HRAJE</h2>
+        <h2 id="hf-playing">{dictionary.live.nowPlaying}</h2>
         <div className="stage-wrap">
           <button
             type="button"
@@ -711,7 +718,7 @@ export function HomePage({
         </div>
         <p className="status-label">
           <span />
-          PRÁVĚ BĚŽÍ
+          {dictionary.live.currentlyRunning}
         </p>
         <h3>{displayTitle}</h3>
         <p className="source-label">{displayChannel}</p>
@@ -721,8 +728,8 @@ export function HomePage({
 
       {/* KANÁLY */}
       <section className="channels" aria-labelledby="hf-channels">
-        <h2 id="hf-channels">KANÁLY</h2>
-        <p>KLIKNĚTE NA VYBRANÝ KANÁL PRO ZOBRAZENÍ DETAILU.</p>
+        <h2 id="hf-channels">{dictionary.live.channels}</h2>
+        <p>{dictionary.live.channelHint}</p>
         <div className="stage-wrap">
           <button
             type="button"

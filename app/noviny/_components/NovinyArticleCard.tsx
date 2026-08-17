@@ -3,6 +3,8 @@
 import Link from "next/link";
 
 import { NovinyArticleActions } from "@/app/noviny/_components/NovinyArticleActions";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { useLocale } from "@/lib/i18n/useLocale";
 import {
   formatNovinyDate,
   getArticleAuthor,
@@ -22,6 +24,8 @@ type NovinyArticleCardProps = {
 };
 
 export function NovinyArticleCard({ article, compact = false }: NovinyArticleCardProps) {
+  const locale = useLocale();
+  const dictionary = getDictionary(locale);
   const title = getVisibleArticleTitle(article);
   const previewTitle = getArticlePreviewTitle(article);
   const previewDescription = getArticlePreviewDescription(article);
@@ -51,7 +55,7 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
         <span className="rounded-full bg-[rgba(255,106,0,0.12)] px-2.5 py-1 text-[#B04A00]">
           {sourceLabel(article)}
         </span>
-        {author ? <span className="rounded-full border border-[var(--abj-gold-dim)] bg-[var(--abj-panel)] px-2.5 py-1">Autor: {author}</span> : null}
+        {author ? <span className="rounded-full border border-[var(--abj-gold-dim)] bg-[var(--abj-panel)] px-2.5 py-1">{dictionary.news.author}: {author}</span> : null}
       </div>
 
       <h2 className={`mt-3 font-bold leading-tight text-abj-text1 ${compact ? "text-xl md:text-2xl" : "text-2xl md:text-3xl"}`}>{title}</h2>
@@ -67,7 +71,7 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
             }}
           />
           <div className="border-t border-[var(--abj-gold-dim)] px-3 py-2 text-xs text-abj-text2">
-            <p className="font-semibold uppercase tracking-[0.08em]">Náhled originálního článku</p>
+            <p className="font-semibold uppercase tracking-[0.08em]">{dictionary.news.originalPreview}</p>
             <p className="mt-1 line-clamp-2 text-sm font-semibold text-abj-text1">{previewTitle}</p>
             {previewDescription ? <p className="mt-1 line-clamp-3 text-xs text-abj-text2">{previewDescription}</p> : null}
             <p className="mt-0.5 truncate">{articleHost || article.original_url}</p>
@@ -112,14 +116,14 @@ export function NovinyArticleCard({ article, compact = false }: NovinyArticleCar
       ) : null}
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-abj-text2">{formatNovinyDate(article.published_at)}</p>
+        <p className="text-sm text-abj-text2">{formatNovinyDate(article.published_at, locale === "en" ? "en-US" : "cs-CZ")}</p>
         <Link
           href={article.original_url}
           target="_blank"
           rel="noopener noreferrer nofollow"
           className="inline-flex min-h-11 items-center rounded-xl border border-[#FF6A00]/40 bg-[#FF6A00]/10 px-4 py-2 text-base font-bold text-[#B04A00] hover:bg-[#FF6A00]/15"
         >
-          Číst původní článek
+          {dictionary.news.readOriginal}
         </Link>
       </div>
       <NovinyArticleActions

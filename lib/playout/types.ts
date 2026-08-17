@@ -17,6 +17,9 @@ export type PlayerHandle = {
   getVolume?: () => number;
   setVolume?: (volume: number) => void;
   isMuted?: () => boolean;
+  loadModule?: (moduleName: string) => void;
+  unloadModule?: (moduleName: string) => void;
+  setOption?: (moduleName: string, option: string, value: unknown) => void;
 };
 
 export type PlayoutFillerType = "panorama" | "weather" | "short" | "boundary" | string;

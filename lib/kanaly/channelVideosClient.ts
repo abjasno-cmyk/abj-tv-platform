@@ -1,4 +1,5 @@
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
+import type { VeroxLocale } from "@/lib/i18n/config";
 import {
   LIVE_CHANNEL_VIDEO_FETCH_BUFFER,
   LIVE_CHANNEL_VIDEO_MIN_FROM_CACHE,
@@ -36,7 +37,7 @@ function mapApiVideos(payload: ChannelLatestApiResponse): LiveChannelVideo[] {
     .filter((video): video is LiveChannelVideo => Boolean(video));
 }
 
-async function fetchFromChannelLatest(channel: LiveChannelGroup): Promise<LiveChannelVideo[]> {
+async function fetchFromChannelLatest(channel: LiveChannelGroup, locale?: VeroxLocale): Promise<LiveChannelVideo[]> {
   if (!channel.channelId && !channel.channelUrl && !channel.channelName.trim()) {
     return [];
   }
@@ -49,6 +50,7 @@ async function fetchFromChannelLatest(channel: LiveChannelGroup): Promise<LiveCh
   }
   params.set("channelName", channel.channelName);
   params.set("limit", String(LIVE_CHANNEL_VIDEO_FETCH_BUFFER));
+  if (locale) params.set("locale", locale);
 
   const response = await fetch(`/api/channel-latest?${params.toString()}`, { cache: "no-store" });
   const payload = (await response.json().catch(() => ({}))) as ChannelLatestApiResponse;
@@ -61,6 +63,7 @@ async function fetchFromChannelLatest(channel: LiveChannelGroup): Promise<LiveCh
 
 export async function fetchChannelVideosForKanaly(
   channel: LiveChannelGroup,
+  locale?: VeroxLocale,
 ): Promise<KanalyChannelVideosResult> {
   const feedSelection = selectKanalyChannelVideos(channel.videos);
   if (!shouldSupplementChannelVideosFromApi(feedSelection.videos.length, LIVE_CHANNEL_VIDEO_MIN_FROM_CACHE)) {
@@ -68,7 +71,7 @@ export async function fetchChannelVideosForKanaly(
   }
 
   try {
-    const apiVideos = await fetchFromChannelLatest(channel);
+    const apiVideos = await fetchFromChannelLatest(channel, locale);
     const merged = mergeChannelVideosByVideoId(channel.videos, apiVideos);
     const mergedSelection = selectKanalyChannelVideos(merged);
     if (mergedSelection.videos.length > 0) {

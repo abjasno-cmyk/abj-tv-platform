@@ -2,12 +2,16 @@
 
 import { useEffect, useState } from "react";
 
-import { formatAudienceLine, type AudienceSnapshot } from "@/lib/live/audience";
+import type { AudienceSnapshot } from "@/lib/live/audience";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { useLocale } from "@/lib/i18n/useLocale";
 
 const POLL_MS = 15_000;
 
 export function HeroAudienceIndicator() {
   const [snapshot, setSnapshot] = useState<AudienceSnapshot | null>(null);
+  const locale = useLocale();
+  const dictionary = getDictionary(locale);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,7 +57,7 @@ export function HeroAudienceIndicator() {
 
   return (
     <p className="hf-audience" aria-live="polite">
-      {formatAudienceLine(snapshot)}
+      {dictionary.live.nowWatching(snapshot.displayedViewers.toLocaleString(locale === "en" ? "en-US" : "cs-CZ"))}
     </p>
   );
 }

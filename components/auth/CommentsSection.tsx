@@ -5,6 +5,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CommentLikeButton } from "@/components/auth/CommentLikeButton";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { PostCommentSharePrompt } from "@/components/viewer/PostCommentSharePrompt";
+import { LOCALE_EN } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { useLocale } from "@/lib/i18n/useLocale";
 import {
   VIEWER_COMMENT_ENTITY_VIDEO,
   buildCommentTree,
@@ -272,6 +275,9 @@ export function CommentsSection({
   compact = false,
 }: CommentsSectionProps) {
   const { user, isAuthenticated, requestAuth } = useAuth();
+  const locale = useLocale();
+  const dictionary = getDictionary(locale);
+  const isEnglish = locale === LOCALE_EN;
   const [comments, setComments] = useState<ViewerCommentRecord[]>([]);
   const [canModerate, setCanModerate] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -516,17 +522,17 @@ export function CommentsSection({
 
       {!isAuthenticated ? (
         <div className="vx-comments-login">
-          <p>Zapojte se do diskuse. Přihlášení je zdarma.</p>
+          <p>{isEnglish ? "Join the discussion. Sign-in is free." : "Zapojte se do diskuse. Přihlášení je zdarma."}</p>
           <button
             type="button"
             onClick={() =>
               requestAuth(() => undefined, {
-                reason: "Komentujte, reagujte a pokračujte tam, kde jste skončili.",
+                reason: dictionary.header.authReason.default,
               })
             }
             className="vx-comments-login-btn"
           >
-            Přihlásit zdarma
+            {dictionary.myVerox.signIn}
           </button>
         </div>
       ) : null}
@@ -535,7 +541,7 @@ export function CommentsSection({
         <div className="vx-comments-compose">
           {replyParentId && replyTargetName ? (
             <p className="vx-comments-reply-hint">
-              Odpovídáte uživateli <strong>{replyTargetName}</strong>
+              {isEnglish ? "Replying to " : "Odpovídáte uživateli "}<strong>{replyTargetName}</strong>
               <button
                 type="button"
                 className="vx-comments-reply-cancel"
@@ -544,13 +550,15 @@ export function CommentsSection({
                   setReplyTargetName(null);
                 }}
               >
-                Zrušit
+                {isEnglish ? "Cancel" : "Zrušit"}
               </button>
             </p>
           ) : null}
           {!composeEntityId ? (
             <p className="vx-comments-hint">
-              Vyberte konkrétní video v sekci PRÁVĚ HRAJE nebo KANÁLY — pak zde můžete napsat komentář k němu.
+              {isEnglish
+                ? "Choose a specific video in NOW PLAYING or CHANNELS — then you can write a comment for it here."
+                : "Vyberte konkrétní video v sekci PRÁVĚ HRAJE nebo KANÁLY — pak zde můžete napsat komentář k němu."}
             </p>
           ) : (
             <>
@@ -563,7 +571,7 @@ export function CommentsSection({
                   onChange={(event) => setDraft(event.target.value)}
                   rows={compact ? 2 : 3}
                   maxLength={2000}
-                  placeholder={replyParentId ? "Napište odpověď..." : "Napište komentář"}
+                  placeholder={replyParentId ? (isEnglish ? "Write a reply..." : "Napište odpověď...") : isEnglish ? "Write a comment" : "Napište komentář"}
                   className="vx-comments-input"
                 />
               </div>

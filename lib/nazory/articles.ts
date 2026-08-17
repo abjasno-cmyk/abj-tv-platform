@@ -257,16 +257,21 @@ export async function getArticleByIdForAuthor(
 export async function listPublishedArticlesByAuthor(
   supabase: SupabaseClient,
   authorId: string,
-  limit = 40,
+  limit?: number,
 ): Promise<OpinionArticleRow[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .from("opinion_articles")
     .select(OPINION_ARTICLE_COLUMNS)
     .eq("author_id", authorId)
     .eq("status", OPINION_ARTICLE_STATUS_PUBLISHED)
     .is("deleted_at", null)
-    .order("published_at", { ascending: false })
-    .limit(limit);
+    .order("published_at", { ascending: false });
+
+  if (limit !== undefined) {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
 
   if (error || !data) return [];
   return data as OpinionArticleRow[];
@@ -274,15 +279,20 @@ export async function listPublishedArticlesByAuthor(
 
 export async function listPublishedArticles(
   supabase: SupabaseClient,
-  limit = 40,
+  limit?: number,
 ): Promise<OpinionArticleRow[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .from("opinion_articles")
     .select(OPINION_ARTICLE_COLUMNS)
     .eq("status", OPINION_ARTICLE_STATUS_PUBLISHED)
     .is("deleted_at", null)
-    .order("published_at", { ascending: false })
-    .limit(limit);
+    .order("published_at", { ascending: false });
+
+  if (limit !== undefined) {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
 
   if (error || !data) return [];
   return data as OpinionArticleRow[];

@@ -9,6 +9,8 @@ import {
   resolveDisplayedTranscript,
   type TranscriptResponse,
 } from "@/lib/transcriptTypes";
+import { LOCALE_EN } from "@/lib/i18n/config";
+import { useLocale } from "@/lib/i18n/useLocale";
 
 type VideoTranscriptPanelProps = {
   open: boolean;
@@ -42,37 +44,40 @@ function isTranscriptPreparing(
   return response?.status === "processing";
 }
 
-function preparingHint(softTimedOut: boolean): string | null {
+function preparingHint(softTimedOut: boolean, isEnglish: boolean): string | null {
   if (!softTimedOut) return null;
-  return "Trvá to déle než obvykle, počkejte prosím…";
+  return isEnglish ? "This is taking longer than usual, please wait…" : "Trvá to déle než obvykle, počkejte prosím…";
 }
 
-function panelMessage(response: TranscriptResponse | null, hardTimedOut: boolean): string {
-  if (!response) return "Přepis se nepodařilo načíst.";
+function panelMessage(response: TranscriptResponse | null, hardTimedOut: boolean, isEnglish: boolean): string {
+  if (!response) return isEnglish ? "The transcript could not be loaded." : "Přepis se nepodařilo načíst.";
 
   switch (response.status) {
     case "ready":
-      return response.transcript?.trim() || response.transcript_original?.trim() ? "" : "Přepis je prázdný.";
+      return response.transcript?.trim() || response.transcript_original?.trim() ? "" : isEnglish ? "The transcript is empty." : "Přepis je prázdný.";
     case "processing":
       if (hardTimedOut) {
-        return "Přepis se stále připravuje. Zkuste to prosím znovu za chvíli.";
+        return isEnglish ? "The transcript is still being prepared. Please try again shortly." : "Přepis se stále připravuje. Zkuste to prosím znovu za chvíli.";
       }
       return "";
     case "not_ready_live":
-      return "Přepis bude po skončení vysílání.";
+      return isEnglish ? "The transcript will be available after the live stream ends." : "Přepis bude po skončení vysílání.";
     case "unavailable":
-      return "Přepis není k dispozici.";
+      return isEnglish ? "The transcript is not available." : "Přepis není k dispozici.";
     default:
-      return "Přepis není k dispozici.";
+      return isEnglish ? "The transcript is not available." : "Přepis není k dispozici.";
   }
 }
 
 export function VideoTranscriptPanel({ open, onClose, videoId, videoTitle }: VideoTranscriptPanelProps) {
+  const isEnglish = useLocale() === LOCALE_EN;
   const { response, phase, softTimedOut, hardTimedOut, retry } = useVideoTranscriptPoll(videoId, open);
   const [viewMode, setViewMode] = useState<TranscriptViewMode>("translation");
 
   useEffect(() => {
-    if (open) setViewMode("translation");
+    if (!open) return;
+    const frame = window.requestAnimationFrame(() => setViewMode("translation"));
+    return () => window.cancelAnimationFrame(frame);
   }, [open, videoId]);
 
   const handleKeyDown = useCallback(
@@ -96,7 +101,7 @@ export function VideoTranscriptPanel({ open, onClose, videoId, videoTitle }: Vid
   if (!open) return null;
 
   const preparing = isTranscriptPreparing(response, phase, hardTimedOut);
-  const message = panelMessage(response, hardTimedOut);
+  const message = panelMessage(response, hardTimedOut, isEnglish);
   const showOriginalToggle = Boolean(response && hasTranscriptOriginal(response));
   const displayedTranscript =
     response?.status === "ready" ? resolveDisplayedTranscript(response, viewMode) : "";
@@ -106,7 +111,7 @@ export function VideoTranscriptPanel({ open, onClose, videoId, videoTitle }: Vid
 
   return (
     <div className="vx-transcript-panel" role="presentation">
-      <button type="button" className="vx-transcript-panel-backdrop" aria-label="Zavřít přepis" onClick={onClose} />
+      <button type="button" className="vx-transcript-panel-backdrop" aria-label={isEnglish ? "Close transcript" : "Zavřít přepis"} onClick={onClose} />
       <aside
         className="vx-transcript-panel-dialog"
         role="dialog"
@@ -115,16 +120,16 @@ export function VideoTranscriptPanel({ open, onClose, videoId, videoTitle }: Vid
       >
         <header className="vx-transcript-panel-head">
           <div>
-            <h2 id="vx-transcript-panel-title">Přepis videa</h2>
+            <h2 id="vx-transcript-panel-title">{isEnglish ? "Video transcript" : "Přepis videa"}</h2>
             {videoTitle ? <p className="vx-transcript-panel-subtitle">{videoTitle}</p> : null}
           </div>
-          <button type="button" className="vx-transcript-panel-close" onClick={onClose} aria-label="Zavřít">
+          <button type="button" className="vx-transcript-panel-close" onClick={onClose} aria-label={isEnglish ? "Close" : "Zavřít"}>
             ×
           </button>
         </header>
         <div className="vx-transcript-panel-body">
           {showOriginalToggle ? (
-            <div className="vx-transcript-panel-toggle" role="tablist" aria-label="Jazyk přepisu">
+            <div className="vx-transcript-panel-toggle" role="tablist" aria-label={isEnglish ? "Transcript language" : "Jazyk přepisu"}>
               <button
                 type="button"
                 role="tab"
@@ -132,7 +137,7 @@ export function VideoTranscriptPanel({ open, onClose, videoId, videoTitle }: Vid
                 aria-selected={viewMode === "translation"}
                 onClick={() => setViewMode("translation")}
               >
-                Překlad
+                {isEnglish ? "Translation" : "Překlad"}
               </button>
               <button
                 type="button"
@@ -141,7 +146,7 @@ export function VideoTranscriptPanel({ open, onClose, videoId, videoTitle }: Vid
                 aria-selected={viewMode === "original"}
                 onClick={() => setViewMode("original")}
               >
-                Originál
+                {isEnglish ? "Original" : "Originál"}
               </button>
             </div>
           ) : null}
@@ -153,9 +158,9 @@ export function VideoTranscriptPanel({ open, onClose, videoId, videoTitle }: Vid
                 <span className="vx-transcript-panel-clock-face" />
                 <span className="vx-transcript-panel-clock-hand" />
               </div>
-              <p className="vx-transcript-panel-preparing-title">Připravujeme pro vás</p>
-              {preparingHint(softTimedOut) ? (
-                <p className="vx-transcript-panel-preparing-hint">{preparingHint(softTimedOut)}</p>
+              <p className="vx-transcript-panel-preparing-title">{isEnglish ? "Preparing for you" : "Připravujeme pro vás"}</p>
+              {preparingHint(softTimedOut, isEnglish) ? (
+                <p className="vx-transcript-panel-preparing-hint">{preparingHint(softTimedOut, isEnglish)}</p>
               ) : null}
             </div>
           ) : (
@@ -165,7 +170,7 @@ export function VideoTranscriptPanel({ open, onClose, videoId, videoTitle }: Vid
               </p>
               {showRetry ? (
                 <button type="button" className="vx-transcript-panel-retry" onClick={retry}>
-                  Zkusit znovu
+                  {isEnglish ? "Try again" : "Zkusit znovu"}
                 </button>
               ) : null}
             </>

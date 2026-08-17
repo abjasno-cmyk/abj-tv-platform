@@ -3,6 +3,8 @@
 import { useState } from "react";
 
 import { NovinyArticleCard } from "@/app/noviny/_components/NovinyArticleCard";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { useLocale } from "@/lib/i18n/useLocale";
 import type { RankedNovinyArticle } from "@/lib/noviny/ranking";
 
 type FeedMode = "domaci" | "zahranicni";
@@ -13,6 +15,7 @@ type NovinyArticleFeedProps = {
 };
 
 function ArticleSections({ articles }: { articles: RankedNovinyArticle[] }) {
+  const dictionary = getDictionary(useLocale());
   const lead = articles[0] ?? null;
   const secondary = articles.slice(1, 7);
   const deepRead = articles.slice(7);
@@ -20,7 +23,7 @@ function ArticleSections({ articles }: { articles: RankedNovinyArticle[] }) {
   if (articles.length === 0) {
     return (
       <div className="rounded-2xl border border-[var(--abj-gold-dim)] bg-white p-6 text-base text-abj-text2">
-        V této části zatím nejsou k dispozici žádné publikované články.
+        {dictionary.news.emptySection}
       </div>
     );
   }
@@ -29,14 +32,14 @@ function ArticleSections({ articles }: { articles: RankedNovinyArticle[] }) {
     <div className="space-y-8">
       {lead ? (
         <section className="space-y-3">
-          <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">Hlavní výběr</h2>
+          <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">{dictionary.news.lead}</h2>
           <NovinyArticleCard article={lead} />
         </section>
       ) : null}
 
       {secondary.length > 0 ? (
         <section className="space-y-3">
-          <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">Doporučené články</h2>
+          <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">{dictionary.news.recommended}</h2>
           <div className="grid gap-4 md:grid-cols-2">
             {secondary.map((article) => (
               <NovinyArticleCard key={article.id} article={article} compact />
@@ -47,7 +50,7 @@ function ArticleSections({ articles }: { articles: RankedNovinyArticle[] }) {
 
       {deepRead.length > 0 ? (
         <section className="space-y-3">
-          <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">Další čtení</h2>
+          <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">{dictionary.news.moreReading}</h2>
           <div className="space-y-4">
             {deepRead.map((article) => (
               <NovinyArticleCard key={article.id} article={article} compact />
@@ -61,6 +64,7 @@ function ArticleSections({ articles }: { articles: RankedNovinyArticle[] }) {
 
 export function NovinyArticleFeed({ domesticArticles, foreignArticles }: NovinyArticleFeedProps) {
   const [mode, setMode] = useState<FeedMode>("domaci");
+  const dictionary = getDictionary(useLocale());
   const activeArticles = mode === "domaci" ? domesticArticles : foreignArticles;
 
   return (
@@ -75,7 +79,7 @@ export function NovinyArticleFeed({ domesticArticles, foreignArticles }: NovinyA
             }`}
             aria-pressed={mode === "domaci"}
           >
-            Domácí
+            {dictionary.news.domestic}
           </button>
           <button
             type="button"
@@ -85,7 +89,7 @@ export function NovinyArticleFeed({ domesticArticles, foreignArticles }: NovinyA
             }`}
             aria-pressed={mode === "zahranicni"}
           >
-            Zahraniční
+            {dictionary.news.foreign}
           </button>
         </div>
       </div>

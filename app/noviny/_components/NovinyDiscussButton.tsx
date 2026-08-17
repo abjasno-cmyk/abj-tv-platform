@@ -3,6 +3,8 @@
 import { useEffect, useState, type MouseEvent } from "react";
 
 import { NovinyCommentsDrawer } from "@/app/noviny/_components/NovinyCommentsDrawer";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { useLocale } from "@/lib/i18n/useLocale";
 import { VIEWER_COMMENT_ENTITY_NOVINY_ARTICLE } from "@/lib/viewer/comments";
 
 type NovinyDiscussButtonProps = {
@@ -64,6 +66,7 @@ export function NovinyDiscussButton({
 }: NovinyDiscussButtonProps) {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [resolvedCounts, setResolvedCounts] = useState<Record<string, number>>({});
+  const dictionary = getDictionary(useLocale());
 
   const openComments = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
@@ -99,7 +102,7 @@ export function NovinyDiscussButton({
 
   const classes = className ?? `vx-discuss-video${compact ? " vx-discuss-video--compact" : ""}`;
   const commentCount = resolvedCounts[articleId] ?? COMMENT_COUNT_CACHE.get(articleId) ?? 0;
-  const countLabel = `Diskutovat (${commentCount})`;
+  const countLabel = `${dictionary.common.discuss} (${commentCount})`;
 
   return (
     <>

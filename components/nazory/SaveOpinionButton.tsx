@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { useLocale } from "@/lib/i18n/useLocale";
 
 type SaveOpinionButtonProps = {
   articleId: string;
@@ -26,6 +28,7 @@ export function SaveOpinionButton({
   className,
 }: SaveOpinionButtonProps) {
   const { isAuthenticated, requestAuth } = useAuth();
+  const dictionary = getDictionary(useLocale());
   const [isSaved, setIsSaved] = useState(saved);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,14 +81,14 @@ export function SaveOpinionButton({
           if (!isAuthenticated) {
             requestAuth(() => {
               void toggleSave();
-            }, { reason: "Přihlaste se a uložte si článek na později." });
+            }, { reason: dictionary.header.authReason.default });
             return;
           }
           void toggleSave();
         }}
       >
         <span aria-hidden="true">{isSaved ? "★" : "☆"}</span>
-        {loading ? "…" : isSaved ? "Uloženo" : "Uložit článek"}
+        {loading ? "…" : isSaved ? dictionary.common.saved : dictionary.common.saveArticle}
       </button>
       {error ? <span className="nazory-error nazory-save-error">{error}</span> : null}
     </span>

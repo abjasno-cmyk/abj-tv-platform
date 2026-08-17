@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import YouTube, { type YouTubeProps } from "react-youtube";
 
+import { LOCALE_EN, type VeroxLocale } from "@/lib/i18n/config";
+
 type LivePlayerProps = {
   videoId: string | null;
   title: string;
@@ -16,6 +18,7 @@ type LivePlayerProps = {
   continueFromSeconds?: number | null;
   onContinueFromSaved?: (seconds: number) => void;
   onPlaybackSample?: (sample: { videoId: string; positionSeconds: number; durationSeconds: number }) => void;
+  locale?: VeroxLocale;
 };
 
 type FullscreenElement = HTMLElement & {
@@ -34,6 +37,8 @@ type YouTubePlayerHandle = {
   pauseVideo?: () => void;
   mute?: () => void;
   unMute?: () => void;
+  loadModule?: (moduleName: string) => void;
+  setOption?: (moduleName: string, option: string, value: unknown) => void;
 };
 
 type ScreenOrientationHandle = {
@@ -133,6 +138,7 @@ export function LivePlayer({
   continueFromSeconds = null,
   onContinueFromSaved,
   onPlaybackSample,
+  locale,
 }: LivePlayerProps) {
   const playerShellRef = useRef<HTMLElement | null>(null);
   const videoViewportRef = useRef<HTMLDivElement | null>(null);
@@ -200,9 +206,12 @@ export function LivePlayer({
         rel: 0,
         modestbranding: 1,
         controls: 1,
+        hl: locale === LOCALE_EN ? "en" : "cs",
+        cc_lang_pref: locale === LOCALE_EN ? "en" : undefined,
+        cc_load_policy: locale === LOCALE_EN ? 1 : undefined,
       },
     }),
-    [isMuted, offsetSeconds]
+    [isMuted, locale, offsetSeconds]
   );
 
   const toggleFullscreen = useCallback(async () => {
@@ -274,6 +283,16 @@ export function LivePlayer({
                   youtubePlayerRef.current.mute?.();
                 } else {
                   youtubePlayerRef.current.unMute?.();
+                }
+                if (locale === LOCALE_EN) {
+                  window.setTimeout(() => {
+                    try {
+                      youtubePlayerRef.current?.loadModule?.("captions");
+                      youtubePlayerRef.current?.setOption?.("captions", "track", { languageCode: "en" });
+                    } catch {
+                      // Captions depend on YouTube availability.
+                    }
+                  }, 300);
                 }
               }}
             />

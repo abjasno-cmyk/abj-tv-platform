@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { useLocale } from "@/lib/i18n/useLocale";
 
 type SaveNovinyArticleButtonProps = {
   articleId: string;
@@ -30,6 +32,7 @@ export function SaveNovinyArticleButton({
   onSavedChange,
 }: SaveNovinyArticleButtonProps) {
   const { isAuthenticated, requestAuth } = useAuth();
+  const dictionary = getDictionary(useLocale());
   const [isSaved, setIsSaved] = useState(saved);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,14 +101,14 @@ export function SaveNovinyArticleButton({
         }
         disabled={loading}
         aria-pressed={isSaved}
-        aria-label={isSaved ? "Odebrat článek z uložených" : "Uložit článek na později"}
-        title={isSaved ? "Odebrat článek z uložených" : "Uložit článek na později"}
+        aria-label={isSaved ? dictionary.common.saved : dictionary.common.saveArticle}
+        title={isSaved ? dictionary.common.saved : dictionary.common.saveArticle}
         onClick={(event) => {
           event.stopPropagation();
           if (!isAuthenticated) {
             requestAuth(() => {
               void toggleSave();
-            }, { reason: "Přihlaste se zdarma a uložte si článek na později." });
+            }, { reason: dictionary.header.authReason.default });
             return;
           }
           void toggleSave();
@@ -113,7 +116,7 @@ export function SaveNovinyArticleButton({
       >
         <span aria-hidden="true">{isSaved ? "★" : "☆"}</span>
         <span className={compact ? "vx-save-video-label vx-save-video-label--compact" : "vx-save-video-label"}>
-          {loading ? "…" : isSaved ? "Uloženo" : "Uložit článek"}
+          {loading ? "…" : isSaved ? dictionary.common.saved : dictionary.common.saveArticle}
         </span>
       </button>
       {error ? <span className="vx-save-video-error">{error}</span> : null}

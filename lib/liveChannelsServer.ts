@@ -57,7 +57,7 @@ function normalizeChannelKey(value: string): string {
     .toLowerCase();
 }
 
-function extractYouTubeIdentifier(channelUrl: string | null): string | null {
+export function extractYouTubeAvatarIdentifier(channelUrl: string | null): string | null {
   if (!channelUrl) return null;
   try {
     const parsed = new URL(channelUrl);
@@ -78,11 +78,11 @@ function extractYouTubeIdentifier(channelUrl: string | null): string | null {
   return null;
 }
 
-function fallbackAvatarUrl(channelId: string | null, channelUrl: string | null): string | null {
-  if (channelId) {
-    return `https://unavatar.io/youtube/${encodeURIComponent(channelId)}`;
-  }
-  const fallbackIdentifier = extractYouTubeIdentifier(channelUrl);
+export function fallbackAvatarUrl(channelId: string | null, channelUrl: string | null): string | null {
+  // Unavatar resolves public YouTube handles/usernames more reliably than
+  // channel IDs. Keep API thumbnails first, but prefer URL-derived identifiers
+  // for the fallback used when the YouTube API is unavailable or incomplete.
+  const fallbackIdentifier = extractYouTubeAvatarIdentifier(channelUrl) ?? channelId?.trim() ?? null;
   if (!fallbackIdentifier) return null;
   return `https://unavatar.io/youtube/${encodeURIComponent(fallbackIdentifier)}`;
 }

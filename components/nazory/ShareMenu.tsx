@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { buildSocialShareUrl, type SocialSharePlatform } from "@/lib/share/socialShare";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { useLocale } from "@/lib/i18n/useLocale";
 
 const SOCIAL_ITEMS: Array<{ id: SocialSharePlatform; label: string }> = [
   { id: "facebook", label: "Facebook" },
@@ -18,6 +20,7 @@ type ShareMenuProps = {
 };
 
 export function ShareMenu({ url, title, label = "Sdílet" }: ShareMenuProps) {
+  const dictionary = getDictionary(useLocale());
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -83,20 +86,20 @@ export function ShareMenu({ url, title, label = "Sdílet" }: ShareMenuProps) {
         aria-controls={menuId}
         onClick={() => setOpen((current) => !current)}
       >
-        {copied ? "Odkaz zkopírován" : label}
+        {copied ? dictionary.common.linkCopied : label === "Sdílet" ? dictionary.common.share : label}
         <span className="nazory-share-menu-chevron" aria-hidden="true">
           {open ? "▴" : "▾"}
         </span>
       </button>
       {open ? (
-        <div id={menuId} className="nazory-share-menu-panel" role="menu" aria-label="Možnosti sdílení">
+        <div id={menuId} className="nazory-share-menu-panel" role="menu" aria-label={dictionary.common.share}>
           <button
             type="button"
             className="nazory-share-menu-item"
             role="menuitem"
             onClick={() => void handleCopy()}
           >
-            Kopírovat odkaz
+            {dictionary.common.copyLink}
           </button>
           {SOCIAL_ITEMS.map((item) => (
             <button

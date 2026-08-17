@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAuthorDisplayName } from "@/lib/nazory/display";
 import { publicNazoryMediaUrl } from "@/lib/nazory/media";
 import type { AuthorProfileRow, OpinionArticleRow } from "@/lib/nazory/types";
+import type { VeroxLocale } from "@/lib/i18n/config";
 
 async function loadAuthorsForArticles(articles: OpinionArticleRow[]) {
   const authorIds = [...new Set(articles.map((article) => article.author_id))];
@@ -47,7 +48,7 @@ async function loadCommentCounts(articleIds: string[]) {
   return counts;
 }
 
-export async function OpinionList({ articles }: { articles: OpinionArticleRow[] }) {
+export async function OpinionList({ articles, locale }: { articles: OpinionArticleRow[]; locale: VeroxLocale }) {
   const [authors, commentCounts] = await Promise.all([
     loadAuthorsForArticles(articles),
     loadCommentCounts(articles.map((article) => article.id)),
@@ -61,6 +62,7 @@ export async function OpinionList({ articles }: { articles: OpinionArticleRow[] 
             article={article}
             author={authors.get(article.author_id) ?? null}
             commentCount={commentCounts.get(article.id) ?? 0}
+            locale={locale}
           />
           {index < articles.length - 1 ? (
             <div className="vx-strip" aria-hidden="true">

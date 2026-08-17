@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { localizedPath } from "@/lib/i18n/paths";
+import { useLocale } from "@/lib/i18n/useLocale";
 import type { PublicAuthorCatalogItem } from "@/lib/nazory/authors";
 
 const DOT_COUNT = 7;
@@ -15,6 +18,8 @@ type NazoryAuthorsCarouselProps = {
 export function NazoryAuthorsCarousel({ authors, activeSlug = null }: NazoryAuthorsCarouselProps) {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [dot, setDot] = useState(0);
+  const locale = useLocale();
+  const dictionary = getDictionary(locale);
 
   const scrollAuthors = (dir: -1 | 1) => {
     const el = trackRef.current;
@@ -50,14 +55,14 @@ export function NazoryAuthorsCarousel({ authors, activeSlug = null }: NazoryAuth
 
   return (
     <section className="channels nazory-authors" aria-labelledby="hf-authors">
-      <h2 id="hf-authors">AUTOŘI</h2>
-      <p>KLIKNĚTE NA VYBRANÉHO AUTORA PRO ZOBRAZENÍ JEHO ČLÁNKŮ.</p>
+      <h2 id="hf-authors">{dictionary.opinions.authorsTitle}</h2>
+      <p>{dictionary.opinions.authorsHint}</p>
       <div className="stage-wrap">
         <button
           type="button"
           className="stage-nav stage-prev"
           onClick={() => scrollAuthors(-1)}
-          aria-label="Předchozí autoři"
+          aria-label={dictionary.opinions.previousAuthors}
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path
@@ -70,10 +75,10 @@ export function NazoryAuthorsCarousel({ authors, activeSlug = null }: NazoryAuth
             />
           </svg>
         </button>
-        <div className="channel-track" ref={trackRef} aria-label="Autoři">
+        <div className="channel-track" ref={trackRef} aria-label={dictionary.opinions.authorsAria}>
           {authors.length === 0 ? (
             <article className="channel-card">
-              <span className="ch-name">Připravujeme…</span>
+              <span className="ch-name">{dictionary.opinions.preparingAuthors}</span>
             </article>
           ) : (
             authors.map((author) => {
@@ -81,7 +86,7 @@ export function NazoryAuthorsCarousel({ authors, activeSlug = null }: NazoryAuth
               return (
                 <Link
                   key={author.slug}
-                  href={`/nazory/autor/${author.slug}`}
+                  href={localizedPath(locale, `/nazory/autor/${author.slug}`)}
                   className={`channel-card${active ? " channel-card-active" : ""}`}
                   aria-current={active ? "page" : undefined}
                 >
@@ -99,7 +104,7 @@ export function NazoryAuthorsCarousel({ authors, activeSlug = null }: NazoryAuth
           type="button"
           className="stage-nav stage-next"
           onClick={() => scrollAuthors(1)}
-          aria-label="Další autoři"
+          aria-label={dictionary.opinions.nextAuthors}
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path

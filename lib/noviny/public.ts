@@ -3,12 +3,12 @@ import { decodeHtmlEntities, normalizeWhitespace, stripHtmlToText } from "@/lib/
 
 const PRAGUE_TIME_ZONE = "Europe/Prague";
 
-function formatInPrague(value: string | null | undefined, opts: Intl.DateTimeFormatOptions): string {
+function formatInPrague(value: string | null | undefined, opts: Intl.DateTimeFormatOptions, locale = "cs-CZ"): string {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   try {
-    return new Intl.DateTimeFormat("cs-CZ", {
+    return new Intl.DateTimeFormat(locale, {
       timeZone: PRAGUE_TIME_ZONE,
       ...opts,
     }).format(date);
@@ -17,14 +17,18 @@ function formatInPrague(value: string | null | undefined, opts: Intl.DateTimeFor
   }
 }
 
-export function formatNovinyDate(value: string | null | undefined): string {
-  return formatInPrague(value, {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+export function formatNovinyDate(value: string | null | undefined, locale = "cs-CZ"): string {
+  return formatInPrague(
+    value,
+    {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    },
+    locale,
+  );
 }
 
 export function getVisibleArticleTitle(article: Pick<NovinyArticleWithRelations, "edited_title" | "title">): string {

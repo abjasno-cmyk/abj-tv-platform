@@ -1,6 +1,7 @@
 import { AuthApiError, requireAuthenticatedUser } from "@/lib/supabase/authenticated-server";
 import { requireAuthorWithCompletedProfile } from "@/lib/nazory/access";
 import { hasMeaningfulDraftContent } from "@/lib/nazory/content";
+import { hasOpinionEnglishOriginal } from "@/lib/nazory/englishOriginal";
 import { createDraftArticle, listAuthorArticles } from "@/lib/nazory/articles";
 import { enforceWriteRateLimit } from "@/lib/rateLimit";
 
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
         ? (payload.contentJson as Record<string, unknown>)
         : undefined;
 
-    if (!hasMeaningfulDraftContent(title, perex, contentJson)) {
+    if (!hasMeaningfulDraftContent(title, perex, contentJson) && !hasOpinionEnglishOriginal({ content_json: contentJson ?? {} })) {
       return Response.json({ error: "Koncept bez obsahu nelze vytvořit." }, { status: 400 });
     }
 

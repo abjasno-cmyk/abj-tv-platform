@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { after } from "next/server";
 
 import { NovinyArticleFeed } from "@/app/noviny/_components/NovinyArticleFeed";
 import {
@@ -8,7 +9,6 @@ import {
   isCzechOrSlovak,
   resolveArticleLanguage,
 } from "@/lib/noviny/public";
-import { fetchOriginMetadata } from "@/lib/noviny/originMetadata";
 import { createNovinyServiceClient, listPublicNovinyArticles, createNovinyPublicClient } from "@/lib/noviny/repository";
 import { rankNovinyArticles } from "@/lib/noviny/ranking";
 import { runNovinyImport } from "@/lib/noviny/importer";
@@ -20,7 +20,12 @@ import { isNazoryAdmin } from "@/lib/nazory/access";
 
 export const dynamic = "force-dynamic";
 
-const STALE_IMPORT_AFTER_MS = 25 * 60 * 1000;
+const PREVIEW_STALE_IMPORT_AFTER_MS = 25 * 60 * 1000;
+const PRODUCTION_STALE_IMPORT_AFTER_MS = 2 * 60 * 60 * 1000;
+const PAGE_STALE_IMPORT_SCHEDULE_COOLDOWN_MS = 15 * 60 * 1000;
+const DEFAULT_FOREIGN_TRANSLATION_LIMIT = 16;
+
+let lastScheduledPageImportAt = 0;
 
 export const metadata: Metadata = {
   title: "Zprávy | Verox",
@@ -36,52 +41,10 @@ export const metadata: Metadata = {
   },
 };
 
-function hasUsefulSourceText(article: NovinyArticleWithRelations): boolean {
-  const metadata = article.metadata ?? {};
-  const sourceText = typeof metadata.summary_source_text === "string" ? metadata.summary_source_text.trim() : "";
-  return sourceText.length >= 180;
-}
-
-async function enrichArticlesFromOrigin(articles: NovinyArticleWithRelations[]): Promise<NovinyArticleWithRelations[]> {
-  const maxToEnrich = 90;
-  const targets = articles
-    .filter((article) => !hasUsefulSourceText(article))
-    .slice(0, maxToEnrich)
-    .map((article) => article.id);
-  if (targets.length === 0) return articles;
-  const targetSet = new Set(targets);
-
-  return Promise.all(
-    articles.map(async (article) => {
-      if (!targetSet.has(article.id)) return article;
-      const metadata = await fetchOriginMetadata(article.original_url);
-      if (!metadata) return article;
-
-      const mergedMeta = { ...(article.metadata ?? {}) } as Record<string, unknown>;
-      if (metadata.title) mergedMeta.preview_title = metadata.title;
-      if (metadata.description) mergedMeta.preview_description = metadata.description;
-
-      const currentSourceText =
-        typeof mergedMeta.summary_source_text === "string" ? String(mergedMeta.summary_source_text) : "";
-      const candidateSource = metadata.sourceText ?? metadata.description ?? "";
-      if (candidateSource && candidateSource.length > currentSourceText.length) {
-        mergedMeta.summary_source_text = candidateSource;
-      }
-
-      return {
-        ...article,
-        external_author: article.external_author ?? metadata.author,
-        perex: article.perex ?? metadata.description,
-        metadata: mergedMeta,
-      };
-    }),
-  );
-}
-
 async function mapWithConcurrency<T, R>(
   items: T[],
   concurrency: number,
-  mapper: (item: T) => Promise<R>,
+  mapper: (item: T, index: number) => Promise<R>,
 ): Promise<R[]> {
   const results = new Array<R>(items.length);
   let cursor = 0;
@@ -91,7 +54,7 @@ async function mapWithConcurrency<T, R>(
       const index = cursor;
       cursor += 1;
       if (index >= items.length) return;
-      results[index] = await mapper(items[index]);
+      results[index] = await mapper(items[index], index);
     }
   }
 
@@ -109,10 +72,13 @@ async function translateMetadataField(
   return translateTextToCzech(value, maxLength);
 }
 
-async function localizeForeignArticlesToCzech(
-  articles: NovinyArticleWithRelations[],
-): Promise<NovinyArticleWithRelations[]> {
-  return mapWithConcurrency(articles, 6, async (article) => {
+async function localizeForeignArticlesToCzech<T extends NovinyArticleWithRelations>(articles: T[]): Promise<T[]> {
+  const explicitLimit = Number(process.env.NOVINY_PAGE_FOREIGN_TRANSLATION_LIMIT);
+  const translationLimit =
+    Number.isFinite(explicitLimit) && explicitLimit >= 0 ? explicitLimit : DEFAULT_FOREIGN_TRANSLATION_LIMIT;
+
+  return mapWithConcurrency(articles, 3, async (article, index) => {
+    if (index >= translationLimit) return article;
     if (isCzechOrSlovak(resolveArticleLanguage(article))) return article;
 
     const metadata = { ...(article.metadata ?? {}) } as Record<string, unknown>;
@@ -150,7 +116,7 @@ async function localizeForeignArticlesToCzech(
       edited_perex: translatedPerex ?? article.edited_perex,
       metadata,
       context,
-    };
+    } as T;
   });
 }
 
@@ -170,7 +136,15 @@ function shouldAttemptPageStaleImport(): boolean {
   const explicit = process.env.NOVINY_PAGE_STALE_IMPORT?.trim().toLowerCase();
   if (explicit === "true" || explicit === "1" || explicit === "yes") return true;
   if (explicit === "false" || explicit === "0" || explicit === "no") return false;
-  return process.env.VERCEL_ENV !== "production";
+  return true;
+}
+
+function staleImportAfterMs(): number {
+  const explicitMinutes = Number(process.env.NOVINY_PAGE_STALE_IMPORT_MINUTES);
+  if (Number.isFinite(explicitMinutes) && explicitMinutes > 0) {
+    return explicitMinutes * 60 * 1000;
+  }
+  return process.env.VERCEL_ENV === "production" ? PRODUCTION_STALE_IMPORT_AFTER_MS : PREVIEW_STALE_IMPORT_AFTER_MS;
 }
 
 function latestArticleImportAt(articles: NovinyArticleWithRelations[]): string | null {
@@ -202,7 +176,25 @@ function isImportStale(value: string | null): boolean {
   if (!value) return true;
   const ts = new Date(value).getTime();
   if (!Number.isFinite(ts)) return true;
-  return Date.now() - ts > STALE_IMPORT_AFTER_MS;
+  return Date.now() - ts > staleImportAfterMs();
+}
+
+async function scheduleStalePageImportIfNeeded(articles: NovinyArticleWithRelations[]): Promise<void> {
+  if (!shouldAttemptPageStaleImport()) return;
+  const latestImport = (await latestFetchLogAt()) ?? latestArticleImportAt(articles);
+  if (!isImportStale(latestImport)) return;
+
+  const now = Date.now();
+  if (now - lastScheduledPageImportAt < PAGE_STALE_IMPORT_SCHEDULE_COOLDOWN_MS) return;
+  lastScheduledPageImportAt = now;
+
+  after(async () => {
+    try {
+      await runNovinyImport({ runType: "api" });
+    } catch (error) {
+      console.error("noviny stale page import failed", error);
+    }
+  });
 }
 
 export default async function NovinyPage() {
@@ -222,25 +214,23 @@ export default async function NovinyPage() {
     } catch (error) {
       articlesError = error instanceof Error ? error.message : "Automatický import Novin selhal.";
     }
-  } else if (shouldAttemptPageStaleImport()) {
+  } else {
     try {
-      const latestImport = (await latestFetchLogAt()) ?? latestArticleImportAt(articles);
-      if (isImportStale(latestImport)) {
-        await runNovinyImport({ runType: "api" });
-        articles = await listPublicNovinyArticles(supabase, { limit: 250 });
-      }
+      await scheduleStalePageImportIfNeeded(articles);
     } catch (error) {
-      articlesError = error instanceof Error ? error.message : "Automatický refresh Novin selhal.";
+      articlesError = error instanceof Error ? error.message : "Naplánování automatického refresh Novin selhalo.";
     }
-  } else if (firstArticlesResult.status === "rejected") {
+  }
+
+  if (firstArticlesResult.status === "rejected" && articles.length === 0) {
     articlesError = firstArticlesResult.reason instanceof Error ? firstArticlesResult.reason.message : "Články se nepodařilo načíst.";
   }
 
-  const enrichedArticles = await enrichArticlesFromOrigin(articles);
-  const localizedArticles = await localizeForeignArticlesToCzech(enrichedArticles);
-  const ranked = rankNovinyArticles(localizedArticles);
+  const ranked = rankNovinyArticles(articles);
   const domesticArticles = ranked.filter((article) => isCzechOrSlovak(resolveArticleLanguage(article)));
-  const foreignArticles = ranked.filter((article) => !isCzechOrSlovak(resolveArticleLanguage(article)));
+  const foreignArticles = await localizeForeignArticlesToCzech(
+    ranked.filter((article) => !isCzechOrSlovak(resolveArticleLanguage(article))),
+  );
   const showAdminControls = await canShowNovinyAdminControls();
 
   return (

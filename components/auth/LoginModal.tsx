@@ -2,17 +2,27 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+type ConsentOptions = { termsAccepted: boolean; newsletterOptIn: boolean };
+type PasswordMode = "signin" | "signup" | "reset";
+
 type LoginModalProps = {
   open: boolean;
   reason?: string | null;
-  busyProvider: "google" | "facebook" | "email" | null;
+  busyProvider: "google" | "facebook" | "email" | "password" | null;
   errorMessage: string | null;
   enableFacebook?: boolean;
   enableEmail?: boolean;
+  enablePassword?: boolean;
   onClose: () => void;
-  onOAuth: (provider: "google" | "facebook", options: { termsAccepted: boolean; newsletterOptIn: boolean }) => Promise<void>;
-  onEmail: (email: string, options: { termsAccepted: boolean; newsletterOptIn: boolean }) => Promise<void>;
+  onOAuth: (provider: "google" | "facebook", options: ConsentOptions) => Promise<void>;
+  onEmail: (email: string, options: ConsentOptions) => Promise<void>;
+  onPasswordSignIn: (email: string, password: string) => Promise<void>;
+  onPasswordSignUp: (email: string, password: string, options: ConsentOptions) => Promise<void>;
+  onPasswordReset: (email: string) => Promise<void>;
 };
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD_LENGTH = 8;
 
 export function LoginModal({
   open,
@@ -21,11 +31,17 @@ export function LoginModal({
   errorMessage,
   enableFacebook = false,
   enableEmail = false,
+  enablePassword = true,
   onClose,
   onOAuth,
   onEmail,
+  onPasswordSignIn,
+  onPasswordSignUp,
+  onPasswordReset,
 }: LoginModalProps) {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordMode, setPasswordMode] = useState<PasswordMode>("signin");
   const [termsAccepted, setTermsAccepted] = useState(true);
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -50,6 +66,53 @@ export function LoginModal({
 
   if (!open) return null;
 
+  const validateEmail = (): string | null => {
+    const normalized = email.trim();
+    if (!normalized || !EMAIL_PATTERN.test(normalized)) {
+      setLocalError("Zadejte prosím platný e-mail.");
+      return null;
+    }
+    return normalized;
+  };
+
+  const submitPassword = () => {
+    setLocalError(null);
+    const normalizedEmail = validateEmail();
+    if (!normalizedEmail) return;
+
+    if (passwordMode === "reset") {
+      void onPasswordReset(normalizedEmail);
+      return;
+    }
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setLocalError(`Heslo musí mít alespoň ${MIN_PASSWORD_LENGTH} znaků.`);
+      return;
+    }
+    if (passwordMode === "signup") {
+      if (!termsAccepted) {
+        setLocalError("Pro vytvoření účtu je potřeba souhlasit s podmínkami.");
+        return;
+      }
+      void onPasswordSignUp(normalizedEmail, password, { termsAccepted, newsletterOptIn });
+      return;
+    }
+    void onPasswordSignIn(normalizedEmail, password);
+  };
+
+  const passwordBusy = busyProvider === "password";
+  const passwordSubmitLabel =
+    passwordMode === "reset"
+      ? passwordBusy
+        ? "Odesílám odkaz…"
+        : "Poslat odkaz pro obnovu hesla"
+      : passwordMode === "signup"
+        ? passwordBusy
+          ? "Vytvářím účet…"
+          : "Zaregistrovat se"
+        : passwordBusy
+          ? "Přihlašuji…"
+          : "Přihlásit se";
+
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center px-4 py-6">
       <button
@@ -68,7 +131,7 @@ export function LoginModal({
         <div className="px-5 py-5 sm:px-7 sm:py-6">
           <header className="space-y-2 text-center">
             <h2 className="text-[28px] font-extrabold uppercase leading-none tracking-wide text-[#303030]">
-              Přihlásit zdarma
+              {passwordMode === "signup" ? "Registrace zdarma" : "Přihlásit zdarma"}
             </h2>
             <p className="text-[13px] leading-relaxed text-[#5a5a5a]">
               Přihlaste se zdarma a získejte svůj divácký účet. Budete moci komentovat, lajkovat, ukládat si oblíbené
@@ -83,10 +146,6 @@ export function LoginModal({
               </p>
             ) : null}
           </header>
-
-          <div className="mt-5 flex min-h-[44px] w-full items-center justify-center border-[1.5px] border-[#ff6600]/55 px-4 py-2 text-center text-[12px] font-bold uppercase tracking-[0.06em] text-[#303030]">
-            Komentujte, lajkujte a pokračujte tam, kde jste skončili.
-          </div>
 
           <div className="mt-3 space-y-2">
             <button
@@ -123,6 +182,86 @@ export function LoginModal({
             ) : null}
           </div>
 
+          {enablePassword ? (
+            <form
+              className="mt-3 space-y-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                submitPassword();
+              }}
+            >
+              <p className="pt-1 text-center text-[11px] font-bold uppercase tracking-[0.12em] text-[#9b9b9b]">
+                {passwordMode === "reset" ? "Obnova hesla" : "Nebo e-mailem a heslem"}
+              </p>
+              <input
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="vas@email.cz"
+                className="min-h-[44px] w-full border-[1.5px] border-[#ff6600]/55 px-3 py-2 text-sm text-[#303030] outline-none placeholder:text-[#9b9b9b] focus:border-[#ff6600]"
+              />
+              {passwordMode !== "reset" ? (
+                <input
+                  type="password"
+                  autoComplete={passwordMode === "signup" ? "new-password" : "current-password"}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder={passwordMode === "signup" ? `Heslo (min. ${MIN_PASSWORD_LENGTH} znaků)` : "Heslo"}
+                  className="min-h-[44px] w-full border-[1.5px] border-[#ff6600]/55 px-3 py-2 text-sm text-[#303030] outline-none placeholder:text-[#9b9b9b] focus:border-[#ff6600]"
+                />
+              ) : (
+                <p className="text-[12px] leading-snug text-[#707070]">
+                  Pošleme vám e-mail s odkazem, přes který si nastavíte nové heslo.
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={busyProvider !== null}
+                className="flex min-h-[44px] w-full items-center justify-center border-2 border-[#ff6600] bg-[#ff6600] px-4 py-2 text-[13px] font-bold uppercase tracking-[0.06em] text-white transition hover:bg-[#e65c00] disabled:opacity-60"
+              >
+                {passwordSubmitLabel}
+              </button>
+              <div className="flex items-center justify-between text-[12px]">
+                {passwordMode === "signin" ? (
+                  <>
+                    <button
+                      type="button"
+                      className="font-semibold text-[#ff6600] hover:underline"
+                      onClick={() => {
+                        setLocalError(null);
+                        setPasswordMode("reset");
+                      }}
+                    >
+                      Zapomenuté heslo?
+                    </button>
+                    <button
+                      type="button"
+                      className="text-[#5a5a5a] hover:text-[#ff6600] hover:underline"
+                      onClick={() => {
+                        setLocalError(null);
+                        setPasswordMode("signup");
+                      }}
+                    >
+                      Nemáte účet? Registrace
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="text-[#5a5a5a] hover:text-[#ff6600] hover:underline"
+                    onClick={() => {
+                      setLocalError(null);
+                      setPasswordMode("signin");
+                    }}
+                  >
+                    ← Zpět na přihlášení
+                  </button>
+                )}
+              </div>
+            </form>
+          ) : null}
+
           {enableEmail ? (
             <div className="mt-3 space-y-2">
               <input
@@ -142,7 +281,7 @@ export function LoginModal({
                     return;
                   }
                   const normalizedEmail = email.trim();
-                  if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+                  if (!normalizedEmail || !EMAIL_PATTERN.test(normalizedEmail)) {
                     setLocalError("Zadejte prosím platný e-mail.");
                     return;
                   }

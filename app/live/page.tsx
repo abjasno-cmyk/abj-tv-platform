@@ -1,6 +1,14 @@
 import { redirect } from "next/navigation";
 
 import LivePage from "@/app/live/LivePage";
+import { getRequestLocale } from "@/lib/i18n/server";
+import { localizedPath } from "@/lib/i18n/paths";
+import {
+  localizeLiveChannels,
+  localizeProgramBlock,
+  localizeProgramDays,
+  localizeVideoTitle,
+} from "@/lib/i18n/videoTitles";
 import { buildEPG } from "@/lib/buildEPG";
 import { loadLiveChannelsForPage } from "@/lib/liveChannelsServer";
 import { getNowPlaying, getProgram } from "@/lib/programEngine";
@@ -453,6 +461,7 @@ export default async function LivePageServer(
   let v3NowPlaying: ProgramBlock | null = null;
   let externalNowPlaying: ExternalNowPlaying | null = null;
   let liveChannels: LiveChannelGroup[] = [];
+  const locale = await getRequestLocale();
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const rawVideoId = resolvedSearchParams?.videoId;
@@ -467,7 +476,8 @@ export default async function LivePageServer(
     if (requestedTitleParam) params.set("title", requestedTitleParam);
     if (requestedChannelParam) params.set("channel", requestedChannelParam);
     const query = params.toString();
-    redirect(query ? `${videoSharePath(requestedVideoId)}?${query}` : videoSharePath(requestedVideoId));
+    const targetPath = localizedPath(locale, videoSharePath(requestedVideoId));
+    redirect(query ? `${targetPath}?${query}` : targetPath);
   }
 
   const liveChannelsPromise = loadLiveChannelsForPage();
@@ -508,6 +518,18 @@ export default async function LivePageServer(
     } catch (error) {
       console.error("live-page-buildEPG-fallback-failed", error);
     }
+  }
+
+  [epg, liveChannels, v3NowPlaying] = await Promise.all([
+    localizeProgramDays(epg, locale),
+    localizeLiveChannels(liveChannels, locale),
+    localizeProgramBlock(v3NowPlaying, locale),
+  ]);
+  if (externalNowPlaying) {
+    externalNowPlaying = {
+      ...externalNowPlaying,
+      title: await localizeVideoTitle(externalNowPlaying.title, locale),
+    };
   }
 
   const initialFromNowPlaying = externalNowPlaying
@@ -571,6 +593,7 @@ export default async function LivePageServer(
       initialStartSeconds={initialStartOffsetSeconds}
       initialIsLive={!hasRequestedVideoId}
       channels={liveChannels}
+      locale={locale}
     />
   );
 }

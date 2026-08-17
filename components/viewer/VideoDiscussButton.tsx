@@ -3,6 +3,8 @@
 import { useEffect, useState, type MouseEvent } from "react";
 
 import { VideoCommentsDrawer } from "@/components/auth/VideoCommentsDrawer";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { useLocale } from "@/lib/i18n/useLocale";
 
 type VideoDiscussButtonProps = {
   videoId: string;
@@ -65,6 +67,7 @@ export function VideoDiscussButton({
 }: VideoDiscussButtonProps) {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [resolvedCounts, setResolvedCounts] = useState<Record<string, number>>({});
+  const dictionary = getDictionary(useLocale());
 
   const openComments = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
@@ -102,7 +105,7 @@ export function VideoDiscussButton({
     className ?? `vx-discuss-video${compact ? " vx-discuss-video--compact" : ""}`;
   const commentCount =
     resolvedCounts[videoId] ?? COMMENT_COUNT_CACHE.get(videoId) ?? 0;
-  const countLabel = `Diskutovat (${commentCount})`;
+  const countLabel = `${dictionary.common.discuss} (${commentCount})`;
 
   return (
     <>

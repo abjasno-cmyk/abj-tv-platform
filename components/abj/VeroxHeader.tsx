@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 import { HeroAudienceIndicator } from "@/components/abj/HeroAudienceIndicator";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { LOCALE_CS, LOCALE_EN, type VeroxLocale } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n/dictionary";
 import { moduleEnabled, TENANT } from "@/lib/tenant";
 
 // Sdílená horní lišta dle návrhu Lucie Robinson („menu_listy"): velké logo
@@ -14,6 +17,7 @@ import { moduleEnabled, TENANT } from "@/lib/tenant";
 export type VeroxNavKey = "zive" | "videa" | "noviny" | "nazory" | "kanaly" | "muj";
 
 const DAYS = ["NEDĚLE", "PONDĚLÍ", "ÚTERÝ", "STŘEDA", "ČTVRTEK", "PÁTEK", "SOBOTA"];
+const DAYS_EN = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
 const MONTHS_GEN = [
   "LEDNA", "ÚNORA", "BŘEZNA", "DUBNA", "KVĚTNA", "ČERVNA",
   "ČERVENCE", "SRPNA", "ZÁŘÍ", "ŘÍJNA", "LISTOPADU", "PROSINCE",
@@ -21,6 +25,10 @@ const MONTHS_GEN = [
 const MONTHS_NOM = [
   "LEDEN", "ÚNOR", "BŘEZEN", "DUBEN", "KVĚTEN", "ČERVEN",
   "ČERVENEC", "SRPEN", "ZÁŘÍ", "ŘÍJEN", "LISTOPAD", "PROSINEC",
+];
+const MONTHS_EN = [
+  "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
+  "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER",
 ];
 
 const EN_WEEKDAY_INDEX: Record<string, number> = {
@@ -62,11 +70,77 @@ interface VeroxHeaderProps {
   active?: VeroxNavKey;
   /** Počítadlo „Právě sleduje" pod datem — jen na /live. */
   showAudience?: boolean;
+  locale?: VeroxLocale;
 }
 
-export function VeroxHeader({ active, showAudience = false }: VeroxHeaderProps) {
+function stripEnglishPrefix(pathname: string): string {
+  if (pathname === "/en") return "/live";
+  return pathname.replace(/^\/en(?=\/|$)/, "") || "/live";
+}
+
+function withEnglishPrefix(pathname: string): string {
+  if (pathname === "/en" || pathname.startsWith("/en/")) return pathname;
+  return `/en${pathname.startsWith("/") ? pathname : `/${pathname}`}`;
+}
+
+function isPreviewLikeHost(host: string): boolean {
+  const normalized = host.toLowerCase();
+  return (
+    normalized.includes("localhost") ||
+    normalized.includes("127.0.0.1") ||
+    normalized.endsWith(".vercel.app") ||
+    normalized.includes("-git-")
+  );
+}
+
+function isPreviewLikeRuntime(): boolean {
+  const vercelEnv = (process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.VERCEL_ENV ?? "").toLowerCase();
+  return vercelEnv === "preview" || vercelEnv === "development";
+}
+
+function shouldUseExternalEnglishOrigin(): boolean {
+  const value = process.env.NEXT_PUBLIC_VEROX_EN_USE_EXTERNAL_ORIGIN?.trim().toLowerCase();
+  return value === "true" || value === "1" || value === "yes";
+}
+
+function languageHref(targetLocale: VeroxLocale, pathname: string): string {
+  const path = pathname || "/live";
+  if (
+    isPreviewLikeRuntime() ||
+    (typeof window !== "undefined" && isPreviewLikeHost(window.location.host))
+  ) {
+    return targetLocale === LOCALE_EN ? withEnglishPrefix(path) : stripEnglishPrefix(path);
+  }
+
+  if (targetLocale === LOCALE_EN) {
+    const origin = process.env.NEXT_PUBLIC_VEROX_EN_ORIGIN?.trim();
+    return origin && shouldUseExternalEnglishOrigin()
+      ? `${origin}${stripEnglishPrefix(path)}`
+      : withEnglishPrefix(path);
+  }
+  const origin = process.env.NEXT_PUBLIC_VEROX_CS_ORIGIN?.trim();
+  const czechPath = stripEnglishPrefix(path);
+  return origin ? `${origin}${czechPath}` : czechPath;
+}
+
+function shouldUseEnglishPathPrefix(locale: VeroxLocale, pathname: string): boolean {
+  if (locale !== LOCALE_EN) return false;
+  if (pathname === "/en" || pathname.startsWith("/en/")) return true;
+  if (typeof window === "undefined") return false;
+  return isPreviewLikeHost(window.location.host);
+}
+
+function localizedHref(locale: VeroxLocale, pathname: string, href: string): string {
+  if (!shouldUseEnglishPathPrefix(locale, pathname)) return href;
+  return withEnglishPrefix(href);
+}
+
+export function VeroxHeader({ active, showAudience = false, locale = LOCALE_CS }: VeroxHeaderProps) {
   const { isAuthenticated, profile, openLoginModal, signOut } = useAuth();
   const [now, setNow] = useState<Date>(() => new Date());
+  const pathname = usePathname();
+  const dictionary = getDictionary(locale);
+  const isEnglish = locale === LOCALE_EN;
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(new Date()), 1000);
@@ -74,67 +148,85 @@ export function VeroxHeader({ active, showAudience = false }: VeroxHeaderProps) 
   }, []);
 
   const t = pragueParts(now);
+  const weekday = isEnglish ? DAYS_EN[DAYS.indexOf(t.weekday)] ?? t.weekday : t.weekday;
+  const mobileMonth = isEnglish ? MONTHS_EN[t.monthIndex] : MONTHS_GEN[t.monthIndex];
+  const desktopMonth = isEnglish ? MONTHS_EN[t.monthIndex] : MONTHS_NOM[t.monthIndex];
 
   return (
     <header className="hf-header" aria-label={TENANT.siteName}>
-      <Link className="hf-logo-link" href="/live" aria-label={`${TENANT.siteName} — ${TENANT.tagline}`}>
+      <Link className="hf-logo-link" href={localizedHref(locale, pathname, "/live")} aria-label={`${TENANT.siteName} — ${TENANT.tagline}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="hf-logo" src={TENANT.logoSrc} alt={TENANT.siteName} />
       </Link>
       <div className="hf-meta">
-        <p className="hf-tagline">{TENANT.tagline}</p>
+        <p className="hf-tagline">{dictionary.header.tagline}</p>
         <div className="hf-timeblock">
           <p className="hf-clock" suppressHydrationWarning>
             {t.hour}:{t.minute}
           </p>
           <p className="hf-date" suppressHydrationWarning>
             <span className="hf-date-m">
-              {t.weekday} {t.day}.{MONTHS_GEN[t.monthIndex]}
+              {isEnglish ? `${weekday} ${mobileMonth} ${t.day}` : `${weekday} ${t.day}.${mobileMonth}`}
             </span>
             <span className="hf-date-d">
-              {t.day}.{MONTHS_NOM[t.monthIndex]} {t.year}
+              {isEnglish ? `${desktopMonth} ${t.day}, ${t.year}` : `${t.day}.${desktopMonth} ${t.year}`}
             </span>
           </p>
+          <div className="hf-lang-switch" aria-label={dictionary.header.language.label}>
+            <a className={locale === LOCALE_CS ? "is-active" : undefined} href={languageHref(LOCALE_CS, pathname)}>
+              {dictionary.header.language.cs}
+            </a>
+            <span aria-hidden="true">/</span>
+            <a className={locale === LOCALE_EN ? "is-active" : undefined} href={languageHref(LOCALE_EN, pathname)}>
+              {dictionary.header.language.en}
+            </a>
+          </div>
           {showAudience ? <HeroAudienceIndicator /> : null}
         </div>
       </div>
       <nav className="hf-nav" aria-label="Hlavní navigace">
-        <Link className={active === "zive" ? "is-active" : undefined} href="/live" aria-current={active === "zive" ? "page" : undefined}>
-          ŽIVĚ
+        <Link className={active === "zive" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/live")} aria-current={active === "zive" ? "page" : undefined}>
+          {dictionary.header.nav.live}
         </Link>
-        <Link className={active === "videa" ? "is-active" : undefined} href="/videa" aria-current={active === "videa" ? "page" : undefined}>
-          NEJNOVĚJŠÍ VIDEA
+        <Link className={active === "videa" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/videa")} aria-current={active === "videa" ? "page" : undefined}>
+          {dictionary.header.nav.latestVideos}
         </Link>
         {moduleEnabled("noviny") ? (
-          <Link className={active === "noviny" ? "is-active" : undefined} href="/noviny" aria-current={active === "noviny" ? "page" : undefined}>
-            ZPRÁVY
+          <Link className={active === "noviny" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/noviny")} aria-current={active === "noviny" ? "page" : undefined}>
+            {dictionary.header.nav.news}
           </Link>
         ) : null}
         {moduleEnabled("nazory") ? (
-          <Link className={active === "nazory" ? "is-active" : undefined} href="/nazory" aria-current={active === "nazory" ? "page" : undefined}>
-            NÁZORY
+          <Link className={active === "nazory" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/nazory")} aria-current={active === "nazory" ? "page" : undefined}>
+            {dictionary.header.nav.opinions}
           </Link>
         ) : null}
         {moduleEnabled("kanaly") ? (
-          <Link className={active === "kanaly" ? "is-active" : undefined} href="/kanaly" aria-current={active === "kanaly" ? "page" : undefined}>
-            KANÁLY
+          <Link className={active === "kanaly" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/kanaly")} aria-current={active === "kanaly" ? "page" : undefined}>
+            {dictionary.header.nav.channels}
           </Link>
         ) : null}
         {moduleEnabled("komunita") ? (
-          <Link className={active === "muj" ? "is-active" : undefined} href="/muj-verox" aria-current={active === "muj" ? "page" : undefined}>
-            MŮJ VEROX
+          <Link className={active === "muj" ? "is-active" : undefined} href={localizedHref(locale, pathname, "/muj-verox")} aria-current={active === "muj" ? "page" : undefined}>
+            {dictionary.header.nav.myVerox}
           </Link>
         ) : null}
         {!moduleEnabled("auth") ? null : isAuthenticated ? (
           <a
-            className="login-link"
+            className="login-link login-link--signout"
             href="/muj-verox"
             onClick={(e) => {
               e.preventDefault();
               void signOut();
             }}
           >
-            {profile?.display_name ? profile.display_name.toUpperCase() : "ODHLÁSIT"}
+            {/* Hover přepne jméno na šedé ODHLÁSIT — divák ví, co klik udělá. */}
+            <span className="login-link-name">
+              {profile?.display_name ? profile.display_name.toUpperCase() : dictionary.header.nav.signOut.toUpperCase()}
+            </span>
+            <span className="login-link-signout" aria-hidden="true">
+              {dictionary.header.nav.signOut.toUpperCase()}
+            </span>
           </a>
         ) : (
           <a
@@ -145,12 +237,12 @@ export function VeroxHeader({ active, showAudience = false }: VeroxHeaderProps) 
               openLoginModal({
                 reason:
                   active === "zive"
-                    ? "Přihlaste se pro komentáře k videím a uložení průběhu sledování."
-                    : "Přihlaste se zdarma a zapojte se do VEROX.",
+                    ? dictionary.header.authReason.live
+                    : dictionary.header.authReason.default,
               });
             }}
           >
-            PŘIHLÁSIT
+            {dictionary.header.nav.signIn}
           </a>
         )}
       </nav>

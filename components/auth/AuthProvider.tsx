@@ -127,7 +127,7 @@ function SupabaseAuthProvider({
   const [loading, setLoading] = useState(() => supabase !== null);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [loginReason, setLoginReason] = useState<string | null>(null);
-  const [busyProvider, setBusyProvider] = useState<"google" | "facebook" | "email" | null>(null);
+  const [busyProvider, setBusyProvider] = useState<"google" | "facebook" | "email" | "password" | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
   const pendingActionRef = useRef<(() => void) | null>(null);
   const lastBootstrappedUserIdRef = useRef<string | null>(null);
@@ -369,6 +369,83 @@ function SupabaseAuthProvider({
     [buildOAuthRedirectTo, supabase],
   );
 
+
+  // Chybové hlášky Supabase auth → česky. Neznámé necháme projít v originále.
+  const translateAuthError = (message: string): string => {
+    const lower = message.toLowerCase();
+    if (lower.includes("invalid login credentials")) return "Nesprávný e-mail nebo heslo.";
+    if (lower.includes("email not confirmed")) return "Nejdřív prosím potvrďte e-mail — odkaz jsme poslali při registraci.";
+    if (lower.includes("user already registered")) return "Účet s tímto e-mailem už existuje. Přihlaste se, nebo použijte obnovu hesla.";
+    if (lower.includes("password should be at least")) return "Heslo je příliš krátké.";
+    if (lower.includes("known to be weak") || lower.includes("pwned")) return "Toto heslo se objevilo ve známých únicích dat — zvolte prosím jiné.";
+    if (lower.includes("rate limit") || lower.includes("too many requests")) return "Příliš mnoho pokusů — zkuste to prosím za chvíli.";
+    return message;
+  };
+
+  const handlePasswordSignIn = useCallback(
+    async (email: string, password: string) => {
+      if (!supabase) {
+        setModalError("Přihlášení není dostupné: chybí konfigurace Supabase.");
+        return;
+      }
+      setBusyProvider("password");
+      setModalError(null);
+      const result = await supabase.auth.signInWithPassword({ email, password });
+      setBusyProvider(null);
+      if (result.error) {
+        setModalError(translateAuthError(result.error.message));
+        return;
+      }
+      closeLoginModal();
+    },
+    [closeLoginModal, supabase],
+  );
+
+  const handlePasswordSignUp = useCallback(
+    async (email: string, password: string, options: { termsAccepted: boolean; newsletterOptIn: boolean }) => {
+      if (!supabase) {
+        setModalError("Přihlášení není dostupné: chybí konfigurace Supabase.");
+        return;
+      }
+      setBusyProvider("password");
+      setModalError(null);
+      storePendingConsentsInStorage({
+        termsAccepted: options.termsAccepted,
+        newsletterOptIn: options.newsletterOptIn,
+        source: "password_signup",
+      });
+      const result = await supabase.auth.signUp({ email, password });
+      setBusyProvider(null);
+      if (result.error) {
+        setModalError(translateAuthError(result.error.message));
+        return;
+      }
+      // Supabase u existujícího e-mailu vrací "úspěch" s prázdnými identities
+      // (enumeration protection) — uživateli řekneme totéž co u nové registrace.
+      setModalError("Poslali jsme vám potvrzovací e-mail. Registraci dokončíte kliknutím na odkaz v něm.");
+    },
+    [supabase],
+  );
+
+  const handlePasswordReset = useCallback(
+    async (email: string) => {
+      if (!supabase) {
+        setModalError("Přihlášení není dostupné: chybí konfigurace Supabase.");
+        return;
+      }
+      setBusyProvider("password");
+      setModalError(null);
+      const result = await supabase.auth.resetPasswordForEmail(email);
+      setBusyProvider(null);
+      if (result.error) {
+        setModalError(translateAuthError(result.error.message));
+        return;
+      }
+      setModalError("Pokud u nás e-mail existuje, poslali jsme na něj odkaz pro nastavení nového hesla.");
+    },
+    [supabase],
+  );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -396,6 +473,10 @@ function SupabaseAuthProvider({
         onClose={closeLoginModal}
         onOAuth={handleOAuth}
         onEmail={handleEmail}
+        enableFacebook
+        onPasswordSignIn={handlePasswordSignIn}
+        onPasswordSignUp={handlePasswordSignUp}
+        onPasswordReset={handlePasswordReset}
       />
     </AuthContext.Provider>
   );
