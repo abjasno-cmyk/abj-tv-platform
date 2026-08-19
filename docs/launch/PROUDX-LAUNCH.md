@@ -27,7 +27,12 @@ Cíl: žádný průnik dat, obsahu ani značky mezi vertikálami. Prováděno pr
 - [x] E-maily/auth: netýká se (auth modul na ProudX vypnutý)
 - [ ] Git-connect Vercel projektu + Production Branch `staging` (klientky, guide odeslán)
 - [ ] Vercel Web Analytics Enable (klientky)
-- [ ] **Launch (ABJ-10):** ostrá doména `proudx.cz` + `www` (DNS), produkční Vercel projekt dle konsolidace, odstranit `DEV_BASIC_AUTH_PASSWORD` env, smoke test, stabilizace
+- [x] Cutover příprava (19. 8. večer): production branch `main`, staging = preview větev s heslem (dev.proudx.cz jako branch doména), produkce bez hesla ověřená na vercel.app URL, domény přidané do projektu (verified), apex→www 308 redirect nastaven
+- [ ] **Launch 20. 8. 15:00 — jediný zbývající krok: DNS u Websupportu (Domény → proudx.cz → DNS záznamy):**
+  - `www` → **CNAME** `9e5b42030ac652f3.vercel-dns-016.com.`
+  - `@` (kořen) → **A** `216.150.1.1` a **A** `216.150.16.1` — NAHRADIT stávající A `37.9.175.165` (pozor: pokud na proudx.cz dnes něco běží, tímto se vypne)
+  - `dev` CNAME beze změny
+  - Po propagaci: smoke matice (live, videa, právní, OG, redirect apex→www), oznámení, dohled
 - [ ] Po launchi: Search Console property pro proudx.cz (volitelné), oznámení klientkám
 
 **Rollback plán launche:** ostrá doména se mapuje na Vercel projekt — případný rollback = přemapovat doménu zpět / vrátit Basic Auth env; datová vrstva se launch dnem nemění (běží tatáž jako na stagingu).
