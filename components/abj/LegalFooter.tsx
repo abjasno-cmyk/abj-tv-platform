@@ -32,6 +32,10 @@ export function LegalFooter({ locale = LOCALE_CS }: { locale?: VeroxLocale }) {
         <Link href="/data-deletion" className="hover:text-abj-text1">
           {dictionary.footer.dataDeletion}
         </Link>
+        <span aria-hidden="true">·</span>
+        <Link href="/about" className="hover:text-abj-text1">
+          O platformě
+        </Link>
       </div>
     </footer>
   );
