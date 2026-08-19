@@ -2,17 +2,29 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { LegalPageLayout } from "@/components/legal/LegalPageLayout";
+import { ProudXAboutPage } from "@/components/legal/proudx/ProudXLegalPages";
+import { TENANT } from "@/lib/tenant";
 
 // Cíl „Application home page" pro Google OAuth brand verifikaci: statická
 // server-rendered stránka s 200 (žádný redirect — checker redirecty nesnáší),
 // která popisuje účel aplikace a důvod přihlášení přes Google.
-export const metadata: Metadata = {
+const VEROX_METADATA: Metadata = {
   title: "O platformě VEROX | VEROX",
   description:
     "VEROX je nezávislá internetová televize — nonstop živý program a videa z desítek nezávislých českých a slovenských kanálů.",
 };
 
+const PROUDX_METADATA: Metadata = {
+  title: "O platformě ProudX | ProudX",
+  description: "ProudX — bezplatná internetová televize: nepřetržitý proud a katalog videí. Provozuje POLYCONSULT, spol. s r.o.",
+};
+
+export const metadata: Metadata = TENANT.id === "proudx" ? PROUDX_METADATA : VEROX_METADATA;
+
 export default function AboutPage() {
+  if (TENANT.id === "proudx") {
+    return <ProudXAboutPage />;
+  }
   return (
     <LegalPageLayout title="VEROX — nezávislá internetová televize" subtitle="Mainstreamový detox">
       <p>
