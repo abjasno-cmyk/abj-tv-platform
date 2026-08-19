@@ -70,6 +70,7 @@ export default function ProudXVidea({ videos }: { videos: FeedVideo[] }) {
       <footer className="px-foot">
         <span className="px-foot-brand">Proud<span>X</span></span>
         <span className="px-foot-tag">Zůstaňte v proudu</span>
+        <span className="px-foot-operator">Provozovatel: POLYCONSULT, spol. s r.o.</span>
       </footer>
     </div>
   );

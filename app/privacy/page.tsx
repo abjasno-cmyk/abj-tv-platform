@@ -1,13 +1,25 @@
 import type { Metadata } from "next";
 
 import { LegalPageLayout } from "@/components/legal/LegalPageLayout";
+import { ProudXPrivacyPage } from "@/components/legal/proudx/ProudXLegalPages";
+import { TENANT } from "@/lib/tenant";
 
-export const metadata: Metadata = {
+const VEROX_METADATA: Metadata = {
   title: "Zásady ochrany osobních údajů | VEROX",
   description: "Zásady ochrany osobních údajů platformy VEROX.",
 };
 
+const PROUDX_METADATA: Metadata = {
+  title: "Zásady ochrany osobních údajů | ProudX",
+  description: "Zásady ochrany osobních údajů platformy ProudX.",
+};
+
+export const metadata: Metadata = TENANT.id === "proudx" ? PROUDX_METADATA : VEROX_METADATA;
+
 export default function PrivacyPage() {
+  if (TENANT.id === "proudx") {
+    return <ProudXPrivacyPage />;
+  }
   return (
     <LegalPageLayout
       title="Zásady ochrany osobních údajů"

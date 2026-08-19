@@ -1,13 +1,25 @@
 import type { Metadata } from "next";
 
 import { LegalPageLayout } from "@/components/legal/LegalPageLayout";
+import { ProudXTermsPage } from "@/components/legal/proudx/ProudXLegalPages";
+import { TENANT } from "@/lib/tenant";
 
-export const metadata: Metadata = {
+const VEROX_METADATA: Metadata = {
   title: "Podmínky užívání | VEROX",
   description: "Podmínky užívání platformy VEROX.",
 };
 
+const PROUDX_METADATA: Metadata = {
+  title: "Podmínky užívání | ProudX",
+  description: "Podmínky užívání platformy ProudX.",
+};
+
+export const metadata: Metadata = TENANT.id === "proudx" ? PROUDX_METADATA : VEROX_METADATA;
+
 export default function TermsPage() {
+  if (TENANT.id === "proudx") {
+    return <ProudXTermsPage />;
+  }
   return (
     <LegalPageLayout title="Podmínky užívání platformy VEROX">
       <p>Tyto podmínky upravují používání platformy VEROX. Používáním platformy souhlasíte s těmito pravidly.</p>

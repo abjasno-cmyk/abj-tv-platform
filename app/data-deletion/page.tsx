@@ -1,13 +1,25 @@
 import type { Metadata } from "next";
 
 import { LegalPageLayout } from "@/components/legal/LegalPageLayout";
+import { ProudXDataDeletionPage } from "@/components/legal/proudx/ProudXLegalPages";
+import { TENANT } from "@/lib/tenant";
 
-export const metadata: Metadata = {
+const VEROX_METADATA: Metadata = {
   title: "Smazání účtu a osobních údajů | VEROX",
   description: "Postup žádosti o smazání účtu a osobních údajů na platformě VEROX.",
 };
 
+const PROUDX_METADATA: Metadata = {
+  title: "Smazání údajů | ProudX",
+  description: "Informace o mazání údajů na platformě ProudX.",
+};
+
+export const metadata: Metadata = TENANT.id === "proudx" ? PROUDX_METADATA : VEROX_METADATA;
+
 export default function DataDeletionPage() {
+  if (TENANT.id === "proudx") {
+    return <ProudXDataDeletionPage />;
+  }
   return (
     <LegalPageLayout title="Smazání účtu a osobních údajů">
       <p>
