@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ProudX">
+  <!-- Favicon: dark cinematic pozadí s modrou září (jako px-bgglow) + brand X.
+       X kreslené cestami, ne fontem — konzistentní render ve všech prohlížečích. -->
+  <defs>
+    <radialGradient id="px-glow" cx="50%" cy="-10%" r="95%">
+      <stop offset="0%" stop-color="#2b3d75"/>
+      <stop offset="50%" stop-color="#131627"/>
+      <stop offset="100%" stop-color="#0a0b10"/>
+    </radialGradient>
+    <linearGradient id="px-x" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7d9bff"/>
+      <stop offset="100%" stop-color="#1c64f2"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#px-glow)"/>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="13.5" fill="none" stroke="rgba(255,255,255,0.09)"/>
+  <g transform="translate(32 33)" fill="url(#px-x)">
+    <rect x="-6.5" y="-19.5" width="13" height="39" rx="2.5" transform="rotate(45)"/>
+    <rect x="-6.5" y="-19.5" width="13" height="39" rx="2.5" transform="rotate(-45)"/>
+  </g>
+</svg>
