@@ -313,6 +313,16 @@
   box-shadow: 0 24px 44px -26px rgba(106, 140, 255, 0.6);
 }
 .px-card:hover .px-card-play { opacity: 1; transform: scale(1); }
+.px-card.is-current .px-card-thumb {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 24px 44px -26px rgba(106, 140, 255, 0.6);
+}
+.px-card-live {
+  position: absolute; left: 10px; bottom: 10px;
+  padding: 4px 10px; border-radius: 999px;
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: #fff; background: var(--accent);
+}
 .px-card-meta { display: flex; flex-direction: column; gap: 5px; }
 .px-card-ch { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); }
 .px-card-title {
