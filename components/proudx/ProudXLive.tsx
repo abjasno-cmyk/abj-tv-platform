@@ -274,10 +274,29 @@ export default function ProudXLive({
     }
   }, []);
 
+  // Celý program dne jako na VEROXu — strop 100 jen omezí degradovaný
+  // 7denní buildEPG fallback. Nižší strop by pozdě večer uřízl právě hraný blok.
   const programItems = useMemo(
-    () => days.flatMap((d) => d.items).filter((i) => Boolean(i.videoId)).slice(0, 40),
+    () => days.flatMap((d) => d.items).filter((i) => Boolean(i.videoId)).slice(0, 100),
     [days],
   );
+
+  // Vycentruj „Právě hraje" na aktuálně hraný blok (při startu i přepnutí) —
+  // stejné chování jako VEROX rail, jinak rail začíná půlnočním openerem.
+  const programRailRef = useRef<HTMLDivElement | null>(null);
+  const currentCardRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      const el = currentCardRef.current;
+      const container = programRailRef.current;
+      if (!el || !container) return;
+      const elRect = el.getBoundingClientRect();
+      const contRect = container.getBoundingClientRect();
+      const delta = elRect.left - contRect.left - (contRect.width - elRect.width) / 2;
+      container.scrollBy({ left: delta, behavior: "smooth" });
+    }, 120);
+    return () => window.clearTimeout(id);
+  }, [videoId, programItems.length]);
 
   return (
     <div className="px" data-live={isLive ? "1" : "0"}>
@@ -356,29 +375,37 @@ export default function ProudXLive({
               <span className="px-eyebrow">Na programu</span>
               <h2 id="px-program">Právě hraje</h2>
             </div>
-            <div className="px-rail">
-              {programItems.map((item, i) => (
-                <button
-                  key={`${item.videoId}-${i}`}
-                  type="button"
-                  className="px-card"
-                  onClick={() => onSelect(item)}
-                >
-                  <span className="px-card-thumb">
-                    {thumbFor(item) ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={thumbFor(item)} alt="" loading="lazy" />
-                    ) : null}
-                    <span className="px-card-play" aria-hidden="true">
-                      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+            <div className="px-rail" ref={programRailRef}>
+              {programItems.map((item, i) => {
+                const isCurrent = Boolean(videoId) && item.videoId === videoId;
+                return (
+                  <button
+                    key={`${item.videoId}-${i}`}
+                    type="button"
+                    className={`px-card${isCurrent ? " is-current" : ""}`}
+                    ref={isCurrent ? currentCardRef : undefined}
+                    onClick={() => onSelect(item)}
+                  >
+                    <span className="px-card-thumb">
+                      {thumbFor(item) ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={thumbFor(item)} alt="" loading="lazy" />
+                      ) : null}
+                      {isCurrent ? (
+                        <span className="px-card-live">Právě hraje</span>
+                      ) : (
+                        <span className="px-card-play" aria-hidden="true">
+                          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                        </span>
+                      )}
                     </span>
-                  </span>
-                  <span className="px-card-meta">
-                    <span className="px-card-ch">{item.channelName}</span>
-                    <span className="px-card-title">{item.title}</span>
-                  </span>
-                </button>
-              ))}
+                    <span className="px-card-meta">
+                      <span className="px-card-ch">{item.channelName}</span>
+                      <span className="px-card-title">{item.title}</span>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </section>
         ) : null}
