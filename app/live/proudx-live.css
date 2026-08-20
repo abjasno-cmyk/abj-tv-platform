@@ -336,6 +336,7 @@
 
 /* Přehrávač epizody v panelu kanálu */
 .px-podcast-player {
+  scroll-margin-top: 24px; /* autoscroll: přehrávač až u vršku, s malým odsazením */
   display: flex; gap: 18px; align-items: center;
   margin: 14px 0 20px; padding: 14px;
   border: 1px solid var(--line-2); border-radius: 16px;

@@ -249,7 +249,7 @@ export default function ProudXLive({
   useEffect(() => {
     if (!playingEpisode) return;
     const id = window.setTimeout(() => {
-      podcastPlayerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      podcastPlayerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 80);
     return () => window.clearTimeout(id);
   }, [playingEpisode]);
