@@ -110,6 +110,14 @@ export function resolveTenant(env = process.env.NEXT_PUBLIC_TENANT): TenantConfi
 
 export const TENANT: TenantConfig = resolveTenant();
 
+/**
+ * Sdílené ABJ TV bloky (denní opener, výplně) tečou z engine do všech vertikál.
+ * Na cizí vertikále nesmí nést cizí brand — zobrazí se pod jménem vertikály.
+ */
+export function tenantChannelLabel(name: string, tenant: TenantConfig = TENANT): string {
+  return tenant.id !== "verox" && name.trim().toLowerCase() === "abj tv" ? tenant.siteName : name;
+}
+
 export function moduleEnabled(module: ModuleKey, tenant: TenantConfig = TENANT): boolean {
   return tenant.modules[module];
 }
