@@ -239,6 +239,21 @@ export default function ProudXLive({
     setPlaying(false);
   }, []);
 
+  // Po výběru videa z railů dole sroluj na hero — jinak divák nevidí, že hraje.
+  const scrollToHero = useCallback(() => {
+    heroRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  // Přehrávač epizody je NAD railem epizod — po kliku ho doscrolluj do záběru.
+  const podcastPlayerRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!playingEpisode) return;
+    const id = window.setTimeout(() => {
+      podcastPlayerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+    return () => window.clearTimeout(id);
+  }, [playingEpisode]);
+
   const channelDetailRef = useRef<HTMLDivElement | null>(null);
   // Panel je NAD gridem — po kliku ze spodku gridu ho doscrolluj do zorneho pole.
   useEffect(() => {
@@ -492,7 +507,10 @@ export default function ProudXLive({
                     type="button"
                     className={`px-card${isCurrent ? " is-current" : ""}`}
                     ref={isCurrent ? currentCardRef : undefined}
-                    onClick={() => onSelect(item)}
+                    onClick={() => {
+                      onSelect(item);
+                      scrollToHero();
+                    }}
                   >
                     <span className="px-card-thumb">
                       {thumbFor(item) ? (
@@ -533,7 +551,7 @@ export default function ProudXLive({
                   <span> · nejnovější epizody</span>
                 </p>
                 {playingEpisode && playingEpisode.channel === activeChannel.channelName ? (
-                  <div className="px-podcast-player">
+                  <div className="px-podcast-player" ref={podcastPlayerRef}>
                     <span className="px-pod-cover">
                       <LetterboxCover src={playingEpisode.episode.image} />
                     </span>
@@ -617,9 +635,10 @@ export default function ProudXLive({
                         key={`${activeChannel.channelName}-${video.videoId}`}
                         type="button"
                         className="px-card"
-                        onClick={() =>
-                          onSelectChannelVideo({ channelName: activeChannel.channelName, video })
-                        }
+                        onClick={() => {
+                          onSelectChannelVideo({ channelName: activeChannel.channelName, video });
+                          scrollToHero();
+                        }}
                       >
                         <span className="px-card-thumb">
                           {thumbFor(video) ? (
