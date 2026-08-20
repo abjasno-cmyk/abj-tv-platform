@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useProgram } from "@/hooks/useProgram";
+import { TENANT, tenantChannelLabel } from "@/lib/tenant";
 
 type Freshness = "breaking" | "today" | "week" | "evergreen";
 
@@ -311,7 +312,7 @@ export default function ProgramPage() {
       <header className="sticky top-0 z-20 mb-4 rounded-xl border border-[var(--abj-gold-dim)] bg-[rgba(6,12,23,0.94)] px-4 py-3 backdrop-blur">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="font-[var(--font-serif)] text-xl font-semibold tracking-[0.08em] text-abj-gold">ABJ TV</p>
+            <p className="font-[var(--font-serif)] text-xl font-semibold tracking-[0.08em] text-abj-gold">{TENANT.siteName}</p>
             <p className="mt-1 text-xs uppercase tracking-[0.14em] text-abj-text2">Program</p>
             <p className="text-xs text-abj-text2">{formatCurrentDate(clockNow)}</p>
           </div>
@@ -457,7 +458,7 @@ export default function ProgramPage() {
                           {dateTime.timeLabel} – {endTime}
                         </span>
                         <span>{formatDuration(block.durationMin)}</span>
-                        <span className="truncate">{block.channel}</span>
+                        <span className="truncate">{tenantChannelLabel(block.channel)}</span>
                       </div>
 
                       {block.editorial.tldr ? (

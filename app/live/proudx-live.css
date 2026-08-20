@@ -324,6 +324,7 @@
   color: #fff; background: var(--accent);
 }
 .px-card-meta { display: flex; flex-direction: column; gap: 5px; }
+.px-card-date { font-size: 0.72rem; color: var(--faint); }
 .px-card-ch { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); }
 .px-card-title {
   font-size: 0.94rem; line-height: 1.32; color: var(--ink);

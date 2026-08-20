@@ -3,6 +3,7 @@
 import { ProudXHeader } from "@/components/proudx/ProudXHeader";
 import { ProudXFooter } from "@/components/proudx/ProudXFooter";
 import { videoSharePath } from "@/lib/viewer/videoMetadata";
+import { tenantChannelLabel } from "@/lib/tenant";
 import type { FeedVideo } from "@/lib/dayOverview";
 
 import "@/app/live/proudx-live.css";
@@ -17,6 +18,15 @@ const FRESHNESS_LABEL: Record<FeedVideo["freshness"], string> = {
 function thumbFor(v: FeedVideo): string {
   if (v.thumbnail && v.thumbnail.trim()) return v.thumbnail.trim();
   return `https://img.youtube.com/vi/${v.video_id}/hqdefault.jpg`;
+}
+
+const CZ_DATE = new Intl.DateTimeFormat("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" });
+
+function premiereDateLabel(publishedAt: string | undefined): string | null {
+  if (!publishedAt) return null;
+  const date = new Date(publishedAt);
+  if (!Number.isFinite(date.getTime()) || date.getFullYear() < 2000) return null;
+  return CZ_DATE.format(date);
 }
 
 function durationLabel(min?: number | null): string | null {
@@ -58,8 +68,11 @@ export default function ProudXVidea({ videos }: { videos: FeedVideo[] }) {
                     </span>
                   </span>
                   <span className="pxv-meta">
-                    <span className="pxv-ch">{v.channel}</span>
+                    <span className="pxv-ch">{tenantChannelLabel(v.channel)}</span>
                     <span className="pxv-title">{v.title}</span>
+                    {premiereDateLabel(v.published_at) ? (
+                      <span className="px-card-date">Premiéra {premiereDateLabel(v.published_at)}</span>
+                    ) : null}
                   </span>
                 </a>
               );
