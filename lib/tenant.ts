@@ -72,7 +72,7 @@ const PROUDX: TenantConfig = {
   description:
     "ProudX — nová internetová televize. Nepřetržité živé vysílání a katalog videí na jednom místě.",
   logoSrc: "/design/brand/proudx-logo.svg",
-  iconSrc: "/design/brand/proudx-logo.svg",
+  iconSrc: "/design/brand/proudx-icon.svg",
   ogImageSrc: "/design/brand/proudx-og.png",
   brandColor: "#1c64f2",
   modules: {

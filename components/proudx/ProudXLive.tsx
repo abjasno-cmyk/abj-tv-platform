@@ -156,6 +156,11 @@ export default function ProudXLive({
     [fetchedByChannel],
   );
 
+  // Po výběru videa z railů dole sroluj na hero — jinak divák nevidí, že hraje.
+  const scrollToHero = useCallback(() => {
+    heroRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
   const channelDetailRef = useRef<HTMLDivElement | null>(null);
   // Panel je NAD gridem — po kliku ze spodku gridu ho doscrolluj do zorneho pole.
   useEffect(() => {
@@ -409,7 +414,10 @@ export default function ProudXLive({
                     type="button"
                     className={`px-card${isCurrent ? " is-current" : ""}`}
                     ref={isCurrent ? currentCardRef : undefined}
-                    onClick={() => onSelect(item)}
+                    onClick={() => {
+                      onSelect(item);
+                      scrollToHero();
+                    }}
                   >
                     <span className="px-card-thumb">
                       {thumbFor(item) ? (
@@ -458,9 +466,10 @@ export default function ProudXLive({
                         key={`${activeChannel.channelName}-${video.videoId}`}
                         type="button"
                         className="px-card"
-                        onClick={() =>
-                          onSelectChannelVideo({ channelName: activeChannel.channelName, video })
-                        }
+                        onClick={() => {
+                          onSelectChannelVideo({ channelName: activeChannel.channelName, video });
+                          scrollToHero();
+                        }}
                       >
                         <span className="px-card-thumb">
                           {thumbFor(video) ? (
