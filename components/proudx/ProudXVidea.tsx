@@ -1,6 +1,7 @@
 // ProudX katalog videí — dark editorial grid, sladěný s živou stránkou.
 
 import { ProudXHeader } from "@/components/proudx/ProudXHeader";
+import { ProudXFooter } from "@/components/proudx/ProudXFooter";
 import { videoSharePath } from "@/lib/viewer/videoMetadata";
 import type { FeedVideo } from "@/lib/dayOverview";
 
@@ -67,11 +68,7 @@ export default function ProudXVidea({ videos }: { videos: FeedVideo[] }) {
         )}
       </main>
 
-      <footer className="px-foot">
-        <span className="px-foot-brand">Proud<span>X</span></span>
-        <span className="px-foot-tag">Zůstaňte v proudu</span>
-        <span className="px-foot-operator">Provozovatel: POLYCONSULT, spol. s r.o.</span>
-      </footer>
+      <ProudXFooter />
     </div>
   );
 }

@@ -59,6 +59,30 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  // Veřejný odpočet před launchem: dokud server čas < NEXT_PUBLIC_LAUNCH_AT,
+  // všechny stránky rewritují na /launch (countdown). V T-0 brána sama zmizí —
+  // žádný deploy v čase spuštění. Aktivuje se jen nastavením env na deploymentu.
+  const launchAtRaw = process.env.NEXT_PUBLIC_LAUNCH_AT;
+  if (
+    launchAtRaw &&
+    pathname !== "/launch" &&
+    !pathname.startsWith("/api/") &&
+    !CRON_PATHS.includes(pathname)
+  ) {
+    const launchAt = Date.parse(launchAtRaw);
+    if (Number.isFinite(launchAt) && Date.now() < launchAt) {
+      return NextResponse.rewrite(new URL("/launch", request.url));
+    }
+  }
+  // Po startu z /launch pryč i bez JS (karta na pozadí, blokovaný skript) —
+  // klientský redirect v countdownu je jen zrychlení, tohle je záruka.
+  if (pathname === "/launch") {
+    const launchAt = Date.parse(launchAtRaw ?? "");
+    if (!Number.isFinite(launchAt) || Date.now() >= launchAt) {
+      return NextResponse.redirect(new URL("/live", request.url));
+    }
+  }
+
   // Stránky vypnutých modulů nesmí být na této vertikále dosažitelné.
   // ponytail: plaintext 404 stačí — hezčí 404 stránka až s brand fází.
   if (!isPageAllowed(pathname)) {
