@@ -58,6 +58,42 @@ function thumbFor(item: { thumbnail: string | null; videoId: string | null }): s
   return "";
 }
 
+type PodcastEpisode = {
+  id: string;
+  title: string;
+  publishedAt: string | null;
+  durationSec: number | null;
+  image: string | null;
+  audioUrl: string;
+};
+
+type PodcastShow = {
+  image: string | null;
+  episodes: PodcastEpisode[];
+};
+
+function episodeDurationLabel(sec: number | null): string | null {
+  if (!sec || sec <= 0) return null;
+  const min = Math.round(sec / 60);
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m > 0 ? `${h} h ${m} min` : `${h} h`;
+}
+
+/** Čtvercový podcast cover v 16:9 kartě — ostrý contain přes rozmazané pozadí. */
+function LetterboxCover({ src }: { src: string | null }) {
+  if (!src) return null;
+  return (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="px-lb-bg" src={src} alt="" loading="lazy" aria-hidden="true" />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="px-lb-fg" src={src} alt="" loading="lazy" />
+    </>
+  );
+}
+
 function initials(name: string): string {
   const parts = name.replace(/[^\p{L}\p{N} ]/gu, " ").trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "•";
@@ -156,10 +192,67 @@ export default function ProudXLive({
     [fetchedByChannel],
   );
 
+  // Podcastové zdroje: epizody z RSS přes /api/podcast-latest, přehrávání
+  // nativním <audio> přímo v panelu kanálu.
+  const [podcastByChannel, setPodcastByChannel] = useState<Record<string, PodcastShow>>({});
+  const [playingEpisode, setPlayingEpisode] = useState<{ channel: string; episode: PodcastEpisode } | null>(null);
+
+  const loadPodcastEpisodes = useCallback(
+    async (channel: LiveChannelGroup) => {
+      const key = channel.channelName;
+      if (Object.prototype.hasOwnProperty.call(podcastByChannel, key)) return;
+
+      setChannelLoading(key);
+      setChannelError((prev) => ({ ...prev, [key]: "" }));
+      try {
+        const response = await fetch(
+          `/api/podcast-latest?channel=${encodeURIComponent(key)}`,
+          { cache: "no-store" },
+        );
+        const payload = (await response.json().catch(() => ({}))) as {
+          image?: string | null;
+          episodes?: PodcastEpisode[];
+          error?: string;
+        };
+        if (!response.ok) throw new Error(payload.error ?? `HTTP ${response.status}`);
+        const episodes = (payload.episodes ?? []).filter((ep) => ep.audioUrl && ep.title);
+        setPodcastByChannel((prev) => ({ ...prev, [key]: { image: payload.image ?? null, episodes } }));
+        if (episodes.length === 0) {
+          setChannelError((prev) => ({ ...prev, [key]: "Podcast teď nemá dostupné epizody." }));
+        }
+      } catch (error) {
+        setPodcastByChannel((prev) => ({ ...prev, [key]: { image: null, episodes: [] } }));
+        setChannelError((prev) => ({
+          ...prev,
+          [key]: error instanceof Error ? error.message : "Epizody se nepodařilo načíst.",
+        }));
+      } finally {
+        setChannelLoading((prev) => (prev === key ? null : prev));
+      }
+    },
+    [podcastByChannel],
+  );
+
+  // Když se rozehraje podcast, ztlum hero — dvě audia přes sebe nedávají smysl.
+  const pauseHeroForPodcast = useCallback(() => {
+    playerRef.current?.pauseVideo?.();
+    setPlaying(false);
+  }, []);
+
   // Po výběru videa z railů dole sroluj úplně nahoru — hero i s hlavičkou.
   const scrollToHero = useCallback(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
+
+  // Přehrávač epizody je NAD railem epizod — po kliku ho doscrolluj do záběru.
+  const podcastPlayerRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!playingEpisode) return;
+    const id = window.setTimeout(() => {
+      podcastPlayerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+    return () => window.clearTimeout(id);
+  }, [playingEpisode]);
 
   const channelDetailRef = useRef<HTMLDivElement | null>(null);
   // Panel je NAD gridem — po kliku ze spodku gridu ho doscrolluj do zorneho pole.
@@ -451,7 +544,83 @@ export default function ProudXLive({
               <h2 id="px-channels">Kanály</h2>
               <span className="px-count">{channels.length}</span>
             </div>
-            {activeChannel ? (
+            {activeChannel && activeChannel.kind === "podcast" ? (
+              <div className="px-channel-detail" ref={channelDetailRef}>
+                <p className="px-kicker">
+                  {activeChannel.channelName}
+                  <span> · nejnovější epizody</span>
+                </p>
+                {playingEpisode && playingEpisode.channel === activeChannel.channelName ? (
+                  <div className="px-podcast-player" ref={podcastPlayerRef}>
+                    <span className="px-pod-cover">
+                      <LetterboxCover src={playingEpisode.episode.image} />
+                    </span>
+                    <div className="px-pod-info">
+                      <p className="px-pod-title">{playingEpisode.episode.title}</p>
+                      <p className="px-pod-meta">
+                        {activeChannel.channelName}
+                        {premiereDateLabel(playingEpisode.episode.publishedAt ?? undefined)
+                          ? ` · Premiéra ${premiereDateLabel(playingEpisode.episode.publishedAt ?? undefined)}`
+                          : ""}
+                        {episodeDurationLabel(playingEpisode.episode.durationSec)
+                          ? ` · ${episodeDurationLabel(playingEpisode.episode.durationSec)}`
+                          : ""}
+                      </p>
+                      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                      <audio
+                        key={playingEpisode.episode.id}
+                        controls
+                        autoPlay
+                        preload="metadata"
+                        src={playingEpisode.episode.audioUrl}
+                        onPlay={pauseHeroForPodcast}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+                {channelLoading === activeChannel.channelName ? (
+                  <p className="px-channel-note">Načítám epizody podcastu…</p>
+                ) : (podcastByChannel[activeChannel.channelName]?.episodes.length ?? 0) > 0 ? (
+                  <div className="px-rail">
+                    {podcastByChannel[activeChannel.channelName]!.episodes.map((ep) => (
+                      <button
+                        key={`${activeChannel.channelName}-${ep.id}`}
+                        type="button"
+                        className={`px-card${playingEpisode?.episode.id === ep.id ? " is-current" : ""}`}
+                        onClick={() =>
+                          setPlayingEpisode({ channel: activeChannel.channelName, episode: ep })
+                        }
+                      >
+                        <span className="px-card-thumb px-thumb-lb">
+                          <LetterboxCover src={ep.image} />
+                          <span className="px-card-play" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                          </span>
+                        </span>
+                        <span className="px-card-meta">
+                          <span className="px-card-ch">{activeChannel.channelName}</span>
+                          <span className="px-card-title">{ep.title}</span>
+                          <span className="px-card-date">
+                            {[
+                              premiereDateLabel(ep.publishedAt ?? undefined)
+                                ? `Premiéra ${premiereDateLabel(ep.publishedAt ?? undefined)}`
+                                : null,
+                              episodeDurationLabel(ep.durationSec),
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="px-channel-note">
+                    {channelError[activeChannel.channelName] || "Podcast teď nemá dostupné epizody."}
+                  </p>
+                )}
+              </div>
+            ) : activeChannel ? (
               <div className="px-channel-detail" ref={channelDetailRef}>
                 <p className="px-kicker">
                   {activeChannel.channelName}
@@ -508,7 +677,8 @@ export default function ProudXLive({
                   aria-expanded={activeChannelName === ch.channelName}
                   onClick={() => {
                     setActiveChannelName((prev) => (prev === ch.channelName ? null : ch.channelName));
-                    void loadChannelVideos(ch);
+                    if (ch.kind === "podcast") void loadPodcastEpisodes(ch);
+                    else void loadChannelVideos(ch);
                   }}
                 >
                   <ChannelAvatar name={ch.channelName} url={ch.avatarUrl} />
