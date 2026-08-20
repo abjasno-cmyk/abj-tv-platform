@@ -14,6 +14,7 @@ import type { PlayerHandle, PlayoutSurface } from "@/lib/playout/types";
 import type { DayProgram, ProgramItem } from "@/lib/epg-types";
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import { ProudXHeader } from "@/components/proudx/ProudXHeader";
+import { ProudXFooter } from "@/components/proudx/ProudXFooter";
 
 import "@/app/live/proudx-live.css";
 
@@ -454,11 +455,7 @@ export default function ProudXLive({
         ) : null}
       </main>
 
-      <footer className="px-foot">
-        <span className="px-foot-brand">Proud<span>X</span></span>
-        <span className="px-foot-tag">Zůstaňte v proudu</span>
-        <span className="px-foot-operator">Provozovatel: POLYCONSULT, spol. s r.o.</span>
-      </footer>
+      <ProudXFooter />
     </div>
   );
 }

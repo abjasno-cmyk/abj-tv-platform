@@ -355,12 +355,17 @@
 }
 
 /* ── Patička ─────────────────────────────────────────────────── */
-.px-foot-operator { margin-left: auto; font-size: 0.78rem; color: var(--faint); }
+.px-foot-links { margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.px-foot-links a {
+  font-size: 0.78rem; color: var(--faint); text-decoration: none;
+  transition: color 0.15s ease;
+}
+.px-foot-links a:hover { color: var(--accent); }
 .px-foot {
   max-width: 1180px; margin: 0 auto;
   padding: 40px clamp(20px, 4vw, 48px);
   border-top: 1px solid var(--line);
-  display: flex; align-items: baseline; gap: 16px;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px 16px;
 }
 .px-foot-brand { font-family: var(--serif); font-size: 1.4rem; color: var(--ink); }
 .px-foot-brand span { color: var(--accent); }
