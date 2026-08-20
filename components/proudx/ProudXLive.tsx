@@ -15,6 +15,11 @@ import type { DayProgram, ProgramItem } from "@/lib/epg-types";
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import { ProudXHeader } from "@/components/proudx/ProudXHeader";
 import { ProudXFooter } from "@/components/proudx/ProudXFooter";
+import { tenantChannelLabel } from "@/lib/tenant";
+import {
+  mergeChannelVideosByVideoId,
+  selectLatestNonShortChannelVideos,
+} from "@/lib/liveChannelVideos";
 
 import "@/app/live/proudx-live.css";
 
@@ -30,6 +35,22 @@ type ProudXLiveProps = {
   onReturnToLive: () => void;
   onSelectChannelVideo: (payload: { channelName: string; video: LiveChannelVideo }) => void;
 };
+
+// Panel kanálu ukazuje 6 nejnovějších ne-short videí; pod tento počet se
+// cache z feedu doplní živým dotazem na /api/channel-latest (jako VEROX).
+const CHANNEL_PANEL_LIMIT = 6;
+// Z API tahej víc kandidátů — Shorts se filtrují až u nás.
+const CHANNEL_PANEL_FETCH_LIMIT = 24;
+
+const CZ_DATE = new Intl.DateTimeFormat("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" });
+
+function premiereDateLabel(publishedAt: string | undefined): string | null {
+  if (!publishedAt) return null;
+  const date = new Date(publishedAt);
+  // Epocha 0 je fallback pro chybějící datum — nezobrazovat.
+  if (!Number.isFinite(date.getTime()) || date.getFullYear() < 2000) return null;
+  return CZ_DATE.format(date);
+}
 
 function thumbFor(item: { thumbnail: string | null; videoId: string | null }): string {
   if (item.thumbnail && item.thumbnail.trim()) return item.thumbnail.trim();
@@ -87,7 +108,7 @@ export default function ProudXLive({
   const loadChannelVideos = useCallback(
     async (channel: LiveChannelGroup) => {
       const key = channel.channelName;
-      if (channel.videos.length > 0) return;
+      if (channel.videos.length >= CHANNEL_PANEL_LIMIT) return;
       if (Object.prototype.hasOwnProperty.call(fetchedByChannel, key)) return;
       if (!channel.channelId && !channel.channelUrl && !key.trim()) return;
 
@@ -98,7 +119,7 @@ export default function ProudXLive({
         if (channel.channelUrl) params.set("channelUrl", channel.channelUrl);
         else if (channel.channelId) params.set("channelId", channel.channelId);
         params.set("channelName", key);
-        params.set("limit", "6");
+        params.set("limit", String(CHANNEL_PANEL_FETCH_LIMIT));
         const response = await fetch(`/api/channel-latest?${params.toString()}`, { cache: "no-store" });
         const payload = (await response.json().catch(() => ({}))) as {
           videos?: Array<{ videoId?: string; title?: string; thumbnail?: string; publishedAt?: string }>;
@@ -146,11 +167,15 @@ export default function ProudXLive({
     () => channels.find((ch) => ch.channelName === activeChannelName) ?? null,
     [channels, activeChannelName],
   );
+  // Cache z feedu + živý dotaz dohromady (dedup dle videoId), Shorts ven.
   const activeChannelVideos = activeChannel
-    ? (activeChannel.videos.length > 0
-        ? activeChannel.videos
-        : (fetchedByChannel[activeChannel.channelName] ?? [])
-      ).slice(0, 6)
+    ? selectLatestNonShortChannelVideos(
+        mergeChannelVideosByVideoId(
+          activeChannel.videos,
+          fetchedByChannel[activeChannel.channelName] ?? [],
+        ),
+        CHANNEL_PANEL_LIMIT,
+      )
     : [];
 
   const offset = Math.max(0, Math.floor(startSeconds));
@@ -363,7 +388,7 @@ export default function ProudXLive({
           </div>
 
           <div className="px-nowmeta">
-            <p className="px-kicker">{displayChannel}<span> · právě vysíláme</span></p>
+            <p className="px-kicker">{tenantChannelLabel(displayChannel)}<span> · právě vysíláme</span></p>
             <h1 className="px-title">{displayTitle}</h1>
           </div>
         </section>
@@ -400,7 +425,7 @@ export default function ProudXLive({
                       )}
                     </span>
                     <span className="px-card-meta">
-                      <span className="px-card-ch">{item.channelName}</span>
+                      <span className="px-card-ch">{tenantChannelLabel(item.channelName)}</span>
                       <span className="px-card-title">{item.title}</span>
                     </span>
                   </button>
@@ -449,6 +474,11 @@ export default function ProudXLive({
                         <span className="px-card-meta">
                           <span className="px-card-ch">{activeChannel.channelName}</span>
                           <span className="px-card-title">{video.title}</span>
+                          {premiereDateLabel(video.publishedAt) ? (
+                            <span className="px-card-date">
+                              Premiéra {premiereDateLabel(video.publishedAt)}
+                            </span>
+                          ) : null}
                         </span>
                       </button>
                     ))}
@@ -469,7 +499,7 @@ export default function ProudXLive({
                   aria-expanded={activeChannelName === ch.channelName}
                   onClick={() => {
                     setActiveChannelName((prev) => (prev === ch.channelName ? null : ch.channelName));
-                    if (ch.videos.length === 0) void loadChannelVideos(ch);
+                    void loadChannelVideos(ch);
                   }}
                 >
                   <ChannelAvatar name={ch.channelName} url={ch.avatarUrl} />
