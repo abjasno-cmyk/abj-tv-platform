@@ -69,7 +69,8 @@ const PROUDX: TenantConfig = {
   siteName: "ProudX",
   tagline: "ZŮSTAŇTE V PROUDU",
   title: "ProudX • Živé vysílání a videa",
-  description: "ProudX — nepřetržitý videoproud a katalog videí pro městské publikum.",
+  description:
+    "ProudX — nová internetová televize. Nepřetržité živé vysílání a katalog videí na jednom místě.",
   logoSrc: "/design/brand/proudx-logo.svg",
   iconSrc: "/design/brand/proudx-logo.svg",
   ogImageSrc: "/design/brand/proudx-og.png",
