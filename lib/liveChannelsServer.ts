@@ -8,6 +8,7 @@ type SourceChannel = {
   channelId: string | null;
   channelUrl: string | null;
   kind: "youtube" | "podcast";
+  avatarUrl: string | null;
 };
 
 type YouTubeChannelApiPayload = {
@@ -139,7 +140,7 @@ async function loadSourceChannels(): Promise<SourceChannel[]> {
     const supabase = createSupabaseAnonServerClient();
     const { data, error } = await supabase
       .from("sources")
-      .select("source_name, channel_id, channel_url, platform")
+      .select("source_name, channel_id, channel_url, platform, avatar_url")
       .in("platform", ["youtube", "podcast"])
       .eq("active", true)
       .order("source_name", { ascending: true });
@@ -160,6 +161,7 @@ async function loadSourceChannels(): Promise<SourceChannel[]> {
         channelId: readString(row.channel_id),
         channelUrl: readString(row.channel_url),
         kind: readString(row.platform) === "podcast" ? "podcast" : "youtube",
+        avatarUrl: readString(row.avatar_url),
       };
       const existing = byKey.get(key);
       if (!existing) {
@@ -168,6 +170,7 @@ async function loadSourceChannels(): Promise<SourceChannel[]> {
       }
       if (!existing.channelId && nextEntry.channelId) existing.channelId = nextEntry.channelId;
       if (!existing.channelUrl && nextEntry.channelUrl) existing.channelUrl = nextEntry.channelUrl;
+      if (!existing.avatarUrl && nextEntry.avatarUrl) existing.avatarUrl = nextEntry.avatarUrl;
       if (nextEntry.channelName.length > existing.channelName.length) existing.channelName = nextEntry.channelName;
     }
 
@@ -222,12 +225,14 @@ function mergeLiveChannels(
   for (const source of sourceChannels) {
     const key = normalizeChannelKey(source.channelName);
     if (!key) continue;
-    // Podcasty: avatar dodá RSS (show cover) až v panelu, YT odvození nedává smysl.
+    // avatar_url z DB má přednost (u podcastů show cover z RSS backfillu);
+    // YT odvození z channel_url nedává pro podcasty smysl.
     const avatarUrl =
-      source.kind === "podcast"
+      source.avatarUrl ??
+      (source.kind === "podcast"
         ? null
         : ((source.channelId ? avatarByChannelId.get(source.channelId) ?? null : null) ??
-          fallbackAvatarUrl(source.channelId, source.channelUrl));
+          fallbackAvatarUrl(source.channelId, source.channelUrl)));
     const existing = merged.get(key);
     if (!existing) {
       merged.set(key, {
