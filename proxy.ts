@@ -74,6 +74,14 @@ export async function proxy(request: NextRequest) {
       return NextResponse.rewrite(new URL("/launch", request.url));
     }
   }
+  // Po startu z /launch pryč i bez JS (karta na pozadí, blokovaný skript) —
+  // klientský redirect v countdownu je jen zrychlení, tohle je záruka.
+  if (pathname === "/launch") {
+    const launchAt = Date.parse(launchAtRaw ?? "");
+    if (!Number.isFinite(launchAt) || Date.now() >= launchAt) {
+      return NextResponse.redirect(new URL("/live", request.url));
+    }
+  }
 
   // Stránky vypnutých modulů nesmí být na této vertikále dosažitelné.
   // ponytail: plaintext 404 stačí — hezčí 404 stránka až s brand fází.
