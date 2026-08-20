@@ -156,9 +156,9 @@ export default function ProudXLive({
     [fetchedByChannel],
   );
 
-  // Po výběru videa z railů dole sroluj na hero — jinak divák nevidí, že hraje.
+  // Po výběru videa z railů dole sroluj úplně nahoru — hero i s hlavičkou.
   const scrollToHero = useCallback(() => {
-    heroRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   const channelDetailRef = useRef<HTMLDivElement | null>(null);
