@@ -128,7 +128,7 @@ export function ProudXAboutPage() {
   return (
     <LegalPageLayout title="ProudX — nepřetržitý proud videí" subtitle="Zůstaňte v proudu">
       <p>
-        ProudX je bezplatná internetová televize pro městské publikum: nepřetržitý živý proud a
+        ProudX je bezplatná internetová televize: nepřetržitý živý proud a
         katalog videí z desítek českých a slovenských kanálů — zpravodajství, rozhovory, komentáře
         a podcasty na jednom místě, bez registrace, na{" "}
         <Link href="/live" className="text-[#6a8cff] hover:text-[#9ab2ff]">
