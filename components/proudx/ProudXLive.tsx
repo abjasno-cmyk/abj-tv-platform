@@ -239,9 +239,9 @@ export default function ProudXLive({
     setPlaying(false);
   }, []);
 
-  // Po výběru videa z railů dole sroluj na hero — jinak divák nevidí, že hraje.
+  // Po výběru videa z railů dole sroluj úplně nahoru — hero i s hlavičkou.
   const scrollToHero = useCallback(() => {
-    heroRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   // Přehrávač epizody je NAD railem epizod — po kliku ho doscrolluj do záběru.
