@@ -96,6 +96,7 @@ const PROUDX: TenantConfig = {
     "/sitemap.xml",
     "/robots.txt",
     "/about",
+    "/launch",
   ],
 };
 
