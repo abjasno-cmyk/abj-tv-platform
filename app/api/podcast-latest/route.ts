@@ -11,6 +11,8 @@ export const dynamic = "force-dynamic";
 const EPISODE_LIMIT = 12;
 const FEED_TIMEOUT_MS = 8000;
 const FEED_REVALIDATE_S = 1800;
+/** Jak dlouho smíme servírovat poslední úspěšný feed, když upstream vypadne. */
+const STALE_FALLBACK_MS = 6 * 60 * 60 * 1000;
 
 type PodcastEpisode = {
   id: string;
@@ -51,6 +53,18 @@ function itemImage(item: Record<string, unknown>): string | null {
   const itunes = item["itunes:image"] as Record<string, unknown> | undefined;
   return readText(itunes?.["@_href"]) ?? null;
 }
+
+type PodcastPayload = {
+  channelName: string;
+  image: string | null;
+  episodes: PodcastEpisode[];
+};
+
+// Poslední úspěšná odpověď per kanál. Cizí RSS (ČRo, Seznam, Transistor)
+// občas vypadne — bez tohohle by divák dostal 502 místo epizod. Žije jen
+// v paměti instance, což pro zmírnění krátkých výpadků stačí.
+// ponytail: in-memory Map, sdílená cache až kdyby výpadky byly delší
+const lastGoodByChannel = new Map<string, { at: number; payload: PodcastPayload }>();
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -115,9 +129,21 @@ export async function GET(request: Request) {
       if (episodes.length >= EPISODE_LIMIT) break;
     }
 
-    return NextResponse.json({ channelName: data.source_name, image: showImage, episodes });
+    const payload: PodcastPayload = {
+      channelName: data.source_name,
+      image: showImage,
+      episodes,
+    };
+    if (episodes.length > 0) {
+      lastGoodByChannel.set(channelName, { at: Date.now(), payload });
+    }
+    return NextResponse.json(payload);
   } catch (error) {
     console.error("podcast-latest-feed-failed", channelName, error);
+    const cached = lastGoodByChannel.get(channelName);
+    if (cached && Date.now() - cached.at < STALE_FALLBACK_MS) {
+      return NextResponse.json({ ...cached.payload, stale: true });
+    }
     return NextResponse.json(
       { episodes: [], error: "Podcastový feed se nepodařilo načíst." },
       { status: 502 },

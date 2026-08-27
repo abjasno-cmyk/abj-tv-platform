@@ -19,6 +19,7 @@ export async function GET() {
         status: 503,
         headers: {
           "Content-Type": "application/feed+json; charset=utf-8",
+          "X-Robots-Tag": "noindex",
         },
       },
     );
@@ -55,6 +56,7 @@ export async function GET() {
   return new Response(JSON.stringify(feed, null, 2), {
     headers: {
       "Content-Type": "application/feed+json; charset=utf-8",
+          "X-Robots-Tag": "noindex",
       "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
     },
   });
