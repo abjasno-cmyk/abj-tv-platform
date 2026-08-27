@@ -115,7 +115,7 @@ jobs:
       # Live tests target the PUBLISHED backend, not the app's NEXT_PUBLIC_REPLIT_URL
       # secret (which may point at an ephemeral Replit dev instance). Override via
       # the repo variable REPLIT_LIVE_URL if the published host ever changes.
-      REPLIT_LIVE_URL: ${{ vars.REPLIT_LIVE_URL || 'https://attached-assets-abjasno.replit.app' }}
+      REPLIT_LIVE_URL: ${{ vars.REPLIT_LIVE_URL || 'https://verox-engine-692691715959.europe-west1.run.app' }}
       REPLIT_API_KEY: ${{ secrets.FEED_API_KEY }}
     steps:
       - uses: actions/checkout@v4
@@ -139,7 +139,7 @@ jobs:
       # Live tests target the PUBLISHED backend, not the app's NEXT_PUBLIC_REPLIT_URL
       # secret (which may point at an ephemeral Replit dev instance). Override via
       # the repo variable REPLIT_LIVE_URL if the published host ever changes.
-      REPLIT_LIVE_URL: ${{ vars.REPLIT_LIVE_URL || 'https://attached-assets-abjasno.replit.app' }}
+      REPLIT_LIVE_URL: ${{ vars.REPLIT_LIVE_URL || 'https://verox-engine-692691715959.europe-west1.run.app' }}
       REPLIT_API_KEY: ${{ secrets.FEED_API_KEY }}
     steps:
       - uses: actions/checkout@v4

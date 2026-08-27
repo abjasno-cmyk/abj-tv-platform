@@ -14,14 +14,14 @@ import { describe, it, expect, beforeAll } from "vitest";
  * /health is public.
  *
  * Configure via env:
- *   REPLIT_LIVE_URL   (default: https://attached-assets-abjasno.replit.app)
+ *   REPLIT_LIVE_URL   (default: https://verox-engine-692691715959.europe-west1.run.app)
  *   REPLIT_API_KEY    (sent as X-Api-Key when present)
  */
 
 // Treat an empty env (e.g. an unset CI secret resolves to "") as "use default",
 // not as a literal empty base URL.
 const RAW_BASE = process.env.REPLIT_LIVE_URL?.trim();
-const BASE = (RAW_BASE && RAW_BASE.length > 0 ? RAW_BASE : "https://attached-assets-abjasno.replit.app").replace(/\/+$/, "");
+const BASE = (RAW_BASE && RAW_BASE.length > 0 ? RAW_BASE : "https://verox-engine-692691715959.europe-west1.run.app").replace(/\/+$/, "");
 const API_KEY = process.env.REPLIT_API_KEY ?? process.env.FEED_API_KEY ?? "";
 const TIMEOUT_MS = 15_000;
 
