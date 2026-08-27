@@ -2195,3 +2195,50 @@
   font-size: 0.75rem;
   color: var(--vx-orange);
 }
+
+/* ---------- MOBILNÍ ZAROVNÁNÍ (27. 8. 2026) — POUZE ≤640 px, desktop beze změny.
+   Jednotná levá hrana obsahu: titulek, akce, PRÁVĚ HRAJE caption i KANÁLY
+   zarovnané k levému okraji (.hf padding); ŽIVÉ VYSÍLÁNÍ v rohu videa;
+   ovládání přes celou šířku přehrávače. ---------- */
+@media (max-width: 640px) {
+  /* 1) titulek/popis/akce vlevo (pryč 16% odsazení; horní mezeru už nedrží odznak) */
+  .hf .feature-summary {
+    padding: 20px 5% 0 0;
+  }
+  /* 2) ŽIVÉ VYSÍLÁNÍ do levého horního rohu videa */
+  .hf .live-badge {
+    left: 10px;
+    right: auto;
+    top: 10px;
+    bottom: auto;
+    transform: none;
+  }
+  /* 3) ovládání přes celou šířku videa */
+  .hf .hero-media .hero-player-bar {
+    left: 0;
+    right: 0;
+    width: 100%;
+  }
+  .hf .hero-player-toggle {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+  }
+  /* 4) jednotná levá hrana pod přehrávačem */
+  .hf .status-label,
+  .hf .playing-now h3,
+  .hf .source-label,
+  .hf .channels h2,
+  .hf .channels > p {
+    margin-left: 0;
+  }
+  .hf .playing-now h3 {
+    max-width: none;
+  }
+  .hf .channels {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}

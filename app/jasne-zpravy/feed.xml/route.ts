@@ -33,6 +33,7 @@ export async function GET() {
         status: 503,
         headers: {
           "Content-Type": "application/rss+xml; charset=utf-8",
+          "X-Robots-Tag": "noindex",
         },
       },
     );
@@ -76,6 +77,7 @@ export async function GET() {
   return new Response(xml, {
     headers: {
       "Content-Type": "application/rss+xml; charset=utf-8",
+          "X-Robots-Tag": "noindex",
       "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
     },
   });

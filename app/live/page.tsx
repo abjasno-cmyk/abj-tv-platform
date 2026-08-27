@@ -262,6 +262,11 @@ function parseExternalNowPlaying(payload: unknown): ExternalNowPlaying | null {
   };
 }
 
+// Visící upstream (Replit feed) bez timeoutu drží SSR render až do zabití
+// funkce platformou → divák dostane error boundary místo fallbacku (launch
+// 20. 8. 15:00). Timeout hodí AbortError do existujících catch větví.
+const EXTERNAL_FEED_TIMEOUT_MS = 6000;
+
 async function loadExternalNowPlaying(): Promise<ExternalNowPlaying | null> {
   const apiKey = resolveProgramFeedApiKey();
   if (!apiKey) return null;
@@ -274,6 +279,7 @@ async function loadExternalNowPlaying(): Promise<ExternalNowPlaying | null> {
           "X-Api-Key": apiKey,
         },
         cache: "no-store",
+        signal: AbortSignal.timeout(EXTERNAL_FEED_TIMEOUT_MS),
       });
       if (!response.ok) {
         if (response.status === 404) continue;
@@ -301,6 +307,7 @@ async function loadExternalProgramTimeline(): Promise<ProgramBlock[]> {
           "X-Api-Key": apiKey,
         },
         cache: "no-store",
+        signal: AbortSignal.timeout(EXTERNAL_FEED_TIMEOUT_MS),
       });
       if (!response.ok) {
         if (response.status === 404) continue;
