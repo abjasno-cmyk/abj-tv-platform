@@ -3,7 +3,6 @@
 import { ProudXHeader } from "@/components/proudx/ProudXHeader";
 import { ProudXFooter } from "@/components/proudx/ProudXFooter";
 import { videoSharePath } from "@/lib/viewer/videoMetadata";
-import { tenantChannelLabel } from "@/lib/tenant";
 import type { FeedVideo } from "@/lib/dayOverview";
 
 import "@/app/live/proudx-live.css";
@@ -68,7 +67,7 @@ export default function ProudXVidea({ videos }: { videos: FeedVideo[] }) {
                     </span>
                   </span>
                   <span className="pxv-meta">
-                    <span className="pxv-ch">{tenantChannelLabel(v.channel)}</span>
+                    <span className="pxv-ch">{v.channel}</span>
                     <span className="pxv-title">{v.title}</span>
                     {premiereDateLabel(v.published_at) ? (
                       <span className="px-card-date">Premiéra {premiereDateLabel(v.published_at)}</span>
