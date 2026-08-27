@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useProgram } from "@/hooks/useProgram";
-import { TENANT, tenantChannelLabel } from "@/lib/tenant";
+import { TENANT } from "@/lib/tenant";
 
 type Freshness = "breaking" | "today" | "week" | "evergreen";
 
@@ -158,7 +158,7 @@ function normalizeProgramPayload(raw: unknown): ProgramFeedView {
       startsAt,
       endsAt,
       title,
-      channel: readString(row.channel) ?? readString(row.channel_name) ?? "ABJ TV",
+      channel: readString(row.channel) ?? readString(row.channel_name) ?? TENANT.siteName,
       videoId: readString(row.video_id) ?? readString(row.videoId),
       thumbnail:
         readString(row.thumbnail) ??
@@ -458,7 +458,7 @@ export default function ProgramPage() {
                           {dateTime.timeLabel} – {endTime}
                         </span>
                         <span>{formatDuration(block.durationMin)}</span>
-                        <span className="truncate">{tenantChannelLabel(block.channel)}</span>
+                        <span className="truncate">{block.channel}</span>
                       </div>
 
                       {block.editorial.tldr ? (

@@ -15,7 +15,6 @@ import type { DayProgram, ProgramItem } from "@/lib/epg-types";
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import { ProudXHeader } from "@/components/proudx/ProudXHeader";
 import { ProudXFooter } from "@/components/proudx/ProudXFooter";
-import { tenantChannelLabel } from "@/lib/tenant";
 import {
   mergeChannelVideosByVideoId,
   selectLatestNonShortChannelVideos,
@@ -486,7 +485,7 @@ export default function ProudXLive({
           </div>
 
           <div className="px-nowmeta">
-            <p className="px-kicker">{tenantChannelLabel(displayChannel)}<span> · právě vysíláme</span></p>
+            <p className="px-kicker">{displayChannel}<span> · právě vysíláme</span></p>
             <h1 className="px-title">{displayTitle}</h1>
           </div>
         </section>
@@ -526,7 +525,7 @@ export default function ProudXLive({
                       )}
                     </span>
                     <span className="px-card-meta">
-                      <span className="px-card-ch">{tenantChannelLabel(item.channelName)}</span>
+                      <span className="px-card-ch">{item.channelName}</span>
                       <span className="px-card-title">{item.title}</span>
                     </span>
                   </button>
