@@ -19,6 +19,8 @@ export type LiveChannelGroup = {
   channelId: string | null;
   channelUrl: string | null;
   videos: LiveChannelVideo[];
+  /** "podcast" = zdroj s RSS feedem (channel_url), epizody přes /api/podcast-latest. */
+  kind?: "youtube" | "podcast";
 };
 
 type ChannelDirectoryProps = {
