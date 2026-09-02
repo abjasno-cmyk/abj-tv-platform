@@ -1,24 +1,6 @@
-import { proxyReplitGet, proxyReplitPost } from "@/lib/replitProxy";
+// Historický název cesty z doby, kdy engine běžel na Replitu. Ponecháno jako
+// alias na /api/engine/*, protože playout smyčka běží v prohlížeči a starší
+// otevřené karty volají ještě tuhle adresu. Odstranit po dojetí relací.
+export { GET, POST } from "@/app/api/engine/[...path]/route";
 
 export const dynamic = "force-dynamic";
-
-type RouteContext = {
-  params: Promise<{ path?: string[] }> | { path?: string[] };
-};
-
-async function resolveUpstreamPath(context: RouteContext): Promise<string> {
-  const resolved = await Promise.resolve(context.params);
-  const segments = Array.isArray(resolved.path) ? resolved.path : [];
-  if (segments.length === 0) return "/";
-  return `/${segments.map((segment) => encodeURIComponent(segment)).join("/")}`;
-}
-
-export async function GET(request: Request, context: RouteContext) {
-  const upstreamPath = await resolveUpstreamPath(context);
-  return proxyReplitGet(request, upstreamPath);
-}
-
-export async function POST(request: Request, context: RouteContext) {
-  const upstreamPath = await resolveUpstreamPath(context);
-  return proxyReplitPost(request, upstreamPath);
-}

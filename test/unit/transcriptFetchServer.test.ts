@@ -163,6 +163,9 @@ describe("fetchVideoTranscriptServer", () => {
 
   it("falls back to legacy upstream when provider stays unavailable", async () => {
     process.env.FEED_API_KEY = "legacy-feed-key";
+    // Legacy větev míří na engine; dřív se sem propadalo přes zapečenou
+    // adresu Replitu, teď musí být engine nakonfigurovaný explicitně.
+    process.env.NEXT_PUBLIC_ENGINE_URL = "https://engine.test";
     const youtubeFallbackMock = vi.mocked(fetchYouTubeTranscriptResponse);
     youtubeFallbackMock.mockResolvedValueOnce(null);
 

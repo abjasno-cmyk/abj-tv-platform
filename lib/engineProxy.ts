@@ -1,8 +1,6 @@
 import "server-only";
 
-const DEFAULT_REPLIT_BASE_URL = "https://attached-assets-abjasno.replit.app";
-
-const ALLOWED_REPLIT_PATH_PATTERNS: ReadonlyArray<RegExp> = [
+const ALLOWED_ENGINE_PATH_PATTERNS: ReadonlyArray<RegExp> = [
   /^\/health(?:\/[^/]+)?$/,
   /^\/program$/,
   /^\/program\/tomorrow$/,
@@ -19,8 +17,8 @@ const ALLOWED_REPLIT_PATH_PATTERNS: ReadonlyArray<RegExp> = [
   /^\/transcript\/[^/]+$/,
 ];
 
-function isAllowedReplitPath(upstreamPath: string): boolean {
-  return ALLOWED_REPLIT_PATH_PATTERNS.some((pattern) => pattern.test(upstreamPath));
+function isAllowedEnginePath(upstreamPath: string): boolean {
+  return ALLOWED_ENGINE_PATH_PATTERNS.some((pattern) => pattern.test(upstreamPath));
 }
 
 function sanitizeEnvValue(value?: string): string | undefined {
@@ -41,14 +39,29 @@ function sanitizeEnvValue(value?: string): string | undefined {
   return maybeAssigned;
 }
 
-export function resolveReplitBaseUrl(): string | null {
-  return sanitizeEnvValue(process.env.NEXT_PUBLIC_REPLIT_URL) ?? sanitizeEnvValue(process.env.REPLIT_URL) ?? null;
+// Adresa playout enginu (Cloud Run). Žádná zapečená výchozí hodnota — dokud
+// engine běžel na Replitu, byla tu jeho URL a po migraci na GCP z ní zůstal
+// odkaz na vypnutou službu: chybějící proměnná pak neselhala hlasitě, ale
+// tiše mířila do prázdna. Bez proměnné proto vracíme null a volající ohlásí chybu.
+// Nové názvy ENGINE_* mají přednost, staré REPLIT_* zůstávají do dojetí nasazení.
+export function resolveEngineBaseUrl(): string | null {
+  return (
+    sanitizeEnvValue(process.env.NEXT_PUBLIC_ENGINE_URL) ??
+    sanitizeEnvValue(process.env.ENGINE_URL) ??
+    sanitizeEnvValue(process.env.NEXT_PUBLIC_REPLIT_URL) ??
+    sanitizeEnvValue(process.env.REPLIT_URL) ??
+    null
+  );
 }
+
+/** @deprecated Zůstává kvůli starším importům, použij resolveEngineBaseUrl. */
+export const resolveReplitBaseUrl = resolveEngineBaseUrl;
 
 function resolveApiKey(): string | null {
   const candidates = [
     process.env.FEED_API_KEY,
     process.env.PROGRAM_FEED_API_KEY,
+    process.env.ENGINE_API_KEY,
     process.env.REPLIT_API_KEY,
     process.env.PROGRAM_API_KEY,
     process.env.API_KEY,
@@ -61,8 +74,8 @@ function resolveApiKey(): string | null {
 }
 
 function buildBaseCandidates(): string[] {
-  const configured = resolveReplitBaseUrl();
-  const candidates = [configured, DEFAULT_REPLIT_BASE_URL]
+  const configured = resolveEngineBaseUrl();
+  const candidates = [configured]
     .filter((value): value is string => Boolean(value && value.trim().length > 0))
     .map((value) => value.trim());
 
@@ -80,8 +93,8 @@ function makeUpstreamUrl(baseUrl: string, upstreamPath: string, request: Request
   return upstreamUrl;
 }
 
-async function proxyReplitRequest(request: Request, upstreamPath: string, method: "GET" | "POST"): Promise<Response> {
-  if (!isAllowedReplitPath(upstreamPath)) {
+async function proxyEngineRequest(request: Request, upstreamPath: string, method: "GET" | "POST"): Promise<Response> {
+  if (!isAllowedEnginePath(upstreamPath)) {
     return Response.json({ error: "Not found." }, { status: 404 });
   }
 
@@ -146,14 +159,14 @@ async function proxyReplitRequest(request: Request, upstreamPath: string, method
   );
 }
 
-export async function proxyReplitGet(request: Request, upstreamPath: string): Promise<Response> {
-  return proxyReplitRequest(request, upstreamPath, "GET");
+export async function proxyEngineGet(request: Request, upstreamPath: string): Promise<Response> {
+  return proxyEngineRequest(request, upstreamPath, "GET");
 }
 
-export async function proxyReplitPost(request: Request, upstreamPath: string): Promise<Response> {
-  return proxyReplitRequest(request, upstreamPath, "POST");
+export async function proxyEnginePost(request: Request, upstreamPath: string): Promise<Response> {
+  return proxyEngineRequest(request, upstreamPath, "POST");
 }
 
 export function getReplitProxyBasePath(): string {
-  return "/api/replit";
+  return "/api/engine";
 }

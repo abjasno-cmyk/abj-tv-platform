@@ -1,6 +1,8 @@
 import "server-only";
 
-const DEFAULT_ANALYTICAL_BASE_URL = "https://analytical-service-abjasno.replit.app";
+// ANALYTICAL_SERVICE_URL nemá výchozí hodnotu — služba po migraci z Replitu
+// nemá nasazený protějšek, takže bez proměnné hlásíme chybu místo volání
+// vypnuté adresy.
 
 const ALLOWED_ANALYTICAL_PATH_PATTERNS: ReadonlyArray<RegExp> = [
   /^\/health(?:\/[^/]+)?$/,
@@ -58,7 +60,7 @@ function resolveApiKey(): string | null {
 
 function buildBaseCandidates(): string[] {
   const configured = resolveAnalyticalBaseUrl();
-  const candidates = [configured, DEFAULT_ANALYTICAL_BASE_URL]
+  const candidates = [configured]
     .filter((value): value is string => Boolean(value && value.trim().length > 0))
     .map((value) => value.trim());
   return Array.from(new Set(candidates));

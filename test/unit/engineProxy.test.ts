@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { proxyReplitGet, proxyReplitPost, resolveReplitBaseUrl } from "@/lib/replitProxy";
+import { proxyEngineGet, proxyEnginePost, resolveEngineBaseUrl } from "@/lib/engineProxy";
 
 const BASE = "https://attached-assets-abjasno.replit.app";
 
@@ -15,18 +15,18 @@ beforeEach(() => {
   vi.stubEnv("FEED_API_KEY", "secret-key");
 });
 
-describe("resolveReplitBaseUrl", () => {
+describe("resolveEngineBaseUrl", () => {
   it("reads and sanitizes the configured base url", () => {
-    vi.stubEnv("NEXT_PUBLIC_REPLIT_URL", '  "https://configured.replit.app"  ');
-    expect(resolveReplitBaseUrl()).toBe("https://configured.replit.app");
+    vi.stubEnv("NEXT_PUBLIC_ENGINE_URL", '  "https://engine.test"  ');
+    expect(resolveEngineBaseUrl()).toBe("https://engine.test");
   });
 });
 
-describe("replit proxy path allowlist", () => {
+describe("engine proxy path allowlist", () => {
   it("rejects a path not on the allowlist with 404 (no upstream call)", async () => {
     const fetchSpy = vi.fn();
     vi.stubGlobal("fetch", fetchSpy);
-    const res = await proxyReplitGet(new Request("https://x.test/api/replit/secret"), "/secret");
+    const res = await proxyEngineGet(new Request("https://x.test/api/engine/secret"), "/secret");
     expect(res.status).toBe(404);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -36,18 +36,18 @@ describe("replit proxy path allowlist", () => {
     async (path) => {
       const fetchSpy = mockFetchOnce(200, JSON.stringify({ ok: true }));
       vi.stubGlobal("fetch", fetchSpy);
-      const res = await proxyReplitGet(new Request("https://x.test/api/replit" + path), path);
+      const res = await proxyEngineGet(new Request("https://x.test/api/engine" + path), path);
       expect(res.status).toBe(200);
       expect(fetchSpy).toHaveBeenCalledOnce();
     },
   );
 });
 
-describe("replit proxy request behavior", () => {
+describe("engine proxy request behavior", () => {
   it("forwards the upstream status and body for an allowed GET", async () => {
     const fetchSpy = mockFetchOnce(200, JSON.stringify({ program: [] }));
     vi.stubGlobal("fetch", fetchSpy);
-    const res = await proxyReplitGet(new Request("https://x.test/api/replit/program"), "/program");
+    const res = await proxyEngineGet(new Request("https://x.test/api/engine/program"), "/program");
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ program: [] });
   });
@@ -55,7 +55,7 @@ describe("replit proxy request behavior", () => {
   it("attaches the X-Api-Key header and forwards query params", async () => {
     const fetchSpy = mockFetchOnce(200, "{}");
     vi.stubGlobal("fetch", fetchSpy);
-    await proxyReplitGet(new Request("https://x.test/api/replit/feed?limit=5"), "/feed");
+    await proxyEngineGet(new Request("https://x.test/api/engine/feed?limit=5"), "/feed");
     const [calledUrl, init] = fetchSpy.mock.calls[0];
     expect(String(calledUrl)).toBe(`${BASE}/feed?limit=5`);
     expect((init as RequestInit).method).toBe("GET");
@@ -65,28 +65,30 @@ describe("replit proxy request behavior", () => {
   it("forwards the POST body and content-type", async () => {
     const fetchSpy = mockFetchOnce(201, JSON.stringify({ liked: true }));
     vi.stubGlobal("fetch", fetchSpy);
-    const req = new Request("https://x.test/api/replit/feed/abc/like", {
+    const req = new Request("https://x.test/api/engine/feed/abc/like", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ x: 1 }),
     });
-    const res = await proxyReplitPost(req, "/feed/abc/like");
+    const res = await proxyEnginePost(req, "/feed/abc/like");
     expect(res.status).toBe(201);
     const [, init] = fetchSpy.mock.calls[0];
     expect((init as RequestInit).method).toBe("POST");
     expect((init as RequestInit).body).toBe(JSON.stringify({ x: 1 }));
   });
 
-  it("falls back to the hardcoded default base when no env url is configured", async () => {
+  it("reports a configuration error instead of calling a hardcoded default", async () => {
+    // Dřív tu byla zapečená adresa Replitu, takže chybějící konfigurace
+    // tiše mířila na vypnutou službu. Nově musí selhat hlasitě.
+    vi.stubEnv("NEXT_PUBLIC_ENGINE_URL", "");
+    vi.stubEnv("ENGINE_URL", "");
     vi.stubEnv("NEXT_PUBLIC_REPLIT_URL", "");
     vi.stubEnv("REPLIT_URL", "");
-    // The lib always includes a hardcoded default base candidate, so the
-    // request is still attempted against attached-assets-abjasno.replit.app.
-    const fetchSpy = mockFetchOnce(200, "{}");
+    const fetchSpy = vi.fn();
     vi.stubGlobal("fetch", fetchSpy);
-    const res = await proxyReplitGet(new Request("https://x.test/api/replit/health"), "/health");
-    expect(res.status).toBe(200);
-    expect(String(fetchSpy.mock.calls[0][0])).toContain("attached-assets-abjasno.replit.app");
+    const res = await proxyEngineGet(new Request("https://x.test/api/engine/health"), "/health");
+    expect(res.status).toBe(500);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it("returns 502 when every upstream candidate throws", async () => {
@@ -94,24 +96,22 @@ describe("replit proxy request behavior", () => {
       throw new Error("network down");
     });
     vi.stubGlobal("fetch", fetchSpy);
-    const res = await proxyReplitGet(new Request("https://x.test/api/replit/health"), "/health");
+    const res = await proxyEngineGet(new Request("https://x.test/api/engine/health"), "/health");
     expect(res.status).toBe(502);
     const payload = (await res.json()) as { error: string; attempts: string[] };
     expect(payload.error).toMatch(/failed/i);
     expect(Array.isArray(payload.attempts)).toBe(true);
   });
 
-  it("falls through to the next base candidate on a 404", async () => {
-    // Configured base 404s, hardcoded default returns 200 → proxy should keep
-    // the 200 from the second candidate.
-    vi.stubEnv("NEXT_PUBLIC_REPLIT_URL", "https://primary.replit.app");
-    const fetchSpy = vi
-      .fn()
-      .mockResolvedValueOnce(new Response("not found", { status: 404 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "content-type": "application/json" } }));
+  it("tries the configured engine exactly once and reports 502 on 404", async () => {
+    // Dřív se po 404 zkoušel druhý, zapečený host. Ten je pryč, takže zůstává
+    // jediný pokus; 502 na konci je stávající chování proxy a záměrně ho
+    // v rámci přejmenování neměníme.
+    vi.stubEnv("NEXT_PUBLIC_ENGINE_URL", "https://engine.test");
+    const fetchSpy = vi.fn().mockResolvedValue(new Response("not found", { status: 404 }));
     vi.stubGlobal("fetch", fetchSpy);
-    const res = await proxyReplitGet(new Request("https://x.test/api/replit/health"), "/health");
-    expect(res.status).toBe(200);
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    const res = await proxyEngineGet(new Request("https://x.test/api/engine/health"), "/health");
+    expect(res.status).toBe(502);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 });

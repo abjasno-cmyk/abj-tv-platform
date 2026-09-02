@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeAll } from "vitest";
 
 /**
- * LIVE behavioral tests against the real Replit backend.
+ * LIVE behavioral tests against the real engine backend (GCP Cloud Run).
  *
  * These are EXCLUDED from the default `npm test` run (see vitest.config.ts) and
- * only execute when RUN_REPLIT_LIVE=1, e.g. `npm run test:live`. They make real
+ * only execute when RUN_ENGINE_LIVE=1, e.g. `npm run test:live`. They make real
  * network calls to the running Replit playout/feed service and assert the
  * shape, status, and latency of its responses — this is the "chování backendu
  * na Replitu" contract from the running service's perspective.
@@ -14,15 +14,15 @@ import { describe, it, expect, beforeAll } from "vitest";
  * /health is public.
  *
  * Configure via env:
- *   REPLIT_LIVE_URL   (default: https://verox-engine-692691715959.europe-west1.run.app)
+ *   ENGINE_LIVE_URL   (default: https://verox-engine-692691715959.europe-west1.run.app)
  *   REPLIT_API_KEY    (sent as X-Api-Key when present)
  */
 
 // Treat an empty env (e.g. an unset CI secret resolves to "") as "use default",
 // not as a literal empty base URL.
-const RAW_BASE = process.env.REPLIT_LIVE_URL?.trim();
+const RAW_BASE = (process.env.ENGINE_LIVE_URL ?? process.env.REPLIT_LIVE_URL)?.trim();
 const BASE = (RAW_BASE && RAW_BASE.length > 0 ? RAW_BASE : "https://verox-engine-692691715959.europe-west1.run.app").replace(/\/+$/, "");
-const API_KEY = process.env.REPLIT_API_KEY ?? process.env.FEED_API_KEY ?? "";
+const API_KEY = process.env.ENGINE_API_KEY ?? process.env.REPLIT_API_KEY ?? process.env.FEED_API_KEY ?? "";
 const TIMEOUT_MS = 15_000;
 
 async function timedFetch(path: string, { withKey = true }: { withKey?: boolean } = {}) {
