@@ -45,7 +45,7 @@ jobs:
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-      NEXT_PUBLIC_REPLIT_URL: ${{ secrets.NEXT_PUBLIC_REPLIT_URL }}
+      NEXT_PUBLIC_ENGINE_URL: ${{ secrets.NEXT_PUBLIC_REPLIT_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -79,7 +79,7 @@ jobs:
       # Build-time + runtime env so /live renders a populated queue.
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-      NEXT_PUBLIC_REPLIT_URL: ${{ secrets.NEXT_PUBLIC_REPLIT_URL }}
+      NEXT_PUBLIC_ENGINE_URL: ${{ secrets.NEXT_PUBLIC_REPLIT_URL }}
       FEED_API_KEY: ${{ secrets.FEED_API_KEY }}
       # Force the data-driven specs on against the PR's own built server.
       E2E_WITH_DATA: "1"
@@ -112,11 +112,11 @@ jobs:
       (github.event_name != 'pull_request' ||
        github.event.pull_request.head.repo.full_name == github.repository)
     env:
-      # Live tests target the PUBLISHED backend, not the app's NEXT_PUBLIC_REPLIT_URL
+      # Live tests target the PUBLISHED engine, not the app's NEXT_PUBLIC_ENGINE_URL
       # secret (which may point at an ephemeral Replit dev instance). Override via
-      # the repo variable REPLIT_LIVE_URL if the published host ever changes.
-      REPLIT_LIVE_URL: ${{ vars.REPLIT_LIVE_URL || 'https://verox-engine-692691715959.europe-west1.run.app' }}
-      REPLIT_API_KEY: ${{ secrets.FEED_API_KEY }}
+      # the repo variable ENGINE_LIVE_URL if the published host ever changes.
+      ENGINE_LIVE_URL: ${{ vars.ENGINE_LIVE_URL || vars.REPLIT_LIVE_URL || 'https://verox-engine-692691715959.europe-west1.run.app' }}
+      ENGINE_API_KEY: ${{ secrets.FEED_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -136,11 +136,11 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     env:
       E2E_BASE_URL: ${{ vars.E2E_BASE_URL || 'https://abj-tv-platform-n7e8.vercel.app' }}
-      # Live tests target the PUBLISHED backend, not the app's NEXT_PUBLIC_REPLIT_URL
+      # Live tests target the PUBLISHED engine, not the app's NEXT_PUBLIC_ENGINE_URL
       # secret (which may point at an ephemeral Replit dev instance). Override via
-      # the repo variable REPLIT_LIVE_URL if the published host ever changes.
-      REPLIT_LIVE_URL: ${{ vars.REPLIT_LIVE_URL || 'https://verox-engine-692691715959.europe-west1.run.app' }}
-      REPLIT_API_KEY: ${{ secrets.FEED_API_KEY }}
+      # the repo variable ENGINE_LIVE_URL if the published host ever changes.
+      ENGINE_LIVE_URL: ${{ vars.ENGINE_LIVE_URL || vars.REPLIT_LIVE_URL || 'https://verox-engine-692691715959.europe-west1.run.app' }}
+      ENGINE_API_KEY: ${{ secrets.FEED_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

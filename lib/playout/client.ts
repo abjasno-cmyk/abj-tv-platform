@@ -4,9 +4,9 @@ import type {
   SafetyBridgeResponse,
 } from "@/lib/playout/types";
 
-// Engine voláme přes interní proxy /api/replit/* — ta doplní X-Api-Key na serveru,
+// Engine voláme přes interní proxy /api/engine/* — ta doplní X-Api-Key na serveru,
 // takže klíč nikdy neopustí backend. Query params (fill-gap) proxy přeposílá.
-const PROXY_BASE = "/api/replit/program";
+const PROXY_BASE = "/api/engine/program";
 const DEFAULT_TIMEOUT_MS = 8000;
 
 // Lokální nouzový boundary, když i safety-bridge selže (síť/timeout). Nikdy nevyhazuje.

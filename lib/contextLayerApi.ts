@@ -27,7 +27,7 @@ export type PublishedVideo = {
   durationSeconds: number | null;
 };
 
-const REPLIT_BASE = "/api/replit";
+const ENGINE_BASE = "/api/engine";
 const ANALYTICAL_BASE = "/api/analytical";
 
 const videosCache: {
@@ -289,7 +289,7 @@ export async function fetchPublishedVideos(): Promise<PublishedVideo[]> {
   if (videosCache.promise) return videosCache.promise;
 
   videosCache.promise = (async () => {
-    const result = await fetchFirstJsonCandidate([`${REPLIT_BASE}/api/videos`, `${REPLIT_BASE}/videos`]);
+    const result = await fetchFirstJsonCandidate([`${ENGINE_BASE}/api/videos`, `${ENGINE_BASE}/videos`]);
     if (!result) {
       videosCache.data = [];
       return [];
@@ -319,7 +319,7 @@ export async function fetchPublishedContext(videoId: string): Promise<ContextCla
   const encodedVideoId = encodeURIComponent(videoId);
   const promise = (async () => {
     const result = await fetchFirstJsonCandidate([
-      `${REPLIT_BASE}/context/${encodedVideoId}`,
+      `${ENGINE_BASE}/context/${encodedVideoId}`,
       `${ANALYTICAL_BASE}/context/${encodedVideoId}`,
       `${ANALYTICAL_BASE}/api/context/${encodedVideoId}`,
       `${ANALYTICAL_BASE}/context/video/${encodedVideoId}`,

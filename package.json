@@ -10,7 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:live": "RUN_REPLIT_LIVE=1 vitest run test/live",
+    "test:live": "RUN_ENGINE_LIVE=1 vitest run test/live",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:report": "playwright show-report",

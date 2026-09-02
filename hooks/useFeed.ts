@@ -183,7 +183,7 @@ export function useFeed(filter?: UseFeedFilter): UseFeedResult {
 
     const connect = () => {
       if (cancelled) return;
-      source = new EventSource("/api/replit/feed/stream");
+      source = new EventSource("/api/engine/feed/stream");
 
       source.addEventListener("open", () => {
         retries = 0;

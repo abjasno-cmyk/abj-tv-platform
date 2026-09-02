@@ -11,13 +11,24 @@ describe("buildTranscriptUrlCandidates", () => {
     expect(candidates).toContain("https://feed.example.com:8000/transcript/lsg3k-Wh9vU");
   });
 
-  it("includes replit base fallback", () => {
+  it("uses the configured engine base and nothing else", () => {
     vi.stubEnv("PROGRAM_FEED_URL", "");
-    vi.stubEnv("NEXT_PUBLIC_REPLIT_URL", "https://custom.replit.app");
+    vi.stubEnv("NEXT_PUBLIC_ENGINE_URL", "https://engine.test");
 
     const candidates = buildTranscriptUrlCandidates("abc123XYZ-_");
-    expect(candidates).toContain("https://custom.replit.app/transcript/abc123XYZ-_");
-    expect(candidates).toContain("https://attached-assets-abjasno.replit.app/transcript/abc123XYZ-_");
+    expect(candidates).toContain("https://engine.test/transcript/abc123XYZ-_");
+    // Zapečená adresa vypnutého Replitu už mezi kandidáty být nesmí.
+    expect(candidates.some((url) => url.includes("replit.app"))).toBe(false);
+  });
+
+  it("returns no candidates when nothing is configured", () => {
+    vi.stubEnv("PROGRAM_FEED_URL", "");
+    vi.stubEnv("NEXT_PUBLIC_ENGINE_URL", "");
+    vi.stubEnv("ENGINE_URL", "");
+    vi.stubEnv("NEXT_PUBLIC_REPLIT_URL", "");
+    vi.stubEnv("REPLIT_URL", "");
+
+    expect(buildTranscriptUrlCandidates("abc123XYZ-_")).toEqual([]);
   });
 });
 

@@ -13,13 +13,21 @@ export async function GET(request: Request) {
     return Response.json(
       {
         error:
-          "Missing API key. Configure FEED_API_KEY, PROGRAM_FEED_API_KEY, or REPLIT_API_KEY.",
+          "Missing API key. Configure FEED_API_KEY, PROGRAM_FEED_API_KEY, or ENGINE_API_KEY.",
       },
       { status: 500 },
     );
   }
 
-  const candidateUrls = buildProgramFeedCandidates(resolveProgramFeedUrl());
+  const feedUrl = resolveProgramFeedUrl();
+  if (!feedUrl) {
+    return Response.json(
+      { error: "Missing PROGRAM_FEED_URL. Configure the engine program feed endpoint." },
+      { status: 500 },
+    );
+  }
+
+  const candidateUrls = buildProgramFeedCandidates(feedUrl);
   const { response: upstreamResponse, resolvedUrl, upstreamAttempts, lastNetworkError } =
     await fetchFirstUpstream(candidateUrls, request, apiKey);
 
@@ -31,7 +39,7 @@ export async function GET(request: Request) {
     return Response.json(
       {
         error:
-          "Program feed endpoint not found. Check PROGRAM_FEED_URL or keep it empty to use the default attached-assets feed.",
+          "Program feed endpoint not found. Check PROGRAM_FEED_URL.",
       },
       { status: 502 },
     );

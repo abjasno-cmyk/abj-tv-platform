@@ -108,7 +108,7 @@ describe("isApiPathAllowed", () => {
 
   it("ProudX povoluje API potřebné pro live+VOD", () => {
     for (const p of [
-      "/api/replit/program/now",
+      "/api/engine/program/now",
       "/api/program/v3/import-feed",
       "/api/live/channels",
       "/api/transcript/abc123",

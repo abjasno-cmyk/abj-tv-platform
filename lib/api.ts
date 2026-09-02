@@ -1,7 +1,7 @@
 import type { TranscriptState } from "@/lib/transcriptTypes";
 
 const BASE = process.env.NEXT_PUBLIC_REPLIT_URL ?? "";
-const PROXY_BASE = "/api/replit";
+const PROXY_BASE = "/api/engine";
 
 if (!BASE && typeof window !== "undefined") {
   console.warn("NEXT_PUBLIC_REPLIT_URL není nastaveno — API volání selžou.");

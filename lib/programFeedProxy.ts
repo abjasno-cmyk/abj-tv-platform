@@ -1,7 +1,5 @@
 import "server-only";
 
-const DEFAULT_PROGRAM_FEED_URL = "https://attached-assets-abjasno.replit.app/program";
-const DEFAULT_REPLIT_BASE_URL = "https://attached-assets-abjasno.replit.app";
 
 export function sanitizeEnvValue(value?: string): string | undefined {
   if (!value) return undefined;
@@ -21,8 +19,9 @@ export function sanitizeEnvValue(value?: string): string | undefined {
   return maybeAssigned;
 }
 
-export function resolveProgramFeedUrl(): string {
-  return sanitizeEnvValue(process.env.PROGRAM_FEED_URL) ?? DEFAULT_PROGRAM_FEED_URL;
+/** Adresa program feedu; null = není nakonfigurovaná (volající ohlásí chybu). */
+export function resolveProgramFeedUrl(): string | null {
+  return sanitizeEnvValue(process.env.PROGRAM_FEED_URL) ?? null;
 }
 
 export function resolveFeedApiKey(): string | null {
@@ -65,7 +64,6 @@ export function buildProgramFeedCandidates(configuredFeedUrl: string): string[] 
     // Keep original candidate only.
   }
 
-  addCandidate(candidates, seen, DEFAULT_PROGRAM_FEED_URL);
   return candidates;
 }
 
@@ -103,18 +101,19 @@ export function buildTranscriptUrlCandidates(videoId: string): string[] {
   const candidates: string[] = [];
   const seen = new Set<string>();
 
-  for (const feedCandidate of buildProgramFeedCandidates(resolveProgramFeedUrl())) {
+  const feedUrl = resolveProgramFeedUrl();
+  for (const feedCandidate of feedUrl ? buildProgramFeedCandidates(feedUrl) : []) {
     const transcriptUrl = transcriptUrlFromFeedUrl(feedCandidate, normalizedVideoId);
     if (transcriptUrl) addCandidate(candidates, seen, transcriptUrl);
   }
 
-  const replitBase =
-    sanitizeEnvValue(process.env.NEXT_PUBLIC_REPLIT_URL) ?? sanitizeEnvValue(process.env.REPLIT_URL);
-  const replitTranscript = replitBase ? transcriptUrlFromBase(replitBase, normalizedVideoId) : null;
-  if (replitTranscript) addCandidate(candidates, seen, replitTranscript);
-
-  const defaultTranscript = transcriptUrlFromBase(DEFAULT_REPLIT_BASE_URL, normalizedVideoId);
-  if (defaultTranscript) addCandidate(candidates, seen, defaultTranscript);
+  const engineBase =
+    sanitizeEnvValue(process.env.NEXT_PUBLIC_ENGINE_URL) ??
+    sanitizeEnvValue(process.env.ENGINE_URL) ??
+    sanitizeEnvValue(process.env.NEXT_PUBLIC_REPLIT_URL) ??
+    sanitizeEnvValue(process.env.REPLIT_URL);
+  const engineTranscript = engineBase ? transcriptUrlFromBase(engineBase, normalizedVideoId) : null;
+  if (engineTranscript) addCandidate(candidates, seen, engineTranscript);
 
   return candidates;
 }

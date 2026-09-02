@@ -4,7 +4,7 @@ import { describe, it, expect } from "vitest";
   * LIVE playout-continuity tests against the real VEROX engine (GCP Cloud Run;
  * Replit byl odstaven 8/2026 — proměnné si nechávají historické názvy).
  *
- * Excluded from `npm test`; run via `npm run test:live` (RUN_REPLIT_LIVE=1).
+ * Excluded from `npm test`; run via `npm run test:live` (RUN_ENGINE_LIVE=1).
  *
  * Two layers:
  *  - Auth-free continuity health via GET /health (always asserted): proves the
@@ -19,9 +19,9 @@ import { describe, it, expect } from "vitest";
  */
 
 // Treat an empty env (e.g. an unset CI secret resolves to "") as "use default".
-const RAW_BASE = process.env.REPLIT_LIVE_URL?.trim();
+const RAW_BASE = (process.env.ENGINE_LIVE_URL ?? process.env.REPLIT_LIVE_URL)?.trim();
 const BASE = (RAW_BASE && RAW_BASE.length > 0 ? RAW_BASE : "https://verox-engine-692691715959.europe-west1.run.app").replace(/\/+$/, "");
-const API_KEY = process.env.REPLIT_API_KEY ?? process.env.FEED_API_KEY ?? "";
+const API_KEY = process.env.ENGINE_API_KEY ?? process.env.REPLIT_API_KEY ?? process.env.FEED_API_KEY ?? "";
 const TIMEOUT_MS = 15_000;
 
 async function get(path: string, withKey: boolean) {

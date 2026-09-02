@@ -16,9 +16,9 @@ import { videoSharePath } from "@/lib/viewer/videoMetadata";
 import { isValidYouTubeVideoId } from "@/lib/viewer/videoPageServer";
 import type { DayProgram, ProgramBlock, ProgramItem } from "@/lib/epg-types";
 import { parseTranscriptState } from "@/lib/transcriptTypes";
+import { TENANT } from "@/lib/tenant";
 
 export const dynamic = "force-dynamic";
-const DEFAULT_PROGRAM_FEED_URL = "https://attached-assets-abjasno.replit.app/program";
 
 type ExternalNowPlaying = {
   videoId: string;
@@ -133,7 +133,6 @@ function resolveProgramFeedUrlCandidates(): string[] {
       // Keep original candidate only.
     }
   }
-  pushCandidate(DEFAULT_PROGRAM_FEED_URL);
   return candidates;
 }
 
@@ -184,7 +183,7 @@ function parseExternalProgramTimeline(payload: unknown): ProgramBlock[] {
       const startIso = readString(row.starts_at) ?? readString(row.start) ?? readString(row.startIso);
       const endIso = readString(row.ends_at) ?? readString(row.end) ?? readString(row.endIso);
       const title = readString(row.title);
-      const channel = readString(row.channel) ?? readString(row.channel_name) ?? "ABJ TV";
+      const channel = readString(row.channel) ?? readString(row.channel_name) ?? TENANT.siteName;
       if (!startIso || !endIso || !title) return null;
 
       const startTs = new Date(startIso).getTime();
