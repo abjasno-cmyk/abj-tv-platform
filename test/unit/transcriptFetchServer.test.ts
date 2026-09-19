@@ -220,15 +220,46 @@ describe("fetchVideoTranscriptServer", () => {
     expect(fetchMock.mock.calls.every(([input]) => !String(input).includes("/enqueue"))).toBe(true);
   });
 
-  it("throws config error when provider env vars are missing", async () => {
+  it("falls back to legacy engine when provider env vars are missing", async () => {
     delete process.env.VEROX_TRANSCRIPTS_BASE_URL;
     delete process.env.VEROX_TRANSCRIPTS_API_KEY;
+    process.env.FEED_API_KEY = "legacy-feed-key";
+    process.env.NEXT_PUBLIC_ENGINE_URL = "https://engine.test";
 
-    await expect(fetchVideoTranscriptServer("abc123XYZ-_")).rejects.toMatchObject<
-      Partial<TranscriptProviderError>
-    >({
-      code: "provider_config_missing",
+    const youtubeFallbackMock = vi.mocked(fetchYouTubeTranscriptResponse);
+    youtubeFallbackMock.mockResolvedValueOnce(null);
+
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("/transcript/abc123XYZ-_")) {
+        return new Response(
+          JSON.stringify({
+            video_id: "abc123XYZ-_",
+            status: "processing",
+            transcript: null,
+            transcript_at: null,
+            transcript_original: null,
+            source_lang: null,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      return new Response("not found", { status: 404 });
     });
+
+    const result = await fetchVideoTranscriptServer("abc123XYZ-_");
+    expect(result).toEqual({
+      video_id: "abc123XYZ-_",
+      status: "processing",
+      transcript: null,
+      transcript_at: null,
+      transcript_original: null,
+      source_lang: null,
+    });
+    expect(fetchMock).toHaveBeenCalled();
+    expect(fetchMock.mock.calls.every(([input]) => !String(input).includes("/transcripts/verox-news"))).toBe(
+      true,
+    );
   });
 
   it("throws auth error when provider returns 403", async () => {

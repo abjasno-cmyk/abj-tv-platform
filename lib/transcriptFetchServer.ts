@@ -44,15 +44,10 @@ function sanitizeEnvValue(value?: string): string | undefined {
   return maybeAssigned;
 }
 
-function resolveTranscriptProviderConfig(): { baseUrl: string; apiKey: string } {
+function resolveTranscriptProviderConfig(): { baseUrl: string; apiKey: string } | null {
   const baseUrl = sanitizeEnvValue(process.env.VEROX_TRANSCRIPTS_BASE_URL);
   const apiKey = sanitizeEnvValue(process.env.VEROX_TRANSCRIPTS_API_KEY);
-  if (!baseUrl || !apiKey) {
-    throw new TranscriptProviderError(
-      "provider_config_missing",
-      "Transcript provider configuration is missing.",
-    );
-  }
+  if (!baseUrl || !apiKey) return null;
   return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey };
 }
 
@@ -256,7 +251,14 @@ export async function fetchVideoTranscriptServer(
   const normalized = videoId.trim();
   if (!normalized) return null;
 
-  const { baseUrl, apiKey } = resolveTranscriptProviderConfig();
+  // Bez VeroxNews provideru (typicky lokální vývoj proti enginu) jdi rovnou
+  // na on-demand GET /transcript/{id} — první klik spustí výpočet v enginu.
+  const provider = resolveTranscriptProviderConfig();
+  if (!provider) {
+    return fetchLegacyFallback(normalized, request);
+  }
+
+  const { baseUrl, apiKey } = provider;
   const response = await fetchProviderTranscript(baseUrl, apiKey, normalized, request);
 
   if (response.status === 401 || response.status === 403) {
