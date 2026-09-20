@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { buildTranscriptUrlCandidates, fetchTranscriptUpstream } from "@/lib/programFeedProxy";
+import { buildAdsUrlCandidates, buildTranscriptUrlCandidates, fetchTranscriptUpstream } from "@/lib/programFeedProxy";
 
 describe("buildTranscriptUrlCandidates", () => {
   it("derives transcript URL from PROGRAM_FEED_URL origin", () => {
@@ -29,6 +29,14 @@ describe("buildTranscriptUrlCandidates", () => {
     vi.stubEnv("REPLIT_URL", "");
 
     expect(buildTranscriptUrlCandidates("abc123XYZ-_")).toEqual([]);
+  });
+});
+
+describe("buildAdsUrlCandidates", () => {
+  it("derives /ads from PROGRAM_FEED_URL", () => {
+    vi.stubEnv("PROGRAM_FEED_URL", "https://feed.example.com:8000/program");
+    vi.stubEnv("NEXT_PUBLIC_ENGINE_URL", "");
+    expect(buildAdsUrlCandidates()).toContain("https://feed.example.com:8000/ads");
   });
 });
 

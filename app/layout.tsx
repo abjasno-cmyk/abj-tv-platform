@@ -7,6 +7,8 @@ import "./live/verox.css";
 import "./live/handoff.css";
 import "./live/tenant-proudx.css";
 import { ABJNav } from "@/components/abj/Nav";
+import { AdRuntime } from "@/components/ads/AdRuntime";
+import { AdsProvider } from "@/components/ads/AdsProvider";
 import { LegalFooter } from "@/components/abj/LegalFooter";
 import { SitePresenceReporter } from "@/components/abj/SitePresenceReporter";
 import { AuthProvider } from "@/components/auth/AuthProvider";
@@ -144,11 +146,14 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         <SitePresenceReporter />
         <AuthProvider vercelEnv={process.env.VERCEL_ENV}>
           <TranscriptStatesProvider>
-            {/* Single global nav only — prevents duplicate legacy header stacks. */}
-            <ABJNav locale={locale} />
-            <main className="min-h-[50vh]">{children}</main>
-            <LegalFooter locale={locale} />
-            {showEditorialDebug ? <EditorialEventDebugPanel /> : null}
+            <AdsProvider>
+              {/* Single global nav only — prevents duplicate legacy header stacks. */}
+              <ABJNav locale={locale} />
+              <AdRuntime />
+              <main className="min-h-[50vh]">{children}</main>
+              <LegalFooter locale={locale} />
+              {showEditorialDebug ? <EditorialEventDebugPanel /> : null}
+            </AdsProvider>
           </TranscriptStatesProvider>
         </AuthProvider>
         {isProductionDeployment ? <Analytics /> : null}

@@ -17,6 +17,7 @@ import { useLocale } from "@/lib/i18n/useLocale";
 import { liveVideoHref, resolveVideoThumbnail } from "@/lib/viewer/videoMetadata";
 import { resolveVideoReleaseIso } from "@/lib/viewer/videoReleaseDate";
 import { useViewerVideoState } from "@/lib/viewer/useViewerVideoState";
+import { InfeedAd } from "@/components/ads/InfeedAd";
 
 const MONTHS = [
   "LEDEN", "ÚNOR", "BŘEZEN", "DUBEN", "KVĚTEN", "ČERVEN",
@@ -107,6 +108,7 @@ export function VideaVideoList({ videos }: VideaVideoListProps) {
                 </div>
               </div>
             </article>
+            <InfeedAd placement="infeed_latest" afterIndex={i} />
             {i < videos.length - 1 ? (
               <div className="vx-strip">
                 <span />

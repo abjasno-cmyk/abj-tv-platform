@@ -12,6 +12,8 @@ import {
   type PlayoutFiller,
   type PlayoutSurface,
 } from "@/lib/playout/types";
+import { useAds } from "@/components/ads/AdsProvider";
+import { bumpSessionShown, isAdPreview, pickVideoAd } from "@/lib/ads/types";
 
 // NONSTOP PLAYOUT smyčka dle klientské specifikace.
 //
@@ -68,6 +70,10 @@ function parseTimeMs(value: string | null | undefined): number | null {
 export function usePlayoutLoop({ enabled, initialBlock }: UsePlayoutLoopOptions): PlayoutLoopState {
   const [surface, setSurface] = useState<PlayoutSurface | null>(null);
   const [phase, setPhase] = useState<PlayoutPhase>("idle");
+  const adUnits = useAds();
+  const adUnitsRef = useRef(adUnits);
+  adUnitsRef.current = adUnits;
+  const adTickRef = useRef(0);
 
   const pendingWaitRef = useRef<PendingWait | null>(null);
   const initialBlockRef = useRef<PlayoutInitialBlock | null | undefined>(initialBlock);
@@ -164,11 +170,55 @@ export function usePlayoutLoop({ enabled, initialBlock }: UsePlayoutLoopOptions)
       await playFiller(block);
     };
 
+    const waitForVideoAds = async (): Promise<void> => {
+      const deadline = Date.now() + 2500;
+      while (!token.cancelled && Date.now() < deadline) {
+        if (adUnitsRef.current.some((unit) => unit.placement === "between_videos")) return;
+        await new Promise((resolve) => window.setTimeout(resolve, 80));
+      }
+    };
+
+    const playScheduledAd = async (moment: "before" | "between", title?: string | null): Promise<void> => {
+      if (token.cancelled) return;
+      if (moment === "between") adTickRef.current += 1;
+      const unit = pickVideoAd(adUnitsRef.current, moment, title, adTickRef.current);
+      if (!unit) return;
+      const durationMs = Math.max(5, unit.duration_sec) * 1000;
+      const label = unit.advertiser ? `Reklama · ${unit.advertiser}` : "Reklama";
+      if (unit.video_id && isValidYouTubeVideoId(unit.video_id)) {
+        setPhase("live");
+        setSurface({
+          kind: "youtube",
+          videoId: unit.video_id.trim(),
+          startSeconds: 0,
+          title: label,
+          channel: "Reklama",
+        });
+        await waitInterruptible(durationMs, token, true);
+        if (!token.cancelled) bumpSessionShown(unit.id);
+        return;
+      }
+      const image = unit.image_desktop || unit.image_tablet || unit.image_mobile;
+      if (!image) return;
+      setPhase("bridge");
+      setSurface({ kind: "ad", image, title: label, clickUrl: unit.click_url });
+      await waitInterruptible(durationMs, token, false);
+      if (!token.cancelled) bumpSessionShown(unit.id);
+    };
+
     const playBlock = async (block: PlayoutBlock, offsetSec: number): Promise<void> => {
       const videoId = readPlayoutVideoId(block);
       if (!videoId) {
         await playSafetyBridge();
         return;
+      }
+
+      // Reklama „před pořadem“ jen na začátku bloku, ne když divák skočí doprostřed.
+      // ?reklama=1 pustí zkoušku hned, i když pořad už běží. Počkáme, až se inventář načte.
+      if (isAdPreview()) await waitForVideoAds();
+      if (offsetSec < 20 || isAdPreview()) {
+        await playScheduledAd("before", block.title);
+        if (token.cancelled) return;
       }
 
       setPhase("live");
@@ -189,6 +239,8 @@ export function usePlayoutLoop({ enabled, initialBlock }: UsePlayoutLoopOptions)
     };
 
     const handleBlockEnd = async (block: PlayoutBlock, nextBlockId?: string | null): Promise<void> => {
+      await playScheduledAd("between", block.title);
+      if (token.cancelled) return;
       showBridgeNow(); // OKAMŽITĚ, ještě než dorazí API
       const slotEndMs = parseTimeMs(block.ends_at);
       const gapSec = slotEndMs ? Math.max(0, Math.floor((slotEndMs - Date.now()) / 1000)) : 0;
@@ -241,6 +293,8 @@ export function usePlayoutLoop({ enabled, initialBlock }: UsePlayoutLoopOptions)
           // /program/now — BEZ handleBlockEnd (seed nemá reálný slot → falešná mezera).
           await playBlock(firstSeed, Math.max(0, Math.floor(seed?.offsetSeconds ?? 0)));
           firstSeed = null;
+          if (token.cancelled) return;
+          await playScheduledAd("between", seed?.title);
           if (token.cancelled) return;
           continue;
         }

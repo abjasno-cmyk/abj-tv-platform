@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { Fragment, useCallback, useMemo, useState } from "react";
 
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import { FollowChannelButton } from "@/components/auth/FollowChannelButton";
@@ -10,6 +10,7 @@ import { fetchChannelVideosForKanaly } from "@/lib/kanaly/channelVideosClient";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { normalizeChannelFollowId } from "@/lib/viewer/videoMetadata";
+import { InfeedAd } from "@/components/ads/InfeedAd";
 
 type KanalyPageClientProps = {
   channels: LiveChannelGroup[];
@@ -97,14 +98,15 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
         <p className="kanaly-empty">{dictionary.channels.emptyList}</p>
       ) : (
         <ul className="kanaly-list">
-          {orderedChannels.map((channel) => {
+          {orderedChannels.map((channel, channelIndex) => {
             const isOpen = openChannelName === channel.channelName;
             const isLoading = loadingChannel === channel.channelName;
             const videos = videosByChannel[channel.channelName] ?? [];
             const usedFallback = fallbackByChannel[channel.channelName] === true;
 
             return (
-              <li key={channel.channelName} className={`kanaly-item${isOpen ? " is-open" : ""}`}>
+              <Fragment key={channel.channelName}>
+              <li className={`kanaly-item${isOpen ? " is-open" : ""}`}>
                 <button
                   type="button"
                   className="kanaly-channel-trigger"
@@ -156,6 +158,9 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
                   </div>
                 ) : null}
               </li>
+              <InfeedAd placement="infeed_channels_tile" afterIndex={channelIndex} variant="tile" as="li" />
+              <InfeedAd placement="infeed_kanaly" afterIndex={channelIndex} as="li" />
+              </Fragment>
             );
           })}
         </ul>

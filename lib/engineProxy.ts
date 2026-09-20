@@ -15,6 +15,7 @@ const ALLOWED_ENGINE_PATH_PATTERNS: ReadonlyArray<RegExp> = [
   /^\/api\/videos$/,
   /^\/context\/[^/]+$/,
   /^\/transcript\/[^/]+$/,
+  /^\/ads$/,
 ];
 
 function isAllowedEnginePath(upstreamPath: string): boolean {

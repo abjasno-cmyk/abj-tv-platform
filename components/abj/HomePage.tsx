@@ -9,7 +9,7 @@ import {
 } from "@/lib/liveChannelVideos";
 
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { VeroxHeader } from "@/components/abj/VeroxHeader";
 import { HeroPlayerBar, type PlaybackSpeed } from "@/components/abj/playout/HeroPlayerBar";
@@ -28,6 +28,7 @@ import { LOCALE_CS, type VeroxLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { PlayoutStage } from "@/components/abj/playout/PlayoutStage";
 import { usePlayoutLoop } from "@/components/abj/playout/usePlayoutLoop";
+import { InfeedAd } from "@/components/ads/InfeedAd";
 import { scrollHorizontalCarousel } from "@/lib/horizontalCarouselScroll";
 import { clampSeekSeconds } from "@/lib/playerTime";
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
@@ -747,25 +748,27 @@ export function HomePage({
                 <span className="ch-name">Připravujeme…</span>
               </article>
             ) : (
-              displayChannels.map((ch) => {
+              displayChannels.map((ch, channelIndex) => {
                 const active = ch.channelName === openChannelName;
                 const isLoading = ch.channelName === channelLoading;
                 return (
-                  <button
-                    type="button"
-                    key={ch.channelName}
-                    className={`channel-card${active ? " channel-card-active" : ""}`}
-                    onClick={() => void selectChannel(ch)}
-                    aria-busy={isLoading}
-                    aria-expanded={active}
-                    style={isLoading ? { opacity: 0.65 } : undefined}
-                  >
-                    {ch.avatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img className="ch-avatar" src={ch.avatarUrl} alt="" />
-                    ) : null}
-                    <span className="ch-name">{ch.channelName}</span>
-                  </button>
+                  <Fragment key={ch.channelName}>
+                    <button
+                      type="button"
+                      className={`channel-card${active ? " channel-card-active" : ""}`}
+                      onClick={() => void selectChannel(ch)}
+                      aria-busy={isLoading}
+                      aria-expanded={active}
+                      style={isLoading ? { opacity: 0.65 } : undefined}
+                    >
+                      {ch.avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img className="ch-avatar" src={ch.avatarUrl} alt="" />
+                      ) : null}
+                      <span className="ch-name">{ch.channelName}</span>
+                    </button>
+                    <InfeedAd placement="infeed_channels_tile" afterIndex={channelIndex} variant="tile" />
+                  </Fragment>
                 );
               })
             )}
@@ -831,6 +834,7 @@ export function HomePage({
           ))}
         </div>
       </section>
+      <InfeedAd placement="infeed_home_channels" />
       </div>
       {/* /hf-body */}
     </div>

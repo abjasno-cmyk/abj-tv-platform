@@ -6,6 +6,7 @@ import { getAuthorDisplayName } from "@/lib/nazory/display";
 import { publicNazoryMediaUrl } from "@/lib/nazory/media";
 import type { AuthorProfileRow, OpinionArticleRow } from "@/lib/nazory/types";
 import type { VeroxLocale } from "@/lib/i18n/config";
+import { InfeedAd } from "@/components/ads/InfeedAd";
 
 async function loadAuthorsForArticles(articles: OpinionArticleRow[]) {
   const authorIds = [...new Set(articles.map((article) => article.author_id))];
@@ -64,6 +65,7 @@ export async function OpinionList({ articles, locale }: { articles: OpinionArtic
             commentCount={commentCounts.get(article.id) ?? 0}
             locale={locale}
           />
+          <InfeedAd placement="infeed_nazory" afterIndex={index} />
           {index < articles.length - 1 ? (
             <div className="vx-strip" aria-hidden="true">
               <span />
