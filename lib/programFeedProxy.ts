@@ -118,6 +118,48 @@ export function buildTranscriptUrlCandidates(videoId: string): string[] {
   return candidates;
 }
 
+export function buildAdsUrlCandidates(): string[] {
+  const candidates: string[] = [];
+  const seen = new Set<string>();
+
+  const feedUrl = resolveProgramFeedUrl();
+  for (const feedCandidate of feedUrl ? buildProgramFeedCandidates(feedUrl) : []) {
+    try {
+      const url = new URL(feedCandidate);
+      const path = url.pathname.replace(/\/+$/, "");
+      if (path.endsWith("/program")) {
+        url.pathname = `${path.slice(0, -"/program".length)}/ads`;
+      } else {
+        url.pathname = "/ads";
+      }
+      url.search = "";
+      url.hash = "";
+      addCandidate(candidates, seen, url.toString());
+    } catch {
+      // skip
+    }
+  }
+
+  const engineBase =
+    sanitizeEnvValue(process.env.NEXT_PUBLIC_ENGINE_URL) ??
+    sanitizeEnvValue(process.env.ENGINE_URL) ??
+    sanitizeEnvValue(process.env.NEXT_PUBLIC_REPLIT_URL) ??
+    sanitizeEnvValue(process.env.REPLIT_URL);
+  if (engineBase) {
+    try {
+      const url = new URL(engineBase);
+      url.pathname = "/ads";
+      url.search = "";
+      url.hash = "";
+      addCandidate(candidates, seen, url.toString());
+    } catch {
+      // skip
+    }
+  }
+
+  return candidates;
+}
+
 export function withForwardedQuery(baseUrl: string, incomingRequest: Request): URL {
   const upstreamUrl = new URL(baseUrl);
   const incoming = new URL(incomingRequest.url);

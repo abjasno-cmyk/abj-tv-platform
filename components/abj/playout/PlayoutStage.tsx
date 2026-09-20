@@ -201,6 +201,25 @@ export function PlayoutStage({
     return <PlayoutWeather label={surface.label} />;
   }
 
+  if (surface.kind === "ad") {
+    const img = (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={surface.image} alt={surface.title || "Reklama"} />
+    );
+    return (
+      <div className="playout-ad" aria-label={surface.title || "Reklama"}>
+        <span className="playout-ad-label">{surface.title || "Reklama"}</span>
+        {surface.clickUrl ? (
+          <a href={surface.clickUrl} target="_blank" rel="noopener noreferrer sponsored">
+            {img}
+          </a>
+        ) : (
+          img
+        )}
+      </div>
+    );
+  }
+
   // youtube (+ multi-source fallback)
   if (sourcesExhausted) {
     return <PlayoutIdent />;

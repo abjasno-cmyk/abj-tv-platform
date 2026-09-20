@@ -112,6 +112,7 @@ describe("isApiPathAllowed", () => {
       "/api/program/v3/import-feed",
       "/api/live/channels",
       "/api/transcript/abc123",
+      "/api/ads",
       "/api/analytics/events",
     ]) {
       expect(isApiPathAllowed(p, proudx)).toBe(true);

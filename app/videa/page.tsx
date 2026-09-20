@@ -5,6 +5,7 @@ import { loadStructuredFeedPayload, type FeedVideo } from "@/lib/dayOverview";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { localizeFeedVideos } from "@/lib/i18n/videoTitles";
 import { selectVideaVideosForTodayAndYesterday } from "@/lib/viewer/videaDaySelection";
+import { InfeedAd } from "@/components/ads/InfeedAd";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,7 @@ export default async function VideaPage() {
       {videos.length === 0 ? (
         <div className="mv">
           <div className="info">{locale === "en" ? "Videos are being prepared." : "Videa se právě připravují."}</div>
+          <InfeedAd placement="infeed_latest" />
         </div>
       ) : (
         <VideaVideoList videos={displayVideos} />

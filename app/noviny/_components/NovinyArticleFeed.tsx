@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 
 import { NovinyArticleCard } from "@/app/noviny/_components/NovinyArticleCard";
+import { InfeedAd } from "@/components/ads/InfeedAd";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { useLocale } from "@/lib/i18n/useLocale";
 import type { RankedNovinyArticle } from "@/lib/noviny/ranking";
@@ -34,6 +35,7 @@ function ArticleSections({ articles }: { articles: RankedNovinyArticle[] }) {
         <section className="space-y-3">
           <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">{dictionary.news.lead}</h2>
           <NovinyArticleCard article={lead} />
+          <InfeedAd placement="infeed_noviny" afterIndex={0} />
         </section>
       ) : null}
 
@@ -41,8 +43,11 @@ function ArticleSections({ articles }: { articles: RankedNovinyArticle[] }) {
         <section className="space-y-3">
           <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">{dictionary.news.recommended}</h2>
           <div className="grid gap-4 md:grid-cols-2">
-            {secondary.map((article) => (
-              <NovinyArticleCard key={article.id} article={article} compact />
+            {secondary.map((article, index) => (
+              <Fragment key={article.id}>
+                <NovinyArticleCard article={article} compact />
+                <InfeedAd placement="infeed_noviny" afterIndex={index + 1} />
+              </Fragment>
             ))}
           </div>
         </section>
@@ -52,8 +57,11 @@ function ArticleSections({ articles }: { articles: RankedNovinyArticle[] }) {
         <section className="space-y-3">
           <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-abj-text2">{dictionary.news.moreReading}</h2>
           <div className="space-y-4">
-            {deepRead.map((article) => (
-              <NovinyArticleCard key={article.id} article={article} compact />
+            {deepRead.map((article, index) => (
+              <Fragment key={article.id}>
+                <NovinyArticleCard article={article} compact />
+                <InfeedAd placement="infeed_noviny" afterIndex={index + 1 + secondary.length} />
+              </Fragment>
             ))}
           </div>
         </section>

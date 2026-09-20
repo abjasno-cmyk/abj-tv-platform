@@ -128,7 +128,8 @@ export type PlayoutSurface =
     }
   | { kind: "embed"; url: string; label?: string }
   | { kind: "ident"; title: string }
-  | { kind: "weather"; data: unknown; label?: string };
+  | { kind: "weather"; data: unknown; label?: string }
+  | { kind: "ad"; image: string; title?: string; clickUrl?: string | null };
 
 // media_sources má neznámý přesný tvar (chybí Multi-source doc) — čteme defenzivně
 // běžná pole: video_id / videoId, url / embed_url.

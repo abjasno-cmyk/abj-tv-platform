@@ -4,7 +4,7 @@
 // Dark cinematic editorial: přehrávač jako centrální stage. Znovupoužívá
 // playout engine (PlayoutStage + usePlayoutLoop) z jádra; layout je vlastní.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { PlayoutStage } from "@/components/abj/playout/PlayoutStage";
 import { usePlayoutLoop } from "@/components/abj/playout/usePlayoutLoop";
@@ -15,6 +15,7 @@ import type { DayProgram, ProgramItem } from "@/lib/epg-types";
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import { ProudXHeader } from "@/components/proudx/ProudXHeader";
 import { ProudXFooter } from "@/components/proudx/ProudXFooter";
+import { InfeedAd } from "@/components/ads/InfeedAd";
 import {
   mergeChannelVideosByVideoId,
   selectLatestNonShortChannelVideos,
@@ -668,9 +669,9 @@ export default function ProudXLive({
               </div>
             ) : null}
             <div className="px-channel-grid">
-              {channels.map((ch) => (
+              {channels.map((ch, channelIndex) => (
+                <Fragment key={ch.channelName}>
                 <button
-                  key={ch.channelName}
                   type="button"
                   className={`pxc${activeChannelName === ch.channelName ? " is-active" : ""}`}
                   aria-expanded={activeChannelName === ch.channelName}
@@ -683,11 +684,14 @@ export default function ProudXLive({
                   <ChannelAvatar name={ch.channelName} url={ch.avatarUrl} />
                   <span className="pxc-name">{ch.channelName}</span>
                 </button>
+                <InfeedAd placement="infeed_channels_tile" afterIndex={channelIndex} variant="tile" />
+                </Fragment>
               ))}
             </div>
 
           </section>
         ) : null}
+        <InfeedAd placement="infeed_home_channels" />
       </main>
 
       <ProudXFooter />

@@ -1,9 +1,12 @@
 // ProudX katalog videí — dark editorial grid, sladěný s živou stránkou.
 
+import { Fragment } from "react";
+
 import { ProudXHeader } from "@/components/proudx/ProudXHeader";
 import { ProudXFooter } from "@/components/proudx/ProudXFooter";
 import { videoSharePath } from "@/lib/viewer/videoMetadata";
 import type { FeedVideo } from "@/lib/dayOverview";
+import { InfeedAd } from "@/components/ads/InfeedAd";
 
 import "@/app/live/proudx-live.css";
 
@@ -48,15 +51,17 @@ export default function ProudXVidea({ videos }: { videos: FeedVideo[] }) {
           <h1 className="pxv-h1">Nejnovější videa</h1>
           <p className="pxv-lede">Výběr z nepřetržitého proudu — kdykoli k přehrání.</p>
         </div>
+        <InfeedAd placement="infeed_latest" />
 
         {videos.length === 0 ? (
           <p className="pxv-empty">Videa se právě připravují.</p>
         ) : (
           <div className="pxv-grid">
-            {videos.map((v) => {
+            {videos.map((v, index) => {
               const dur = durationLabel(v.duration_min);
               return (
-                <a key={v.video_id} className="pxv-card" href={videoSharePath(v.video_id)}>
+                <Fragment key={v.video_id}>
+                <a className="pxv-card" href={videoSharePath(v.video_id)}>
                   <span className="pxv-thumb">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={thumbFor(v)} alt="" loading="lazy" />
@@ -74,6 +79,8 @@ export default function ProudXVidea({ videos }: { videos: FeedVideo[] }) {
                     ) : null}
                   </span>
                 </a>
+                <InfeedAd placement="infeed_latest" afterIndex={index} />
+                </Fragment>
               );
             })}
           </div>
