@@ -262,6 +262,41 @@ describe("fetchVideoTranscriptServer", () => {
     );
   });
 
+  it("peek SEO request never hits compute URLs without peek=1", async () => {
+    process.env.FEED_API_KEY = "legacy-feed-key";
+    process.env.NEXT_PUBLIC_ENGINE_URL = "https://engine.test";
+    const youtubeFallbackMock = vi.mocked(fetchYouTubeTranscriptResponse);
+    youtubeFallbackMock.mockResolvedValueOnce(null);
+
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("/transcripts/verox-news/") && url.includes("peek=1")) {
+        return new Response("not found", { status: 404 });
+      }
+      if (url.includes("/transcript/") && url.includes("peek=1")) {
+        return new Response(
+          JSON.stringify({
+            video_id: "dQw4w9WgXcQ",
+            status: "unavailable",
+            transcript: null,
+            transcript_at: null,
+            transcript_original: null,
+            source_lang: null,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      throw new Error(`SEO peek nesmí volat compute URL: ${url}`);
+    });
+
+    const result = await fetchVideoTranscriptServer("dQw4w9WgXcQ", undefined, { peek: true });
+    expect(result?.status).toBe("unavailable");
+    expect(fetchMock).toHaveBeenCalled();
+    expect(fetchMock.mock.calls.every(([input]) => String(input).includes("peek=1") || String(input).includes("/status?"))).toBe(
+      true,
+    );
+  });
+
   it("throws auth error when provider returns 403", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response("forbidden", { status: 403 }),
