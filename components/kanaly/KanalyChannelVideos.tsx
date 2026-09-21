@@ -15,6 +15,7 @@ import { getDictionary } from "@/lib/i18n/dictionary";
 import { localizedPath } from "@/lib/i18n/paths";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { resolveVideoThumbnail } from "@/lib/viewer/videoMetadata";
+import { formatPremiereDateLine } from "@/lib/viewer/videoReleaseDate";
 import { useViewerVideoState } from "@/lib/viewer/useViewerVideoState";
 
 const MONTHS = [
@@ -54,6 +55,7 @@ export function KanalyChannelVideos({ videos, channelName }: KanalyChannelVideos
     <>
       {videos.map((video, index) => {
         const { month, day } = dateParts(video.publishedAt, locale);
+        const premiereLine = formatPremiereDateLine(video.publishedAt);
         const thumbnail = resolveVideoThumbnail(video.videoId, video.thumbnail);
         const href = localizedPath(locale, channelVideoHref(video.videoId, video.title, channelName));
 
@@ -76,6 +78,7 @@ export function KanalyChannelVideos({ videos, channelName }: KanalyChannelVideos
               <div className="body">
                 <h3>{video.title}</h3>
                 <div className="by">{channelName}</div>
+                {premiereLine ? <div className="premiere">{premiereLine}</div> : null}
                 <div className="vx-videa-actions nazory-detail-actions">
                   <SaveVideoButton
                     videoId={video.videoId}

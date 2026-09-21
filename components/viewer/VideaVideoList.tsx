@@ -15,7 +15,7 @@ import { getDictionary } from "@/lib/i18n/dictionary";
 import { localizedPath } from "@/lib/i18n/paths";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { liveVideoHref, resolveVideoThumbnail } from "@/lib/viewer/videoMetadata";
-import { resolveVideoReleaseIso } from "@/lib/viewer/videoReleaseDate";
+import { formatPremiereDateLine, resolveVideoReleaseIso } from "@/lib/viewer/videoReleaseDate";
 import { useViewerVideoState } from "@/lib/viewer/useViewerVideoState";
 import { InfeedAd } from "@/components/ads/InfeedAd";
 
@@ -54,6 +54,7 @@ export function VideaVideoList({ videos }: VideaVideoListProps) {
         });
         const { month, day } = dateParts(releaseIso ?? video.published_at, locale);
         const desc = video.tldr ?? video.context ?? "";
+        const premiereLine = formatPremiereDateLine(releaseIso ?? video.published_at);
         const href = localizedPath(
           locale,
           liveVideoHref({
@@ -87,6 +88,7 @@ export function VideaVideoList({ videos }: VideaVideoListProps) {
               <div className="body">
                 <h3>{video.title}</h3>
                 <div className="by">{video.channel}</div>
+                {premiereLine ? <div className="premiere">{premiereLine}</div> : null}
                 {desc ? <p>{desc}</p> : null}
                 <div className="vx-videa-actions nazory-detail-actions">
                   <SaveVideoButton

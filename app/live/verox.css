@@ -796,7 +796,14 @@
   font-size: clamp(0.85rem, 2cqw, 1.05rem);
   color: var(--vx-gray-light);
   letter-spacing: 0.05em;
-  margin: 0.6em 0;
+  margin: 0.6em 0 0.2em;
+}
+.vx-card .body .premiere {
+  font-weight: 400;
+  font-size: clamp(0.75rem, 1.8cqw, 0.9rem);
+  color: var(--vx-gray-light);
+  letter-spacing: 0.04em;
+  margin: 0 0 0.6em;
 }
 .vx-card .body p {
   font-weight: 400;
@@ -2859,6 +2866,27 @@
   justify-content: space-between;
   gap: 10px;
   margin-top: 4px;
+}
+.kanaly-videos-toggle {
+  margin: 4px var(--L1) 16px;
+}
+.kanaly-videos-toggle-btn {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--vx-orange);
+  font-family: var(--vx-myriad);
+  font-weight: 800;
+  font-size: clamp(0.82rem, 2cqw, 0.95rem);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.kanaly-videos-toggle-btn:hover {
+  color: #c44f00;
+}
+.kanaly-videos-toggle-btn:disabled {
+  cursor: wait;
+  opacity: 0.7;
 }
 .kanaly-channel-panel-name {
   margin: 0;

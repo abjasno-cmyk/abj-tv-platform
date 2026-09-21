@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatVideoReleaseDateBadge,
+  formatPremiereDateLine,
   getVideoReleaseBadgeLabel,
   isScheduledPremiere,
   resolveVideoReleaseIso,
@@ -48,5 +49,11 @@ describe("videoReleaseDate", () => {
   it("returns null for invalid dates", () => {
     expect(formatVideoReleaseDateBadge("not-a-date")).toBeNull();
     expect(resolveVideoReleaseIso({ publishedAt: "bad", videoType: "vod" }, NOW)).toBeNull();
+  });
+
+  it("formats a ProudX-style premiere line without time", () => {
+    expect(formatPremiereDateLine("2026-06-01T10:00:00.000Z")).toBe("Premiéra 1. 6. 2026");
+    expect(formatPremiereDateLine("1970-01-01T00:00:00.000Z")).toBeNull();
+    expect(formatPremiereDateLine(null)).toBeNull();
   });
 });
