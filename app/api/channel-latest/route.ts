@@ -1,5 +1,7 @@
 import {
   LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT,
+  LIVE_CHANNEL_VIDEO_EXPANDED_FETCH_BUFFER,
+  LIVE_CHANNEL_VIDEO_EXPANDED_LIMIT,
   LIVE_CHANNEL_VIDEO_FETCH_BUFFER,
   selectLatestNonShortChannelVideos,
   type ChannelVideoCandidate,
@@ -497,7 +499,7 @@ async function fetchUploadPlaylistVideos(
   const uploadsPlaylistId = await resolveUploadsPlaylistId(channelId, apiKey);
   if (!uploadsPlaylistId) return [];
 
-  const target = Math.min(LIVE_CHANNEL_VIDEO_FETCH_BUFFER, Math.max(1, fetchLimit));
+  const target = Math.min(LIVE_CHANNEL_VIDEO_EXPANDED_FETCH_BUFFER, Math.max(1, fetchLimit));
   const videos: ChannelLatestVideo[] = [];
   let pageToken: string | undefined;
 
@@ -634,9 +636,12 @@ export async function GET(request: Request) {
   const locale = parseLocale(searchParams.get("locale"));
   const requestedLimit = Number.parseInt(searchParams.get("limit") ?? String(LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT), 10);
   const displayLimit = Number.isFinite(requestedLimit)
-    ? Math.min(LIVE_CHANNEL_VIDEO_FETCH_BUFFER, Math.max(1, requestedLimit))
+    ? Math.min(LIVE_CHANNEL_VIDEO_EXPANDED_LIMIT, Math.max(1, requestedLimit))
     : LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT;
-  const fetchBuffer = Math.max(displayLimit * 3, LIVE_CHANNEL_VIDEO_FETCH_BUFFER);
+  const fetchBuffer =
+    displayLimit > LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT
+      ? Math.max(Math.ceil(displayLimit * 1.5), LIVE_CHANNEL_VIDEO_EXPANDED_FETCH_BUFFER)
+      : Math.max(displayLimit * 3, LIVE_CHANNEL_VIDEO_FETCH_BUFFER);
   const apiKey = resolveYouTubeApiKey();
 
   let channelId = "";

@@ -68,6 +68,15 @@ export function formatVideoReleaseDateBadge(
   return label;
 }
 
+/** ProudX-style line under a card title: „Premiéra 1. 6. 2026“ (bez času). */
+export function formatPremiereDateLine(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (!Number.isFinite(date.getTime()) || date.getFullYear() < 2000) return null;
+  const label = formatVideoReleaseDateBadge(iso);
+  return label ? `Premiéra ${label}` : null;
+}
+
 export function getVideoReleaseBadgeLabel(
   source: VideoReleaseDateSource,
   nowMs: number = Date.now(),

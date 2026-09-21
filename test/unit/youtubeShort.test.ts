@@ -5,7 +5,7 @@ import {
   parseIsoDurationSeconds,
   YOUTUBE_SHORT_MAX_SECONDS,
 } from "@/lib/youtubeShort";
-import { selectLatestNonShortChannelVideos, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT } from "@/lib/liveChannelVideos";
+import { selectLatestNonShortChannelVideos, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT, LIVE_CHANNEL_VIDEO_EXPANDED_LIMIT } from "@/lib/liveChannelVideos";
 
 describe("parseIsoDurationSeconds", () => {
   it("parses minute and second durations", () => {
@@ -50,6 +50,20 @@ describe("selectLatestNonShortChannelVideos", () => {
     const selected = selectLatestNonShortChannelVideos(videos);
     expect(selected.length).toBe(LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT);
     expect(selected.every((video) => !isYouTubeShort(video))).toBe(true);
+  });
+
+  it("can return up to the expanded channel limit", () => {
+    const videos = Array.from({ length: 140 }, (_, index) => ({
+      videoId: `v${index}`,
+      title: `Video ${index}`,
+      thumbnail: null,
+      publishedAt: new Date(2026, 0, 20 - (index % 20)).toISOString(),
+      durationMin: 12,
+    }));
+
+    expect(selectLatestNonShortChannelVideos(videos, LIVE_CHANNEL_VIDEO_EXPANDED_LIMIT)).toHaveLength(
+      LIVE_CHANNEL_VIDEO_EXPANDED_LIMIT,
+    );
   });
 
   it("filterNonShortVideos removes all shorts from a mixed list", () => {

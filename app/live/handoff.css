@@ -1244,6 +1244,33 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+.hf .channel-video .cv-date {
+  font-family: var(--vx-myriad);
+  font-size: clamp(0.68rem, 0.95vw, 0.78rem);
+  line-height: 1.25;
+  color: var(--vx-gray-light);
+}
+.hf .channel-videos-toggle {
+  margin: clamp(12px, 1.4vw, 18px) 0 0;
+}
+.hf .channel-videos-toggle-btn {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--vx-orange);
+  font-family: var(--vx-myriad);
+  font-weight: 800;
+  font-size: clamp(0.78rem, 1.15vw, 0.95rem);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.hf .channel-videos-toggle-btn:hover {
+  color: #c44f00;
+}
+.hf .channel-videos-toggle-btn:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
 
 /* ============================================================================
    DESKTOP (návrh Lucie Robinson, „cely_nahled_sirka") — široká lišta s hodinami

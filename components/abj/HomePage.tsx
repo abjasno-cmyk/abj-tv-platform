@@ -2,6 +2,7 @@
 
 import {
   LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT,
+  LIVE_CHANNEL_VIDEO_EXPANDED_LIMIT,
   LIVE_CHANNEL_VIDEO_MIN_FROM_CACHE,
   mergeChannelVideosByVideoId,
   selectLatestNonShortChannelVideos,
@@ -65,6 +66,24 @@ function thumbFor(item: ProgramItem): string {
   return "/placeholder-thumb.jpg";
 }
 
+function mapChannelLatestVideos(
+  videos: Array<{ videoId?: string; title?: string; thumbnail?: string; publishedAt?: string }>,
+): LiveChannelVideo[] {
+  return videos
+    .map((video): LiveChannelVideo | null => {
+      const videoId = video.videoId?.trim();
+      const title = video.title?.trim();
+      if (!videoId || !title) return null;
+      return {
+        videoId,
+        title,
+        thumbnail: video.thumbnail?.trim() || null,
+        publishedAt: video.publishedAt?.trim() || new Date(0).toISOString(),
+      };
+    })
+    .filter((video): video is LiveChannelVideo => Boolean(video));
+}
+
 // Landing dle finálního handoffu: hero + odznak, feature-summary, PRÁVĚ HRAJE
 // (3 náhledy) + PRÁVĚ BĚŽÍ, KANÁLY. Vše napojené na reálná data.
 export function HomePage({
@@ -97,11 +116,14 @@ export function HomePage({
   const [playing, setPlaying] = useState(true);
   const [stageDot, setStageDot] = useState(0);
   const [channelDot, setChannelDot] = useState(0);
-  // Sekce KANÁLY: otevřený kanál + až 24 videí bez Shorts (detail panel pod lištou).
+  // Sekce KANÁLY: otevřený kanál + 24 videí bez Shorts (lze načíst 100 a sbalit).
   const [openChannelName, setOpenChannelName] = useState<string | null>(null);
   const [channelVideosByName, setChannelVideosByName] = useState<Record<string, LiveChannelVideo[]>>({});
   const [channelLoading, setChannelLoading] = useState<string | null>(null);
   const [channelError, setChannelError] = useState<Record<string, string>>({});
+  const [channelExpandedByName, setChannelExpandedByName] = useState<Record<string, boolean>>({});
+  const [channelExpandLoadedByName, setChannelExpandLoadedByName] = useState<Record<string, boolean>>({});
+  const [channelExpandLoading, setChannelExpandLoading] = useState<string | null>(null);
   const [playbackRate, setPlaybackRate] = useState<PlaybackSpeed>(1);
   const [playerCurrentTime, setPlayerCurrentTime] = useState(0);
   const [playerDuration, setPlayerDuration] = useState(0);
@@ -293,13 +315,45 @@ export function HomePage({
   // se rovnou — klik na konkrétní video v panelu pak otevře HeroScreen). Kanály bez
   // přednačtených videí (např. Datarun) si je doptají přímo přes /api/channel-latest
   // (YouTube), ať jdou taky zobrazit.
+  const fetchChannelLatest = useCallback(
+    async (ch: LiveChannelGroup, limit: number): Promise<LiveChannelVideo[]> => {
+      const params = new URLSearchParams();
+      if (ch.channelUrl) {
+        params.set("channelUrl", ch.channelUrl);
+      } else if (ch.channelId) {
+        params.set("channelId", ch.channelId);
+      }
+      params.set("channelName", ch.channelName);
+      params.set("limit", String(limit));
+      params.set("locale", locale);
+
+      const response = await fetch(`/api/channel-latest?${params.toString()}`, { cache: "no-store" });
+      const payload = (await response.json().catch(() => ({}))) as {
+        videos?: Array<{ videoId?: string; title?: string; thumbnail?: string; publishedAt?: string }>;
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(payload.error ?? `HTTP ${response.status}`);
+      }
+      return mapChannelLatestVideos(payload.videos ?? []);
+    },
+    [locale],
+  );
+
   const selectChannel = async (ch: LiveChannelGroup) => {
     // Toggle: druhý klik na otevřený kanál panel zavře.
     if (openChannelName === ch.channelName) {
       setOpenChannelName(null);
+      setChannelExpandedByName((prev) => ({ ...prev, [ch.channelName]: false }));
       return;
     }
     setOpenChannelName(ch.channelName);
+
+    const existing = channelVideosByName[ch.channelName];
+    if (existing && existing.length > 0) {
+      setPlayerBarExpanded(true);
+      return;
+    }
 
     const cachedVideos = ch.videos.slice(0, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT);
     const hasEnoughCache = !shouldSupplementChannelVideosFromApi(
@@ -322,8 +376,6 @@ export function HomePage({
         [ch.channelName]: cachedVideos,
       }));
       setPlayerBarExpanded(true);
-    } else if (channelVideosByName[ch.channelName]) {
-      return; // už načteno
     }
 
     if (!ch.channelId && !ch.channelUrl && !ch.channelName.trim()) return;
@@ -331,33 +383,7 @@ export function HomePage({
     setChannelLoading(ch.channelName);
     setChannelError((prev) => ({ ...prev, [ch.channelName]: "" }));
     try {
-      const params = new URLSearchParams();
-      // URL má přednost před DB channel_id — ten často zastará (Bazalová, Datarun, …).
-      if (ch.channelUrl) {
-        params.set("channelUrl", ch.channelUrl);
-      } else if (ch.channelId) {
-        params.set("channelId", ch.channelId);
-      }
-      params.set("channelName", ch.channelName);
-      params.set("limit", String(LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT));
-
-      const response = await fetch(`/api/channel-latest?${params.toString()}`, { cache: "no-store" });
-      const payload = (await response.json().catch(() => ({}))) as {
-        videos?: Array<{ videoId?: string; title?: string; thumbnail?: string; publishedAt?: string }>;
-      };
-      const apiVideos = (payload.videos ?? [])
-        .map((video): LiveChannelVideo | null => {
-          const videoId = video.videoId?.trim();
-          const title = video.title?.trim();
-          if (!videoId || !title) return null;
-          return {
-            videoId,
-            title,
-            thumbnail: video.thumbnail?.trim() || null,
-            publishedAt: video.publishedAt?.trim() || new Date(0).toISOString(),
-          };
-        })
-        .filter((video): video is LiveChannelVideo => Boolean(video));
+      const apiVideos = await fetchChannelLatest(ch, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT);
       const merged = mergeChannelVideosByVideoId(ch.videos, apiVideos);
       const videos = selectLatestNonShortChannelVideos(merged, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT);
       setChannelVideosByName((prev) => ({ ...prev, [ch.channelName]: videos }));
@@ -370,6 +396,43 @@ export function HomePage({
     } finally {
       setChannelLoading(null);
     }
+  };
+
+  const expandChannelVideos = async (ch: LiveChannelGroup) => {
+    const existing = channelVideosByName[ch.channelName] ?? [];
+    if (
+      channelExpandLoadedByName[ch.channelName] ||
+      existing.length >= LIVE_CHANNEL_VIDEO_EXPANDED_LIMIT
+    ) {
+      setChannelExpandedByName((prev) => ({ ...prev, [ch.channelName]: true }));
+      return;
+    }
+    if (!ch.channelId && !ch.channelUrl && !ch.channelName.trim()) {
+      setChannelExpandedByName((prev) => ({ ...prev, [ch.channelName]: true }));
+      return;
+    }
+
+    setChannelExpandLoading(ch.channelName);
+    setChannelError((prev) => ({ ...prev, [ch.channelName]: "" }));
+    try {
+      const apiVideos = await fetchChannelLatest(ch, LIVE_CHANNEL_VIDEO_EXPANDED_LIMIT);
+      const merged = mergeChannelVideosByVideoId(ch.videos, existing, apiVideos);
+      const videos = selectLatestNonShortChannelVideos(merged, LIVE_CHANNEL_VIDEO_EXPANDED_LIMIT);
+      setChannelVideosByName((prev) => ({ ...prev, [ch.channelName]: videos }));
+      setChannelExpandedByName((prev) => ({ ...prev, [ch.channelName]: true }));
+      setChannelExpandLoadedByName((prev) => ({ ...prev, [ch.channelName]: true }));
+      if (videos.length === 0) {
+        setChannelError((prev) => ({ ...prev, [ch.channelName]: "Kanál teď nemá dostupná videa." }));
+      }
+    } catch {
+      setChannelError((prev) => ({ ...prev, [ch.channelName]: "Videa kanálu se nepodařilo načíst." }));
+    } finally {
+      setChannelExpandLoading(null);
+    }
+  };
+
+  const collapseChannelVideos = (channelName: string) => {
+    setChannelExpandedByName((prev) => ({ ...prev, [channelName]: false }));
   };
 
   // Pozice přehrávače pro vlastní posuvník / čas (YouTube iframe, controls:0).
@@ -807,19 +870,54 @@ export function HomePage({
             {channelLoading === openChannelName ? (
               <p className="channel-detail-info">Načítám nejnovější videa…</p>
             ) : (channelVideosByName[openChannelName]?.length ?? 0) > 0 ? (
-              <div className="channel-videos">
-                {channelVideosByName[openChannelName]!.map((video) => (
-                  <ChannelVideoTile
-                    key={video.videoId}
-                    video={video}
-                    channelName={openChannelName}
-                    saved={savedVideoIds.has(video.videoId)}
-                    watched={watchedVideoIds.has(video.videoId)}
-                    onSelect={() => onSelectChannelVideo({ channelName: openChannelName, video })}
-                    onSavedChange={(nextSaved) => setSaved(video.videoId, nextSaved)}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="channel-videos">
+                  {(channelExpandedByName[openChannelName]
+                    ? channelVideosByName[openChannelName]!
+                    : channelVideosByName[openChannelName]!.slice(0, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT)
+                  ).map((video) => (
+                    <ChannelVideoTile
+                      key={video.videoId}
+                      video={video}
+                      channelName={openChannelName}
+                      saved={savedVideoIds.has(video.videoId)}
+                      watched={watchedVideoIds.has(video.videoId)}
+                      onSelect={() => onSelectChannelVideo({ channelName: openChannelName, video })}
+                      onSavedChange={(nextSaved) => setSaved(video.videoId, nextSaved)}
+                    />
+                  ))}
+                </div>
+                {(() => {
+                  const openChannel = displayChannels.find((ch) => ch.channelName === openChannelName);
+                  const expanded = channelExpandedByName[openChannelName] === true;
+                  const expanding = channelExpandLoading === openChannelName;
+                  if (!openChannel) return null;
+                  return (
+                    <p className="channel-videos-toggle">
+                      {expanded ? (
+                        <button
+                          type="button"
+                          className="channel-videos-toggle-btn"
+                          onClick={() => collapseChannelVideos(openChannelName)}
+                        >
+                          {dictionary.live.collapseVideos}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="channel-videos-toggle-btn"
+                          onClick={() => void expandChannelVideos(openChannel)}
+                          disabled={expanding}
+                        >
+                          {expanding
+                            ? dictionary.live.loadingLatestVideos
+                            : dictionary.live.loadLatestVideos(LIVE_CHANNEL_VIDEO_EXPANDED_LIMIT)}
+                        </button>
+                      )}
+                    </p>
+                  );
+                })()}
+              </>
             ) : (
               <p className="channel-detail-info">
                 {channelError[openChannelName] || "Tento kanál teď nemá dostupná videa."}

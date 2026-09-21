@@ -5,8 +5,8 @@ import { Fragment, useCallback, useMemo, useState } from "react";
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import { FollowChannelButton } from "@/components/auth/FollowChannelButton";
 import { KanalyChannelVideos } from "@/components/kanaly/KanalyChannelVideos";
-import { CHANNEL_VIDEO_LOOKBACK_DAYS } from "@/lib/liveChannelVideos";
-import { fetchChannelVideosForKanaly } from "@/lib/kanaly/channelVideosClient";
+import { CHANNEL_VIDEO_LOOKBACK_DAYS, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT, LIVE_CHANNEL_VIDEO_EXPANDED_LIMIT } from "@/lib/liveChannelVideos";
+import { fetchChannelVideosForKanaly, fetchExpandedChannelVideosForKanaly } from "@/lib/kanaly/channelVideosClient";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { normalizeChannelFollowId } from "@/lib/viewer/videoMetadata";
@@ -52,10 +52,14 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
   const [fallbackByChannel, setFallbackByChannel] = useState<Record<string, boolean>>({});
   const [loadingChannel, setLoadingChannel] = useState<string | null>(null);
   const [errorByChannel, setErrorByChannel] = useState<Record<string, string>>({});
+  const [expandedByChannel, setExpandedByChannel] = useState<Record<string, boolean>>({});
+  const [expandLoadedByChannel, setExpandLoadedByChannel] = useState<Record<string, boolean>>({});
+  const [expandLoadingChannel, setExpandLoadingChannel] = useState<string | null>(null);
 
   const selectChannel = useCallback(async (channel: LiveChannelGroup) => {
     if (openChannelName === channel.channelName) {
       setOpenChannelName(null);
+      setExpandedByChannel((prev) => ({ ...prev, [channel.channelName]: false }));
       return;
     }
 
@@ -90,6 +94,40 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
     }
   }, [dictionary.channels.emptyChannel, dictionary.channels.loadError, locale, openChannelName, videosByChannel]);
 
+  const expandChannel = useCallback(async (channel: LiveChannelGroup) => {
+    const existing = videosByChannel[channel.channelName] ?? [];
+    if (
+      expandLoadedByChannel[channel.channelName] ||
+      existing.length >= LIVE_CHANNEL_VIDEO_EXPANDED_LIMIT
+    ) {
+      setExpandedByChannel((prev) => ({ ...prev, [channel.channelName]: true }));
+      return;
+    }
+
+    setExpandLoadingChannel(channel.channelName);
+    setErrorByChannel((prev) => ({ ...prev, [channel.channelName]: "" }));
+    try {
+      const videos = await fetchExpandedChannelVideosForKanaly(channel, locale, existing);
+      setVideosByChannel((prev) => ({ ...prev, [channel.channelName]: videos }));
+      setFallbackByChannel((prev) => ({ ...prev, [channel.channelName]: false }));
+      setExpandedByChannel((prev) => ({ ...prev, [channel.channelName]: true }));
+      setExpandLoadedByChannel((prev) => ({ ...prev, [channel.channelName]: true }));
+      if (videos.length === 0) {
+        setErrorByChannel((prev) => ({
+          ...prev,
+          [channel.channelName]: dictionary.channels.emptyChannel,
+        }));
+      }
+    } catch {
+      setErrorByChannel((prev) => ({
+        ...prev,
+        [channel.channelName]: dictionary.channels.loadError,
+      }));
+    } finally {
+      setExpandLoadingChannel(null);
+    }
+  }, [dictionary.channels.emptyChannel, dictionary.channels.loadError, expandLoadedByChannel, locale, videosByChannel]);
+
   return (
     <div className="kanaly-page">
       <p className="kanaly-lead">{dictionary.channels.lead(CHANNEL_VIDEO_LOOKBACK_DAYS)}</p>
@@ -101,8 +139,11 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
           {orderedChannels.map((channel, channelIndex) => {
             const isOpen = openChannelName === channel.channelName;
             const isLoading = loadingChannel === channel.channelName;
-            const videos = videosByChannel[channel.channelName] ?? [];
+            const allVideos = videosByChannel[channel.channelName] ?? [];
+            const expanded = expandedByChannel[channel.channelName] === true;
+            const videos = expanded ? allVideos : allVideos.slice(0, LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT);
             const usedFallback = fallbackByChannel[channel.channelName] === true;
+            const expanding = expandLoadingChannel === channel.channelName;
 
             return (
               <Fragment key={channel.channelName}>
@@ -142,12 +183,36 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
                       <p className="kanaly-channel-info">{dictionary.channels.loading(CHANNEL_VIDEO_LOOKBACK_DAYS)}</p>
                     ) : videos.length > 0 ? (
                       <>
-                        {usedFallback ? (
+                        {usedFallback && !expanded ? (
                           <p className="kanaly-channel-info kanaly-channel-fallback">
                             {dictionary.channels.fallback(CHANNEL_VIDEO_LOOKBACK_DAYS)}
                           </p>
                         ) : null}
                         <KanalyChannelVideos videos={videos} channelName={channel.channelName} />
+                        <p className="kanaly-videos-toggle">
+                          {expanded ? (
+                            <button
+                              type="button"
+                              className="kanaly-videos-toggle-btn"
+                              onClick={() =>
+                                setExpandedByChannel((prev) => ({ ...prev, [channel.channelName]: false }))
+                              }
+                            >
+                              {dictionary.channels.collapseVideos}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="kanaly-videos-toggle-btn"
+                              onClick={() => void expandChannel(channel)}
+                              disabled={expanding}
+                            >
+                              {expanding
+                                ? dictionary.channels.loadingLatestVideos
+                                : dictionary.channels.loadLatestVideos(LIVE_CHANNEL_VIDEO_EXPANDED_LIMIT)}
+                            </button>
+                          )}
+                        </p>
                       </>
                     ) : (
                       <p className="kanaly-channel-info">

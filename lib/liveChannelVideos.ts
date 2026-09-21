@@ -3,8 +3,14 @@ import { filterNonShortVideos, type ShortDetectionInput } from "@/lib/youtubeSho
 /** How many recent non-short videos to show in the /live KANÁLY detail panel. */
 export const LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT = 24;
 
+/** Expanded channel panel: last N videos, then one-click collapse. */
+export const LIVE_CHANNEL_VIDEO_EXPANDED_LIMIT = 100;
+
 /** Fetch extra candidates before filtering Shorts out (RSS/API). */
 export const LIVE_CHANNEL_VIDEO_FETCH_BUFFER = 72;
+
+/** Extra candidates when loading the expanded 100-video list. */
+export const LIVE_CHANNEL_VIDEO_EXPANDED_FETCH_BUFFER = 150;
 
 /** Lookback window for the standalone /kanaly page. */
 export const CHANNEL_VIDEO_LOOKBACK_DAYS = 7;

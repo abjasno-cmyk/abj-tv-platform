@@ -8,6 +8,7 @@ import { VideoTranscriptLabel } from "@/components/viewer/VideoTranscriptLabel";
 import { VideoReleaseDateBadge } from "@/components/viewer/VideoReleaseDateBadge";
 import { ViewerVideoBadges } from "@/components/viewer/ViewerVideoBadges";
 import { resolveVideoThumbnail } from "@/lib/viewer/videoMetadata";
+import { formatPremiereDateLine } from "@/lib/viewer/videoReleaseDate";
 
 type ChannelVideoTileProps = {
   video: LiveChannelVideo;
@@ -27,6 +28,7 @@ export function ChannelVideoTile({
   onSavedChange,
 }: ChannelVideoTileProps) {
   const thumbnail = resolveVideoThumbnail(video.videoId, video.thumbnail);
+  const premiereLine = formatPremiereDateLine(video.publishedAt);
 
   return (
     <div className="channel-video-wrap">
@@ -38,6 +40,7 @@ export function ChannelVideoTile({
           <VideoReleaseDateBadge publishedAt={video.publishedAt} videoType="vod" />
         </span>
         <span className="cv-title">{video.title}</span>
+        {premiereLine ? <span className="cv-date">{premiereLine}</span> : null}
       </button>
       <div className="channel-video-actions nazory-detail-actions">
         <SaveVideoButton

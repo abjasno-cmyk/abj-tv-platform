@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { LiveChannelGroup } from "@/components/abj/ChannelDirectory";
-import { fetchChannelVideosForKanaly } from "@/lib/kanaly/channelVideosClient";
+import { fetchChannelVideosForKanaly, fetchExpandedChannelVideosForKanaly } from "@/lib/kanaly/channelVideosClient";
+import { LIVE_CHANNEL_VIDEO_EXPANDED_LIMIT } from "@/lib/liveChannelVideos";
 
 describe("fetchChannelVideosForKanaly", () => {
   beforeEach(() => {
@@ -80,5 +81,35 @@ describe("fetchChannelVideosForKanaly", () => {
     expect(fetchMock).not.toHaveBeenCalled();
     expect(result.videos).toHaveLength(24);
     expect(result.usedLatestFallback).toBe(false);
+  });
+
+  it("loads up to 100 latest videos without the 7-day window", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        videos: Array.from({ length: 100 }, (_, index) => ({
+          videoId: `api-${index + 1}`,
+          title: `Video ${index + 1}`,
+          thumbnail: null,
+          publishedAt: `2026-0${index < 50 ? 5 : 6}-${String((index % 28) + 1).padStart(2, "0")}T10:00:00.000Z`,
+        })),
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const channel: LiveChannelGroup = {
+      channelName: "Datarun",
+      avatarUrl: null,
+      channelId: "UC_STALE",
+      channelUrl: "https://www.youtube.com/@Datarun_cz",
+      videos: [],
+    };
+
+    const videos = await fetchExpandedChannelVideosForKanaly(channel);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const requestedUrl = String(fetchMock.mock.calls[0]?.[0] ?? "");
+    expect(requestedUrl).toContain(`limit=${LIVE_CHANNEL_VIDEO_EXPANDED_LIMIT}`);
+    expect(videos).toHaveLength(100);
   });
 });

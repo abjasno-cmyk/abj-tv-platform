@@ -67,6 +67,9 @@ type SiteDictionary = {
     currentlyRunning: string;
     channels: string;
     channelHint: string;
+    loadLatestVideos: (count: number) => string;
+    collapseVideos: string;
+    loadingLatestVideos: string;
     player: {
       controls: string;
       hideControls: string;
@@ -109,6 +112,9 @@ type SiteDictionary = {
     loadError: string;
     noRecentVideos: (days: number) => string;
     fallback: (days: number) => string;
+    loadLatestVideos: (count: number) => string;
+    collapseVideos: string;
+    loadingLatestVideos: string;
   };
   opinions: {
     authorsTitle: string;
@@ -195,6 +201,9 @@ const cs: SiteDictionary = {
     currentlyRunning: "PRÁVĚ BĚŽÍ",
     channels: "KANÁLY",
     channelHint: "KLIKNĚTE NA VYBRANÝ KANÁL PRO ZOBRAZENÍ DETAILU.",
+    loadLatestVideos: (count) => `Načíst ${count} posledních videí`,
+    collapseVideos: "Sbalit",
+    loadingLatestVideos: "Načítám nejnovější videa…",
     player: {
       controls: "Ovládání přehrávání",
       hideControls: "Skrýt ovládání",
@@ -237,6 +246,9 @@ const cs: SiteDictionary = {
     loadError: "Videa kanálu se nepodařilo načíst.",
     noRecentVideos: (days) => `Za posledních ${days} dní nejsou u tohoto kanálu dostupná videa.`,
     fallback: (days) => `Za posledních ${days} dní bez novinek — zobrazujeme nejnovější videa kanálu.`,
+    loadLatestVideos: (count) => `Načíst ${count} posledních videí`,
+    collapseVideos: "Sbalit",
+    loadingLatestVideos: "Načítám nejnovější videa…",
   },
   opinions: {
     authorsTitle: "AUTOŘI",
@@ -323,6 +335,9 @@ const en: SiteDictionary = {
     currentlyRunning: "ON AIR NOW",
     channels: "CHANNELS",
     channelHint: "CLICK A CHANNEL TO SEE DETAILS.",
+    loadLatestVideos: (count) => `Load the last ${count} videos`,
+    collapseVideos: "Collapse",
+    loadingLatestVideos: "Loading the latest videos…",
     player: {
       controls: "Playback controls",
       hideControls: "Hide controls",
@@ -365,6 +380,9 @@ const en: SiteDictionary = {
     loadError: "Could not load channel videos.",
     noRecentVideos: (days) => `No videos are available for this channel from the last ${days} days.`,
     fallback: (days) => `No new videos in the last ${days} days — showing the channel's latest videos.`,
+    loadLatestVideos: (count) => `Load the last ${count} videos`,
+    collapseVideos: "Collapse",
+    loadingLatestVideos: "Loading the latest videos…",
   },
   opinions: {
     authorsTitle: "AUTHORS",

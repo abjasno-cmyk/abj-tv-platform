@@ -1,10 +1,12 @@
 import type { LiveChannelGroup, LiveChannelVideo } from "@/components/abj/ChannelDirectory";
 import type { VeroxLocale } from "@/lib/i18n/config";
 import {
+  LIVE_CHANNEL_VIDEO_EXPANDED_LIMIT,
   LIVE_CHANNEL_VIDEO_FETCH_BUFFER,
   LIVE_CHANNEL_VIDEO_MIN_FROM_CACHE,
   mergeChannelVideosByVideoId,
   selectKanalyChannelVideos,
+  selectLatestNonShortChannelVideos,
   shouldSupplementChannelVideosFromApi,
   type KanalyChannelVideoSelection,
 } from "@/lib/liveChannelVideos";
@@ -37,7 +39,11 @@ function mapApiVideos(payload: ChannelLatestApiResponse): LiveChannelVideo[] {
     .filter((video): video is LiveChannelVideo => Boolean(video));
 }
 
-async function fetchFromChannelLatest(channel: LiveChannelGroup, locale?: VeroxLocale): Promise<LiveChannelVideo[]> {
+async function fetchFromChannelLatest(
+  channel: LiveChannelGroup,
+  locale?: VeroxLocale,
+  limit: number = LIVE_CHANNEL_VIDEO_FETCH_BUFFER,
+): Promise<LiveChannelVideo[]> {
   if (!channel.channelId && !channel.channelUrl && !channel.channelName.trim()) {
     return [];
   }
@@ -49,7 +55,7 @@ async function fetchFromChannelLatest(channel: LiveChannelGroup, locale?: VeroxL
     params.set("channelId", channel.channelId);
   }
   params.set("channelName", channel.channelName);
-  params.set("limit", String(LIVE_CHANNEL_VIDEO_FETCH_BUFFER));
+  params.set("limit", String(limit));
   if (locale) params.set("locale", locale);
 
   const response = await fetch(`/api/channel-latest?${params.toString()}`, { cache: "no-store" });
@@ -86,4 +92,14 @@ export async function fetchChannelVideosForKanaly(
   }
 
   return { videos: [], usedLatestFallback: false };
+}
+
+export async function fetchExpandedChannelVideosForKanaly(
+  channel: LiveChannelGroup,
+  locale?: VeroxLocale,
+  existing: LiveChannelVideo[] = [],
+): Promise<LiveChannelVideo[]> {
+  const apiVideos = await fetchFromChannelLatest(channel, locale, LIVE_CHANNEL_VIDEO_EXPANDED_LIMIT);
+  const merged = mergeChannelVideosByVideoId(channel.videos, existing, apiVideos);
+  return selectLatestNonShortChannelVideos(merged, LIVE_CHANNEL_VIDEO_EXPANDED_LIMIT);
 }
