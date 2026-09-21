@@ -9,7 +9,7 @@ const TRANSCRIPT_FETCH_TIMEOUT_MS = 4_000;
 
 async function fetchTranscriptUpstream(videoId: string): Promise<TranscriptResponse | null> {
   try {
-    return await fetchVideoTranscriptServer(videoId);
+    return await fetchVideoTranscriptServer(videoId, undefined, { peek: true });
   } catch {
     return null;
   }

@@ -85,11 +85,24 @@ function shouldUseLegacyResponse(payload: TranscriptResponse): boolean {
   return false;
 }
 
-async function fetchLegacyTranscript(videoId: string, request: Request): Promise<TranscriptResponse | null> {
+async function fetchLegacyTranscript(
+  videoId: string,
+  request: Request,
+  peek = false,
+): Promise<TranscriptResponse | null> {
   const apiKey = resolveFeedApiKey();
   if (!apiKey) return null;
 
-  const candidateUrls = buildTranscriptUrlCandidates(videoId);
+  const candidateUrls = buildTranscriptUrlCandidates(videoId).map((url) => {
+    if (!peek) return url;
+    try {
+      const next = new URL(url);
+      next.searchParams.set("peek", "1");
+      return next.toString();
+    } catch {
+      return url;
+    }
+  });
   const { response: upstreamResponse } = await fetchTranscriptUpstream(candidateUrls, request, apiKey, videoId);
   if (!upstreamResponse) return null;
 
@@ -101,8 +114,12 @@ async function fetchLegacyTranscript(videoId: string, request: Request): Promise
   }
 }
 
-async function fetchLegacyFallback(videoId: string, request: Request): Promise<TranscriptResponse | null> {
-  const upstream = await fetchLegacyTranscript(videoId, request);
+async function fetchLegacyFallback(
+  videoId: string,
+  request: Request,
+  peek = false,
+): Promise<TranscriptResponse | null> {
+  const upstream = await fetchLegacyTranscript(videoId, request, peek);
   if (upstream && shouldUseLegacyResponse(upstream)) {
     return upstream;
   }
@@ -133,12 +150,14 @@ async function fetchProviderTranscript(
   apiKey: string,
   videoId: string,
   request: Request,
+  peek = false,
 ): Promise<Response> {
   const providerUrl = new URL(`${baseUrl}/${encodeURIComponent(videoId)}`);
   const incoming = new URL(request.url);
   incoming.searchParams.forEach((value, key) => {
     providerUrl.searchParams.append(key, value);
   });
+  if (peek) providerUrl.searchParams.set("peek", "1");
 
   try {
     return await fetch(providerUrl.toString(), {
@@ -244,22 +263,27 @@ async function fetchProviderStatus(baseUrl: string, apiKey: string, videoId: str
   return extractStatusFromStatusPayload(payload, videoId);
 }
 
+export type FetchVideoTranscriptOptions = {
+  /** SEO / crawler: jen čtení hotového přepisu, žádný výpočet v enginu. */
+  peek?: boolean;
+};
+
 export async function fetchVideoTranscriptServer(
   videoId: string,
   request = new Request(`https://verox.cz/api/transcript/${encodeURIComponent(videoId)}`),
+  options: FetchVideoTranscriptOptions = {},
 ): Promise<TranscriptResponse | null> {
   const normalized = videoId.trim();
   if (!normalized) return null;
+  const peek = Boolean(options.peek);
 
-  // Bez VeroxNews provideru (typicky lokální vývoj proti enginu) jdi rovnou
-  // na on-demand GET /transcript/{id} — první klik spustí výpočet v enginu.
   const provider = resolveTranscriptProviderConfig();
   if (!provider) {
-    return fetchLegacyFallback(normalized, request);
+    return fetchLegacyFallback(normalized, request, peek);
   }
 
   const { baseUrl, apiKey } = provider;
-  const response = await fetchProviderTranscript(baseUrl, apiKey, normalized, request);
+  const response = await fetchProviderTranscript(baseUrl, apiKey, normalized, request, peek);
 
   if (response.status === 401 || response.status === 403) {
     throw new TranscriptProviderError(
@@ -269,6 +293,11 @@ export async function fetchVideoTranscriptServer(
     );
   }
   if (response.status === 404) {
+    if (peek) {
+      const legacyFallback = await fetchLegacyFallback(normalized, request, true);
+      if (legacyFallback) return legacyFallback;
+      return unavailableEnvelope(normalized);
+    }
     const statusFromProvider = await fetchProviderStatus(baseUrl, apiKey, normalized);
     if (statusFromProvider === "processing" || statusFromProvider === "unknown") {
       return processingEnvelope(normalized);
@@ -276,7 +305,7 @@ export async function fetchVideoTranscriptServer(
     if (statusFromProvider === "not_ready_live") {
       return { ...processingEnvelope(normalized), status: "not_ready_live" };
     }
-    const legacyFallback = await fetchLegacyFallback(normalized, request);
+    const legacyFallback = await fetchLegacyFallback(normalized, request, false);
     if (legacyFallback) return legacyFallback;
     return unavailableEnvelope(normalized);
   }
@@ -314,7 +343,7 @@ export async function fetchVideoTranscriptServer(
     if (statusFromProvider === "not_ready_live") {
       return { ...processingEnvelope(normalized), status: "not_ready_live" };
     }
-    const legacyFallback = await fetchLegacyFallback(normalized, request);
+    const legacyFallback = await fetchLegacyFallback(normalized, request, peek);
     if (legacyFallback) return legacyFallback;
   }
 
