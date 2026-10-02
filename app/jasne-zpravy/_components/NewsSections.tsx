@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { StickyCategoryNav } from "./StickyCategoryNav";
 import {
   getCategoryLabel,
   orderedCategories,
@@ -91,6 +92,10 @@ function itemPreviewLead(item: NewsItem): string | null {
   return null;
 }
 
+function categoryAnchorId(category: NewsItem["category"]): string {
+  return `sekce-${category}`;
+}
+
 export function NewsSections({
   items,
   sourcesByItem,
@@ -102,6 +107,10 @@ export function NewsSections({
 }: NewsSectionsProps) {
   const sortedItems = [...items].sort((a, b) => rankForSort(a) - rankForSort(b));
   const categories = orderedCategories(sortedItems);
+  const categoryNavItems = categories.map((category) => ({
+    anchorId: categoryAnchorId(category),
+    label: getCategoryLabel(category),
+  }));
   const grouped = toCategoryGroups(sortedItems);
   const orderedFlat = [...sortedItems].sort((a, b) => {
     const byRank = rankForSort(a) - rankForSort(b);
@@ -127,6 +136,10 @@ export function NewsSections({
 
   return (
     <div className={className}>
+      {mode === "detail" && categories.length > 1 ? (
+        <StickyCategoryNav items={categoryNavItems} />
+      ) : null}
+
       {categories.map((category) => {
         const sectionItems = [...(grouped.get(category) ?? [])].sort(
           (a, b) => rankForSort(a) - rankForSort(b),
@@ -134,7 +147,7 @@ export function NewsSections({
         if (sectionItems.length === 0) return null;
 
         return (
-          <section key={category} className="mb-12">
+          <section id={categoryAnchorId(category)} key={category} className="mb-12 scroll-mt-28">
             <SectionHeading className="mb-5 flex items-center justify-between text-sm font-bold uppercase tracking-[0.18em] text-gray-600">
               <span>{getCategoryLabel(category)}</span>
               <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] tracking-normal text-gray-600">
