@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { FollowChannelButton } from "@/components/auth/FollowChannelButton";
 import { useLocale } from "@/lib/i18n/useLocale";
+import { openExternalYoutubeChannel } from "@/lib/viewer/externalYoutubeChannels";
 import { scrollHorizontalCarousel } from "@/lib/horizontalCarouselScroll";
 
 export type LiveChannelVideo = {
@@ -343,7 +344,17 @@ export function ChannelDirectory({ channels, onSelectVideo }: ChannelDirectoryPr
                           <button
                             key={`${activeChannel.channelName}-${video.videoId}`}
                             type="button"
-                            onClick={() => onSelectVideo({ channelName: activeChannel.channelName, video })}
+                            onClick={() => {
+                              if (
+                                openExternalYoutubeChannel({
+                                  channelName: activeChannel.channelName,
+                                  channelUrl: activeChannel.channelUrl,
+                                })
+                              ) {
+                                return;
+                              }
+                              onSelectVideo({ channelName: activeChannel.channelName, video });
+                            }}
                             className="group overflow-hidden rounded-2xl bg-white text-left shadow-[0_10px_20px_rgba(17,17,17,0.08)] transition hover:-translate-y-[1px] hover:shadow-[0_16px_28px_rgba(17,17,17,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ED742F]/45"
                           >
                             <div className="relative aspect-[16/9] w-full overflow-hidden bg-abj-main">

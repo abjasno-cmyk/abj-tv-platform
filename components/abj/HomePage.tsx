@@ -24,6 +24,7 @@ import { ViewerVideoBadges } from "@/components/viewer/ViewerVideoBadges";
 import { useRegisterTranscriptStates } from "@/components/viewer/TranscriptStatesProvider";
 import type { TranscriptState } from "@/lib/transcriptTypes";
 import { useViewerVideoState } from "@/lib/viewer/useViewerVideoState";
+import { openExternalYoutubeChannel } from "@/lib/viewer/externalYoutubeChannels";
 import { normalizeChannelFollowId } from "@/lib/viewer/videoMetadata";
 import { LOCALE_CS, type VeroxLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -134,10 +135,19 @@ export function HomePage({
 
   const onSelectChannelVideo = useCallback(
     (payload: { channelName: string; video: LiveChannelVideo }) => {
+      const channel = displayChannels.find((ch) => ch.channelName === payload.channelName);
+      if (
+        openExternalYoutubeChannel({
+          channelName: payload.channelName,
+          channelUrl: channel?.channelUrl,
+        })
+      ) {
+        return;
+      }
       setPlayerBarExpanded(true);
       onSelectChannelVideoProp(payload);
     },
-    [onSelectChannelVideoProp],
+    [displayChannels, onSelectChannelVideoProp],
   );
 
   useEffect(() => {
