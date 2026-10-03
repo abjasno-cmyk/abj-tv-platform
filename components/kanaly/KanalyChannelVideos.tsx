@@ -14,6 +14,10 @@ import { LOCALE_EN } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { localizedPath } from "@/lib/i18n/paths";
 import { useLocale } from "@/lib/i18n/useLocale";
+import {
+  externalYoutubeChannelUrl,
+  isExternalYoutubeOnlyChannel,
+} from "@/lib/viewer/externalYoutubeChannels";
 import { resolveVideoThumbnail } from "@/lib/viewer/videoMetadata";
 import { formatPremiereDateLine } from "@/lib/viewer/videoReleaseDate";
 import { useViewerVideoState } from "@/lib/viewer/useViewerVideoState";
@@ -44,12 +48,15 @@ function channelVideoHref(videoId: string, title: string, channelName: string): 
 type KanalyChannelVideosProps = {
   videos: LiveChannelVideo[];
   channelName: string;
+  channelUrl?: string | null;
 };
 
-export function KanalyChannelVideos({ videos, channelName }: KanalyChannelVideosProps) {
+export function KanalyChannelVideos({ videos, channelName, channelUrl }: KanalyChannelVideosProps) {
   const { savedVideoIds, watchedVideoIds, setSaved } = useViewerVideoState();
   const locale = useLocale();
   const dictionary = getDictionary(locale);
+  const youtubeOnly = isExternalYoutubeOnlyChannel({ channelName, channelUrl });
+  const youtubeHref = externalYoutubeChannelUrl({ channelUrl });
 
   return (
     <>
@@ -58,6 +65,7 @@ export function KanalyChannelVideos({ videos, channelName }: KanalyChannelVideos
         const premiereLine = formatPremiereDateLine(video.publishedAt);
         const thumbnail = resolveVideoThumbnail(video.videoId, video.thumbnail);
         const href = localizedPath(locale, channelVideoHref(video.videoId, video.title, channelName));
+        const playLabel = dictionary.common.play;
 
         return (
           <Fragment key={video.videoId}>
@@ -66,15 +74,33 @@ export function KanalyChannelVideos({ videos, channelName }: KanalyChannelVideos
                 <div className="month">{month}</div>
                 <div className="day">{day}</div>
               </div>
-              <Link href={href} className="thumb vx-videa-thumb" aria-label={video.title}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={thumbnail} alt={video.title} loading="lazy" />
-                <ViewerVideoBadges
-                  watched={watchedVideoIds.has(video.videoId)}
-                  saved={savedVideoIds.has(video.videoId)}
-                />
-                <VideoReleaseDateBadge publishedAt={video.publishedAt} videoType="vod" />
-              </Link>
+              {youtubeOnly ? (
+                <a
+                  href={youtubeHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="thumb vx-videa-thumb"
+                  aria-label={video.title}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={thumbnail} alt={video.title} loading="lazy" />
+                  <ViewerVideoBadges
+                    watched={watchedVideoIds.has(video.videoId)}
+                    saved={savedVideoIds.has(video.videoId)}
+                  />
+                  <VideoReleaseDateBadge publishedAt={video.publishedAt} videoType="vod" />
+                </a>
+              ) : (
+                <Link href={href} className="thumb vx-videa-thumb" aria-label={video.title}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={thumbnail} alt={video.title} loading="lazy" />
+                  <ViewerVideoBadges
+                    watched={watchedVideoIds.has(video.videoId)}
+                    saved={savedVideoIds.has(video.videoId)}
+                  />
+                  <VideoReleaseDateBadge publishedAt={video.publishedAt} videoType="vod" />
+                </Link>
+              )}
               <div className="body">
                 <h3>{video.title}</h3>
                 <div className="by">{channelName}</div>
@@ -91,11 +117,19 @@ export function KanalyChannelVideos({ videos, channelName }: KanalyChannelVideos
                   <VideoDiscussButton videoId={video.videoId} videoTitle={video.title} />
                   <VideoTranscriptLabel videoId={video.videoId} videoTitle={video.title} />
                   <ShareVideoButton videoId={video.videoId} title={video.title} />
-                  <Link href={href} className="vx-arrow">
-                    <b>{dictionary.common.play}</b>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/icons/ikona_sipka.svg" alt="" />
-                  </Link>
+                  {youtubeOnly ? (
+                    <a href={youtubeHref} target="_blank" rel="noopener noreferrer" className="vx-arrow">
+                      <b>{playLabel}</b>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/icons/ikona_sipka.svg" alt="" />
+                    </a>
+                  ) : (
+                    <Link href={href} className="vx-arrow">
+                      <b>{playLabel}</b>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/icons/ikona_sipka.svg" alt="" />
+                    </Link>
+                  )}
                 </div>
               </div>
             </article>

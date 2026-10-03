@@ -7,6 +7,7 @@ import type { DayProgram } from "@/lib/epg-types";
 import { HomePage } from "@/components/abj/HomePage";
 import ProudXLive from "@/components/proudx/ProudXLive";
 import { TENANT } from "@/lib/tenant";
+import { openExternalYoutubeChannel } from "@/lib/viewer/externalYoutubeChannels";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { trackAnalyticsEvent, trackVideoProgressThrottled } from "@/lib/analytics/client";
 import { videoSharePath } from "@/lib/viewer/videoMetadata";
@@ -361,6 +362,15 @@ export default function LivePage({
           });
         }}
         onSelectChannelVideo={({ channelName: selectedChannelName, video }) => {
+          const channel = channels.find((ch) => ch.channelName === selectedChannelName);
+          if (
+            openExternalYoutubeChannel({
+              channelName: selectedChannelName,
+              channelUrl: channel?.channelUrl,
+            })
+          ) {
+            return;
+          }
           setTitle(video.title);
           setChannelName(selectedChannelName);
           setVideoId(video.videoId);

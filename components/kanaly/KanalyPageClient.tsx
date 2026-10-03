@@ -188,7 +188,11 @@ export function KanalyPageClient({ channels }: KanalyPageClientProps) {
                             {dictionary.channels.fallback(CHANNEL_VIDEO_LOOKBACK_DAYS)}
                           </p>
                         ) : null}
-                        <KanalyChannelVideos videos={videos} channelName={channel.channelName} />
+                        <KanalyChannelVideos
+                          videos={videos}
+                          channelName={channel.channelName}
+                          channelUrl={channel.channelUrl}
+                        />
                         <p className="kanaly-videos-toggle">
                           {expanded ? (
                             <button
