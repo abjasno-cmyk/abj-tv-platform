@@ -9,6 +9,7 @@ import {
 import { LOCALE_CS, LOCALE_EN, type VeroxLocale } from "@/lib/i18n/config";
 import { localizeVideoTitleItems } from "@/lib/i18n/videoTitles";
 import { resolveChannelIdsFromChannelUrl } from "@/lib/youtubeChannelResolve";
+import { isExternalYoutubeOnlyChannel } from "@/lib/viewer/externalYoutubeChannels";
 import { parseIsoDurationSeconds } from "@/lib/youtubeShort";
 
 type ChannelLatestVideo = {
@@ -633,6 +634,9 @@ export async function GET(request: Request) {
   const requestedChannelId = searchParams.get("channelId")?.trim() ?? "";
   const channelUrl = searchParams.get("channelUrl")?.trim() ?? "";
   const channelName = searchParams.get("channelName")?.trim() ?? "";
+  if (isExternalYoutubeOnlyChannel({ channelName, channelUrl })) {
+    return Response.json({ videos: [] });
+  }
   const locale = parseLocale(searchParams.get("locale"));
   const requestedLimit = Number.parseInt(searchParams.get("limit") ?? String(LIVE_CHANNEL_VIDEO_DISPLAY_LIMIT), 10);
   const displayLimit = Number.isFinite(requestedLimit)

@@ -4,6 +4,7 @@ import { TENANT } from "@/lib/tenant";
 import { loadStructuredFeedPayload, type FeedVideo } from "@/lib/dayOverview";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { localizeFeedVideos } from "@/lib/i18n/videoTitles";
+import { filterVeroxFeedVideos } from "@/lib/viewer/externalYoutubeChannels";
 import { selectVideaVideosForTodayAndYesterday } from "@/lib/viewer/videaDaySelection";
 import { InfeedAd } from "@/components/ads/InfeedAd";
 
@@ -13,7 +14,7 @@ async function loadVideos(): Promise<FeedVideo[]> {
   try {
     const payload = await loadStructuredFeedPayload();
     const allVideos = Object.values(payload.channels).flat();
-    return selectVideaVideosForTodayAndYesterday(allVideos);
+    return filterVeroxFeedVideos(selectVideaVideosForTodayAndYesterday(allVideos));
   } catch {
     return [];
   }

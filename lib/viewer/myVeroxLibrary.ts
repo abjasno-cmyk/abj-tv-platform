@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { LiveChannelGroup } from "@/components/abj/ChannelDirectory";
 import { loadLiveChannelsForPage } from "@/lib/liveChannelsServer";
+import { isExternalYoutubeOnlyChannel } from "@/lib/viewer/externalYoutubeChannels";
 import {
   liveVideoHref,
   normalizeChannelFollowId,
@@ -281,8 +282,12 @@ export async function loadMyVeroxLibraryForUser(
     throw new Error("Nepodařilo se načíst osobní knihovnu.");
   }
 
-  const savedRows = (savedRes.data ?? []) as SavedVideoRow[];
-  const progressRows = (progressRes.data ?? []) as VideoProgressRow[];
+  const savedRows = ((savedRes.data ?? []) as SavedVideoRow[]).filter(
+    (row) => !isExternalYoutubeOnlyChannel({ channelName: row.channel_name }),
+  );
+  const progressRows = ((progressRes.data ?? []) as VideoProgressRow[]).filter(
+    (row) => !isExternalYoutubeOnlyChannel({ channelName: row.channel_name }),
+  );
   const videoIds = [
     ...savedRows.map((row) => row.video_id),
     ...progressRows.map((row) => row.video_id),

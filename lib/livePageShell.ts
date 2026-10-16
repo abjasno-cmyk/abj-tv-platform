@@ -4,6 +4,7 @@ import type { LiveChannelGroup } from "@/components/abj/ChannelDirectory";
 import { buildEPG } from "@/lib/buildEPG";
 import { loadLiveChannelsForPage } from "@/lib/liveChannelsServer";
 import type { DayProgram } from "@/lib/epg-types";
+import { filterVeroxProgramDays } from "@/lib/viewer/externalYoutubeChannels";
 
 export type LivePageShell = {
   epg: DayProgram[];
@@ -21,5 +22,5 @@ export async function loadLivePageShell(): Promise<LivePageShell> {
   }
 
   const channels = await channelsPromise;
-  return { epg, channels };
+  return { epg: filterVeroxProgramDays(epg), channels };
 }
