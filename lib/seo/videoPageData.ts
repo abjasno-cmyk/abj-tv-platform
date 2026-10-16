@@ -2,6 +2,7 @@ import "server-only";
 
 import { createSupabaseAnonServerClient } from "@/lib/supabase/server";
 import { buildVideoSlug } from "@/lib/seo/slug";
+import { isExternalYoutubeOnlyChannel } from "@/lib/viewer/externalYoutubeChannels";
 import { resolveVideoThumbnail, resolveVideoTitle } from "@/lib/viewer/videoMetadata";
 import { isValidYouTubeVideoId } from "@/lib/viewer/videoPageServer";
 
@@ -120,6 +121,7 @@ export async function loadRelatedChannelVideos(
 ): Promise<RelatedVideoSeo[]> {
   const normalizedChannel = channelName.trim();
   if (!normalizedChannel) return [];
+  if (isExternalYoutubeOnlyChannel({ channelName: normalizedChannel })) return [];
 
   try {
     const supabase = createSupabaseAnonServerClient();
@@ -168,7 +170,8 @@ export async function listVideosForSitemap(limit = 500): Promise<VideoSeoRecord[
 
     return data
       .map((row) => mapRowToSeoRecord(row as VideoRow))
-      .filter((item): item is VideoSeoRecord => item !== null && Boolean(item.slug));
+      .filter((item): item is VideoSeoRecord => item !== null && Boolean(item.slug))
+      .filter((item) => !isExternalYoutubeOnlyChannel({ channelName: item.channelName }));
   } catch {
     return [];
   }

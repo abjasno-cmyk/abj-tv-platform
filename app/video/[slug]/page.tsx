@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import { JsonLd } from "@/components/seo/JsonLd";
 import { VideoSeoPageContent } from "@/components/seo/VideoSeoPageContent";
@@ -9,6 +9,7 @@ import { loadCachedVideoTranscript } from "@/lib/seo/transcriptServer";
 import { buildVideoMetaDescription, buildVideoSeoTitle } from "@/lib/seo/videoTitles";
 import { loadRelatedChannelVideos, loadVideoSeoRecord } from "@/lib/seo/videoPageData";
 import { SITE_URL } from "@/lib/site";
+import { isExternalYoutubeOnlyChannel, youtubeWatchUrl } from "@/lib/viewer/externalYoutubeChannels";
 
 export const revalidate = 3600;
 
@@ -23,6 +24,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const video = await loadVideoSeoRecord(parsed.videoId);
   if (!video?.slug) return { title: "Video nenalezeno | Verox" };
+  if (isExternalYoutubeOnlyChannel({ channelName: video.channelName })) {
+    return { title: video.title, robots: { index: false, follow: false } };
+  }
 
   const pageUrl = `${SITE_URL}${videoSeoPath(video.slug)}`;
   const title = buildVideoSeoTitle(video.title, video.channelName);
@@ -57,6 +61,9 @@ export default async function VideoSeoPage({ params }: PageProps) {
 
   const video = await loadVideoSeoRecord(parsed.videoId);
   if (!video?.slug || video.slug !== slug.trim()) notFound();
+  if (isExternalYoutubeOnlyChannel({ channelName: video.channelName })) {
+    permanentRedirect(youtubeWatchUrl(video.videoId));
+  }
 
   const [relatedVideos, transcript] = await Promise.all([
     loadRelatedChannelVideos(video.channelName, video.videoId),

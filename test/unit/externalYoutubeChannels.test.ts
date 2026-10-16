@@ -4,8 +4,12 @@ import {
   EXTERNAL_YOUTUBE_CHANNEL_URL,
   extractYoutubeHandle,
   externalYoutubeChannelUrl,
+  filterVeroxCatalogChannels,
+  filterVeroxFeedVideos,
+  filterVeroxProgramDays,
   isExternalYoutubeOnlyChannel,
   normalizeChannelName,
+  youtubeWatchUrl,
 } from "@/lib/viewer/externalYoutubeChannels";
 
 const MATCHING_URL = "https://www.youtube.com/@spoleksvobodneradio3681";
@@ -92,5 +96,51 @@ describe("externalYoutubeChannelUrl", () => {
   it("keeps the channel's own youtube url when it already matches the handle", () => {
     const own = "https://www.youtube.com/@spoleksvobodneradio3681/videos";
     expect(externalYoutubeChannelUrl({ channelUrl: own })).toBe(own);
+  });
+});
+
+describe("youtubeWatchUrl", () => {
+  it("builds a YouTube watch url for the clicked video", () => {
+    expect(youtubeWatchUrl("2JQ6DphibPA")).toBe("https://www.youtube.com/watch?v=2JQ6DphibPA");
+  });
+});
+
+describe("filterVeroxCatalogChannels", () => {
+  it("removes Spolek Svobodné rádio from Verox listings and keeps other channels", () => {
+    const channels = [
+      { channelName: "Spolek Svobodné rádio", channelUrl: MATCHING_URL },
+      { channelName: "Protiproud", channelUrl: "https://www.youtube.com/@ProtiproudTV" },
+    ];
+    expect(filterVeroxCatalogChannels(channels, "verox").map((row) => row.channelName)).toEqual(["Protiproud"]);
+    expect(filterVeroxCatalogChannels(channels, "proudx").map((row) => row.channelName)).toEqual([
+      "Spolek Svobodné rádio",
+      "Protiproud",
+    ]);
+  });
+});
+
+describe("filterVeroxFeedVideos", () => {
+  it("drops this channel's videos from Verox feed lists", () => {
+    const videos = [
+      { video_id: "2JQ6DphibPA", channel: "Spolek Svobodné rádio" },
+      { video_id: "other", channel: "XTV" },
+    ];
+    expect(filterVeroxFeedVideos(videos, "verox").map((row) => row.video_id)).toEqual(["other"]);
+  });
+});
+
+describe("filterVeroxProgramDays", () => {
+  it("strips this channel from the Verox program timeline", () => {
+    const days = [
+      {
+        date: "2026-10-16",
+        label: "Dnes",
+        items: [
+          { time: "10:00", title: "Studio Kladno", channelName: "Spolek Svobodné rádio", thumbnail: null, videoId: "2JQ6DphibPA", isABJ: false },
+          { time: "11:00", title: "Jiný pořad", channelName: "XTV", thumbnail: null, videoId: "abc", isABJ: false },
+        ],
+      },
+    ];
+    expect(filterVeroxProgramDays(days, "verox")[0]?.items.map((item) => item.channelName)).toEqual(["XTV"]);
   });
 });

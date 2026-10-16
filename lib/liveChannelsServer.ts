@@ -2,6 +2,7 @@ import type { LiveChannelGroup } from "@/components/abj/ChannelDirectory";
 import { loadStructuredFeedPayload, parsePublishedTimestamp, type FeedVideo } from "@/lib/dayOverview";
 import { selectLatestNonShortChannelVideos } from "@/lib/liveChannelVideos";
 import { createSupabaseAnonServerClient } from "@/lib/supabase/server";
+import { filterVeroxCatalogChannels } from "@/lib/viewer/externalYoutubeChannels";
 
 type SourceChannel = {
   channelName: string;
@@ -273,7 +274,7 @@ export async function loadLiveChannelsForPage(): Promise<LiveChannelGroup[]> {
       1200,
       new Map<string, string>(),
     );
-    return mergeLiveChannels(feedChannels, sourceChannels, avatarByChannelId);
+    return filterVeroxCatalogChannels(mergeLiveChannels(feedChannels, sourceChannels, avatarByChannelId));
   } catch (error) {
     console.error("live-channels-load-failed", error);
     return [];

@@ -7,7 +7,11 @@ import type { DayProgram } from "@/lib/epg-types";
 import { HomePage } from "@/components/abj/HomePage";
 import ProudXLive from "@/components/proudx/ProudXLive";
 import { TENANT } from "@/lib/tenant";
-import { openExternalYoutubeChannel } from "@/lib/viewer/externalYoutubeChannels";
+import {
+  isExternalYoutubeOnlyChannel,
+  openExternalYoutubeChannel,
+  youtubeWatchUrl,
+} from "@/lib/viewer/externalYoutubeChannels";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { trackAnalyticsEvent, trackVideoProgressThrottled } from "@/lib/analytics/client";
 import { videoSharePath } from "@/lib/viewer/videoMetadata";
@@ -107,6 +111,14 @@ export default function LivePage({
     const current = timelineItems[selectedIndex] ?? null;
     return current?.type === "vod" && Boolean(current.isABJ) && !videoId;
   }, [timelineItems, selectedIndex, videoId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (initialIsLive) return;
+    if (!initialVideoId) return;
+    if (!isExternalYoutubeOnlyChannel({ channelName: initialChannelName })) return;
+    window.location.replace(youtubeWatchUrl(initialVideoId));
+  }, [initialChannelName, initialIsLive, initialVideoId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

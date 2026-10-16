@@ -1,6 +1,7 @@
+import type { DayProgram } from "@/lib/epg-types";
 import { TENANT, type TenantId } from "@/lib/tenant";
 
-/** Canonical YouTube channel for the Verox-only "open on YouTube" exception. */
+/** Canonical YouTube channel for the Verox-only exception (not hosted on Verox). */
 export const EXTERNAL_YOUTUBE_CHANNEL_URL =
   "https://www.youtube.com/@spoleksvobodneradio3681";
 
@@ -66,6 +67,40 @@ export function externalYoutubeChannelUrl(input?: { channelUrl?: string | null }
     }
   }
   return EXTERNAL_YOUTUBE_CHANNEL_URL;
+}
+
+export function youtubeWatchUrl(videoId: string): string {
+  return `https://www.youtube.com/watch?v=${encodeURIComponent(videoId.trim())}`;
+}
+
+/** Drop this channel from Verox listings (kanály, live carousel, feed). ProudX unchanged. */
+export function filterVeroxCatalogChannels<T extends { channelName?: string | null; channelUrl?: string | null }>(
+  channels: T[],
+  tenantId: TenantId = TENANT.id,
+): T[] {
+  return channels.filter(
+    (channel) => !isExternalYoutubeOnlyChannel({ channelName: channel.channelName, channelUrl: channel.channelUrl }, tenantId),
+  );
+}
+
+export function filterVeroxFeedVideos<T extends { channel?: string | null; channelName?: string | null }>(
+  videos: T[],
+  tenantId: TenantId = TENANT.id,
+): T[] {
+  return videos.filter(
+    (video) =>
+      !isExternalYoutubeOnlyChannel(
+        { channelName: video.channelName ?? video.channel ?? null },
+        tenantId,
+      ),
+  );
+}
+
+export function filterVeroxProgramDays(days: DayProgram[], tenantId: TenantId = TENANT.id): DayProgram[] {
+  return days.map((day) => ({
+    ...day,
+    items: day.items.filter((item) => !isExternalYoutubeOnlyChannel({ channelName: item.channelName }, tenantId)),
+  }));
 }
 
 /** Opens the YouTube channel in a new tab. Returns true when the click was handled. */

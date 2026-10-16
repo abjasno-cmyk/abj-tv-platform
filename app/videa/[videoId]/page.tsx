@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import LivePage from "@/app/live/LivePage";
 import { getRequestLocale } from "@/lib/i18n/server";
@@ -9,6 +9,7 @@ import { videoSeoPath } from "@/lib/seo/slug";
 import { buildVideoMetaDescription, buildVideoSeoTitle } from "@/lib/seo/videoTitles";
 import { loadVideoSeoRecord } from "@/lib/seo/videoPageData";
 import { SITE_URL } from "@/lib/site";
+import { isExternalYoutubeOnlyChannel, youtubeWatchUrl } from "@/lib/viewer/externalYoutubeChannels";
 import { videoSharePath } from "@/lib/viewer/videoMetadata";
 import { isValidYouTubeVideoId, loadVideoPageMeta } from "@/lib/viewer/videoPageServer";
 
@@ -37,6 +38,9 @@ export async function generateMetadata({
     title: fallbackTitle,
     channelName: fallbackChannel,
   });
+  if (isExternalYoutubeOnlyChannel({ channelName: meta.channelName || fallbackChannel })) {
+    return { title: meta.title, robots: { index: false, follow: false } };
+  }
   const seoRecord = await loadVideoSeoRecord(meta.videoId);
   const pageUrl = `${SITE_URL}${videoSharePath(meta.videoId)}`;
   const canonicalUrl = seoRecord?.slug ? `${SITE_URL}${videoSeoPath(seoRecord.slug)}` : undefined;
@@ -81,13 +85,14 @@ export default async function VideoSharePage({
   const fallbackChannel = (Array.isArray(rawChannel) ? rawChannel[0] : rawChannel)?.trim() || null;
 
   const locale = await getRequestLocale();
-  const [{ epg, channels }, meta] = await Promise.all([
-    loadLivePageShell(),
-    loadVideoPageMeta(videoId, {
-      title: fallbackTitle,
-      channelName: fallbackChannel,
-    }),
-  ]);
+  const meta = await loadVideoPageMeta(videoId, {
+    title: fallbackTitle,
+    channelName: fallbackChannel,
+  });
+  if (isExternalYoutubeOnlyChannel({ channelName: meta.channelName || fallbackChannel })) {
+    permanentRedirect(youtubeWatchUrl(meta.videoId));
+  }
+  const { epg, channels } = await loadLivePageShell();
   const [displayEpg, displayChannels, displayTitle] = await Promise.all([
     localizeProgramDays(epg, locale),
     localizeLiveChannels(channels, locale),

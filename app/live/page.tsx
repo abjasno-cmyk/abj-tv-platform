@@ -12,6 +12,7 @@ import {
 import { buildEPG } from "@/lib/buildEPG";
 import { loadLiveChannelsForPage } from "@/lib/liveChannelsServer";
 import { getNowPlaying, getProgram } from "@/lib/programEngine";
+import { filterVeroxProgramDays, isExternalYoutubeOnlyChannel } from "@/lib/viewer/externalYoutubeChannels";
 import { videoSharePath } from "@/lib/viewer/videoMetadata";
 import { isValidYouTubeVideoId } from "@/lib/viewer/videoPageServer";
 import type { DayProgram, ProgramBlock, ProgramItem } from "@/lib/epg-types";
@@ -531,11 +532,19 @@ export default async function LivePageServer(
     localizeLiveChannels(liveChannels, locale),
     localizeProgramBlock(v3NowPlaying, locale),
   ]);
+  epg = filterVeroxProgramDays(epg);
+  if (v3NowPlaying && isExternalYoutubeOnlyChannel({ channelName: v3NowPlaying.channel })) {
+    v3NowPlaying = null;
+  }
   if (externalNowPlaying) {
-    externalNowPlaying = {
-      ...externalNowPlaying,
-      title: await localizeVideoTitle(externalNowPlaying.title, locale),
-    };
+    if (isExternalYoutubeOnlyChannel({ channelName: externalNowPlaying.channelName })) {
+      externalNowPlaying = null;
+    } else {
+      externalNowPlaying = {
+        ...externalNowPlaying,
+        title: await localizeVideoTitle(externalNowPlaying.title, locale),
+      };
+    }
   }
 
   const initialFromNowPlaying = externalNowPlaying
